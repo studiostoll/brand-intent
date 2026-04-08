@@ -360,7 +360,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 |-----|------|----------|-------------|
 | `id:` | string | Yes | Unique purpose identifier |
 | `name:` | string | No | Display name (derived from id if omitted) |
-| `archetypes:` | list | Yes | Valid composition IDs for this purpose |
+| `compositions:` | list | Yes | Valid composition IDs for this purpose |
 | `density:` | enum | No | `light` \| `medium` \| `full` |
 | `identity-filter` | block | No | Filters the composed upstream |
 | `identity-extension` | block | No | Adds purpose-specific AI context |

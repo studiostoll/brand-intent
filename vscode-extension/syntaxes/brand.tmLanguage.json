@@ -1,0 +1,216 @@
+{
+  "scopeName": "source.brand-intent-brand",
+  "name": "Brand Intent Brand",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#id-field" },
+    { "include": "#name-field" },
+    { "include": "#tokens-enum" },
+    { "include": "#ai-context-header" },
+    { "include": "#brand-colors-header" },
+    { "include": "#voice-constraints-header" },
+    { "include": "#content-defaults-header" },
+    { "include": "#theme-header" },
+    { "include": "#brand-color-entry" },
+    { "include": "#brand-color-print-sub" },
+    { "include": "#token-slot-ref" },
+    { "include": "#token-slot-with-comment" },
+    { "include": "#token-slot" },
+    { "include": "#spacing-value" },
+    { "include": "#divider-header" },
+    { "include": "#divider-value" },
+    { "include": "#font-header" },
+    { "include": "#font-value" },
+    { "include": "#typography-header" },
+    { "include": "#typography-value" },
+    { "include": "#ai-context-body" },
+    { "include": "#string-field" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.brand-intent-brand"
+    },
+    "id-field": {
+      "match": "^(id:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "name-field": {
+      "match": "^(name:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "string.unquoted.brand-intent-brand" }
+      }
+    },
+    "tokens-enum": {
+      "match": "^(tokens:)\\s+(figma|inline)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.tag.brand-intent-brand" }
+      }
+    },
+    "ai-context-header": {
+      "match": "^(ai-context:)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "brand-colors-header": {
+      "match": "^(brand-colors)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "voice-constraints-header": {
+      "match": "^(voice-constraints)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "content-defaults-header": {
+      "match": "^(content-defaults)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "theme-header": {
+      "match": "^(theme)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "brand-color-entry": {
+      "comment": "Top-level brand color: exactly 2-space indent, name: #HEX",
+      "match": "^( {2})([-\\w]+)(:\\s*)(#[0-9A-Fa-f]{3,8})\\s*$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" }
+      }
+    },
+    "brand-color-print-sub": {
+      "comment": "Print sub-keys under a brand color: 4-space indent, pantone/hks/cmyk",
+      "match": "^( {4})(pantone|hks|cmyk)(:\\s*)(\\S.*)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
+    "token-slot-ref": {
+      "comment": "Indented token slot with $ref value",
+      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(\\$[\\w]+)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "entity.name.tag.brand-intent-brand" }
+      }
+    },
+    "token-slot-with-comment": {
+      "comment": "Indented token slot: background: #HEX  # annotation",
+      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(#[0-9A-Fa-f]{3,8})(\\s+#.*)?$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
+        "5": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
+    "token-slot": {
+      "comment": "Indented token slot without comment",
+      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(#[0-9A-Fa-f]{3,8})\\s*$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" }
+      }
+    },
+    "spacing-value": {
+      "comment": "Indented spacing key-value pairs",
+      "match": "^(\\s{2,})(unit|xs|s|m|l|xl)(:\\s*)(\\S+)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
+    "divider-header": {
+      "match": "^(divider)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "divider-value": {
+      "comment": "Indented divider property key-value pairs",
+      "match": "^(\\s{2,})(thickness|width|color|spacing|align)(:\\s*)(\\S+)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
+    "font-header": {
+      "match": "^(font)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "font-value": {
+      "comment": "Indented font block properties",
+      "match": "^(\\s{2,})(name|fallback|source)(:\\s*)(\\S+)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "string.unquoted.brand-intent-brand" }
+      }
+    },
+    "typography-header": {
+      "match": "^(typography)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "typography-value": {
+      "comment": "Indented typography block properties; font ref colored teal as a cross-reference",
+      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "entity.name.tag.brand-intent-brand" },
+        "6": { "name": "support.type.property-name.brand-intent-brand" },
+        "7": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "8": { "name": "constant.numeric.brand-intent-brand" },
+        "10": { "name": "support.type.property-name.brand-intent-brand" }
+      }
+    },
+    "ai-context-body": {
+      "comment": "Indented continuation lines for ai-context block",
+      "match": "^(\\s{2,}.+)",
+      "captures": {
+        "1": { "name": "string.unquoted.brand-intent-brand" }
+      }
+    },
+    "string-field": {
+      "match": "^(language|locale|domain|app-icon|favicon|figma-file-key|figma-collection|tokens-file|spacing):?\\s*(.+)?",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-brand" },
+        "2": { "name": "string.unquoted.brand-intent-brand" }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|ai-context:|spacing:|brand-colors|voice-constraints|content-defaults|theme|divider|font|typography)(?=\\s|$)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    }
+  }
+}

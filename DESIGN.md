@@ -410,7 +410,7 @@ These were explicitly identified during the design session as unresolved:
 - `identity-filter` key vocabulary — what can be filtered? Can things be explicitly excluded?
 - Should `density` (currently on `.purpose`) be defined in `.brand` as a default and overridable per purpose?
 - Grid vs flow layout mode — should one supersede the other, or remain as parallel tools?
-- `archetypes` field in `.purpose` files — these are referenced but not defined anywhere in the current files. What defines the archetype vocabulary?
+- ~~`archetypes` field in `.purpose` files — what defines the vocabulary?~~ **Resolved:** Renamed to `compositions:` — references `.composition` file IDs directly. `archetypes:` kept as deprecated alias.
 
 **Architecture:**
 - How does the parser actually compose the AI context object from five layers? What is the data structure passed to the model?

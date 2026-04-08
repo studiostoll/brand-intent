@@ -6,7 +6,7 @@ id:   daily-bread
 name: Tagesbrot
 
 # Which compositions can render this purpose.
-archetypes: editorial, simple-stack
+compositions: editorial, simple-stack
 
 density: low
 

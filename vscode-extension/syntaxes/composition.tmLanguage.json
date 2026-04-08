@@ -1,0 +1,274 @@
+{
+  "scopeName": "source.brand-intent-composition",
+  "name": "Brand Intent Composition",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#id-field" },
+    { "include": "#name-field" },
+    { "include": "#image" },
+    { "include": "#grid" },
+    { "include": "#logo-none" },
+    { "include": "#logo-keyword" },
+    { "include": "#logo-row" },
+    { "include": "#logo-band" },
+    { "include": "#icon-keyword" },
+    { "include": "#icon-row" },
+    { "include": "#icon-band" },
+    { "include": "#mode" },
+    { "include": "#flow" },
+    { "include": "#flow-panel" },
+    { "include": "#flow-split" },
+    { "include": "#sticky" },
+    { "include": "#flow-property" },
+    { "include": "#group" },
+    { "include": "#spacer" },
+    { "include": "#divider" },
+    { "include": "#flow-icon" },
+    { "include": "#sticky-logo" },
+    { "include": "#grouped-slot" },
+    { "include": "#slot-row" },
+    { "include": "#slot-band" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.brand-intent-composition"
+    },
+    "id-field": {
+      "match": "^(id:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "entity.name.type.brand-intent-composition" }
+      }
+    },
+    "name-field": {
+      "match": "^(name:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "string.unquoted.brand-intent-composition" }
+      }
+    },
+    "image": {
+      "match": "^(image:)\\s+(full|none|\\w+--\\w+(?:\\s+cols\\s+\\S+)?)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "string.unquoted.brand-intent-composition" }
+      }
+    },
+    "grid": {
+      "match": "^(grid:)\\s+(\\d+)\\s+(\\d+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "constant.numeric.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "logo-none": {
+      "match": "^(logo:)\\s+(none)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "string.unquoted.brand-intent-composition" }
+      }
+    },
+    "logo-keyword": {
+      "match": "^(logo:)\\s+(top|center|bottom)\\s+(?:col\\s+)?(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "constant.numeric.row.brand-intent-composition" },
+        "3": { "name": "variable.parameter.brand-intent-composition" },
+        "4": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "logo-row": {
+      "match": "^(logo:)\\s+(row)\\s+(\\d+)\\s+(?:col\\s+)?(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "keyword.other.brand-intent-composition" },
+        "3": { "name": "constant.numeric.row.brand-intent-composition" },
+        "4": { "name": "variable.parameter.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "logo-band": {
+      "comment": "Deprecated band A form -- kept for backward compat",
+      "match": "^(logo:)\\s+(band)\\s+([A-F])\\s+(?:col\\s+)?(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "invalid.deprecated.brand-intent-composition" },
+        "3": { "name": "constant.numeric.row.brand-intent-composition" },
+        "4": { "name": "variable.parameter.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "icon-keyword": {
+      "match": "^(icon:)\\s+(top|center|bottom)\\s+(?:col\\s+)?(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "constant.numeric.row.brand-intent-composition" },
+        "3": { "name": "variable.parameter.brand-intent-composition" },
+        "4": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "icon-row": {
+      "match": "^(icon:)\\s+(row)\\s+(\\d+)\\s+(?:col\\s+)?(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "keyword.other.brand-intent-composition" },
+        "3": { "name": "constant.numeric.row.brand-intent-composition" },
+        "4": { "name": "variable.parameter.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "icon-band": {
+      "comment": "Deprecated band A form -- kept for backward compat",
+      "match": "^(icon:)\\s+(band)\\s+([A-F])\\s+(?:col\\s+)?(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "invalid.deprecated.brand-intent-composition" },
+        "3": { "name": "constant.numeric.row.brand-intent-composition" },
+        "4": { "name": "variable.parameter.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "mode": {
+      "match": "^(mode:)\\s+(compose|grid|flow)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "constant.language.brand-intent-composition" }
+      }
+    },
+    "flow": {
+      "match": "^(flow:)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" }
+      }
+    },
+    "flow-panel": {
+      "match": "^(flow:)\\s+(panel)\\s+(\\S+)(?:\\s+(\\d+/\\d+))?(?:\\s+(\\d+/\\d+))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "entity.name.tag.brand-intent-composition" },
+        "3": { "name": "variable.parameter.brand-intent-composition" },
+        "4": { "name": "constant.numeric.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "flow-split": {
+      "match": "^(flow:)\\s+(split)\\s+(top|bottom|left|right)(?:\\s+(\\d+/\\d+))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "entity.name.tag.brand-intent-composition" },
+        "3": { "name": "variable.parameter.brand-intent-composition" },
+        "4": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "sticky": {
+      "match": "^(sticky:)\\s+(top|bottom|left|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "variable.parameter.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "flow-property": {
+      "match": "^\\s+(direction|columns|column-gap)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-composition" },
+        "2": { "name": "punctuation.separator.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "group": {
+      "comment": "Deprecated -- use flow: split instead",
+      "match": "^(group:)(.*)",
+      "captures": {
+        "1": { "name": "invalid.deprecated.brand-intent-composition" },
+        "2": { "name": "invalid.deprecated.brand-intent-composition" }
+      }
+    },
+    "spacer": {
+      "match": "^\\s+\\|\\s+(spacer-)(\\w+)",
+      "captures": {
+        "1": { "name": "support.type.brand-intent-composition" },
+        "2": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "divider": {
+      "match": "^\\s+\\|\\s+(divider-)(ruler|hairline)",
+      "captures": {
+        "1": { "name": "support.type.brand-intent-composition" },
+        "2": { "name": "entity.name.tag.brand-intent-composition" }
+      }
+    },
+    "flow-icon": {
+      "match": "^\\s+\\|\\s+(icon)\\s+(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.other.brand-intent-composition" },
+        "2": { "name": "variable.parameter.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "sticky-logo": {
+      "match": "^\\s+\\|\\s+(logo)\\s+(left|center|right)(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.other.brand-intent-composition" },
+        "2": { "name": "variable.parameter.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "grouped-slot": {
+      "match": "^\\s+\\|\\s+(primary|secondary|detail|meta|cta|label)(?:\\s+(cols)\\s+(\\S+))?\\s+(left|center|right)(?:\\s+(top|center|bottom))?(?:\\s+(columns:\\d+))?(?:\\s+(gap:\\w+))?",
+      "captures": {
+        "1": { "name": "entity.name.tag.brand-intent-composition" },
+        "2": { "name": "keyword.other.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" },
+        "4": { "name": "support.constant.brand-intent-composition" },
+        "5": { "name": "support.constant.brand-intent-composition" },
+        "6": { "name": "variable.parameter.brand-intent-composition" },
+        "7": { "name": "variable.parameter.brand-intent-composition" }
+      }
+    },
+    "slot-row": {
+      "match": "^(primary|secondary|detail|meta|cta|label)\\s+(?:(row)\\s+)?(\\d+|top|center|bottom)\\s+(cols)\\s+(\\S+)\\s+(left|center|right)(?:\\s+(top|center|bottom))?",
+      "captures": {
+        "1": { "name": "entity.name.tag.brand-intent-composition" },
+        "2": { "name": "keyword.other.brand-intent-composition" },
+        "3": { "name": "constant.numeric.row.brand-intent-composition" },
+        "4": { "name": "keyword.other.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" },
+        "6": { "name": "support.constant.brand-intent-composition" },
+        "7": { "name": "support.constant.brand-intent-composition" }
+      }
+    },
+    "slot-band": {
+      "comment": "Deprecated band A form -- kept for backward compat",
+      "match": "^(primary|secondary|detail|meta|cta|label)\\s+(band)\\s+([A-F])\\s+(cols)\\s+(\\S+)\\s+(left|center|right)",
+      "captures": {
+        "1": { "name": "entity.name.tag.brand-intent-composition" },
+        "2": { "name": "invalid.deprecated.brand-intent-composition" },
+        "3": { "name": "constant.numeric.row.brand-intent-composition" },
+        "4": { "name": "keyword.other.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" },
+        "6": { "name": "support.constant.brand-intent-composition" }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "patterns": [
+        {
+          "match": "^(id:|name:|image:|grid:|logo:|icon:|mode:|flow:|sticky:|group:|primary|secondary|detail|meta|cta|label)(?=\\s|$)",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-composition" }
+          }
+        },
+        {
+          "match": "^\\s+\\|\\s+(spacer-|divider-|primary|secondary|detail|meta|cta|label)(?=\\s|$)",
+          "captures": {
+            "1": { "name": "support.type.brand-intent-composition" }
+          }
+        }
+      ]
+    }
+  }
+}

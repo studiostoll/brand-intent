@@ -1,0 +1,200 @@
+{
+  "scopeName": "source.brand-intent-purpose",
+  "name": "Brand Intent Purpose",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#id-field" },
+    { "include": "#name-field" },
+    { "include": "#compositions" },
+    { "include": "#archetypes" },
+    { "include": "#density" },
+    { "include": "#ai-context" },
+    { "include": "#default-icon" },
+    { "include": "#icon-deprecated" },
+    { "include": "#identity-filter-header" },
+    { "include": "#identity-extension-header" },
+    { "include": "#slot-header" },
+    { "include": "#override-header" },
+    { "include": "#override-value" },
+    { "include": "#list-property" },
+    { "include": "#sample-item" },
+    { "include": "#property" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.brand-intent-purpose"
+    },
+    "id-field": {
+      "match": "^(id:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "entity.name.type.brand-intent-purpose" }
+      }
+    },
+    "name-field": {
+      "match": "^(name:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "string.unquoted.brand-intent-purpose" }
+      }
+    },
+    "compositions": {
+      "match": "^(compositions:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "string.unquoted.brand-intent-purpose" }
+      }
+    },
+    "archetypes": {
+      "match": "^(archetypes:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "string.unquoted.brand-intent-purpose" }
+      }
+    },
+    "density": {
+      "match": "^(density:)\\s+(light|medium|full)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "support.constant.brand-intent-purpose" }
+      }
+    },
+    "ai-context": {
+      "match": "^(ai-context:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "string.unquoted.brand-intent-purpose" }
+      }
+    },
+    "default-icon": {
+      "match": "^(defaultIcon:)\\s+([\\w-]+)(?:\\s+(thin|light|regular|bold|fill|duotone))?",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "entity.name.function.brand-intent-purpose" },
+        "3": { "name": "variable.parameter.brand-intent-purpose" }
+      }
+    },
+    "icon-deprecated": {
+      "comment": "Deprecated icon: form -- use defaultIcon: instead",
+      "match": "^(icon:)\\s+([\\w-]+)(?:\\s+(thin|light|regular|bold|fill|duotone))?",
+      "captures": {
+        "1": { "name": "invalid.deprecated.brand-intent-purpose" },
+        "2": { "name": "entity.name.function.brand-intent-purpose" },
+        "3": { "name": "variable.parameter.brand-intent-purpose" }
+      }
+    },
+    "identity-filter-header": {
+      "match": "^(identity-filter)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" }
+      }
+    },
+    "identity-extension-header": {
+      "match": "^(identity-extension)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" }
+      }
+    },
+    "slot-header": {
+      "match": "^(slot)\\s+(primary|secondary|detail|meta|cta|label)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "entity.name.tag.brand-intent-purpose" }
+      }
+    },
+    "override-header": {
+      "match": "^\\s+(override:)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" }
+      }
+    },
+    "override-value": {
+      "comment": "Indented override sub-properties (double-indent under override:); italic/uppercase can be bare flags",
+      "patterns": [
+        {
+          "match": "^\\s{4,}(size|opsz|lineHeight|letterSpacing|weight)(:)\\s+(.*)",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-purpose" },
+            "2": { "name": "punctuation.separator.brand-intent-purpose" },
+            "3": { "name": "constant.numeric.brand-intent-purpose" }
+          }
+        },
+        {
+          "match": "^\\s{4,}(italic|uppercase|hyphenate)(?:(:)\\s+(true|false))?\\s*$",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-purpose" },
+            "2": { "name": "punctuation.separator.brand-intent-purpose" },
+            "3": { "name": "constant.language.brand-intent-purpose" }
+          }
+        },
+        {
+          "match": "^\\s{4,}(textAlign)(:)\\s+(left|center|right|justify)",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-purpose" },
+            "2": { "name": "punctuation.separator.brand-intent-purpose" },
+            "3": { "name": "support.constant.brand-intent-purpose" }
+          }
+        },
+        {
+          "match": "^\\s{4,}(autofit-min|autofit-max)(:)\\s+(.*)",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-purpose" },
+            "2": { "name": "punctuation.separator.brand-intent-purpose" },
+            "3": { "name": "constant.numeric.brand-intent-purpose" }
+          }
+        },
+        {
+          "match": "^\\s{4,}(autofit)(:)\\s+(none)",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-purpose" },
+            "2": { "name": "punctuation.separator.brand-intent-purpose" },
+            "3": { "name": "string.unquoted.brand-intent-purpose" }
+          }
+        }
+      ]
+    },
+    "property": {
+      "match": "^\\s+(label|samples|maxLength|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-purpose" },
+        "2": { "name": "punctuation.separator.brand-intent-purpose" },
+        "3": { "name": "string.unquoted.brand-intent-purpose" }
+      }
+    },
+    "list-property": {
+      "comment": "4-space indented properties under type: list blocks",
+      "match": "^\\s{4,}(icons|iconOnly|iconGap|itemGap|maxItems|direction)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-purpose" },
+        "2": { "name": "punctuation.separator.brand-intent-purpose" },
+        "3": { "name": "constant.numeric.brand-intent-purpose" }
+      }
+    },
+    "sample-item": {
+      "comment": "Multi-line sample entries -- dim only the dash, leave text unstyled",
+      "match": "^(\\s{4,})(-)(?=\\s)",
+      "captures": {
+        "2": { "name": "comment.line.dash.brand-intent-purpose" }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "patterns": [
+        {
+          "match": "^(id:|name:|compositions:|archetypes:|density:|ai-context:|defaultIcon:|identity-filter|identity-extension|slot)(?=\\s|$)",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-purpose" }
+          }
+        },
+        {
+          "match": "^\\s+(label|samples|maxLength|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|override|audience|pillars)(?=:|\\s|$)",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-purpose" }
+          }
+        }
+      ]
+    }
+  }
+}

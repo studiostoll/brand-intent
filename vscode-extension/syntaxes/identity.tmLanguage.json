@@ -1,0 +1,67 @@
+{
+  "scopeName": "source.brand-intent-identity",
+  "name": "Brand Intent Identity",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#top-level-keyword" },
+    { "include": "#named-block" },
+    { "include": "#indented-property" },
+    { "include": "#list-item" },
+    { "include": "#continuation-line" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.brand-intent-identity"
+    },
+    "top-level-keyword": {
+      "match": "^(essence|promise)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-identity" },
+        "2": { "name": "punctuation.separator.key-value.brand-intent-identity" },
+        "3": { "name": "string.unquoted.brand-intent-identity" }
+      }
+    },
+    "named-block": {
+      "comment": "Block headers: voice, pillars, audience NAME",
+      "patterns": [
+        {
+          "match": "^(voice|pillars)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-identity" }
+          }
+        },
+        {
+          "match": "^(audience)\\s+(\\S.*)",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-identity" },
+            "2": { "name": "entity.name.type.brand-intent-identity" }
+          }
+        }
+      ]
+    },
+    "indented-property": {
+      "match": "^(\\s{2,})(register|persona|rhythm|always|never|primary|secondary|avoid|label|profile|motivation|language)(:)\\s+(.*)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-identity" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-identity" },
+        "4": { "name": "string.unquoted.brand-intent-identity" }
+      }
+    },
+    "list-item": {
+      "comment": "List items: - value",
+      "match": "^(\\s{2,})(-)\\s+(.*)",
+      "captures": {
+        "2": { "name": "punctuation.definition.list.brand-intent-identity" },
+        "3": { "name": "string.unquoted.brand-intent-identity" }
+      }
+    },
+    "continuation-line": {
+      "comment": "Indented continuation lines for multi-line values",
+      "match": "^(\\s{4,})(\\S.*)",
+      "captures": {
+        "2": { "name": "string.unquoted.brand-intent-identity" }
+      }
+    }
+  }
+}
