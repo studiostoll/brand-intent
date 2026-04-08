@@ -110,6 +110,23 @@ td {
 }
 tbody tr:nth-child(odd) td { background-color: var(--color-surface-secondary); }
 
+/* Sticky bar */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 99999;
+  width: 100%;
+  background-color: var(--color-sticky-bar-bg);
+  color: var(--color-sticky-bar-text);
+  text-align: center;
+  font-size: 0.8em;
+  line-height: 0.8;
+  padding: var(--space-sticky-bar-padding);
+  margin-bottom: 0.8em;
+}
+.bar p, .bar a { color: inherit; margin: 0; }
+.bar em { font-style: italic; }
+
 /* Container */
 .container {
   max-width: var(--container-max-width);
