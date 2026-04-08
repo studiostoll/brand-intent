@@ -42,8 +42,8 @@
   font-family: var(--font-monospace);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-medium);
-  background: var(--color-accent-1);
-  color: var(--color-black);
+  background: var(--color-black);
+  color: var(--color-white);
   padding: 0.6rem 1.2rem;
   border-radius: 3px;
   text-decoration: none;
