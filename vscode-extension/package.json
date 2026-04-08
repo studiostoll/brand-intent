@@ -1,7 +1,7 @@
 {
   "name": "brand-intent-lang",
   "displayName": "Brand Intent \u2014 .identity, .brand, .format, .purpose, .composition",
-  "description": "Syntax highlighting and autocomplete for the Brand Intent specification \u2014 .identity, .brand, .format, .purpose, .composition, and .layout files that define brand identity, visual language, and content architecture.",
+  "description": "Syntax highlighting and autocomplete for the Brand Intent specification \u2014 .identity, .brand, .format, .purpose, and .composition files that define brand identity, visual language, and content architecture.",
   "version": "0.1.0",
   "publisher": "stoll",
   "author": {
@@ -17,8 +17,7 @@
     "onLanguage:brand-intent-brand",
     "onLanguage:brand-intent-format",
     "onLanguage:brand-intent-purpose",
-    "onLanguage:brand-intent-composition",
-    "onLanguage:brand-intent-layout"
+    "onLanguage:brand-intent-composition"
   ],
   "contributes": {
     "languages": [
@@ -49,7 +48,7 @@
       {
         "id": "brand-intent-composition",
         "aliases": ["Brand Intent Composition"],
-        "extensions": [".composition", ".layout"],
+        "extensions": [".composition"],
         "configuration": "./language-configuration.json"
       }
     ],

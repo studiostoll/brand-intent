@@ -1,6 +1,6 @@
 # Brand Intent Language Extension
 
-VS Code extension providing syntax highlighting, autocomplete, and hover documentation for the six file types in the **Brand Intent** specification.
+VS Code extension providing syntax highlighting, autocomplete, and hover documentation for the five file types in the **Brand Intent** specification.
 
 ---
 
@@ -15,7 +15,6 @@ Brand Intent is an open specification for defining brand identity, visual langua
 | Format | `.format` | Canvas size, grid, safe zones, restrictions |
 | Purpose | `.purpose` | Content types, text slots, typography overrides |
 | Composition | `.composition` | How elements are arranged on the canvas |
-| Layout | `.layout` | Backward-compatible alias for `.composition` |
 
 This extension adds:
 - **Syntax coloring** -- keywords, values, slot names, rows, columns, hex colors
@@ -85,9 +84,6 @@ locale: en-US
 domain: example.com
 
 tokens: inline
-
-ai-context:
-  A brief description of the brand for AI context...
 
 voice-constraints
   register: friendly
@@ -192,7 +188,7 @@ name: Bottom Stack
 image: full
 logo: top col right m
 
-mode: compose
+mode: grid
 primary    row 5 cols 1--4 left
 secondary  row 4 cols 1--4 left
 detail     row 6 cols 1--3 left
@@ -215,12 +211,6 @@ flow: split bottom 1/2
   | spacer-auto
   | detail left
 ```
-
-### .layout files
-
-`.layout` is the backward-compatible extension for `.composition`. Both file types use identical syntax and share the same language features. Use `.composition` for new files.
-
----
 
 ## Editing the extension
 

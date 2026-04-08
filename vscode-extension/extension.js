@@ -3,7 +3,7 @@ const vscode = require('vscode');
 
 /** @param {vscode.ExtensionContext} context */
 function activate(context) {
-  // ── Composition / Layout file completions ───────────────────────────────
+  // ── Composition file completions ─────────────────────────────────────────
   const compositionProvider = vscode.languages.registerCompletionItemProvider(
     [{ language: 'brand-intent-composition' }],
     {
@@ -69,7 +69,6 @@ function activate(context) {
         // mode: — suggest layout modes
         if (prefix.match(/^mode:\s*$/)) {
           for (const [v, detail] of [
-            ['compose', 'Fixed grid positions'],
             ['grid', 'Grid-based positioning'],
             ['flow', 'Content-driven reflow'],
           ]) {
@@ -202,7 +201,7 @@ function activate(context) {
             ['image:', 'Image region -- full, none, or top--center etc.'],
             ['logo:', 'Logo placement -- position col side [size]'],
             ['icon:', 'Icon slot placement -- position col side size'],
-            ['mode:', 'Layout mode -- flow, compose, or grid'],
+            ['mode:', 'Layout mode -- grid or flow'],
             ['flow:', 'Flow region -- plain, panel, or split'],
             ['sticky:', 'Sticky header/footer bar'],
           ]) {
@@ -227,8 +226,8 @@ function activate(context) {
         const prefix = line.substring(0, position.character);
         const items = [];
 
-        // compositions: or archetypes: line — all known composition names
-        if (prefix.match(/^(?:compositions|archetypes):\s*/)) {
+        // compositions: line — all known composition names
+        if (prefix.match(/^compositions:\s*/)) {
           for (const [a, detail] of [
             ['bottom-stack', 'Text stacked at bottom'],
             ['center-stage', 'Text centered'],
@@ -254,9 +253,9 @@ function activate(context) {
             ['caption', 'Flow: sticky logo, small caption at bottom'],
             ['sign', 'Flow: horizontal signage, sticky logo left'],
             ['sign-icons', 'Flow: horizontal icon row'],
-            ['sign-text-only', 'Signage: text only (compose)'],
-            ['sign-icon-text', 'Signage: icon + text (compose)'],
-            ['sign-icon-only', 'Signage: single icon (compose)'],
+            ['sign-text-only', 'Signage: text only (grid)'],
+            ['sign-icon-text', 'Signage: icon + text (grid)'],
+            ['sign-icon-only', 'Signage: single icon (grid)'],
           ]) {
             const item = new vscode.CompletionItem(a, vscode.CompletionItemKind.Reference);
             item.detail = detail;
@@ -361,7 +360,6 @@ function activate(context) {
             ['id:', 'Purpose identifier (e.g. outdoor-sign)'],
             ['name:', 'Display name (e.g. Outdoor Sign)'],
             ['compositions:', 'Preferred compositions (comma-separated)'],
-            ['archetypes:', 'Preferred compositions (legacy alias for compositions:)'],
             ['density:', 'Content density -- light, medium, or full'],
             ['defaultIcon:', 'Default icon name (Phosphor kebab-case) + weight'],
             ['identity-filter', 'Filter identity traits for this purpose'],
@@ -669,7 +667,6 @@ function activate(context) {
             ['figma-file-key:', 'Figma file key (tokens: figma only)'],
             ['figma-collection:', 'Figma collection name (tokens: figma only)'],
             ['tokens-file:', 'Runtime tokens file path (default: tokens.json)'],
-            ['ai-context:', 'AI brand context -- multi-line indented block'],
             ['theme ', 'Inline color theme block (tokens: inline only)'],
             ['spacing:', 'Spacing scale block (tokens: inline only)'],
             ['brand-colors', 'Brand color definitions block'],
@@ -777,8 +774,7 @@ function activate(context) {
     'logo:': '**`logo:`** -- Logo position.\n\n`row N col X` places the logo at grid row N (1-6), column X.\n`top/center/bottom col X` uses grid keywords.\n\n**col values:** `left`, `right`, `center`.\n\n**size (optional):** `s` (65%), `m` (default, 100%), `l` (140%) of base logo size.',
     'icon:': '**`icon:`** -- Icon slot position.\n\nSame syntax as `logo:` but for a decorative icon.\n\nIcons are always decorative -- set the icon in the `.purpose` file with `defaultIcon:`.',
     'grid:': '**`grid:`** -- Native grid declaration.\n\n`grid: rows cols` declares that this composition was designed for a specific grid.\nWhen the format\'s grid matches, column indices are used directly (no proportional mapping).',
-    'group:': '**`group:`** -- **Deprecated.** Use `flow: split` instead.',
-    'mode:': '**`mode:`** -- Layout mode.\n\n`flow` = content-driven reflow. `compose` = fixed grid positions. `grid` = grid-based positioning.',
+    'mode:': '**`mode:`** -- Layout mode.\n\n`grid` = grid-based positioning. `flow` = content-driven reflow.',
     'flow:': '**`flow:`** -- Flow region.\n\nBare `flow:` fills remaining space.\n`flow: panel bottom-left 2/3 1/1` creates a floating panel.\n`flow: split bottom 1/2` splits canvas -- text in specified fraction, image fills the rest.\n\nWith `image: full` + `split`, photo covers entire canvas and text overlays the split region.',
     'sticky:': '**`sticky:`** -- Sticky bar.\n\n`sticky: top s` creates a small bar at the top.\nContains `| logo` and `| label` items.\n\nPositions: `top`, `bottom`, `left`, `right`. Sizes: `s`, `m`, `l`.',
     'primary': '**`primary`** -- Primary text slot.\n\nThe headline or main message. Usually largest and most prominent.',
@@ -792,7 +788,6 @@ function activate(context) {
   /** @type {Record<string, string>} */
   const PURPOSE_HOVER_DOCS = {
     'compositions:': '**`compositions:`** -- Preferred compositions.\n\nComma-separated list of `.composition` file IDs. The layout engine randomly picks from this list.\n\nExample: `compositions: bottom-left, center-left, editorial`',
-    'archetypes:': '**`archetypes:`** -- Preferred compositions (legacy alias).\n\nComma-separated list of composition IDs. Equivalent to `compositions:` -- kept for backward compatibility.',
     'density:': '**`density:`** -- Content density.\n\n`light` = minimal content, `medium` = standard, `full` = maximum content density.',
     'defaultIcon:': '**`defaultIcon:`** -- Default Phosphor icon.\n\nKebab-case Phosphor icon name, optionally followed by a weight.\n\nExample: `defaultIcon: calendar regular`\n\nWeights: `thin`, `light`, `regular`, `bold`, `fill`, `duotone`',
     'slot': '**`slot`** -- Text slot definition.\n\nFollowed by `primary`, `secondary`, `detail`, `meta`, `cta`, or `label`.\nIndented properties below define the slot\'s typography and content.',
@@ -822,7 +817,6 @@ function activate(context) {
     'figma-file-key:': '**`figma-file-key:`** -- Figma file key for token sync.\n\nRequired when `tokens: figma`.\n\nFound in the Figma file URL: `figma.com/design/FILEKEY/...`',
     'figma-collection:': '**`figma-collection:`** -- Figma variable collection name.\n\nThe collection to read color variables from.',
     'tokens-file:': '**`tokens-file:`** -- Runtime tokens file path.\n\nDefaults to `tokens.json`.',
-    'ai-context:': '**`ai-context:`** -- Brand context for AI prompts.\n\nMulti-line block -- all indented continuation lines become the context string.',
     'theme': '**`theme ThemeName`** -- Inline color theme block.\n\nOnly used when `tokens: inline`. Each theme defines color slots.\nIndented lines: `slot-name: #HEX  # optional annotation`',
     'spacing:': '**`spacing:`** -- Spacing scale block.\n\nOnly used when `tokens: inline`. Indented key-value pairs define the spacing unit and named sizes.\n\n```\nspacing:\n  unit: cqmin\n  xs: 1.5\n  s: 2\n  m: 3\n  l: 5\n  xl: 6.5\n```',
     'voice-constraints': '**`voice-constraints`** -- Voice and writing constraints block.\n\nDefines guardrails for content generation: register, sentence length, headline patterns, number formatting.',

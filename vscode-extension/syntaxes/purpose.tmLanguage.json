@@ -6,11 +6,8 @@
     { "include": "#id-field" },
     { "include": "#name-field" },
     { "include": "#compositions" },
-    { "include": "#archetypes" },
     { "include": "#density" },
-    { "include": "#ai-context" },
     { "include": "#default-icon" },
-    { "include": "#icon-deprecated" },
     { "include": "#identity-filter-header" },
     { "include": "#identity-extension-header" },
     { "include": "#slot-header" },
@@ -47,13 +44,6 @@
         "2": { "name": "string.unquoted.brand-intent-purpose" }
       }
     },
-    "archetypes": {
-      "match": "^(archetypes:)\\s+(.*)",
-      "captures": {
-        "1": { "name": "keyword.control.brand-intent-purpose" },
-        "2": { "name": "string.unquoted.brand-intent-purpose" }
-      }
-    },
     "density": {
       "match": "^(density:)\\s+(light|medium|full)",
       "captures": {
@@ -61,26 +51,10 @@
         "2": { "name": "support.constant.brand-intent-purpose" }
       }
     },
-    "ai-context": {
-      "match": "^(ai-context:)\\s+(.*)",
-      "captures": {
-        "1": { "name": "keyword.control.brand-intent-purpose" },
-        "2": { "name": "string.unquoted.brand-intent-purpose" }
-      }
-    },
     "default-icon": {
       "match": "^(defaultIcon:)\\s+([\\w-]+)(?:\\s+(thin|light|regular|bold|fill|duotone))?",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-purpose" },
-        "2": { "name": "entity.name.function.brand-intent-purpose" },
-        "3": { "name": "variable.parameter.brand-intent-purpose" }
-      }
-    },
-    "icon-deprecated": {
-      "comment": "Deprecated icon: form -- use defaultIcon: instead",
-      "match": "^(icon:)\\s+([\\w-]+)(?:\\s+(thin|light|regular|bold|fill|duotone))?",
-      "captures": {
-        "1": { "name": "invalid.deprecated.brand-intent-purpose" },
         "2": { "name": "entity.name.function.brand-intent-purpose" },
         "3": { "name": "variable.parameter.brand-intent-purpose" }
       }
@@ -183,7 +157,7 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|compositions:|archetypes:|density:|ai-context:|defaultIcon:|identity-filter|identity-extension|slot)(?=\\s|$)",
+          "match": "^(id:|name:|compositions:|density:|defaultIcon:|identity-filter|identity-extension|slot)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-purpose" }
           }

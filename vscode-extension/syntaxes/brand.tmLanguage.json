@@ -6,7 +6,6 @@
     { "include": "#id-field" },
     { "include": "#name-field" },
     { "include": "#tokens-enum" },
-    { "include": "#ai-context-header" },
     { "include": "#brand-colors-header" },
     { "include": "#voice-constraints-header" },
     { "include": "#content-defaults-header" },
@@ -23,7 +22,6 @@
     { "include": "#font-value" },
     { "include": "#typography-header" },
     { "include": "#typography-value" },
-    { "include": "#ai-context-body" },
     { "include": "#string-field" },
     { "include": "#keyword-partial" }
   ],
@@ -51,12 +49,6 @@
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" },
         "2": { "name": "entity.name.tag.brand-intent-brand" }
-      }
-    },
-    "ai-context-header": {
-      "match": "^(ai-context:)\\s*$",
-      "captures": {
-        "1": { "name": "keyword.control.brand-intent-brand" }
       }
     },
     "brand-colors-header": {
@@ -191,13 +183,6 @@
         "10": { "name": "support.type.property-name.brand-intent-brand" }
       }
     },
-    "ai-context-body": {
-      "comment": "Indented continuation lines for ai-context block",
-      "match": "^(\\s{2,}.+)",
-      "captures": {
-        "1": { "name": "string.unquoted.brand-intent-brand" }
-      }
-    },
     "string-field": {
       "match": "^(language|locale|domain|app-icon|favicon|figma-file-key|figma-collection|tokens-file|spacing):?\\s*(.+)?",
       "captures": {
@@ -207,7 +192,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|ai-context:|spacing:|brand-colors|voice-constraints|content-defaults|theme|divider|font|typography)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|brand-colors|voice-constraints|content-defaults|theme|divider|font|typography)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }
