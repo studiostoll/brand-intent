@@ -376,81 +376,50 @@ description: An open file format specification for making brand intent machine-r
 </section>
 
 
-<!-- ═══ FOR AGENTS ═══ -->
-<section id="agents" class="landing-section">
-  <span class="section-label">04 — For AI Agents</span>
+<!-- ═══ GET STARTED ═══ -->
+<section id="start" class="landing-section">
+  <span class="section-label">04 — Get Started</span>
   <h2>Your brand as infrastructure.</h2>
 
-  <div class="two-col">
+  <div class="two-col" style="margin-top:1.5rem;">
     <div>
+      <h3 style="margin-top:0;">1. Install the VS Code extension</h3>
+      <p>Syntax highlighting, autocomplete, and hover docs for all five file types.</p>
+      <div class="install-block">
+        <div class="install-cmd">
+          <span class="prompt">ext</span>install stoll.brand-intent-lang
+        </div>
+      </div>
+
+      <h3>2. Install skills for your AI agent</h3>
       <p>
-        Brand Intent ships with a skill file — compatible with Claude Code, Cursor, Gemini CLI,
-        and other AI harnesses — that teaches any agent how to parse and compose Brand Intent layers.
-      </p>
-      <p>
-        Once installed, an agent understands the derivation chain:
-        how <code>identity-filter</code> narrows the composed upstream,
-        how to validate content against <code>voice.never</code> and <code>pillars.avoid</code>.
+        Teaches any agent how to compose Brand Intent layers into context,
+        validate content against <code>voice.never</code> and <code>pillars.avoid</code>,
+        and respect <code>anti-audience</code> boundaries.
         Brand knowledge becomes infrastructure — not a prompt you write each time.
       </p>
-      <p>
+      <div class="install-block">
+        <div class="install-cmd">
+          <span class="prompt">$</span>npx brand-intent install-skills
+        </div>
+      </div>
+      <div class="install-block">
+        <div class="install-label">Works with</div>
+        <div style="font-family:var(--font-monospace);font-size:var(--font-size-small);color:var(--color-secondary);line-height:2;">
+          Claude Code &middot; Cursor &middot; Gemini CLI &middot; VS Code Copilot &middot; Codex CLI
+        </div>
+      </div>
+      <p style="margin-top:var(--space-md); font-size:var(--font-size-small); color:var(--color-tertiary);">
         Complementary to <a href="https://impeccable.style">Impeccable</a>:
         where Impeccable teaches agents <em>how to design well</em>,
         Brand Intent teaches them <em>what this brand's expression intent is</em>.
       </p>
     </div>
     <div>
-      <div class="install-block">
-        <div class="install-label">Install skills (once, org-wide)</div>
-        <div class="install-cmd">
-          <span class="prompt">$</span>npx brand-intent install-skills
-        </div>
-      </div>
-      <div class="install-block">
-        <div class="install-label">Add a brand to a project</div>
-        <div class="install-cmd">
-          <span class="prompt">$</span>npx brand-intent add krume/brand
-        </div>
-      </div>
-      <div class="install-block">
-        <div class="install-label">Works with</div>
-        <div style="font-family:var(--font-monospace);font-size:var(--font-size-small);color:var(--color-secondary);line-height:2;">
-          Claude Code &middot; Cursor &middot; Gemini CLI<br>
-          VS Code Copilot &middot; Codex CLI
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══ GET STARTED ═══ -->
-<section id="start" class="landing-section">
-  <span class="section-label">05 — Get Started</span>
-  <h2>Three steps to a machine-readable brand.</h2>
-
-  <div class="two-col" style="margin-top:1.5rem;">
-    <div>
-      <h3 style="margin-top:0;">1. Install the VS Code extension</h3>
-      <p>Syntax highlighting, autocomplete, and validation for all five file types.</p>
-      <div class="install-block">
-        <div class="install-cmd">
-          <span class="prompt">ext</span>install stoll.bif-language
-        </div>
-      </div>
-
-      <h3>2. Install agent skills</h3>
-      <p>Teach your AI harness how to read Brand Intent layers.</p>
-      <div class="install-block">
-        <div class="install-cmd">
-          <span class="prompt">$</span>npx brand-intent install-skills
-        </div>
-      </div>
-    </div>
-    <div>
       <h3 style="margin-top:0;">3. Author your brand</h3>
       <p>
-        Start with <code>.identity</code> — the reasoning, the voice, the always/never rules.
+        Start with <code>.identity</code> — the reasoning, the voice, the always/never rules,
+        values, audiences, anti-audiences.
         Then derive the expression intent in <code>.brand</code>.
         Add formats for the platforms your brand inhabits.
         Purposes and compositions follow.
