@@ -85,15 +85,6 @@ domain: example.com
 
 tokens: inline
 
-voice-constraints
-  register: friendly
-  sentence-max: 25
-  headline-pattern: action-first
-
-content-defaults
-  density: medium
-  image-treatment: full-bleed
-
 font Primary
   name: Inter
   fallback: system-ui
@@ -152,7 +143,7 @@ compositions: bottom-stack, center-stage, editorial
 density: medium
 defaultIcon: megaphone regular
 
-identity-filter
+scope
   audience: Families
   pillars: primary
 

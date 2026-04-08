@@ -208,7 +208,7 @@ purposes: daily-bread, seasonal-special, baking-tip,
 
 **The question it answers:** What is this content trying to do?
 
-**What it contains:** Semantic slot definitions, typography and color role per slot, sample content, length constraints, and the `identity-filter` / `identity-extension` pair that composes AI context from upstream layers.
+**What it contains:** Semantic slot definitions, typography and color role per slot, sample content, length constraints, and the `scope` / `context` pair that composes AI context from upstream layers.
 
 **What it deliberately excludes:** Color values (only named semantic slots from `.brand`). Absolute positions (only slot names that compositions resolve). Full voice/strategy (only a filtered reference to the composed upstream).
 
@@ -216,7 +216,7 @@ purposes: daily-bread, seasonal-special, baking-tip,
 
 These names travel through the entire stack. A composition doesn't know what a "headline" is; it knows where `primary` goes. A purpose doesn't know where anything sits on the canvas; it knows what `primary` means for this content type. This separation is what makes the system composable: a composition can serve multiple purposes, a purpose can be rendered in multiple compositions, both governed by a single brand.
 
-**Cardinality:** Multiple per brand. New content types = new purpose files. Purposes can be shared across brands (a `daily-bread` purpose is not brand-specific; it could be used for any bakery brand, with identity-filter doing the brand-specific work).
+**Cardinality:** Multiple per brand. New content types = new purpose files. Purposes can be shared across brands (a `daily-bread` purpose is not brand-specific; it could be used for any bakery brand, with `scope` doing the brand-specific work).
 
 ---
 
@@ -272,7 +272,7 @@ flow: panel bottom-left 2/3 1/1
 
 ---
 
-## The identity-filter / identity-extension mechanism
+## The scope / context mechanism
 
 This is the most architecturally significant part of Brand Intent and the part that most needs clear documentation for implementers.
 
@@ -285,21 +285,21 @@ By the time a `.purpose` file needs to compose its AI context, the upstream has 
     ↓
 .brand (derived expression intent)
     ↓
-composed upstream ← this is what identity-filter operates on
+composed upstream ← this is what scope operates on
     ↓
-.purpose (identity-filter narrows / identity-extension adds)
+.purpose (scope narrows / context adds)
     ↓
 .format + .composition (condition the specific act of expression)
 ```
 
 The purpose doesn't filter `.identity` and `.brand` separately. It filters the **composed upstream**, which includes both the strategic reasoning from `.identity` and the operationalized parameters from `.brand`. The parser resolves which layer each key comes from.
 
-### identity-filter: narrowing
+### scope: narrowing
 
-`identity-filter` selects a relevant subset of the composed upstream for this specific content type. It narrows. It does not add anything not already present in the upstream layers.
+`scope` selects a relevant subset of the composed upstream for this specific content type. It narrows. It does not add anything not already present in the upstream layers.
 
 ```yaml
-identity-filter
+scope
   audience: regulars, newcomers  # pulls audience blocks from .identity
   pillars:  primary              # restricts to primary content pillar scope
   # voice-constraints and content-defaults from .brand are included automatically
@@ -314,9 +314,9 @@ When the parser composes AI context for this purpose, the result includes:
 
 None of this is restated in the purpose file. It is referenced and composed.
 
-### identity-extension: adding
+### context: adding
 
-`identity-extension` adds only what is genuinely specific to this content type, what cannot be derived from identity or brand.
+`context` adds only what is genuinely specific to this content type, what cannot be derived from identity or brand.
 
 **The test for what belongs here:**
 - If it sounds like voice guidance → belongs in `.identity`
@@ -326,7 +326,7 @@ None of this is restated in the purpose file. It is referenced and composed.
 
 **Wrong (restates identity):**
 ```yaml
-identity-extension
+context
   Keep the tone direct and no-nonsense.
   Avoid lifestyle language.
   Write in German, informal register.
@@ -335,14 +335,14 @@ identity-extension
 
 **Right (slot-specific only):**
 ```yaml
-identity-extension
+context
   primary is the bread name, 1-3 words.
   secondary is the weight ("750 g") or slice count.
   meta is one sentence: what makes this bread specific.
   # ✓ genuinely specific to this content type
 ```
 
-**Open question, filter key vocabulary:** What keys can `identity-filter` reference? Currently: `audience`, `pillars`. Should it be able to explicitly exclude voice rules? Reference specific themes? Declare an image mood? The vocabulary needs to be fully specified for v1.0.
+**Open question, scope key vocabulary:** What keys can `scope` reference? Currently: `audience`, `pillars`. Should it be able to explicitly exclude voice rules? Reference specific themes? Declare an image mood? The vocabulary needs to be fully specified for v1.0.
 
 ---
 
@@ -383,7 +383,7 @@ npx brand-intent init --from krume # scaffold a new brand from the reference
 
 **AI harness skill file:**
 - A markdown file installed into `.claude/`, `.cursor/`, `.gemini/`, `.agents/` etc.
-- Teaches the agent: what Brand Intent layers are, how to compose context from them, how to resolve `identity-filter`, how to validate content against `voice.never` and `pillars.avoid`
+- Teaches the agent: what Brand Intent layers are, how to compose context from them, how to resolve `scope`, how to validate content against `voice.never` and `pillars.avoid`
 - Compatible with Impeccable (complementary, not competing; Impeccable = design craft, Brand Intent = brand identity)
 
 ---
@@ -407,7 +407,7 @@ These were explicitly identified during the design session as unresolved:
 **Grammar and syntax:**
 - Full `voice-constraints` key vocabulary: what keys are valid? What value types?
 - `content-defaults` key vocabulary: same question
-- `identity-filter` key vocabulary: what can be filtered? Can things be explicitly excluded?
+- `scope` key vocabulary: what can be filtered? Can things be explicitly excluded?
 - Should `density` (currently on `.purpose`) be defined in `.brand` as a default and overridable per purpose?
 - Grid vs flow layout mode: should one supersede the other, or remain as parallel tools?
 - ~~`archetypes` field in `.purpose` files: what defines the vocabulary?~~ **Resolved:** Renamed to `compositions:`, which references `.composition` file IDs directly. `archetypes:` kept as deprecated alias.
@@ -421,7 +421,7 @@ These were explicitly identified during the design session as unresolved:
 **Tooling:**
 - What does the skill file actually contain? (The landing page implies it exists; it needs to be written)
 - `npx brand-intent` CLI: needs to be built. Which commands are v1.0 vs later?
-- Validation: when should the parser warn that an `identity-extension` is restating identity?
+- Validation: when should the parser warn that a `context` block is restating identity?
 
 **Conceptual:**
 - ~~The `voice-constraints` naming: is "tokens" the right word here?~~ **Resolved:** Renamed from `voice-tokens` to `voice-constraints`. These are enforceable limits, not values a renderer consumes.

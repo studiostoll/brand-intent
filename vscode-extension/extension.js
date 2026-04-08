@@ -349,9 +349,22 @@ function activate(context) {
           }
         }
 
-        // identity-filter block properties
+        // scope block properties
         if (prefix.match(/^\s+(audience|pillars):\s*$/)) {
           // Just trigger — values are brand-specific
+        }
+
+        // voice block properties (2-space indent)
+        if (prefix.match(/^\s{2}[\w-]*$/)) {
+          for (const [p, detail] of [
+            ['sentence-max:', 'Maximum words per sentence'],
+            ['headline-pattern:', 'Headline pattern -- noun-first, verb-first, any'],
+            ['number-format:', 'Number format -- digit, cardinal, ordinal'],
+          ]) {
+            const item = new vscode.CompletionItem(p, vscode.CompletionItemKind.Property);
+            item.detail = detail;
+            items.push(item);
+          }
         }
 
         // Top-level purpose keywords at start of line
@@ -362,8 +375,9 @@ function activate(context) {
             ['compositions:', 'Preferred compositions (comma-separated)'],
             ['density:', 'Content density -- light, medium, or full'],
             ['defaultIcon:', 'Default icon name (Phosphor kebab-case) + weight'],
-            ['identity-filter', 'Filter identity traits for this purpose'],
-            ['identity-extension', 'Extend identity traits for this purpose'],
+            ['scope', 'Narrow the composed upstream for this purpose'],
+            ['voice', 'Purpose-specific writing rules for AI text generation'],
+            ['context', 'Add purpose-specific slot guidance'],
             ['slot primary', 'Define primary text slot'],
             ['slot secondary', 'Define secondary text slot'],
             ['slot detail', 'Define detail text slot'],
@@ -584,40 +598,8 @@ function activate(context) {
           }
         }
 
-        // voice-constraints block properties
         if (prefix.match(/^\s{2,}$/) || prefix.match(/^\s{2,}[\w-]*$/)) {
-          // Check if we're inside a voice-constraints block
-          let inVoiceConstraints = false;
-          let inContentDefaults = false;
-          for (let i = position.line - 1; i >= 0; i--) {
-            const prevLine = document.lineAt(i).text;
-            if (prevLine.match(/^voice-constraints\s*$/)) { inVoiceConstraints = true; break; }
-            if (prevLine.match(/^content-defaults\s*$/)) { inContentDefaults = true; break; }
-            if (!prevLine.match(/^\s/) && prevLine.trim() !== '') break;
-          }
-
-          if (inVoiceConstraints) {
-            for (const [p, detail] of [
-              ['register:', 'Voice register (e.g. formal, casual, friendly)'],
-              ['sentence-max:', 'Maximum sentence length'],
-              ['headline-pattern:', 'Headline writing pattern'],
-              ['number-format:', 'Number formatting convention'],
-            ]) {
-              const item = new vscode.CompletionItem(p, vscode.CompletionItemKind.Property);
-              item.detail = detail;
-              items.push(item);
-            }
-          } else if (inContentDefaults) {
-            for (const [p, detail] of [
-              ['density:', 'Default content density (light, medium, full)'],
-              ['image-treatment:', 'Default image treatment'],
-              ['divider:', 'Default divider style'],
-            ]) {
-              const item = new vscode.CompletionItem(p, vscode.CompletionItemKind.Property);
-              item.detail = detail;
-              items.push(item);
-            }
-          } else {
+          {
             // Generic indented properties (theme slots, spacing, font, typography, divider)
             for (const [slot, detail] of [
               ['background:', 'Canvas background color'],
@@ -670,8 +652,6 @@ function activate(context) {
             ['theme ', 'Inline color theme block (tokens: inline only)'],
             ['spacing:', 'Spacing scale block (tokens: inline only)'],
             ['brand-colors', 'Brand color definitions block'],
-            ['voice-constraints', 'Voice and writing constraints block'],
-            ['content-defaults', 'Default content settings block'],
             ['font ', 'Named font definition block'],
             ['typography ', 'Named typography style block'],
             ['divider ', 'Named divider style block'],
@@ -833,8 +813,9 @@ function activate(context) {
     'density:': '**`density:`** -- Content density.\n\n`light` = minimal content, `medium` = standard, `full` = maximum content density.',
     'defaultIcon:': '**`defaultIcon:`** -- Default Phosphor icon.\n\nKebab-case Phosphor icon name, optionally followed by a weight.\n\nExample: `defaultIcon: calendar regular`\n\nWeights: `thin`, `light`, `regular`, `bold`, `fill`, `duotone`',
     'slot': '**`slot`** -- Text slot definition.\n\nFollowed by `primary`, `secondary`, `detail`, `meta`, `cta`, or `label`.\nIndented properties below define the slot\'s typography and content.',
-    'identity-filter': '**`identity-filter`** -- Filter identity traits for this purpose.\n\nIndented properties specify which audience segments or pillars to prioritize when this purpose is active.',
-    'identity-extension': '**`identity-extension`** -- Extend identity traits for this purpose.\n\nIndented properties add purpose-specific voice or content traits that augment the base identity.',
+    'scope': '**`scope`** -- Narrow the composed upstream for this purpose.\n\nIndented properties specify which audience segments or pillars to include when composing AI context for this purpose.',
+    'voice': '**`voice`** -- Purpose-specific writing rules.\n\nIndented key: value pairs for AI text generation hints.\n\nCommon properties: `sentence-max`, `headline-pattern`, `number-format`.',
+    'context': '**`context`** -- Add purpose-specific slot guidance.\n\nIndented text adds only what is genuinely specific to this content type — slot-level instructions that cannot be derived from identity or brand.',
     'label:': '**`label:`** -- Display name for this slot in the UI.',
     'samples:': '**`samples:`** -- Sample texts for this slot.\n\nInline: pipe-separated (`|`) list. Multi-line: bare `samples:` followed by `- ` lines.\nOne variant is picked randomly when creating a new page.',
     'maxLength:': '**`maxLength:`** -- Maximum character count for this slot.',
@@ -861,8 +842,6 @@ function activate(context) {
     'tokens-file:': '**`tokens-file:`** -- Runtime tokens file path.\n\nDefaults to `tokens.json`.',
     'theme': '**`theme ThemeName`** -- Inline color theme block.\n\nOnly used when `tokens: inline`. Each theme defines color slots.\nIndented lines: `slot-name: #HEX  # optional annotation`',
     'spacing:': '**`spacing:`** -- Spacing scale block.\n\nOnly used when `tokens: inline`. Indented key-value pairs define the spacing unit and named sizes.\n\n```\nspacing:\n  unit: cqmin\n  xs: 1.5\n  s: 2\n  m: 3\n  l: 5\n  xl: 6.5\n```',
-    'voice-constraints': '**`voice-constraints`** -- Voice and writing constraints block.\n\nDefines guardrails for content generation: register, sentence length, headline patterns, number formatting.',
-    'content-defaults': '**`content-defaults`** -- Default content settings block.\n\nDefines default density, image treatment, and divider style for content created under this brand.',
     'brand-colors': '**`brand-colors`** -- Brand color definitions.\n\nDefines named brand colors with optional print specifications (Pantone, HKS, CMYK).',
     'font': '**`font Name`** -- Named font definition block.\n\nDefines a font family with name, fallback, and source.',
     'typography': '**`typography Name`** -- Named typography style block.\n\nDefines reusable typography settings (font ref, weight, size, line height, etc.).',

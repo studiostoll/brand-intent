@@ -8,8 +8,10 @@
     { "include": "#compositions" },
     { "include": "#density" },
     { "include": "#default-icon" },
-    { "include": "#identity-filter-header" },
-    { "include": "#identity-extension-header" },
+    { "include": "#scope-header" },
+    { "include": "#voice-header" },
+    { "include": "#voice-property" },
+    { "include": "#context-header" },
     { "include": "#slot-header" },
     { "include": "#override-header" },
     { "include": "#override-value" },
@@ -59,14 +61,29 @@
         "3": { "name": "variable.parameter.brand-intent-purpose" }
       }
     },
-    "identity-filter-header": {
-      "match": "^(identity-filter)\\s*$",
+    "scope-header": {
+      "match": "^(scope)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-purpose" }
       }
     },
-    "identity-extension-header": {
-      "match": "^(identity-extension)\\s*$",
+    "voice-header": {
+      "match": "^(voice)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" }
+      }
+    },
+    "voice-property": {
+      "match": "^\\s{2}(sentence-max|headline-pattern|number-format|[\\w-]+)(:)\\s+(.*)",
+      "comment": "Indented key: value pairs inside a voice block",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-purpose" },
+        "2": { "name": "punctuation.separator.brand-intent-purpose" },
+        "3": { "name": "string.unquoted.brand-intent-purpose" }
+      }
+    },
+    "context-header": {
+      "match": "^(context)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-purpose" }
       }
@@ -157,7 +174,7 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|compositions:|density:|defaultIcon:|identity-filter|identity-extension|slot)(?=\\s|$)",
+          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|context|slot)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-purpose" }
           }

@@ -58,7 +58,7 @@ Contains: platform, dimensions, safe zones (danger/crop/comfort), grid, allowed 
 
 ### `.purpose`: Content Type Definition
 
-Contains: semantic slot definitions (primary, secondary, detail, meta, cta, label), typography and color per slot, sample content, length constraints, `identity-filter`, `identity-extension`.
+Contains: semantic slot definitions (primary, secondary, detail, meta, cta, label), typography and color per slot, sample content, length constraints, `scope`, `context`.
 
 **Semantic slots are roles, not positions:**
 - `primary` = main communicative act (headline, key message)
@@ -97,24 +97,24 @@ Load voice-constraints and content-defaults:
 - Use `number-format` for numbers
 - Apply `density` from content-defaults
 
-### Step 3: Apply `identity-filter` from `.purpose`
+### Step 3: Apply `scope` from `.purpose`
 
-The purpose file's `identity-filter` narrows the composed upstream:
+The purpose file's `scope` narrows the composed upstream:
 - `audience:` only use language guidance from these audience blocks
 - `pillars:` restrict to this pillar scope (`primary`, `secondary`, or `all`)
 
 If no filter is specified, include everything.
 
-### Step 4: Apply `identity-extension` from `.purpose`
+### Step 4: Apply `context` from `.purpose`
 
-Read the `identity-extension` block. This contains slot-specific instructions that cannot be derived from identity or brand. Follow them literally; they are precise, not general.
+Read the `context` block. This contains slot-specific instructions that cannot be derived from identity or brand. Follow them literally; they are precise, not general.
 
 ### Step 5: Generate per-slot content
 
 For each slot in the purpose:
 - Respect `maxLength` (hard character limit)
 - Use `samples` as structural reference (match the pattern, not the words)
-- Follow the `identity-extension` instructions for this slot
+- Follow the `context` instructions for this slot
 
 ## Validation Checklist
 
@@ -132,7 +132,7 @@ After generating or reviewing content, validate against these rules in order:
 
 ## What NOT to Do
 
-- **Do not restate identity in purpose-level work.** If a purpose's `identity-extension` says "keep it warm and friendly," that belongs in `.identity`, not here. Flag it.
+- **Do not restate identity in purpose-level work.** If a purpose's `context` block says "keep it warm and friendly," that belongs in `.identity`, not here. Flag it.
 - **Do not invent voice rules.** Only apply constraints from the actual files. Your interpretation of the brand is less reliable than the authored rules.
 - **Do not mix layers.** If asked to suggest a color, look in `.brand`. If asked about audience, look in `.identity`. Never guess from the wrong layer.
 - **Do not ignore `never` rules.** These exist because the brand has been burned by generic AI output before. The `never` list is the most important part of the identity file.

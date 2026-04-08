@@ -409,8 +409,8 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `name:` | string | No | Display name (derived from id if omitted) |
 | `compositions:` | list | Yes | Valid composition IDs for this purpose |
 | `density:` | enum | No | `light` \| `medium` \| `full` |
-| `identity-filter` | block | No | Filters the composed upstream |
-| `identity-extension` | block | No | Adds purpose-specific AI context |
+| `scope` | block | No | Narrows the composed upstream |
+| `context` | block | No | Adds purpose-specific AI context |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable) |
 
 ### Semantic Slots
@@ -467,7 +467,7 @@ samples:
 
 Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`.
 
-### `identity-filter` Block
+### `scope` Block
 
 Selects a relevant subset of the composed upstream (`.identity` + `.brand` resolved together) for this content type. It narrows, but does not add.
 
@@ -478,7 +478,7 @@ Selects a relevant subset of the composed upstream (`.identity` + `.brand` resol
 
 Voice rules (`always`, `never`) and `voice-constraints` from `.brand` are always included unless explicitly excluded.
 
-### `identity-extension` Block
+### `context` Block
 
 Adds only what is genuinely specific to this content type, what cannot be derived from identity or brand. Written as free-form text, indented under the block header.
 
@@ -489,7 +489,7 @@ Adds only what is genuinely specific to this content type, what cannot be derive
 - Is genuinely slot-level and content-type-specific → belongs here
 
 ```yaml
-identity-extension
+context
   primary is the bread name, 1-3 words.
   secondary is the weight ("750 g") or slice count.
   meta is one sentence: what makes this bread specific.
@@ -639,7 +639,7 @@ When an AI agent generates content, the five layers compose into a single contex
     ↓
 composed upstream
     ↓
-.purpose (identity-filter narrows, identity-extension adds)
+.purpose (scope narrows, context adds)
     ↓
 .format + .composition (condition the specific act of expression)
 ```
@@ -648,19 +648,19 @@ The purpose does not filter `.identity` and `.brand` separately. It filters the 
 
 ### Composition Rules
 
-1. `voice.always` and `voice.never` from `.identity` are **always included** unless explicitly excluded by `identity-filter`.
+1. `voice.always` and `voice.never` from `.identity` are **always included** unless explicitly excluded by `scope`.
 2. `voice-constraints` and `content-defaults` from `.brand` are **always included** automatically.
-3. `identity-filter.audience` selects which audience blocks to include from `.identity`.
-4. `identity-filter.pillars` restricts the pillar scope.
-5. `identity-extension` adds text that is not present in any upstream layer.
-6. If the same key appears in `identity-extension` and an upstream layer, the upstream value takes precedence (the extension should not restate upstream).
+3. `scope.audience` selects which audience blocks to include from `.identity`.
+4. `scope.pillars` restricts the pillar scope.
+5. `context` adds text that is not present in any upstream layer.
+6. If the same key appears in `context` and an upstream layer, the upstream value takes precedence (the context should not restate upstream).
 
 ### Validation
 
 A parser should warn when:
-- An `identity-extension` restates content from `.identity` (voice guidance, tone descriptions)
-- An `identity-extension` restates content from `.brand` (production parameters)
-- The same extension text appears in 3+ purpose files (belongs upstream)
+- A `context` block restates content from `.identity` (voice guidance, tone descriptions)
+- A `context` block restates content from `.brand` (production parameters)
+- The same context text appears in 3+ purpose files (belongs upstream)
 - A `slot` references a `typography` style not defined in `.brand`
 - A `slot` references a `color` not defined as a theme slot
 - An `archetypes` entry references a non-existent `.composition` file

@@ -7,8 +7,6 @@
     { "include": "#name-field" },
     { "include": "#tokens-enum" },
     { "include": "#brand-colors-header" },
-    { "include": "#voice-constraints-header" },
-    { "include": "#content-defaults-header" },
     { "include": "#theme-header" },
     { "include": "#brand-color-entry" },
     { "include": "#brand-color-print-sub" },
@@ -53,18 +51,6 @@
     },
     "brand-colors-header": {
       "match": "^(brand-colors)\\s*$",
-      "captures": {
-        "1": { "name": "keyword.control.brand-intent-brand" }
-      }
-    },
-    "voice-constraints-header": {
-      "match": "^(voice-constraints)\\s*$",
-      "captures": {
-        "1": { "name": "keyword.control.brand-intent-brand" }
-      }
-    },
-    "content-defaults-header": {
-      "match": "^(content-defaults)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }
@@ -192,7 +178,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|brand-colors|voice-constraints|content-defaults|theme|divider|font|typography)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|brand-colors|theme|divider|font|typography)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

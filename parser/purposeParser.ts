@@ -19,8 +19,10 @@ export interface ParsedPurpose {
   slots: ParsedPurposeSlot[];
   /** Content density — how much content this purpose typically carries. */
   density?: Density;
-  /** AI context injected into the image-analysis prompt for this purpose. */
-  aiContext?: string;
+  /** Scope — narrows the composed upstream (audience, pillars). */
+  scope?: { audience?: string[]; pillars?: string };
+  /** Context — purpose-specific slot guidance (free-form text). */
+  context?: string;
   /** Default icon (Phosphor PascalCase name, e.g. "ArrowRight"). */
   defaultIcon?: string;
   /** Default icon weight. */
@@ -95,7 +97,11 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let name = '';
   let description = '';
   let archetypes: string[] | null = null;
-  let aiContext: string | undefined;
+  let scope: { audience?: string[]; pillars?: string } | undefined;
+  let context: string | undefined;
+  let inScopeBlock = false;
+  let inContextBlock = false;
+  const contextLines: string[] = [];
   let density: Density | undefined;
   let defaultIcon: string | undefined;
   let defaultIconWeight: string | undefined;
@@ -161,9 +167,46 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // AI context for image analysis prompt
+    // scope block header
+    if (line === 'scope') {
+      inScopeBlock = true;
+      inContextBlock = false;
+      scope = scope ?? {};
+      continue;
+    }
+
+    // context block header
+    if (line === 'context') {
+      inContextBlock = true;
+      inScopeBlock = false;
+      continue;
+    }
+
+    // scope block properties (indented)
+    if (inScopeBlock && raw.startsWith('  ') && !raw.startsWith('    ')) {
+      if (line.startsWith('audience:')) {
+        scope = scope ?? {};
+        scope.audience = line.slice(9).trim().split(/[\s,]+/).filter(s => s.length > 0);
+      } else if (line.startsWith('pillars:')) {
+        scope = scope ?? {};
+        scope.pillars = line.slice(8).trim();
+      }
+      continue;
+    } else if (inScopeBlock && !raw.startsWith('  ')) {
+      inScopeBlock = false;
+    }
+
+    // context block lines (indented free-form text)
+    if (inContextBlock && raw.startsWith('  ')) {
+      contextLines.push(line);
+      continue;
+    } else if (inContextBlock && !raw.startsWith('  ')) {
+      inContextBlock = false;
+    }
+
+    // Legacy: ai-context field (backward compat, maps to context)
     if (line.startsWith('ai-context:')) {
-      aiContext = line.slice(11).trim();
+      context = line.slice(11).trim();
       continue;
     }
 
@@ -477,5 +520,10 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     name = id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
-  return { id, name, description, preferredArchetypes: archetypes, slots, density, aiContext, defaultIcon, defaultIconWeight };
+  // Finalize context from block lines (if any)
+  if (contextLines.length > 0 && !context) {
+    context = contextLines.join('\n').trim();
+  }
+
+  return { id, name, description, preferredArchetypes: archetypes, slots, density, scope, context, defaultIcon, defaultIconWeight };
 }
