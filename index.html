@@ -173,38 +173,40 @@ description: An open file format specification for making brand intent machine-r
     <p>
       The <code>always</code> / <code>never</code> construct is its most powerful primitive:
       concrete, parseable rules an AI can follow without interpretation.
-      <em>"Always say Ostsee, never Nordsee"</em> is more useful to a model than
-      <em>"brand voice: warm and nature-oriented."</em>
+      <em>"Always say Sauerteig, never artisan bread"</em> is more useful to a model than
+      <em>"brand voice: warm and authentic."</em>
     </p>
 
-    <div class="file-label">fehmarn.identity</div>
-<pre><span class="cm"># Fehmarn — Brand Identity</span>
+    <div class="file-label">krume.identity</div>
+<pre><span class="cm"># Krume — Brand Identity
+# Neighborhood sourdough bakery, Berlin-Neukölln.</span>
 
-<span class="kw">essence:</span>  <span class="val">Fehmarn ist das Draußen-Sein. Wind, Weite, echtes Inselleben.</span>
-<span class="kw">promise:</span>  <span class="val">Wer kommt, spürt sofort: hier ist das Wetter kein Hintergrund,
-          es ist das Erlebnis.</span>
+<span class="kw">essence:</span>  <span class="val">Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.</span>
+<span class="kw">promise:</span>  <span class="val">Wer reinkommt, riecht sofort, dass hier seit vier Uhr
+          morgens jemand steht.</span>
 
 <span class="kw">voice</span>
   <span class="meta">register:</span>  <span class="val">informal, Du</span>
-  <span class="meta">persona:</span>   <span class="val">ortskundige Freundin — begeistert, konkret, nie werblich</span>
+  <span class="meta">persona:</span>   <span class="val">Bäckerin hinterm Tresen — direkt, trocken, stolz auf das Handwerk</span>
 
   <span class="meta">always:</span>
-    - <span class="val">Ostsee, not Nordsee</span>
-    - <span class="val">Du, not Sie</span>
-    - <span class="val">konkrete Ortsnamen (Südstrand, Staberhuk) over "die Insel"</span>
+    - <span class="val">Sauerteig, not "artisan bread"</span>
+    - <span class="val">konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"</span>
+    - <span class="val">Backzeit in Stunden, nicht "lange Teigführung"</span>
 
   <span class="meta">never:</span>
-    - <span class="val">Superlative ohne Substanz (schönste, größte, unvergessliche)</span>
-    - <span class="val">Tourismus-Floskeln (Traumurlaub, Erholung pur)</span>
+    - <span class="val">Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)</span>
+    - <span class="val">"Artisan" oder "Craft" — wir sagen Handwerk</span>
+    - <span class="val">Englische Begriffe wenn ein deutsches Wort existiert</span>
 
 <span class="kw">pillars</span>
-  <span class="meta">primary:</span>   <span class="val">Windsport, Natur, Draußen-Leben, Ostsee</span>
-  <span class="meta">avoid:</span>     <span class="val">Wellness-Tourismus, Massentourismus-Narrative</span>
+  <span class="meta">primary:</span>   <span class="val">Sauerteig, Handwerk, Zutaten, Kiez</span>
+  <span class="meta">avoid:</span>     <span class="val">Lifestyle-Gastronomie, Wellness-Ernährung, Influencer-Kultur</span>
 
-<span class="kw">audience</span> windsport
-  <span class="meta">label:</span>       <span class="val">Windsport-Enthusiasten</span>
-  <span class="meta">motivation:</span>  <span class="val">optimale Bedingungen finden, Insider-Wissen</span>
-  <span class="meta">language:</span>    <span class="val">präzise, sportlich, auf Augenhöhe — kein Lehrton</span></pre>
+<span class="kw">audience</span> regulars
+  <span class="meta">label:</span>       <span class="val">Stammkunden aus dem Kiez</span>
+  <span class="meta">motivation:</span>  <span class="val">ihr Brot, ihr Laden, verlässlicher Rhythmus</span>
+  <span class="meta">language:</span>    <span class="val">knapp, direkt, kein Erklären — die wissen Bescheid</span></pre>
 
     <div class="excludes">
       <strong>This file contains no:</strong>
@@ -227,31 +229,32 @@ description: An open file format specification for making brand intent machine-r
     </p>
     <p>
       A hex value in a theme is not a color on screen — it is an <strong>intent</strong> that a renderer realizes.
-      The identity says <em>"persona: knowledgeable local friend."</em>
-      The brand derives <code>sentence-max: 12</code> and <code>headline-pattern: verb-first</code> from that.
+      The identity says <em>"persona: baker behind the counter, dry humor."</em>
+      The brand derives <code>sentence-max: 8</code> and <code>headline-pattern: noun-first</code> from that.
     </p>
 
-    <div class="file-label">fehmarn.brand (excerpt)</div>
+    <div class="file-label">krume.brand (excerpt)</div>
 <pre><span class="kw">brand-colors</span>
-  <span class="meta">primary:</span>   <span class="val">#0324B1</span>  <span class="cm"># Pantone 286 C</span>
-  <span class="meta">accent1:</span>   <span class="val">#E32D39</span>
-  <span class="meta">accent2:</span>   <span class="val">#84D3DA</span>
+  <span class="meta">primary:</span>   <span class="val">#2C1810</span>  <span class="cm"># dark roast</span>
+  <span class="meta">accent1:</span>   <span class="val">#C8A47E</span>  <span class="cm"># crust</span>
+  <span class="meta">accent2:</span>   <span class="val">#8B4513</span>  <span class="cm"># rye</span>
+  <span class="meta">white:</span>     <span class="val">#FAF6F0</span>  <span class="cm"># flour</span>
 
-<span class="kw">theme</span> Basic
-  <span class="meta">background:</span>     <span class="ref">$primary</span>
-  <span class="meta">text-primary:</span>   <span class="ref">$white</span>
-  <span class="meta">cta:</span>            <span class="ref">$accent1</span>
+<span class="kw">theme</span> Laden
+  <span class="meta">background:</span>     <span class="ref">$white</span>
+  <span class="meta">text-primary:</span>   <span class="ref">$primary</span>
+  <span class="meta">cta:</span>            <span class="ref">$accent2</span>
 
 <span class="kw">typography</span> headline
-  <span class="meta">weight:</span>       <span class="num">800</span>
-  <span class="meta">size:</span>         <span class="num">8</span>      <span class="cm"># cqh</span>
+  <span class="meta">weight:</span>       <span class="num">700</span>
+  <span class="meta">size:</span>         <span class="num">6</span>      <span class="cm"># cqh</span>
   <span class="meta">autofit-min:</span>  <span class="num">4</span>
-  <span class="meta">autofit-max:</span>  <span class="num">12</span>
+  <span class="meta">autofit-max:</span>  <span class="num">10</span>
 
 <span class="kw">voice-tokens</span>
   <span class="meta">register:</span>         <span class="val">informal</span>
-  <span class="meta">sentence-max:</span>     <span class="num">12</span>
-  <span class="meta">headline-pattern:</span> <span class="val">verb-first</span></pre>
+  <span class="meta">sentence-max:</span>     <span class="num">8</span>
+  <span class="meta">headline-pattern:</span> <span class="val">noun-first</span></pre>
   </div>
 
   <hr>
@@ -324,7 +327,7 @@ description: An open file format specification for making brand intent machine-r
       <div class="install-block">
         <div class="install-label">Add a brand to a project</div>
         <div class="install-cmd">
-          <span class="prompt">$</span>npx brand-intent add fehmarn/brand
+          <span class="prompt">$</span>npx brand-intent add krume/brand
         </div>
       </div>
       <div class="install-block">
@@ -371,11 +374,11 @@ description: An open file format specification for making brand intent machine-r
         Purposes and compositions follow.
       </p>
       <p>
-        The Fehmarn brand is included as a fully commented reference implementation.
+        The Krume bakery brand is included as a fully commented reference implementation.
       </p>
       <div class="install-block">
         <div class="install-cmd">
-          <span class="prompt">$</span>npx brand-intent init --from fehmarn
+          <span class="prompt">$</span>npx brand-intent init --from krume
         </div>
       </div>
     </div>

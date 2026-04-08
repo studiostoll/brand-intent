@@ -42,10 +42,10 @@ Works with Claude Code, Cursor, Gemini CLI, VS Code Copilot, Codex CLI, and any 
 
 ### 3. Author your brand
 
-Start with `.identity` (strategy, voice, audiences), then derive `.brand` (expression intent). Add formats, purposes, and compositions as needed. The Fehmarn brand in `brands/fehmarn/` is a fully commented reference implementation.
+Start with `.identity` (strategy, voice, audiences), then derive `.brand` (expression intent). Add formats, purposes, and compositions as needed. The Krume bakery brand in `brands/krume/` is a fully commented reference implementation.
 
 ```bash
-npx brand-intent init --from fehmarn
+npx brand-intent init --from krume
 ```
 
 ## Documentation
