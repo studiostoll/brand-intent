@@ -106,7 +106,7 @@ A hex value in a theme is not a color on screen — it is an intent that a rende
 - Color primitives and semantic theme mappings (slot names → color values per theme)
 - Font definitions and named typography styles (including optical sizing, autofit ranges, weight variants — richer than design tokens)
 - Spacing tokens and named divider styles
-- `voice-tokens` — operationalized voice parameters derived from `.identity` voice reasoning (register, sentence-max, headline-pattern, etc.)
+- `voice-constraints` — operationalized voice parameters derived from `.identity` voice reasoning (register, sentence-max, headline-pattern, etc.)
 - `content-defaults` — production-level defaults derived from identity (density, image-treatment, divider style)
 
 **What it deliberately excludes:** Identity reasoning, audience definitions, content pillar descriptions, strategic prose of any kind. Composition rules. Platform specifications. The reasoning for any decision — that lives in `.identity`.
@@ -154,7 +154,7 @@ typography headline
   autofit-max: 10
 
 # Derived from identity voice reasoning — operationalized for production
-voice-tokens
+voice-constraints
   register:         informal
   sentence-max:     8       # words — short, direct
   headline-pattern: noun-first
@@ -166,7 +166,7 @@ content-defaults
   divider:         line
 ```
 
-**Open question — voice-tokens vocabulary:** The `voice-tokens` block is new and its full key vocabulary is not yet defined. Needs to be specified: what keys are valid, what value types they accept, how they are passed to AI context. This is a significant design task for v1.0.
+**Open question — voice-constraints vocabulary:** The `voice-constraints` block is new and its full key vocabulary is not yet defined. Needs to be specified: what keys are valid, what value types they accept, how they are passed to AI context. This is a significant design task for v1.0.
 
 ---
 
@@ -302,7 +302,7 @@ The purpose doesn't filter `.identity` and `.brand` separately. It filters the *
 identity-filter
   audience: regulars, newcomers  # pulls audience blocks from .identity
   pillars:  primary              # restricts to primary content pillar scope
-  # voice-tokens and content-defaults from .brand are included automatically
+  # voice-constraints and content-defaults from .brand are included automatically
 ```
 
 When the parser composes AI context for this purpose, the result includes:
@@ -405,7 +405,7 @@ A complete AI-assisted brand production workflow would use both. This should be 
 These were explicitly identified during the design session as unresolved:
 
 **Grammar and syntax:**
-- Full `voice-tokens` key vocabulary — what keys are valid? What value types?
+- Full `voice-constraints` key vocabulary — what keys are valid? What value types?
 - `content-defaults` key vocabulary — same question
 - `identity-filter` key vocabulary — what can be filtered? Can things be explicitly excluded?
 - Should `density` (currently on `.purpose`) be defined in `.brand` as a default and overridable per purpose?
@@ -424,7 +424,7 @@ These were explicitly identified during the design session as unresolved:
 - Validation: when should the parser warn that an `identity-extension` is restating identity?
 
 **Conceptual:**
-- The `voice-tokens` naming — is "tokens" the right word here? It implies the design token ecosystem. "voice-params" or "voice-constraints" might be more precise.
+- ~~The `voice-constraints` naming — is "tokens" the right word here?~~ **Resolved:** Renamed from `voice-tokens` to `voice-constraints`. These are enforceable limits, not values a renderer consumes.
 - Should `.brand` reference `.identity` explicitly (a `derives-from` field)? This would make the derivation relationship machine-checkable, not just documented.
 - The `samples` field in `.purpose` slots — is this training data, documentation, or both? The answer affects how it should be formatted and validated.
 
@@ -450,7 +450,7 @@ The commercial model for Brand Atelier itself (10–15 brands, designer as stewa
 The following files should be created for the v1.0 repository as the reference implementation:
 
 - `krume.identity` — the full identity file for the fictional bakery brand
-- `krume.brand` — expression intent with colors, typography, voice-tokens, and content-defaults
+- `krume.brand` — expression intent with colors, typography, voice-constraints, and content-defaults
 - `instagram-4-5-feed-portrait.format` — Instagram feed format
 - (other formats: story, A5 flyer, chalkboard sign)
 - `daily-bread.purpose` — daily bread announcement post

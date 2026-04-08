@@ -157,7 +157,7 @@ The brand file encodes derived expression intent — visual language and operati
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
-| `voice-tokens` | block | No | Operationalized voice parameters |
+| `voice-constraints` | block | No | Operationalized voice parameters |
 | `content-defaults` | block | No | Production-level defaults |
 | `spacing:` | block | No | Spacing token scale |
 | `divider NAME` | block | No | Named divider style (repeatable) |
@@ -235,7 +235,7 @@ theme Laden
 | `italic` | flag | No | Enable italic |
 | `uppercase` | flag | No | Enable uppercase transform |
 
-### `voice-tokens` Block
+### `voice-constraints` Block
 
 Operationalized voice parameters derived from `.identity` voice reasoning. These are production-enforceable constraints, not restated strategy.
 
@@ -429,7 +429,7 @@ Selects a relevant subset of the composed upstream (`.identity` + `.brand` resol
 | `audience:` | list | Audience IDs to include from `.identity` |
 | `pillars:` | enum | `primary` \| `secondary` \| `all` — pillar scope |
 
-Voice rules (`always`, `never`) and `voice-tokens` from `.brand` are always included unless explicitly excluded.
+Voice rules (`always`, `never`) and `voice-constraints` from `.brand` are always included unless explicitly excluded.
 
 ### `identity-extension` Block
 
@@ -602,7 +602,7 @@ The purpose does not filter `.identity` and `.brand` separately. It filters the 
 ### Composition Rules
 
 1. `voice.always` and `voice.never` from `.identity` are **always included** unless explicitly excluded by `identity-filter`.
-2. `voice-tokens` and `content-defaults` from `.brand` are **always included** automatically.
+2. `voice-constraints` and `content-defaults` from `.brand` are **always included** automatically.
 3. `identity-filter.audience` selects which audience blocks to include from `.identity`.
 4. `identity-filter.pillars` restricts the pillar scope.
 5. `identity-extension` adds text that is not present in any upstream layer.
