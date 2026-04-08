@@ -6,13 +6,13 @@ This document summarises the reasoning, decisions, and open questions from the d
 
 ## What Brand Intent is and why it exists
 
-Brand Intent is an open file format specification for making brand intent machine-readable. It was developed in the context of **Brand Studio** — a "service as software" approach to brand operationalization, where a designer acts as ongoing brand steward for multiple clients, with AI-assisted content production running inside guardrails the designer authors and maintains.
+Brand Intent is an open file format specification for making brand intent machine-readable. It was developed in the context of **Brand Atelier** — a "service as software" approach to brand operationalization, where a designer acts as ongoing brand steward for multiple clients, with AI-assisted content production running inside guardrails the designer authors and maintains.
 
 The commercial context matters for understanding the design decisions: Brand Intent is not trying to become a W3C standard. It is positioned as a **personal tool with a public spec** — a reference implementation others can adopt, fork, and build on, in the same way that the Open Color Tools project (an earlier initiative by the same author) shaped today's best practices for Figma color variables without ever becoming a formal standard. The goal is conceptual influence and niche community exchange, not institutional adoption.
 
 ### What existing formats don't capture
 
-**Design tokens** (W3C DTCG format) capture decisions as values: `color.primary = #0324B1`. They do not capture why that color was chosen, for whom, from what cultural position, or what content it is appropriate to use it in.
+**Design tokens** (W3C DTCG format) capture decisions as values: `color.primary = #2C1810`. They do not capture why that color was chosen, for whom, from what cultural position, or what content it is appropriate to use it in.
 
 **Brand guidelines (PDF/portal)** capture rules and rationale in prose, but they are not machine-readable. An AI agent cannot parse a PDF to understand always/never voice rules.
 
@@ -46,48 +46,48 @@ The arrow is a **derivation arrow**, not merely a sequence. Identity contains re
 
 **How it changes:** Slowly. It changes when strategy changes — which may be years apart.
 
-**Key design decision — the `always`/`never` construct:** Rather than prose voice guidance, Brand Intent uses a structured list of concrete rules. `Always say "Ostsee", never "Nordsee"` is more useful to an AI model than `brand voice: warm and nature-oriented`. The former is a rule. The latter is an interpretation prompt. Brand Intent prefers rules over descriptions wherever possible.
+**Key design decision — the `always`/`never` construct:** Rather than prose voice guidance, Brand Intent uses a structured list of concrete rules. `Always say "Sauerteig", never "artisan bread"` is more useful to an AI model than `brand voice: warm and authentic`. The former is a rule. The latter is an interpretation prompt. Brand Intent prefers rules over descriptions wherever possible.
 
 **Example:**
 ```yaml
-# fehmarn.identity
+# krume.identity
 
-essence:  Fehmarn ist das Draußen-Sein. Wind, Weite, echtes Inselleben.
-promise:  Wer kommt, spürt sofort: hier ist das Wetter kein Hintergrund,
-          es ist das Erlebnis.
+essence:  Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.
+promise:  Wer reinkommt, riecht sofort, dass hier seit vier Uhr
+          morgens jemand steht.
 
 voice
   register:  informal, Du
-  persona:   ortskundige Freundin — begeistert, konkret, nie werblich
-  rhythm:    kurze Sätze, Aktivverben, konkrete Ortsnamen
+  persona:   Bäckerin hinterm Tresen — direkt, trocken, stolz auf das Handwerk
+  rhythm:    kurze Sätze, konkrete Angaben, kein Erklären
 
   always:
-    - Ostsee, not Nordsee
-    - Du, not Sie
-    - konkrete Ortsnamen (Südstrand, Staberhuk) over "die Insel"
-    - Wind als Protagonist, nicht als Kulisse
+    - Sauerteig, not "artisan bread"
+    - konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"
+    - Backzeit in Stunden, nicht "lange Teigführung"
+    - Kiez-Bezug (Neukölln, Weserstraße) over "unser Standort"
 
   never:
-    - Superlative ohne Substanz (schönste, größte, unvergessliche)
-    - Tourismus-Floskeln (Traumurlaub, Erholung pur)
-    - Passivkonstruktionen in Headlines
+    - Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)
+    - "Artisan" oder "Craft" — wir sagen Handwerk
+    - Englische Begriffe wenn ein deutsches Wort existiert
 
 pillars
-  primary:   Windsport, Natur, Draußen-Leben, Ostsee
-  secondary: Inselkultur, Nachhaltigkeit, Entschleunigung
-  avoid:     Wellness-Tourismus, Städtevergleiche, Massentourismus
+  primary:   Sauerteig, Handwerk, Zutaten, Kiez
+  secondary: Saisonales, Nachhaltigkeit, Backwissen
+  avoid:     Lifestyle-Gastronomie, Wellness-Ernährung, Influencer-Kultur
 
-audience windsport
-  label:       Windsport-Enthusiasten
-  profile:     25–45, aktiv, planungsfreudig, erfahren
-  motivation:  optimale Bedingungen finden, Insider-Wissen
-  language:    präzise, sportlich, auf Augenhöhe — kein Lehrton
+audience regulars
+  label:       Stammkunden aus dem Kiez
+  profile:     25–65, täglich oder wöchentlich, kennen die Sorten
+  motivation:  ihr Brot, ihr Laden, verlässlicher Rhythmus
+  language:    knapp, direkt, kein Erklären — die wissen Bescheid
 
-audience nature
-  label:       Naturtouristen
-  profile:     Familien und Paare, 30–55, nachhaltigkeitsbewusst
-  motivation:  Entschleunigung, echtes Inselerlebnis
-  language:    einladend, sensorisch, ruhige Energie
+audience newcomers
+  label:       Neugierige und Laufkundschaft
+  profile:     Touristen, neue Nachbarn, Marktbesucher
+  motivation:  gutes Brot finden, verstehen was anders ist
+  language:    einladend, konkret, erklärt ohne belehrend zu sein
 ```
 
 ---
@@ -98,7 +98,7 @@ audience nature
 
 **Important framing:** `.brand` is NOT just the visual file. This was a key conceptual shift during the design session. The brand file contains the full **expression intent** derived from identity — visual language AND operationalized voice parameters AND structural content defaults. The word "expression" here is used carefully: this is not expression itself (pixels, rendered words), but the authored conditions and semantic structures that govern what valid expression looks like.
 
-A hex value in a theme is not a color on screen — it is an intent that a renderer realizes. A `sentence-max: 12` is not a word count — it is a constraint a text generation system enforces. Designers author intent. Tools and agents produce expression from it.
+A hex value in a theme is not a color on screen — it is an intent that a renderer realizes. A `sentence-max: 8` is not a word count — it is a constraint a text generation system enforces. Designers author intent. Tools and agents produce expression from it.
 
 **The derivation relationship:** Every decision in `.brand` should be traceable to a statement in `.identity`. If it isn't, it is either an undocumented strategic choice (which should be made explicit in `.identity`) or arbitrary decoration (which has no place in either file). This traceability is a governance mechanism — not just a documentation principle.
 
@@ -117,54 +117,53 @@ A hex value in a theme is not a color on screen — it is an intent that a rende
 
 **Example (partial):**
 ```yaml
-# fehmarn.brand — expression intent derived from fehmarn.identity
+# krume.brand — expression intent derived from krume.identity
 
 brand-colors
-  primary:   #0324B1   # Pantone 286 C / HKS 44 K
-  secondary: #071142
-  accent1:   #E32D39
-  accent2:   #84D3DA
-  white:     #FFFFFF
+  primary:   #2C1810   # dark roast
+  secondary: #5C3A28   # walnut
+  accent1:   #C8A47E   # crust
+  accent2:   #8B4513   # rye
+  white:     #FAF6F0   # flour
 
-theme Basic
+theme Laden
+  background:     $white
+  text-primary:   $primary
+  text-secondary: $secondary
+  logo:           $primary
+  cta:            $accent2
+  divider:        $accent1
+
+theme Tafel
   background:     $primary
   text-primary:   $white
-  text-secondary: #D0D8F0
-  logo:           $accent2
   cta:            $accent1
   divider:        $accent1
 
-theme Strand
-  background:     #F5EDE3
-  text-primary:   #2C1810
-  cta:            #C05E2C
-  divider:        #C05E2C
-
 font primary
-  name:     Die Grotesk
+  name:     Libre Franklin
   fallback: sans-serif
-  source:   local
+  source:   google
 
 typography headline
-  weight:      800
-  strong:      900
-  size:        8        # cqh
-  opsz:        24       # optical size axis
-  lineHeight:  1.1
+  weight:      700
+  strong:      800
+  size:        6        # cqh
+  lineHeight:  1.15
   autofit-min: 4
-  autofit-max: 12
+  autofit-max: 10
 
 # Derived from identity voice reasoning — operationalized for production
 voice-tokens
   register:         informal
-  sentence-max:     12      # words
-  headline-pattern: verb-first
+  sentence-max:     8       # words — short, direct
+  headline-pattern: noun-first
   number-format:    cardinal  # "drei", not "3"
 
 content-defaults
-  density:         medium
-  image-treatment: full-bleed
-  divider:         ruler
+  density:         low
+  image-treatment: natural
+  divider:         line
 ```
 
 **Open question — voice-tokens vocabulary:** The `voice-tokens` block is new and its full key vocabulary is not yet defined. Needs to be specified: what keys are valid, what value types they accept, how they are passed to AI context. This is a significant design task for v1.0.
@@ -197,12 +196,11 @@ danger:   0 0 0 0       # px — always cropped
 crop:     0 34 0 34     # px — may be cropped by UI
 comfort:  40            # px — safe reading margin
 
-purposes: announcement, quote, event, listicle-cover,
-          listicle-item-card, listicle-item-text,
-          article-cover, article-item-teaser
+purposes: daily-bread, seasonal-special, baking-tip,
+          behind-the-scenes, market-announcement
 ```
 
-**Open question — audience affinity on formats:** Should a format be able to declare an audience affinity? Some formats (e.g. a kitesurfing-specific story format) might be inherently more relevant to one audience. Not implemented, worth considering.
+**Open question — audience affinity on formats:** Should a format be able to declare an audience affinity? Some formats (e.g. a baking-workshop story format) might be inherently more relevant to one audience. Not implemented, worth considering.
 
 ---
 
@@ -218,7 +216,7 @@ purposes: announcement, quote, event, listicle-cover,
 
 These names travel through the entire stack. A composition doesn't know what a "headline" is — it knows where `primary` goes. A purpose doesn't know where anything sits on the canvas — it knows what `primary` means for this content type. This separation is what makes the system composable: a composition can serve multiple purposes, a purpose can be rendered in multiple compositions, both governed by a single brand.
 
-**Cardinality:** Multiple per brand. New content types = new purpose files. Purposes can be shared across brands (a `listicle-cover` purpose is not brand-specific — it could be used for any brand, with identity-filter doing the brand-specific work).
+**Cardinality:** Multiple per brand. New content types = new purpose files. Purposes can be shared across brands (a `daily-bread` purpose is not brand-specific — it could be used for any bakery brand, with identity-filter doing the brand-specific work).
 
 ---
 
@@ -302,13 +300,13 @@ The purpose doesn't filter `.identity` and `.brand` separately. It filters the *
 
 ```yaml
 identity-filter
-  audience: windsport, nature    # pulls audience blocks from .identity
+  audience: regulars, newcomers  # pulls audience blocks from .identity
   pillars:  primary              # restricts to primary content pillar scope
   # voice-tokens and content-defaults from .brand are included automatically
 ```
 
 When the parser composes AI context for this purpose, the result includes:
-- The audience language guidance for `windsport` and `nature` from `.identity`
+- The audience language guidance for `regulars` and `newcomers` from `.identity`
 - The primary pillar scope from `.identity`
 - The always/never voice rules from `.identity` (always included unless explicitly excluded)
 - The operationalized `sentence-max`, `headline-pattern` from `.brand`
@@ -329,8 +327,8 @@ None of this is restated in the purpose file. It is referenced and composed.
 **Wrong (restates identity):**
 ```yaml
 identity-extension
-  Keep the tone warm and direct.
-  Avoid promotional language.
+  Keep the tone direct and no-nonsense.
+  Avoid lifestyle language.
   Write in German, informal register.
   # ✗ all of this is already in .identity
 ```
@@ -338,9 +336,9 @@ identity-extension
 **Right (slot-specific only):**
 ```yaml
 identity-extension
-  secondary is the rank number displayed large: "01", "02" etc.
-  primary is a place name, 1–3 words.
-  meta is a short descriptor, 3–6 words.
+  primary is the bread name, 1–3 words.
+  secondary is the weight ("750 g") or slice count.
+  meta is one sentence: what makes this bread specific.
   # ✓ genuinely specific to this content type
 ```
 
@@ -356,7 +354,7 @@ These are non-negotiable design decisions established during the session:
 2. **YAML-like, but not YAML.** Indentation-based block structure. No colons required for block headers. No quotes required for simple string values.
 3. **`$reference` syntax** for cross-referencing named values within the same file (e.g. `$primary` referencing a brand-color named `primary`).
 4. **`#` comments** everywhere. Comments are first-class — they carry the reasoning that connects decisions to identity.
-5. **Named blocks** rather than keyed objects. `theme Basic` not `themes: { Basic: { ... } }`.
+5. **Named blocks** rather than keyed objects. `theme Laden` not `themes: { Laden: { ... } }`.
 6. **Presence as boolean.** Some flags (like `italic`, `uppercase` in typography) are set by presence alone, not `italic: true`.
 7. **Human-writable as a primary constraint.** The format should feel like authoring, not configuring. A brand strategist writing `.identity` should not feel like they are filling in a schema.
 
@@ -366,15 +364,15 @@ These are non-negotiable design decisions established during the session:
 
 **GitHub repository:**
 - The spec (this document + formal grammar)
-- Reference parser (`brandParser.ts` — already exists in Brand Studio prototype)
-- Reference implementation: the Fehmarn brand (`.identity`, `.brand`, formats, purposes, compositions) with full inline comments explaining derivation decisions
+- Reference parser (`brandParser.ts` — already exists in Brand Atelier prototype)
+- Reference implementation: the Krume bakery brand (`.identity`, `.brand`, formats, purposes, compositions) with full inline comments explaining derivation decisions
 - MIT license or similar open license
 
 **npm package — `brand-intent`:**
 ```bash
 npx brand-intent install-skills    # install Brand Intent skill files for your AI harness
-npx brand-intent add fehmarn/brand # install a brand into a project
-npx brand-intent init --from fehmarn  # scaffold a new brand from the reference
+npx brand-intent add krume/brand   # install a brand into a project
+npx brand-intent init --from krume # scaffold a new brand from the reference
 ```
 
 **VS Code extension — already exists:**
@@ -417,7 +415,7 @@ These were explicitly identified during the design session as unresolved:
 **Architecture:**
 - How does the parser actually compose the AI context object from five layers? What is the data structure passed to the model?
 - Should `.format` be able to declare audience affinity?
-- Multi-brand folder structure — how does a project with 3 brands organize its files? Suggested: `brands/fehmarn/fehmarn.identity`, `brands/fehmarn/fehmarn.brand`, shared `purposes/` and `compositions/` at project root
+- Multi-brand folder structure — how does a project with 3 brands organize its files? Suggested: `brands/krume/krume.identity`, `brands/krume/krume.brand`, shared `purposes/` and `compositions/` at project root
 - How are purposes shared across brands? By file reference? By convention?
 
 **Tooling:**
@@ -432,37 +430,36 @@ These were explicitly identified during the design session as unresolved:
 
 ---
 
-## What Brand Studio is (background context)
+## What Brand Atelier is (background context)
 
-Brand Studio is a multi-tenant web application prototype developed by Studio Stoll (Christophe Stoll, Hamburg) for the Fehmarn destination marketing brand. It is a "service as software" product: not a generic SaaS tool, but a designer-mediated brand production environment where:
+Brand Atelier is a multi-tenant web application developed by Studio Stoll (Christophe Stoll, Hamburg). It is a "service as software" product: not a generic SaaS tool, but a designer-mediated brand production environment where:
 
 - The designer (Christophe) authors and maintains all Brand Intent files for a client brand
-- Non-designer team members at the client use the Brand Studio interface to produce on-brand content
+- Non-designer team members at the client use the Brand Atelier interface to produce on-brand content
 - AI generates text and assists with image selection, constrained by the Brand Intent files
 - The designer is the ongoing brand steward — not just the initial setup person
 
-Brand Intent emerged from Brand Studio's internal file format for encoding brand decisions. The goal of open-sourcing it is not to scale Brand Studio, but to establish a shared conceptual vocabulary and demonstrate the framework's value to other designers and agencies who could build their own Brand Intent-based tools.
+Brand Intent emerged from Brand Atelier's internal file format for encoding brand decisions. The goal of open-sourcing it is not to scale Brand Atelier, but to establish a shared conceptual vocabulary and demonstrate the framework's value to other designers and agencies who could build their own Brand Intent-based tools.
 
-The commercial model for Brand Studio itself (10–15 brands, designer as steward, strong lock-in through encoded brand knowledge) is intentionally not a scalable SaaS play. The open-source Brand Intent spec is the "marketing" layer — community exchange, intellectual credibility, and potential inbound interest from designers who encounter the framework.
+The commercial model for Brand Atelier itself (10–15 brands, designer as steward, strong lock-in through encoded brand knowledge) is intentionally not a scalable SaaS play. The open-source Brand Intent spec is the "marketing" layer — community exchange, intellectual credibility, and potential inbound interest from designers who encounter the framework.
 
 ---
 
-## Fehmarn reference implementation — file inventory
+## Krume reference implementation — file inventory
 
-The following files exist in the current Brand Studio prototype and should be included in the v1.0 repository as the reference implementation:
+The following files should be created for the v1.0 repository as the reference implementation:
 
-- `fehmarn.identity` — to be created based on session discussion (does not yet exist as a file)
-- `fehmarn.brand` — exists, needs `voice-tokens` and `content-defaults` sections added
-- `instagram-4-5-feed-portrait.format` — exists
-- (other formats exist, to be inventoried)
-- `listicle-cover.purpose` — exists
-- `listicle-item-card.purpose` — exists, needs `identity-filter` / `identity-extension` replacing `ai-context`
-- `listicle-item-text.purpose` — exists, same
-- `editorial.composition` — exists (renamed from `editorial.layout`)
-- `half-stack-bottom.composition` — exists (renamed from `half-stack-bottom.layout`)
-- `panel.composition` — exists (renamed from `panel.layout`)
+- `krume.identity` — the full identity file for the fictional bakery brand
+- `krume.brand` — expression intent with colors, typography, voice-tokens, and content-defaults
+- `instagram-4-5-feed-portrait.format` — Instagram feed format
+- (other formats: story, A5 flyer, chalkboard sign)
+- `daily-bread.purpose` — daily bread announcement post
+- `seasonal-special.purpose` — seasonal special feature
+- `baking-tip.purpose` — baking knowledge sharing
+- `editorial.composition` — grid mode composition
+- `panel.composition` — flow mode composition
 
-The migration from `ai-context` to `identity-filter` + `identity-extension` in all `.purpose` files is a concrete v1.0 task. The file extension migration from `.layout` to `.composition` (and the internal `compose` mode rename to `grid`) is a straightforward rename task — update the parser, the VS Code extension grammar, and all reference files.
+The Krume brand is fictional but fully specified — every decision has inline comments explaining derivation from identity. It serves as both documentation and a scaffold for new brands.
 
 ---
 
@@ -476,9 +473,9 @@ The migration from `ai-context` to `identity-filter` + `identity-extension` in a
 ├── package.json                      # for npx brand-intent CLI
 │
 ├── brands/
-│   └── fehmarn/
-│       ├── fehmarn.identity          # reference implementation
-│       ├── fehmarn.brand
+│   └── krume/
+│       ├── krume.identity            # reference implementation
+│       ├── krume.brand
 │       └── assets/
 │
 ├── formats/
@@ -486,19 +483,18 @@ The migration from `ai-context` to `identity-filter` + `identity-extension` in a
 │   └── (other reference formats)
 │
 ├── purposes/
-│   ├── listicle-cover.purpose
-│   ├── listicle-item-card.purpose
-│   ├── listicle-item-text.purpose
+│   ├── daily-bread.purpose
+│   ├── seasonal-special.purpose
+│   ├── baking-tip.purpose
 │   └── (other reference purposes)
 │
 ├── compositions/
 │   ├── editorial.composition
 │   ├── panel.composition
-│   ├── half-stack-bottom.composition
 │   └── (other reference compositions)
 │
 ├── parser/
-│   └── brandParser.ts                # reference parser (from Brand Studio)
+│   └── brandParser.ts                # reference parser (from Brand Atelier)
 │
 ├── skills/
 │   ├── claude/brand-context.md       # Brand Intent skill for Claude Code
