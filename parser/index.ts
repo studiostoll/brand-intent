@@ -1,6 +1,9 @@
 // Brand Intent — reference parser
-// Extracted from Brand Atelier. All four parsers are pure functions:
+// All five parsers are pure functions:
 // they take a string (file content) and filename, return a parsed object.
+
+export { parseIdentityFile } from './identityParser';
+export type { ParsedIdentity, ParsedVoice, ParsedPillars, ParsedAudience } from './identityParser';
 
 export { parseBrandFile } from './brandParser';
 export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec } from './brandParser';
