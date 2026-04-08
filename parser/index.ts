@@ -3,7 +3,7 @@
 // they take a string (file content) and filename, return a parsed object.
 
 export { parseIdentityFile } from './identityParser';
-export type { ParsedIdentity, ParsedVoice, ParsedPillars, ParsedAudience } from './identityParser';
+export type { ParsedIdentity, ParsedVoice, ParsedPillars, ParsedAudience, ParsedAntiAudience, ParsedValue } from './identityParser';
 
 export { parseBrandFile } from './brandParser';
 export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec } from './brandParser';

@@ -703,7 +703,10 @@ function activate(context) {
           const prevLine = document.lineAt(i).text;
           if (prevLine.match(/^voice\s*$/)) { currentBlock = 'voice'; break; }
           if (prevLine.match(/^pillars\s*$/)) { currentBlock = 'pillars'; break; }
+          if (prevLine.match(/^narrative\s*$/)) { currentBlock = 'narrative'; break; }
+          if (prevLine.match(/^values\s*$/)) { currentBlock = 'values'; break; }
           if (prevLine.match(/^audience\s+/)) { currentBlock = 'audience'; break; }
+          if (prevLine.match(/^anti-audience\s+/)) { currentBlock = 'anti-audience'; break; }
           if (!prevLine.match(/^\s/) && prevLine.trim() !== '') break;
         }
 
@@ -742,6 +745,37 @@ function activate(context) {
               item.detail = detail;
               items.push(item);
             }
+          } else if (currentBlock === 'anti-audience') {
+            for (const [p, detail] of [
+              ['label:', 'Anti-audience segment label'],
+              ['description:', 'Why this audience is excluded'],
+            ]) {
+              const item = new vscode.CompletionItem(p, vscode.CompletionItemKind.Property);
+              item.detail = detail;
+              items.push(item);
+            }
+          }
+        }
+
+        // archetype: value completions
+        if (prefix.match(/^archetype:\s*/)) {
+          for (const [v, detail] of [
+            ['craftsman', 'The Craftsman -- mastery and quality'],
+            ['sage', 'The Sage -- wisdom and knowledge'],
+            ['explorer', 'The Explorer -- freedom and discovery'],
+            ['hero', 'The Hero -- courage and achievement'],
+            ['outlaw', 'The Outlaw -- rebellion and disruption'],
+            ['magician', 'The Magician -- transformation and vision'],
+            ['innocent', 'The Innocent -- optimism and simplicity'],
+            ['ruler', 'The Ruler -- control and authority'],
+            ['caregiver', 'The Caregiver -- nurture and protection'],
+            ['creator', 'The Creator -- imagination and expression'],
+            ['jester', 'The Jester -- humor and spontaneity'],
+            ['everyman', 'The Everyman -- belonging and authenticity'],
+          ]) {
+            const item = new vscode.CompletionItem(v, vscode.CompletionItemKind.EnumMember);
+            item.detail = detail;
+            items.push(item);
           }
         }
 
@@ -750,9 +784,17 @@ function activate(context) {
           for (const [kw, detail] of [
             ['essence:', 'Core brand essence -- one-line distillation'],
             ['promise:', 'Brand promise to the audience'],
+            ['tagline:', 'Brand tagline -- short memorable phrase'],
+            ['positioning:', 'Brand positioning statement'],
+            ['mission:', 'Brand mission -- purpose and reason for being'],
+            ['vision:', 'Brand vision -- aspirational future state'],
+            ['archetype:', 'Brand archetype (e.g. craftsman, sage, explorer)'],
             ['voice', 'Voice characteristics block'],
             ['pillars', 'Brand pillars block'],
+            ['narrative', 'Brand narrative block -- long-form brand story'],
+            ['values', 'Brand values block -- core value names'],
             ['audience ', 'Audience segment block (followed by segment name)'],
+            ['anti-audience ', 'Anti-audience segment block (followed by segment name)'],
           ]) {
             const item = new vscode.CompletionItem(kw, vscode.CompletionItemKind.Keyword);
             item.detail = detail;
@@ -845,9 +887,17 @@ function activate(context) {
   const IDENTITY_HOVER_DOCS = {
     'essence:': '**`essence:`** -- Core brand essence.\n\nA one-line distillation of what the brand fundamentally is.',
     'promise:': '**`promise:`** -- Brand promise.\n\nThe commitment the brand makes to its audience.',
+    'tagline:': '**`tagline:`** -- Brand tagline.\n\nA short, memorable phrase that captures the brand spirit.',
+    'positioning:': '**`positioning:`** -- Brand positioning.\n\nHow the brand positions itself relative to competitors and in the minds of its audience.',
+    'mission:': '**`mission:`** -- Brand mission.\n\nThe brand\'s purpose and reason for being -- what it does and for whom.',
+    'vision:': '**`vision:`** -- Brand vision.\n\nThe aspirational future state the brand is working toward.',
+    'archetype:': '**`archetype:`** -- Brand archetype.\n\nOne of twelve Jungian brand archetypes: craftsman, sage, explorer, hero, outlaw, magician, innocent, ruler, caregiver, creator, jester, everyman.',
     'voice': '**`voice`** -- Voice characteristics block.\n\nDefines the brand\'s voice traits: register, persona, rhythm, and behavioral guidelines (always/never).',
     'pillars': '**`pillars`** -- Brand pillars block.\n\nDefines primary and secondary brand pillars, plus anti-pillars (what the brand avoids).',
+    'narrative': '**`narrative`** -- Brand narrative block.\n\nA long-form brand story. Indented continuation lines form the narrative text.',
+    'values': '**`values`** -- Brand values block.\n\nCore brand values listed as indented names (one per line, no colon).',
     'audience': '**`audience Name`** -- Audience segment block.\n\nDefines a target audience segment with label, profile, motivation, and language preferences.',
+    'anti-audience': '**`anti-audience Name`** -- Anti-audience segment block.\n\nDefines an audience the brand deliberately does not target, with label and description.',
     'register:': '**`register:`** -- Voice register.\n\nThe tonal register of the brand voice (e.g. warm, authoritative, playful, professional).',
     'persona:': '**`persona:`** -- Brand persona.\n\nA description of the brand as if it were a person.',
     'rhythm:': '**`rhythm:`** -- Writing rhythm.\n\nThe cadence and flow of brand copy (e.g. short-punchy, flowing, staccato).',
@@ -856,7 +906,8 @@ function activate(context) {
     'primary:': '**`primary:`** -- Primary brand pillar.\n\nThe most important brand value or attribute.',
     'secondary:': '**`secondary:`** -- Secondary brand pillar.\n\nA supporting brand value or attribute.',
     'avoid:': '**`avoid:`** -- Anti-pillar.\n\nWhat the brand deliberately avoids or stands against.',
-    'label:': '**`label:`** -- Audience segment label.\n\nShort name for this audience segment.',
+    'label:': '**`label:`** -- Segment label.\n\nShort name for this audience or anti-audience segment.',
+    'description:': '**`description:`** -- Anti-audience description.\n\nExplains why this audience segment is excluded from targeting.',
     'profile:': '**`profile:`** -- Audience profile.\n\nDescription of who this audience is.',
     'motivation:': '**`motivation:`** -- Audience motivation.\n\nWhat drives this audience to engage with the brand.',
     'language:': '**`language:`** -- Audience language preferences.\n\nHow this audience prefers to be spoken to.',

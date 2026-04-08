@@ -13,6 +13,31 @@ essence:  Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.
 promise:  Wer reinkommt, riecht sofort, dass hier seit vier Uhr
           morgens jemand steht.
 
+tagline:  Mehl, Wasser, Zeit.  # also known as "Claim" (DACH)
+
+positioning:  Krume ist die einzige Bäckerei im Kiez, die jedes
+              Brot beim Mehl nennt, nicht beim Marketing.
+
+mission:  Ehrliches Brot für den Kiez — jeden Tag, aus dem
+          gleichen Ofen, mit den gleichen Händen.
+
+vision:  Eine Nachbarschaft, in der niemand mehr erklären muss,
+         warum gutes Brot sechs Euro kostet.
+
+archetype: craftsman
+
+# ── Narrative ──
+# The origin story. Useful for about pages, editorial, press.
+
+narrative
+  Gegründet 2019, als die Bäckerin ihren Agenturjob
+  kündigte, um das zu tun, was sie jeden Morgen seit
+  ihrem sechzehnten Lebensjahr getan hat: Brot backen.
+  Der Laden in der Weserstraße war vorher ein Copyshop.
+  Die erste Woche war der Ofen zu klein. Die zweite
+  Woche war das Brot zu schnell ausverkauft.
+  Beides hat sich nicht geändert.
+
 # ── Voice ──
 # The voice is the baker herself: direct, dry, proud of the work.
 # Not warm-and-fuzzy. Not educational. Not performative.
@@ -40,6 +65,26 @@ voice
     - Superlative ohne Substanz (bestes Brot, einzigartiger Geschmack)
     - Wellness- oder Gesundheitsversprechen (gut für dich, clean eating)
 
+# ── Values ──
+# Not keywords — behavior statements. Each value describes
+# how it manifests in what we say and do.
+
+values
+  Handwerk
+    Wir benennen den Prozess, nicht das Ergebnis.
+    Backzeit in Stunden, Mehlsorte beim Namen.
+    Kein Brot ohne nachvollziehbaren Weg vom Korn zum Laib.
+
+  Ehrlichkeit
+    Kein Brot ohne Zutatenliste. Keine Versprechen
+    die der Teig nicht halten kann. Wenn etwas
+    nicht gelungen ist, sagen wir das.
+
+  Kiez
+    Der Laden gehört zur Weserstraße wie der Späti
+    nebenan. Wir kennen die Stammkunden beim Namen
+    und die Nachbarn beim Brot.
+
 # ── Content Pillars ──
 # What Krume talks about, and what it explicitly avoids.
 
@@ -64,3 +109,19 @@ audience newcomers
   profile:     Touristen, neue Nachbarn, Marktbesucher
   motivation:  gutes Brot finden, verstehen was anders ist
   language:    einladend, konkret, erklärt ohne belehrend zu sein
+
+# ── Anti-Audiences ──
+# Explicitly not-our-people. Gives the AI a concrete
+# "never sound like you're talking to this person" signal.
+
+anti-audience influencers
+  label:       Lifestyle-Influencer
+  description: Menschen die Brot als Aesthetic posten, nicht
+               als Lebensmittel essen. Wir sind nicht ihr Content.
+
+anti-audience discount-hunters
+  label:       Schnäppchenjäger
+  description: Wer den Preis eines Sauerteigbrots mit dem
+               Supermarkt-Toastbrot vergleicht, ist hier falsch.
+               Wir erklären gerne warum es kostet was es kostet —
+               aber wir rechtfertigen uns nicht.

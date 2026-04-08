@@ -2,16 +2,17 @@
  * Parser for .identity brand identity files.
  *
  * Line-based format with indentation-based blocks.
- * Contains brand strategy: essence, promise, voice, pillars, audiences.
+ * Contains brand strategy: essence, promise, voice, pillars, audiences, values.
  * No visual properties of any kind.
  */
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
 export interface ParsedIdentity {
-  /** One-sentence brand essence */
+  // ── Required ──
+  /** One-sentence brand essence (2-5 words ideal) */
   essence: string;
-  /** Brand promise (may span multiple lines) */
+  /** Brand promise — the commitment to the audience */
   promise: string;
   /** Voice and tone definition */
   voice: ParsedVoice;
@@ -19,6 +20,24 @@ export interface ParsedIdentity {
   pillars: ParsedPillars;
   /** Audience segments keyed by ID */
   audiences: Record<string, ParsedAudience>;
+
+  // ── Optional ──
+  /** Public-facing brand claim / tagline */
+  tagline?: string;
+  /** Competitive positioning — what makes this brand the only one of its kind */
+  positioning?: string;
+  /** Organizational mission — what the brand does, for whom */
+  mission?: string;
+  /** Aspirational future state */
+  vision?: string;
+  /** Brand archetype shorthand (e.g. "craftsman", "sage") */
+  archetype?: string;
+  /** Brand origin story or ongoing narrative */
+  narrative?: string;
+  /** Core brand values with behavior statements */
+  values?: ParsedValue[];
+  /** Explicitly not-our-audience segments keyed by ID */
+  antiAudiences?: Record<string, ParsedAntiAudience>;
 }
 
 export interface ParsedVoice {
@@ -54,9 +73,23 @@ export interface ParsedAudience {
   language: string;
 }
 
+export interface ParsedAntiAudience {
+  /** Human-readable name */
+  label: string;
+  /** Who they are and why the brand is not for them */
+  description: string;
+}
+
+export interface ParsedValue {
+  /** Value name (e.g. "Handwerk", "Ehrlichkeit") */
+  name: string;
+  /** Behavior statement — what this value means in practice */
+  behavior: string;
+}
+
 // ── Parser ────────────────────────────────────────────────────────────────────
 
-type Block = 'top' | 'voice' | 'pillars' | 'audience';
+type Block = 'top' | 'voice' | 'pillars' | 'audience' | 'anti-audience' | 'values' | 'narrative';
 type ListTarget = 'always' | 'never' | 'primary' | 'secondary' | 'avoid';
 
 export function parseIdentityFile(content: string, fileName: string): ParsedIdentity {
@@ -64,14 +97,33 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
   let essence = '';
   let promise = '';
+  let tagline = '';
+  let positioning = '';
+  let mission = '';
+  let vision = '';
+  let archetype = '';
+  let narrative = '';
   const voice: Partial<ParsedVoice> = { always: [], never: [] };
   const pillars: Partial<ParsedPillars> = { primary: [], avoid: [] };
   const audiences: Record<string, Partial<ParsedAudience>> = {};
+  const antiAudiences: Record<string, Partial<ParsedAntiAudience>> = {};
+  const values: ParsedValue[] = [];
 
   let block: Block = 'top';
   let currentAudience = '';
+  let currentAntiAudience = '';
+  let currentValueName = '';
+  let currentValueBehavior = '';
   let listTarget: ListTarget | null = null;
   let continuationKey: string | null = null;
+
+  function flushValue() {
+    if (currentValueName && currentValueBehavior) {
+      values.push({ name: currentValueName, behavior: currentValueBehavior.trim() });
+    }
+    currentValueName = '';
+    currentValueBehavior = '';
+  }
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -82,17 +134,44 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
     // Skip blank lines and full-line comments
     if (line.trim() === '' || line.trim().startsWith('#')) {
-      // Blank line resets continuation
       if (line.trim() === '') continuationKey = null;
       continue;
     }
 
-    // ── Indented continuation line ──
-    if (/^\s{2,}/.test(raw) && continuationKey && !raw.trim().startsWith('-') && !raw.trim().includes(':')) {
-      const continuation = raw.trim();
-      if (continuationKey === 'essence') essence += ' ' + continuation;
-      else if (continuationKey === 'promise') promise += ' ' + continuation;
+    // ── Values block: 2-space = value name, 4-space = behavior ──
+    if (block === 'values' && /^\s{2,}/.test(raw) && !raw.trim().startsWith('#')) {
+      const indent = raw.match(/^(\s*)/)?.[1].length ?? 0;
+      const text = raw.trim();
+      if (indent <= 2 && !text.includes(':')) {
+        // New value name (2-space indent)
+        flushValue();
+        currentValueName = text;
+      } else if (currentValueName) {
+        // Behavior text (4+ space indent) or continuation
+        currentValueBehavior += (currentValueBehavior ? ' ' : '') + text;
+      }
       continue;
+    }
+
+    // ── Narrative block: all indented lines are narrative text ──
+    if (block === 'narrative' && /^\s{2,}/.test(raw) && !raw.trim().startsWith('#')) {
+      narrative += (narrative ? '\n' : '') + raw.trim();
+      continue;
+    }
+
+    // ── Indented continuation lines ──
+    if (/^\s{2,}/.test(raw) && !raw.trim().startsWith('-') && !raw.trim().includes(':')) {
+      const continuation = raw.trim();
+
+      // Top-level multi-line continuation
+      if (continuationKey) {
+        if (continuationKey === 'essence') essence += ' ' + continuation;
+        else if (continuationKey === 'promise') promise += ' ' + continuation;
+        else if (continuationKey === 'positioning') positioning += ' ' + continuation;
+        else if (continuationKey === 'mission') mission += ' ' + continuation;
+        else if (continuationKey === 'vision') vision += ' ' + continuation;
+        continue;
+      }
     }
 
     // ── List items (- prefixed, indented) ──
@@ -155,17 +234,27 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
           default:
             throw new Error(`${fileName}:${lineNum}: unknown audience key "${key}"`);
         }
+      } else if (block === 'anti-audience' && currentAntiAudience) {
+        const aa = antiAudiences[currentAntiAudience] ??= {};
+        switch (key) {
+          case 'label': aa.label = val; break;
+          case 'description': aa.description = val; break;
+          default:
+            throw new Error(`${fileName}:${lineNum}: unknown anti-audience key "${key}"`);
+        }
       }
       continue;
     }
 
     // ── Top-level key: value ──
-    const topMatch = raw.match(/^([\w-]+):\s*(.*)/);
+    const topMatch = line.match(/^([\w-]+):\s*(.*)/);
     if (topMatch) {
       const [, key, value] = topMatch;
       const val = value.trim();
+      if (block === 'values') flushValue();
       block = 'top';
       listTarget = null;
+      continuationKey = null;
 
       switch (key) {
         case 'essence':
@@ -176,6 +265,24 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
           promise = val;
           continuationKey = 'promise';
           break;
+        case 'tagline':
+          tagline = val;
+          break;
+        case 'positioning':
+          positioning = val;
+          continuationKey = 'positioning';
+          break;
+        case 'mission':
+          mission = val;
+          continuationKey = 'mission';
+          break;
+        case 'vision':
+          vision = val;
+          continuationKey = 'vision';
+          break;
+        case 'archetype':
+          archetype = val;
+          break;
         default:
           throw new Error(`${fileName}:${lineNum}: unknown top-level key "${key}"`);
       }
@@ -183,17 +290,33 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     }
 
     // ── Block headers ──
-    const voiceMatch = raw.match(/^voice\s*$/);
-    if (voiceMatch) {
+    if (raw.match(/^voice\s*$/)) {
+      if (block === 'values') flushValue();
       block = 'voice';
       listTarget = null;
       continuationKey = null;
       continue;
     }
 
-    const pillarsMatch = raw.match(/^pillars\s*$/);
-    if (pillarsMatch) {
+    if (raw.match(/^pillars\s*$/)) {
+      if (block === 'values') flushValue();
       block = 'pillars';
+      listTarget = null;
+      continuationKey = null;
+      continue;
+    }
+
+    if (raw.match(/^values\s*$/)) {
+      if (block === 'values') flushValue();
+      block = 'values';
+      listTarget = null;
+      continuationKey = null;
+      continue;
+    }
+
+    if (raw.match(/^narrative\s*$/)) {
+      if (block === 'values') flushValue();
+      block = 'narrative';
       listTarget = null;
       continuationKey = null;
       continue;
@@ -201,6 +324,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
     const audienceMatch = raw.match(/^audience\s+(\S+)\s*$/);
     if (audienceMatch) {
+      if (block === 'values') flushValue();
       block = 'audience';
       currentAudience = audienceMatch[1];
       audiences[currentAudience] ??= {};
@@ -208,7 +332,21 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
       continuationKey = null;
       continue;
     }
+
+    const antiAudienceMatch = raw.match(/^anti-audience\s+(\S+)\s*$/);
+    if (antiAudienceMatch) {
+      if (block === 'values') flushValue();
+      block = 'anti-audience';
+      currentAntiAudience = antiAudienceMatch[1];
+      antiAudiences[currentAntiAudience] ??= {};
+      listTarget = null;
+      continuationKey = null;
+      continue;
+    }
   }
+
+  // Flush last value if in values block
+  if (block === 'values') flushValue();
 
   // ── Validation ──────────────────────────────────────────────────────────────
 
@@ -228,17 +366,36 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     if (!aud.language) throw new Error(`${fileName}: audience "${id}" missing required field "language:"`);
   }
 
+  for (const [id, aa] of Object.entries(antiAudiences)) {
+    if (!aa.label) throw new Error(`${fileName}: anti-audience "${id}" missing required field "label:"`);
+    if (!aa.description) throw new Error(`${fileName}: anti-audience "${id}" missing required field "description:"`);
+  }
+
   // ── Hex value exclusion rule ──
   const hexPattern = /#[0-9A-Fa-f]{3,8}\b/;
   if (hexPattern.test(content.replace(/#.*$/gm, ''))) {
     throw new Error(`${fileName}: identity files must not contain hex color values`);
   }
 
-  return {
+  const result: ParsedIdentity = {
     essence,
     promise,
     voice: voice as ParsedVoice,
     pillars: pillars as ParsedPillars,
     audiences: audiences as Record<string, ParsedAudience>,
   };
+
+  // Optional fields — only include if present
+  if (tagline) result.tagline = tagline;
+  if (positioning) result.positioning = positioning;
+  if (mission) result.mission = mission;
+  if (vision) result.vision = vision;
+  if (archetype) result.archetype = archetype;
+  if (narrative) result.narrative = narrative;
+  if (values.length > 0) result.values = values;
+  if (Object.keys(antiAudiences).length > 0) {
+    result.antiAudiences = antiAudiences as Record<string, ParsedAntiAudience>;
+  }
+
+  return result;
 }

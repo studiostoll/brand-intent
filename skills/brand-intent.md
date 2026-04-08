@@ -24,9 +24,17 @@ Identity → Brand → Format → Purpose → Composition
 
 ### `.identity` — Strategy (no visual properties)
 
-Contains: essence, promise, voice (register, persona, rhythm), `always`/`never` rules, content pillars, audience definitions.
+**Required:** essence, promise, voice (register, persona, rhythm, always/never), pillars, audience segments.
+
+**Optional:** tagline, positioning, mission, vision, archetype, narrative, values (with behavior statements), anti-audience segments.
 
 **The `always`/`never` construct is your primary guardrail.** These are concrete, testable rules. When generating or reviewing content, check every item in `never:` and confirm every item in `always:`. They are not suggestions — they are constraints.
+
+**`values`** are not just keywords — each has a behavior statement that describes how it manifests. Use these to inform decisions when voice rules don't cover a situation.
+
+**`anti-audience`** segments define who the brand is explicitly *not* for. Never generate content that sounds like it's addressing an anti-audience. This is as important as `voice.never`.
+
+**`positioning`** gives the competitive frame — what the brand is the only one of. Use this when the content needs to differentiate.
 
 **Does NOT contain:** hex values, font names, type sizes, spacing, composition rules, or any visual properties.
 
@@ -77,6 +85,9 @@ Load the full identity. Pay special attention to:
 - `voice.persona` — adopt this voice
 - `voice.register` — match this formality level
 - `pillars.avoid` — never generate content in these topic areas
+- `anti-audience` — never sound like you're addressing these people
+- `values` — use behavior statements to guide decisions when voice rules don't cover a situation
+- `positioning` — use when content needs to differentiate
 
 ### Step 2 — Read `.brand`
 
@@ -111,11 +122,13 @@ After generating or reviewing content, validate against these rules in order:
 
 1. **`voice.never`** — Does any generated text contain a phrase, pattern, or concept from the never list? If yes, rewrite.
 2. **`voice.always`** — Does the text follow every rule in the always list? If not, fix.
-3. **`pillars.avoid`** — Does the content touch an avoided topic area? If yes, reject.
-4. **`sentence-max`** — Count words in every sentence. Does any exceed the limit? If yes, split.
-5. **`headline-pattern`** — Does the headline follow the specified pattern? If not, restructure.
-6. **`maxLength`** — Does each slot's content fit within its character limit? If not, shorten.
-7. **`register`** — Does the formality level match? (e.g., if `informal, Du` — no formal address)
+3. **`anti-audience`** — Could this content be read as addressing an anti-audience? If yes, rewrite.
+4. **`pillars.avoid`** — Does the content touch an avoided topic area? If yes, reject.
+5. **`values`** — Does the content contradict any value's behavior statement? If yes, fix.
+6. **`sentence-max`** — Count words in every sentence. Does any exceed the limit? If yes, split.
+7. **`headline-pattern`** — Does the headline follow the specified pattern? If not, restructure.
+8. **`maxLength`** — Does each slot's content fit within its character limit? If not, shorten.
+9. **`register`** — Does the formality level match? (e.g., if `informal, Du` — no formal address)
 
 ## What NOT to Do
 

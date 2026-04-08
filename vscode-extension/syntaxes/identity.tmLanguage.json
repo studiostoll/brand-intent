@@ -6,6 +6,7 @@
     { "include": "#top-level-keyword" },
     { "include": "#named-block" },
     { "include": "#indented-property" },
+    { "include": "#value-name" },
     { "include": "#list-item" },
     { "include": "#continuation-line" }
   ],
@@ -15,7 +16,7 @@
       "name": "comment.line.number-sign.brand-intent-identity"
     },
     "top-level-keyword": {
-      "match": "^(essence|promise)(:)\\s+(.*)",
+      "match": "^(essence|promise|tagline|positioning|mission|vision|archetype)(:)\\s+(.*)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-identity" },
         "2": { "name": "punctuation.separator.key-value.brand-intent-identity" },
@@ -23,16 +24,16 @@
       }
     },
     "named-block": {
-      "comment": "Block headers: voice, pillars, audience NAME",
+      "comment": "Block headers: voice, pillars, narrative, values, audience NAME, anti-audience NAME",
       "patterns": [
         {
-          "match": "^(voice|pillars)\\s*$",
+          "match": "^(voice|pillars|narrative|values)\\s*$",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-identity" }
           }
         },
         {
-          "match": "^(audience)\\s+(\\S.*)",
+          "match": "^(audience|anti-audience)\\s+(\\S.*)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-identity" },
             "2": { "name": "entity.name.type.brand-intent-identity" }
@@ -41,11 +42,18 @@
       ]
     },
     "indented-property": {
-      "match": "^(\\s{2,})(register|persona|rhythm|always|never|primary|secondary|avoid|label|profile|motivation|language)(:)\\s+(.*)",
+      "match": "^(\\s{2,})(register|persona|rhythm|always|never|primary|secondary|avoid|label|profile|motivation|language|description)(:)\\s+(.*)",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-identity" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-identity" },
         "4": { "name": "string.unquoted.brand-intent-identity" }
+      }
+    },
+    "value-name": {
+      "comment": "Value names inside the values block (2-space indent, no colon)",
+      "match": "^(\\s{2})(\\S.*)$",
+      "captures": {
+        "2": { "name": "entity.name.tag.brand-intent-identity" }
       }
     },
     "list-item": {

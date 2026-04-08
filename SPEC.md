@@ -44,11 +44,19 @@ The identity file encodes brand strategy in machine-readable form. It contains n
 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
-| `essence:` | string | Yes | One-sentence brand essence |
-| `promise:` | string | Yes | Brand promise (may span multiple lines via indentation) |
+| `essence:` | string | Yes | One-sentence brand essence (2-5 words ideal) |
+| `promise:` | string | Yes | Brand promise — the commitment to the audience |
+| `tagline:` | string | No | Public-facing brand claim (also known as "Claim" in DACH) |
+| `positioning:` | string | No | Competitive positioning — what makes this brand the only one of its kind |
+| `mission:` | string | No | Organizational mission — what the brand does, for whom |
+| `vision:` | string | No | Aspirational future state — what the world looks like if the brand succeeds |
+| `archetype:` | string | No | Brand archetype shorthand (e.g., `craftsman`, `sage`, `explorer`) |
+| `narrative` | block | No | Brand origin story or ongoing narrative (multi-line) |
 | `voice` | block | Yes | Voice and tone definition |
+| `values` | block | No | Core brand values with behavior statements (repeatable) |
 | `pillars` | block | Yes | Content pillar definitions |
 | `audience NAME` | block | Yes (1+) | Audience segment (repeatable) |
+| `anti-audience NAME` | block | No | Explicitly not-our-audience (repeatable) |
 
 ### `voice` Block
 
@@ -69,6 +77,34 @@ always:
 
 **Design principle:** Every item in `always` and `never` should be a concrete, testable rule — not a description or aspiration. An AI agent should be able to evaluate any piece of content against these rules with a yes/no answer.
 
+### `narrative` Block
+
+Free-form multi-line text, indented under the block header. The brand's origin story, founding narrative, or ongoing story arc.
+
+```yaml
+narrative
+  Founded in 2019 when the baker quit her agency job
+  to do the one thing she'd done every morning since
+  she was sixteen: bake bread.
+```
+
+### `values` Block
+
+Repeatable named entries. Each value has a name and a behavior statement that makes it actionable — not just a keyword.
+
+```yaml
+values
+  Handwerk
+    Wir benennen den Prozess, nicht das Ergebnis.
+    Backzeit in Stunden, Mehlsorte beim Namen.
+
+  Ehrlichkeit
+    Kein Brot ohne Zutatenliste. Keine Versprechen
+    die der Teig nicht halten kann.
+```
+
+Each value is a named block (the value name on its own line, unindented within `values`), followed by 2-space indented behavior description lines.
+
 ### `pillars` Block
 
 | Key | Type | Required | Description |
@@ -87,6 +123,17 @@ always:
 | `profile:` | string | No | Demographic and behavioral description |
 | `motivation:` | string | Yes | What this audience wants from the brand |
 | `language:` | string | Yes | Tone and register guidance for this audience |
+
+### `anti-audience NAME` Block
+
+Defines who the brand is explicitly *not* for. This gives an AI agent a concrete "never sound like you're addressing this person" signal.
+
+`NAME` is a lowercase identifier (e.g., `influencers`, `bargain-hunters`).
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `label:` | string | Yes | Human-readable name |
+| `description:` | string | Yes | Who they are and why the brand is not for them |
 
 ### Exclusion Rule
 
