@@ -1,4 +1,4 @@
-# Brand Intent — AI Skill
+# Brand Intent - AI Skill
 
 You are working in a project that uses **Brand Intent**, an open file format for encoding brand identity, expression intent, and content composition rules across five composable layers. This skill teaches you how to read, compose, and validate Brand Intent files.
 
@@ -22,41 +22,41 @@ Identity → Brand → Format → Purpose → Composition
 
 ## How to Read Each Layer
 
-### `.identity` — Strategy (no visual properties)
+### `.identity` - Strategy (no visual properties)
 
 **Required:** essence, promise, voice (register, persona, rhythm, always/never), pillars, audience segments.
 
 **Optional:** tagline, positioning, mission, vision, archetype, narrative, values (with behavior statements), anti-audience segments.
 
-**The `always`/`never` construct is your primary guardrail.** These are concrete, testable rules. When generating or reviewing content, check every item in `never:` and confirm every item in `always:`. They are not suggestions — they are constraints.
+**The `always`/`never` construct is your primary guardrail.** These are concrete, testable rules. When generating or reviewing content, check every item in `never:` and confirm every item in `always:`. They are not suggestions - they are constraints.
 
-**`values`** are not just keywords — each has a behavior statement that describes how it manifests. Use these to inform decisions when voice rules don't cover a situation.
+**`values`** are not just keywords - each has a behavior statement that describes how it manifests. Use these to inform decisions when voice rules don't cover a situation.
 
 **`anti-audience`** segments define who the brand is explicitly *not* for. Never generate content that sounds like it's addressing an anti-audience. This is as important as `voice.never`.
 
-**`positioning`** gives the competitive frame — what the brand is the only one of. Use this when the content needs to differentiate.
+**`positioning`** gives the competitive frame - what the brand is the only one of. Use this when the content needs to differentiate.
 
 **Does NOT contain:** hex values, font names, type sizes, spacing, composition rules, or any visual properties.
 
-### `.brand` — Derived Expression Intent
+### `.brand` - Derived Expression Intent
 
 Contains: color primitives, semantic themes, font definitions, named typography styles, `voice-constraints` (operationalized voice parameters), `content-defaults`, spacing, divider styles.
 
 **`voice-constraints`** are production-enforceable limits derived from identity voice reasoning:
-- `sentence-max:` — maximum words per sentence. Enforce this.
-- `headline-pattern:` — structural pattern for headlines (e.g., `noun-first`, `verb-first`).
-- `number-format:` — `cardinal` means write "drei" not "3".
-- `register:` — must match the identity register.
+- `sentence-max:` - maximum words per sentence. Enforce this.
+- `headline-pattern:` - structural pattern for headlines (e.g., `noun-first`, `verb-first`).
+- `number-format:` - `cardinal` means write "drei" not "3".
+- `register:` - must match the identity register.
 
 **Does NOT contain:** identity reasoning, audience definitions, strategic prose, composition rules.
 
-### `.format` — Canvas Definition
+### `.format` - Canvas Definition
 
 Contains: platform, dimensions, safe zones (danger/crop/comfort), grid, allowed purposes.
 
 **You rarely need this directly** unless generating content that must fit specific dimensions or validating whether a purpose is allowed on a given platform.
 
-### `.purpose` — Content Type Definition
+### `.purpose` - Content Type Definition
 
 Contains: semantic slot definitions (primary, secondary, detail, meta, cta, label), typography and color per slot, sample content, length constraints, `identity-filter`, `identity-extension`.
 
@@ -68,7 +68,7 @@ Contains: semantic slot definitions (primary, secondary, detail, meta, cta, labe
 - `cta` = call to action
 - `label` = orientation marker (badge, tag)
 
-### `.composition` — Spatial Arrangement
+### `.composition` - Spatial Arrangement
 
 Contains: slot-to-position mappings in grid or flow mode.
 
@@ -78,18 +78,18 @@ Contains: slot-to-position mappings in grid or flow mode.
 
 When generating content for a specific purpose, compose your context by reading layers in order:
 
-### Step 1 — Read `.identity`
+### Step 1 - Read `.identity`
 
 Load the full identity. Pay special attention to:
-- `voice.always` and `voice.never` — these are your hard constraints
-- `voice.persona` — adopt this voice
-- `voice.register` — match this formality level
-- `pillars.avoid` — never generate content in these topic areas
-- `anti-audience` — never sound like you're addressing these people
-- `values` — use behavior statements to guide decisions when voice rules don't cover a situation
-- `positioning` — use when content needs to differentiate
+- `voice.always` and `voice.never` - these are your hard constraints
+- `voice.persona` - adopt this voice
+- `voice.register` - match this formality level
+- `pillars.avoid` - never generate content in these topic areas
+- `anti-audience` - never sound like you're addressing these people
+- `values` - use behavior statements to guide decisions when voice rules don't cover a situation
+- `positioning` - use when content needs to differentiate
 
-### Step 2 — Read `.brand`
+### Step 2 - Read `.brand`
 
 Load voice-constraints and content-defaults:
 - Enforce `sentence-max` on all generated text
@@ -97,22 +97,22 @@ Load voice-constraints and content-defaults:
 - Use `number-format` for numbers
 - Apply `density` from content-defaults
 
-### Step 3 — Apply `identity-filter` from `.purpose`
+### Step 3 - Apply `identity-filter` from `.purpose`
 
 The purpose file's `identity-filter` narrows the composed upstream:
-- `audience:` — only use language guidance from these audience blocks
-- `pillars:` — restrict to this pillar scope (`primary`, `secondary`, or `all`)
+- `audience:` - only use language guidance from these audience blocks
+- `pillars:` - restrict to this pillar scope (`primary`, `secondary`, or `all`)
 
 If no filter is specified, include everything.
 
-### Step 4 — Apply `identity-extension` from `.purpose`
+### Step 4 - Apply `identity-extension` from `.purpose`
 
-Read the `identity-extension` block. This contains slot-specific instructions that cannot be derived from identity or brand. Follow them literally — they are precise, not general.
+Read the `identity-extension` block. This contains slot-specific instructions that cannot be derived from identity or brand. Follow them literally - they are precise, not general.
 
-### Step 5 — Generate per-slot content
+### Step 5 - Generate per-slot content
 
 For each slot in the purpose:
-- Respect `maxLength` — hard character limit
+- Respect `maxLength` - hard character limit
 - Use `samples` as structural reference (match the pattern, not the words)
 - Follow the `identity-extension` instructions for this slot
 
@@ -120,19 +120,19 @@ For each slot in the purpose:
 
 After generating or reviewing content, validate against these rules in order:
 
-1. **`voice.never`** — Does any generated text contain a phrase, pattern, or concept from the never list? If yes, rewrite.
-2. **`voice.always`** — Does the text follow every rule in the always list? If not, fix.
-3. **`anti-audience`** — Could this content be read as addressing an anti-audience? If yes, rewrite.
-4. **`pillars.avoid`** — Does the content touch an avoided topic area? If yes, reject.
-5. **`values`** — Does the content contradict any value's behavior statement? If yes, fix.
-6. **`sentence-max`** — Count words in every sentence. Does any exceed the limit? If yes, split.
-7. **`headline-pattern`** — Does the headline follow the specified pattern? If not, restructure.
-8. **`maxLength`** — Does each slot's content fit within its character limit? If not, shorten.
-9. **`register`** — Does the formality level match? (e.g., if `informal, Du` — no formal address)
+1. **`voice.never`** - Does any generated text contain a phrase, pattern, or concept from the never list? If yes, rewrite.
+2. **`voice.always`** - Does the text follow every rule in the always list? If not, fix.
+3. **`anti-audience`** - Could this content be read as addressing an anti-audience? If yes, rewrite.
+4. **`pillars.avoid`** - Does the content touch an avoided topic area? If yes, reject.
+5. **`values`** - Does the content contradict any value's behavior statement? If yes, fix.
+6. **`sentence-max`** - Count words in every sentence. Does any exceed the limit? If yes, split.
+7. **`headline-pattern`** - Does the headline follow the specified pattern? If not, restructure.
+8. **`maxLength`** - Does each slot's content fit within its character limit? If not, shorten.
+9. **`register`** - Does the formality level match? (e.g., if `informal, Du` - no formal address)
 
 ## What NOT to Do
 
-- **Do not restate identity in purpose-level work.** If a purpose's `identity-extension` says "keep it warm and friendly" — that belongs in `.identity`, not here. Flag it.
+- **Do not restate identity in purpose-level work.** If a purpose's `identity-extension` says "keep it warm and friendly" - that belongs in `.identity`, not here. Flag it.
 - **Do not invent voice rules.** Only apply constraints from the actual files. Your interpretation of the brand is less reliable than the authored rules.
 - **Do not mix layers.** If asked to suggest a color, look in `.brand`. If asked about audience, look in `.identity`. Never guess from the wrong layer.
 - **Do not ignore `never` rules.** These exist because the brand has been burned by generic AI output before. The `never` list is the most important part of the identity file.

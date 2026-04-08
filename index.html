@@ -9,7 +9,7 @@ description: An open file format specification for making brand intent machine-r
   <h1>Five layers.<br>One brand.<br>Any agent.</h1>
   <p class="hero-lead">
     Design tokens capture <strong>decisions</strong>. Brand guidelines capture <strong>rules</strong>.
-    Neither captures <em>intent</em> — the reasoning, the voice, the compositional logic
+    Neither captures <em>intent</em> - the reasoning, the voice, the compositional logic
     that make a brand impossible to confuse with anything else.
     Brand Intent is an open file format that makes all of it machine-readable.
   </p>
@@ -33,7 +33,7 @@ description: An open file format specification for making brand intent machine-r
 
 <!-- ═══ THE PROBLEM ═══ -->
 <section id="why" class="landing-section">
-  <span class="section-label">01 — The Problem</span>
+  <span class="section-label">01 - The Problem</span>
   <h2>Slop is the default. Intent is the exception.</h2>
 
   <div class="two-col" style="margin-top:1.5rem;">
@@ -42,12 +42,12 @@ description: An open file format specification for making brand intent machine-r
         AI-generated content has a gravity toward the generic. Without specific constraints,
         every model reaches for the same superlatives, the same structures, the same
         <strong>performed enthusiasm that belongs to no brand in particular</strong>.
-        What survives is specificity — brands that know exactly what they are, what they never say,
+        What survives is specificity - brands that know exactly what they are, what they never say,
         and why every visual decision was made. That knowledge has to be authored.
       </p>
       <p>
         Brand Intent is the missing layer: machine-readable authorship.
-        Not rules — <em>intent</em>. The reasoning that makes a brand specific,
+        Not rules - <em>intent</em>. The reasoning that makes a brand specific,
         in a format any AI agent can read and respect.
       </p>
     </div>
@@ -107,7 +107,7 @@ description: An open file format specification for making brand intent machine-r
 
 <!-- ═══ FRAMEWORK ═══ -->
 <section id="framework" class="landing-section">
-  <span class="section-label">02 — The Framework</span>
+  <span class="section-label">02 - The Framework</span>
   <h2>Every brand system answers five independent questions.</h2>
   <p>
     Most tools collapse them into one place. Brand Intent keeps them separate.
@@ -159,7 +159,7 @@ description: An open file format specification for making brand intent machine-r
 
 <!-- ═══ LAYERS ═══ -->
 <section id="layers" class="landing-section">
-  <span class="section-label">03 — The Layers</span>
+  <span class="section-label">03 - The Layers</span>
   <h2>Each file. One job. Nothing more.</h2>
 
   <!-- IDENTITY -->
@@ -168,7 +168,7 @@ description: An open file format specification for making brand intent machine-r
     <p>
       The only place brand strategy lives in machine-readable form.
       Essence, promise, voice with <code>always</code>/<code>never</code> rules,
-      content pillars, audiences — and optionally: values with behavior statements,
+      content pillars, audiences - and optionally: values with behavior statements,
       positioning, anti-audiences, narrative.
       Nothing visual. Nothing compositional.
     </p>
@@ -185,14 +185,14 @@ description: An open file format specification for making brand intent machine-r
 
 <span class="kw">voice</span>
   <span class="meta">register:</span>  <span class="val">informal, Du</span>
-  <span class="meta">persona:</span>   <span class="val">Bäckerin hinterm Tresen — direkt, trocken, stolz auf das Handwerk</span>
+  <span class="meta">persona:</span>   <span class="val">Bäckerin hinterm Tresen - direkt, trocken, stolz auf das Handwerk</span>
   <span class="meta">always:</span>
     - <span class="val">Sauerteig, not "artisan bread"</span>
     - <span class="val">konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"</span>
     - <span class="val">Backzeit in Stunden, nicht "lange Teigführung"</span>
   <span class="meta">never:</span>
     - <span class="val">Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)</span>
-    - <span class="val">"Artisan" oder "Craft" — wir sagen Handwerk</span>
+    - <span class="val">"Artisan" oder "Craft" - wir sagen Handwerk</span>
 
 <span class="kw">values</span>
   <span class="sl">Handwerk</span>
@@ -224,7 +224,7 @@ description: An open file format specification for making brand intent machine-r
     <h3>Brand</h3>
     <p>
       The derived expression intent. Colors, typography, voice constraints,
-      content defaults. Not expression itself — the authored conditions
+      content defaults. Not expression itself - the authored conditions
       that determine what valid expression looks like.
     </p>
 
@@ -305,7 +305,7 @@ description: An open file format specification for making brand intent machine-r
   <span class="meta">pillars:</span>  <span class="val">primary</span>
 
 <span class="kw">identity-extension</span>
-  <span class="val">primary is the bread name, 1–3 words.
+  <span class="val">primary is the bread name, 1-3 words.
   secondary is the weight and price ("750 g · 5,80 €").
   meta is one sentence: what makes this bread specific.</span>
 
@@ -334,12 +334,12 @@ description: An open file format specification for making brand intent machine-r
     <h3>Composition</h3>
     <p>
       Slot-to-position mappings. Two modes: <strong>grid</strong> (explicit row/column placement)
-      and <strong>flow</strong> (panels, stacks, sticky zones — content-driven arrangement).
+      and <strong>flow</strong> (panels, stacks, sticky zones - content-driven arrangement).
       Zero brand-specific information.
     </p>
 
     <details class="code-example">
-      <summary>editorial.composition — grid mode</summary>
+      <summary>editorial.composition - grid mode</summary>
 <pre><span class="kw">id:</span>    <span class="val">editorial</span>
 <span class="kw">mode:</span>  <span class="val">grid</span>
 <span class="kw">image:</span> <span class="val">full</span>
@@ -352,7 +352,7 @@ description: An open file format specification for making brand intent machine-r
     </details>
 
     <details class="code-example" style="margin-top:0.5rem;">
-      <summary>simple-stack.composition — flow mode</summary>
+      <summary>simple-stack.composition - flow mode</summary>
 <pre><span class="kw">id:</span>    <span class="val">simple-stack</span>
 <span class="kw">mode:</span>  <span class="val">flow</span>
 <span class="kw">image:</span> <span class="val">full</span>
@@ -378,7 +378,7 @@ description: An open file format specification for making brand intent machine-r
 
 <!-- ═══ GET STARTED ═══ -->
 <section id="start" class="landing-section">
-  <span class="section-label">04 — Get Started</span>
+  <span class="section-label">04 - Get Started</span>
   <h2>Your brand as infrastructure.</h2>
 
   <div class="two-col" style="margin-top:1.5rem;">
@@ -396,7 +396,7 @@ description: An open file format specification for making brand intent machine-r
         Teaches any agent how to compose Brand Intent layers into context,
         validate content against <code>voice.never</code> and <code>pillars.avoid</code>,
         and respect <code>anti-audience</code> boundaries.
-        Brand knowledge becomes infrastructure — not a prompt you write each time.
+        Brand knowledge becomes infrastructure - not a prompt you write each time.
       </p>
       <div class="install-block">
         <div class="install-cmd">
@@ -418,7 +418,7 @@ description: An open file format specification for making brand intent machine-r
     <div>
       <h3 style="margin-top:0;">3. Author your brand</h3>
       <p>
-        Start with <code>.identity</code> — the reasoning, the voice, the always/never rules,
+        Start with <code>.identity</code> - the reasoning, the voice, the always/never rules,
         values, audiences, anti-audiences.
         Then derive the expression intent in <code>.brand</code>.
         Add formats for the platforms your brand inhabits.

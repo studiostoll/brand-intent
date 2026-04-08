@@ -1,5 +1,5 @@
 # krume.identity
-# Krume — neighborhood sourdough bakery, Berlin-Neukölln.
+# Krume - neighborhood sourdough bakery, Berlin-Neukölln.
 # This file is the reference implementation for Brand Intent.
 # Every decision is commented to explain its derivation.
 
@@ -18,7 +18,7 @@ tagline:  Mehl, Wasser, Zeit.  # also known as "Claim" (DACH)
 positioning:  Krume ist die einzige Bäckerei im Kiez, die jedes
               Brot beim Mehl nennt, nicht beim Marketing.
 
-mission:  Ehrliches Brot für den Kiez — jeden Tag, aus dem
+mission:  Ehrliches Brot für den Kiez - jeden Tag, aus dem
           gleichen Ofen, mit den gleichen Händen.
 
 vision:  Eine Nachbarschaft, in der niemand mehr erklären muss,
@@ -45,7 +45,7 @@ narrative
 
 voice
   register:  informal, Du
-  persona:   Bäckerin hinterm Tresen — direkt, trocken, stolz auf das Handwerk
+  persona:   Bäckerin hinterm Tresen - direkt, trocken, stolz auf das Handwerk
   rhythm:    kurze Sätze, konkrete Angaben, kein Erklären
 
   # always/never: concrete, testable rules.
@@ -60,13 +60,13 @@ voice
 
   never:
     - Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)
-    - "Artisan" oder "Craft" — wir sagen Handwerk
+    - "Artisan" oder "Craft" - wir sagen Handwerk
     - Englische Begriffe wenn ein deutsches Wort existiert
     - Superlative ohne Substanz (bestes Brot, einzigartiger Geschmack)
     - Wellness- oder Gesundheitsversprechen (gut für dich, clean eating)
 
 # ── Values ──
-# Not keywords — behavior statements. Each value describes
+# Not keywords - behavior statements. Each value describes
 # how it manifests in what we say and do.
 
 values
@@ -95,14 +95,14 @@ pillars
 
 # ── Audiences ──
 # Two audiences with genuinely different language needs.
-# The regulars don't need explanations. The newcomers do —
+# The regulars don't need explanations. The newcomers do -
 # but never in a condescending way.
 
 audience regulars
   label:       Stammkunden aus dem Kiez
-  profile:     25–65, täglich oder wöchentlich, kennen die Sorten
+  profile:     25-65, täglich oder wöchentlich, kennen die Sorten
   motivation:  ihr Brot, ihr Laden, verlässlicher Rhythmus
-  language:    knapp, direkt, kein Erklären — die wissen Bescheid
+  language:    knapp, direkt, kein Erklären - die wissen Bescheid
 
 audience newcomers
   label:       Neugierige und Laufkundschaft
@@ -123,5 +123,5 @@ anti-audience discount-hunters
   label:       Schnäppchenjäger
   description: Wer den Preis eines Sauerteigbrots mit dem
                Supermarkt-Toastbrot vergleicht, ist hier falsch.
-               Wir erklären gerne warum es kostet was es kostet —
+               Wir erklären gerne warum es kostet was es kostet -
                aber wir rechtfertigen uns nicht.

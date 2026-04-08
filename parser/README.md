@@ -1,4 +1,4 @@
-# Brand Intent — Reference Parser
+# Brand Intent - Reference Parser
 
 TypeScript parsers for all five Brand Intent file types.
 
@@ -33,5 +33,5 @@ const brand = parseBrandFile(
 
 ## Notes
 
-- The composition parser exports `parseLayoutFile()` — the function name will be updated to `parseCompositionFile()` in a future version.
+- The composition parser exports `parseLayoutFile()` - the function name will be updated to `parseCompositionFile()` in a future version.
 - These parsers throw on validation errors, with the filename and line number included in the error message.

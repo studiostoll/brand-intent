@@ -10,7 +10,7 @@ Identity → Brand → Format → Purpose → Composition
 
 ## What this is
 
-Design tokens capture decisions. Brand guidelines capture rules. Neither captures *intent* — the reasoning, the derived expression conditions, the signal-level decisions that make a brand specific.
+Design tokens capture decisions. Brand guidelines capture rules. Neither captures *intent* - the reasoning, the derived expression conditions, the signal-level decisions that make a brand specific.
 
 Brand Intent is a set of five composable file types that encode brand knowledge from strategy to composition, in a format any AI agent can read and respect.
 
@@ -50,9 +50,9 @@ npx brand-intent init --from krume
 
 ## Documentation
 
-- [Specification](SPEC.md) — formal grammar for all five file types
-- [Design Decisions](DESIGN.md) — reasoning behind the framework
-- [intent.stoll.studio](https://intent.stoll.studio) — project landing page
+- [Specification](SPEC.md) - formal grammar for all five file types
+- [Design Decisions](DESIGN.md) - reasoning behind the framework
+- [intent.stoll.studio](https://intent.stoll.studio) - project landing page
 
 ## Relationship to Impeccable
 

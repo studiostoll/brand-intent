@@ -1,5 +1,5 @@
 # daily-bread.purpose
-# A single bread announcement — today's bread, name and facts.
+# A single bread announcement - today's bread, name and facts.
 # Used for daily Instagram posts: what's fresh, what's available.
 
 id:   daily-bread
@@ -19,12 +19,12 @@ identity-filter
   pillars:  primary
 
 # Extension: only what is genuinely specific to this content type.
-# These are slot-level instructions — not voice, not production params.
+# These are slot-level instructions - not voice, not production params.
 identity-extension
-  primary is the bread name, 1–3 words (e.g. "Roggenlaib").
+  primary is the bread name, 1-3 words (e.g. "Roggenlaib").
   secondary is the weight and price ("750 g · 5,80 €").
   meta is one sentence: what makes this bread specific today.
-  Never describe the bread as "delicious" or "special" —
+  Never describe the bread as "delicious" or "special" -
   state a fact (flour type, fermentation time, seasonal ingredient).
 
 # ── Slots ──

@@ -1,4 +1,4 @@
-# krume.brand — expression intent derived from krume.identity
+# krume.brand - expression intent derived from krume.identity
 # Every decision here should be traceable to a statement in the identity file.
 # No strategic reasoning. No audience definitions. No prose.
 
@@ -12,11 +12,11 @@ locale:   de-DE
 # warm wood, flour dust, rye. No corporate blue, no lifestyle pastels.
 
 brand-colors
-  primary:   #2C1810   # dark roast — the color of a well-baked crust
-  secondary: #5C3A28   # walnut — warm wood of the shop counter
-  accent1:   #C8A47E   # crust — golden, used for dividers and highlights
-  accent2:   #8B4513   # rye — deep warm brown for CTAs
-  white:     #FAF6F0   # flour — not pure white, slightly warm
+  primary:   #2C1810   # dark roast - the color of a well-baked crust
+  secondary: #5C3A28   # walnut - warm wood of the shop counter
+  accent1:   #C8A47E   # crust - golden, used for dividers and highlights
+  accent2:   #8B4513   # rye - deep warm brown for CTAs
+  white:     #FAF6F0   # flour - not pure white, slightly warm
 
 # ── Themes ──
 # Laden (shop): light background, dark text. The everyday.
@@ -56,7 +56,7 @@ font primary
 typography headline
   weight:      700
   strong:      800
-  size:        6          # cqh — large but not shouting
+  size:        6          # cqh - large but not shouting
   lineHeight:  1.15
   autofit-min: 4
   autofit-max: 10
@@ -84,7 +84,7 @@ typography label
 
 typography number
   weight:      300
-  size:        14        # intentionally large — display element
+  size:        14        # intentionally large - display element
   lineHeight:  0.9
   letterSpacing: -0.03
 
@@ -121,7 +121,7 @@ divider short
 
 voice-constraints
   register:         informal
-  sentence-max:     8         # words — short, direct, like the baker talks
+  sentence-max:     8         # words - short, direct, like the baker talks
   headline-pattern: noun-first
   number-format:    cardinal  # "drei", not "3"
 
