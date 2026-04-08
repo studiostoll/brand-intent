@@ -8,11 +8,19 @@ name: Tagesbrot
 # Which compositions can render this purpose.
 compositions: editorial, simple-stack
 
-density: low
+density: light
+palette: dynamic
+
+# ── Voice ──
+# Purpose-specific writing rules for AI text generation.
+
+voice
+  headline-pattern: noun-first
+  number-format: digit
+  sentence-max: 8
 
 # ── Identity Composition ──
 # Filter the composed upstream: both audiences, primary pillars only.
-# voice.always, voice.never, and voice-constraints are included automatically.
 
 scope
   audience: regulars, newcomers

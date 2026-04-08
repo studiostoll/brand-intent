@@ -409,8 +409,10 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `name:` | string | No | Display name (derived from id if omitted) |
 | `compositions:` | list | Yes | Valid composition IDs for this purpose |
 | `density:` | enum | No | `light` \| `medium` \| `full` |
+| `palette:` | string | No | Color palette strategy (see below) |
 | `scope` | block | No | Narrows the composed upstream |
 | `context` | block | No | Adds purpose-specific AI context |
+| `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable) |
 
 ### Semantic Slots
@@ -476,7 +478,7 @@ Selects a relevant subset of the composed upstream (`.identity` + `.brand` resol
 | `audience:` | list | Audience IDs to include from `.identity` |
 | `pillars:` | enum | `primary` \| `secondary` \| `all` (pillar scope) |
 
-Voice rules (`always`, `never`) and `voice-constraints` from `.brand` are always included unless explicitly excluded.
+Voice rules (`always`, `never`) from `.identity` are always included. Purpose-specific voice overrides live in the `voice` block on the purpose.
 
 ### `context` Block
 
@@ -494,6 +496,37 @@ context
   secondary is the weight ("750 g") or slice count.
   meta is one sentence: what makes this bread specific.
 ```
+
+### `voice` Block
+
+Purpose-specific writing rules as key-value pairs (2-space indent). These are operationalized constraints for AI text generation — not voice strategy (that lives in `.identity`), but concrete rules for this content type.
+
+```yaml
+voice
+  number-format: digit
+  headline-pattern: noun-first
+  sentence-max: 8
+```
+
+Common keys: `number-format` (digit | word), `headline-pattern` (noun-first | verb-first | any), `sentence-max` (max words per sentence). Keys are not fixed — any key-value pair is valid. The AI agent receives them as-is.
+
+### `palette:` Field
+
+Determines which color palette to use for this purpose. The brand defines available themes (in `.brand` theme blocks); the purpose decides which one to use.
+
+| Value | Behaviour |
+|-------|-----------|
+| `dynamic` | Derive colors from photo analysis (default when omitted) |
+| `<ThemeName>` | Always use this named theme (e.g. `palette: Basic`) |
+| `rotate <T1>, <T2>, ...` | Cycle through named themes on shuffle |
+
+```yaml
+palette: dynamic          # photo-derived colors (default)
+palette: Basic            # always use the Basic theme
+palette: rotate Basic, Strand   # alternate between two themes
+```
+
+When `palette` is absent, behaviour is `dynamic` — colors are derived from the photo when one is present, or randomized when no photo is set.
 
 ### Exclusion Rule
 
@@ -649,9 +682,9 @@ The purpose does not filter `.identity` and `.brand` separately. It filters the 
 ### Composition Rules
 
 1. `voice.always` and `voice.never` from `.identity` are **always included** unless explicitly excluded by `scope`.
-2. `voice-constraints` and `content-defaults` from `.brand` are **always included** automatically.
-3. `scope.audience` selects which audience blocks to include from `.identity`.
-4. `scope.pillars` restricts the pillar scope.
+2. `scope.audience` selects which audience blocks to include from `.identity`.
+3. `scope.pillars` restricts the pillar scope.
+4. `voice` on the purpose adds or overrides writing rules for this content type.
 5. `context` adds text that is not present in any upstream layer.
 6. If the same key appears in `context` and an upstream layer, the upstream value takes precedence (the context should not restate upstream).
 

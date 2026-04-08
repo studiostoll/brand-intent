@@ -23,6 +23,10 @@ export interface ParsedPurpose {
   scope?: { audience?: string[]; pillars?: string };
   /** Context — purpose-specific slot guidance (free-form text). */
   context?: string;
+  /** Voice hints — purpose-specific writing rules for AI text generation. */
+  voice?: Record<string, string>;
+  /** Palette strategy: 'dynamic' (default), a theme name, or 'rotate T1, T2'. */
+  palette?: string;
   /** Default icon (Phosphor PascalCase name, e.g. "ArrowRight"). */
   defaultIcon?: string;
   /** Default icon weight. */
@@ -99,8 +103,11 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let archetypes: string[] | null = null;
   let scope: { audience?: string[]; pillars?: string } | undefined;
   let context: string | undefined;
+  let voice: Record<string, string> | undefined;
+  let palette: string | undefined;
   let inScopeBlock = false;
   let inContextBlock = false;
+  let inVoiceBlock = false;
   const contextLines: string[] = [];
   let density: Density | undefined;
   let defaultIcon: string | undefined;
@@ -179,6 +186,16 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     if (line === 'context') {
       inContextBlock = true;
       inScopeBlock = false;
+      inVoiceBlock = false;
+      continue;
+    }
+
+    // voice block header
+    if (line === 'voice') {
+      inVoiceBlock = true;
+      inScopeBlock = false;
+      inContextBlock = false;
+      voice = voice ?? {};
       continue;
     }
 
@@ -196,6 +213,18 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       inScopeBlock = false;
     }
 
+    // voice block properties (2-space indent, key: value)
+    if (inVoiceBlock && raw.startsWith('  ') && !raw.startsWith('    ')) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx !== -1) {
+        voice = voice ?? {};
+        voice[line.slice(0, colonIdx).trim()] = line.slice(colonIdx + 1).trim();
+      }
+      continue;
+    } else if (inVoiceBlock && !raw.startsWith('  ')) {
+      inVoiceBlock = false;
+    }
+
     // context block lines (indented free-form text)
     if (inContextBlock && raw.startsWith('  ')) {
       contextLines.push(line);
@@ -210,11 +239,18 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // Archetypes
-    if (line.startsWith('archetypes:')) {
-      const value = line.slice(11).trim();
+    // Compositions (accepts "compositions:" and legacy "archetypes:")
+    if (line.startsWith('compositions:') || line.startsWith('archetypes:')) {
+      const colonIdx = line.indexOf(':');
+      const value = line.slice(colonIdx + 1).trim();
       archetypes = value.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
-      if (archetypes.length === 0) throw new Error(`${fileName}:${lineNum}: empty archetypes list`);
+      if (archetypes.length === 0) throw new Error(`${fileName}:${lineNum}: empty compositions list`);
+      continue;
+    }
+
+    // Palette strategy
+    if (line.startsWith('palette:')) {
+      palette = line.slice(8).trim();
       continue;
     }
 
@@ -512,7 +548,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   }
 
   // Validate required fields
-  if (!archetypes) throw new Error(`${fileName}: missing "archetypes:" line`);
+  if (!archetypes) throw new Error(`${fileName}: missing "compositions:" line`);
   if (slots.length === 0) throw new Error(`${fileName}: no slots defined`);
 
   // Derive display name from id if not provided: capitalize first letter of each word
@@ -525,5 +561,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredArchetypes: archetypes, slots, density, scope, context, defaultIcon, defaultIconWeight };
+  return { id, name, description, preferredArchetypes: archetypes, slots, density, palette, scope, context, voice, defaultIcon, defaultIconWeight };
 }
