@@ -43,7 +43,7 @@
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-medium);
   background: var(--color-accent-2);
-  color: var(--color-white);
+  color: var(--color-surface);
   padding: 0.6rem 1.2rem;
   border-radius: 3px;
   text-decoration: none;
