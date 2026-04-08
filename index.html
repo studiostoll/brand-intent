@@ -1,0 +1,398 @@
+---
+layout: default
+title: Five layers. One brand. Any agent.
+description: An open file format specification for making brand intent machine-readable.
+---
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <h1>Five layers.<br>One brand.<br>Any agent.</h1>
+  <p class="hero-lead">
+    Design tokens capture <strong>decisions</strong>. Brand guidelines capture <strong>rules</strong>.
+    Neither captures <em>intent</em> — the reasoning, the voice, the compositional logic
+    that make a brand impossible to confuse with anything else.
+    Brand Intent is an open file format that makes all of it machine-readable.
+  </p>
+  <div class="hero-cta">
+    <a href="#start" class="btn-primary">Get started</a>
+    <a href="#framework" class="btn-ghost">Read the framework</a>
+  </div>
+  <div class="layer-chain">
+    <span>identity</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span>brand</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span>format</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span>purpose</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span>composition</span>
+  </div>
+</section>
+
+
+<!-- ═══ THE PROBLEM ═══ -->
+<section id="why" class="landing-section">
+  <span class="section-label">01 — The Problem</span>
+  <h2>Slop is the default. Intent is the exception.</h2>
+
+  <div class="two-col" style="margin-top:1.5rem;">
+    <div>
+      <p>
+        AI-generated content has a gravity toward the generic. Without specific constraints,
+        every model reaches for the same superlatives, the same structures, the same
+        <strong>performed enthusiasm that belongs to no brand in particular</strong>.
+        What survives is specificity — brands that know exactly what they are, what they never say,
+        and why every visual decision was made. That knowledge has to be authored.
+      </p>
+      <p>
+        Brand Intent is the missing layer: machine-readable authorship.
+        Not rules — <em>intent</em>. The reasoning that makes a brand specific,
+        in a format any AI agent can read and respect.
+      </p>
+    </div>
+    <div>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Format</th>
+            <th>Visual</th>
+            <th>Voice</th>
+            <th>Intent</th>
+            <th>Audience</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Design tokens</td>
+            <td class="check">&check;</td>
+            <td class="cross">&mdash;</td>
+            <td class="cross">&mdash;</td>
+            <td class="cross">&mdash;</td>
+          </tr>
+          <tr>
+            <td>Brand guidelines</td>
+            <td class="check">&check;</td>
+            <td class="check">&check;</td>
+            <td class="cross">&mdash;</td>
+            <td class="cross">&mdash;</td>
+          </tr>
+          <tr>
+            <td>DAM / brand portal</td>
+            <td class="check">&check;</td>
+            <td class="check">partial</td>
+            <td class="cross">&mdash;</td>
+            <td class="cross">&mdash;</td>
+          </tr>
+          <tr>
+            <td>Prompt engineering</td>
+            <td class="cross">&mdash;</td>
+            <td class="check">&check;</td>
+            <td class="check">&check;</td>
+            <td class="check">&check;</td>
+          </tr>
+          <tr>
+            <td><strong>Brand Intent</strong></td>
+            <td class="check">&check;</td>
+            <td class="check">&check;</td>
+            <td class="check">&check;</td>
+            <td class="check">&check;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ FRAMEWORK ═══ -->
+<section id="framework" class="landing-section">
+  <span class="section-label">02 — The Framework</span>
+  <h2>Every brand system answers five independent questions.</h2>
+  <p>
+    Most tools collapse them into one place. Brand Intent keeps them separate.
+    Each question has its own file type. Each file type has one job.
+    That separation is what makes the system composable.
+  </p>
+
+  <div class="questions-grid">
+    <div class="question-card">
+      <div class="q-number">01</div>
+      <div class="q-question">Who is this brand?</div>
+      <div class="q-answer">Identity</div>
+      <div class="q-file">.identity</div>
+    </div>
+    <div class="question-card">
+      <div class="q-number">02</div>
+      <div class="q-question">What expression intent does it derive?</div>
+      <div class="q-answer">Brand</div>
+      <div class="q-file">.brand</div>
+    </div>
+    <div class="question-card">
+      <div class="q-number">03</div>
+      <div class="q-question">Where does it appear?</div>
+      <div class="q-answer">Format</div>
+      <div class="q-file">.format</div>
+    </div>
+    <div class="question-card">
+      <div class="q-number">04</div>
+      <div class="q-question">What is this content trying to do?</div>
+      <div class="q-answer">Purpose</div>
+      <div class="q-file">.purpose</div>
+    </div>
+    <div class="question-card full-width">
+      <div class="q-number">05</div>
+      <div class="q-question">How are elements composed to achieve that intent?</div>
+      <div class="q-answer">Composition</div>
+      <div class="q-file">.composition</div>
+    </div>
+  </div>
+
+  <p>
+    The arrow is a <em>derivation</em> arrow. Identity contains reasoning.
+    Brand derives expression intent from that reasoning.
+    Format, Purpose, and Composition condition specific acts of expression
+    without repeating what upstream layers establish.
+  </p>
+</section>
+
+
+<!-- ═══ LAYERS ═══ -->
+<section id="layers" class="landing-section">
+  <span class="section-label">03 — The Layers</span>
+  <h2>Each file. One job. Nothing more.</h2>
+
+  <!-- IDENTITY — shown in full as the most novel layer -->
+  <div class="layer-detail">
+    <div class="layer-header">
+      <div class="layer-index">I &rarr;</div>
+      <div class="layer-name">Identity</div>
+    </div>
+    <div class="layer-rule">
+      The identity file is the only place brand strategy lives in machine-readable form.
+      Voice, register, positioning, content pillars, audience definitions.
+      Nothing visual. Nothing compositional.
+    </div>
+    <p>
+      The <code>always</code> / <code>never</code> construct is its most powerful primitive:
+      concrete, parseable rules an AI can follow without interpretation.
+      <em>"Always say Ostsee, never Nordsee"</em> is more useful to a model than
+      <em>"brand voice: warm and nature-oriented."</em>
+    </p>
+
+    <div class="file-label">fehmarn.identity</div>
+<pre><span class="cm"># Fehmarn — Brand Identity</span>
+
+<span class="kw">essence:</span>  <span class="val">Fehmarn ist das Draußen-Sein. Wind, Weite, echtes Inselleben.</span>
+<span class="kw">promise:</span>  <span class="val">Wer kommt, spürt sofort: hier ist das Wetter kein Hintergrund,
+          es ist das Erlebnis.</span>
+
+<span class="kw">voice</span>
+  <span class="meta">register:</span>  <span class="val">informal, Du</span>
+  <span class="meta">persona:</span>   <span class="val">ortskundige Freundin — begeistert, konkret, nie werblich</span>
+
+  <span class="meta">always:</span>
+    - <span class="val">Ostsee, not Nordsee</span>
+    - <span class="val">Du, not Sie</span>
+    - <span class="val">konkrete Ortsnamen (Südstrand, Staberhuk) over "die Insel"</span>
+
+  <span class="meta">never:</span>
+    - <span class="val">Superlative ohne Substanz (schönste, größte, unvergessliche)</span>
+    - <span class="val">Tourismus-Floskeln (Traumurlaub, Erholung pur)</span>
+
+<span class="kw">pillars</span>
+  <span class="meta">primary:</span>   <span class="val">Windsport, Natur, Draußen-Leben, Ostsee</span>
+  <span class="meta">avoid:</span>     <span class="val">Wellness-Tourismus, Massentourismus-Narrative</span>
+
+<span class="kw">audience</span> windsport
+  <span class="meta">label:</span>       <span class="val">Windsport-Enthusiasten</span>
+  <span class="meta">motivation:</span>  <span class="val">optimale Bedingungen finden, Insider-Wissen</span>
+  <span class="meta">language:</span>    <span class="val">präzise, sportlich, auf Augenhöhe — kein Lehrton</span></pre>
+
+    <div class="excludes">
+      <strong>This file contains no:</strong>
+      <ul>
+        <li>hex values or color references</li>
+        <li>font names or type sizes</li>
+        <li>composition rules or canvas specs</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- BRAND — shown condensed -->
+  <div class="layer-detail">
+    <div class="layer-header">
+      <div class="layer-index">B &rarr;</div>
+      <div class="layer-name">Brand</div>
+    </div>
+    <div class="layer-rule">
+      The derived expression intent of the identity. Colors, typography, operationalized voice parameters,
+      content defaults. Not expression itself — the authored conditions that determine what valid expression looks like.
+    </div>
+    <p>
+      A hex value in a theme is not a color on screen — it is an <strong>intent</strong> that a renderer realizes.
+      The identity says <em>"persona: knowledgeable local friend."</em>
+      The brand derives <code>sentence-max: 12</code> and <code>headline-pattern: verb-first</code> from that.
+    </p>
+
+    <div class="file-label">fehmarn.brand (excerpt)</div>
+<pre><span class="kw">brand-colors</span>
+  <span class="meta">primary:</span>   <span class="val">#0324B1</span>  <span class="cm"># Pantone 286 C</span>
+  <span class="meta">accent1:</span>   <span class="val">#E32D39</span>
+  <span class="meta">accent2:</span>   <span class="val">#84D3DA</span>
+
+<span class="kw">theme</span> Basic
+  <span class="meta">background:</span>     <span class="ref">$primary</span>
+  <span class="meta">text-primary:</span>   <span class="ref">$white</span>
+  <span class="meta">cta:</span>            <span class="ref">$accent1</span>
+
+<span class="kw">typography</span> headline
+  <span class="meta">weight:</span>       <span class="num">800</span>
+  <span class="meta">size:</span>         <span class="num">8</span>      <span class="cm"># cqh</span>
+  <span class="meta">autofit-min:</span>  <span class="num">4</span>
+  <span class="meta">autofit-max:</span>  <span class="num">12</span>
+
+<span class="kw">voice-tokens</span>
+  <span class="meta">register:</span>         <span class="val">informal</span>
+  <span class="meta">sentence-max:</span>     <span class="num">12</span>
+  <span class="meta">headline-pattern:</span> <span class="val">verb-first</span></pre>
+  </div>
+
+  <hr>
+
+  <!-- FORMAT, PURPOSE, COMPOSITION — brief summaries -->
+  <div class="layer-detail">
+    <div class="layer-header">
+      <div class="layer-index">F &rarr;</div>
+      <div class="layer-name">Format</div>
+    </div>
+    <p>
+      Platform, canvas dimensions, safe zones (danger / crop / comfort), grid spec,
+      and which purposes are editorially valid for this surface.
+      No colors. No typography. No composition rules.
+    </p>
+  </div>
+
+  <div class="layer-detail">
+    <div class="layer-header">
+      <div class="layer-index">P &rarr;</div>
+      <div class="layer-name">Purpose</div>
+    </div>
+    <p>
+      Defines a content type through semantic slots (<code>primary</code>, <code>secondary</code>,
+      <code>meta</code>, <code>label</code>, <code>cta</code>).
+      Uses <code>identity-filter</code> to narrow the composed upstream
+      and <code>identity-extension</code> to add only what is genuinely slot-specific.
+    </p>
+  </div>
+
+  <div class="layer-detail">
+    <div class="layer-header">
+      <div class="layer-index">C &rarr;</div>
+      <div class="layer-name">Composition</div>
+    </div>
+    <p>
+      Slot-to-position mappings. Two modes: <strong>grid</strong> (explicit row/column placement)
+      and <strong>flow</strong> (panels, stacks, sticky zones — content-driven arrangement).
+      Zero brand-specific information. Compositions are the most reusable layer.
+    </p>
+  </div>
+
+  <p style="margin-top:1.5rem;">
+    <a href="https://github.com/" class="btn-ghost">Full specification on GitHub</a>
+  </p>
+</section>
+
+
+<!-- ═══ FOR AGENTS ═══ -->
+<section id="agents" class="landing-section">
+  <span class="section-label">04 — For AI Agents</span>
+  <h2>Your brand as infrastructure.</h2>
+
+  <div class="two-col">
+    <div>
+      <p>
+        Brand Intent ships with a skill file — compatible with Claude Code, Cursor, Gemini CLI,
+        and other AI harnesses — that teaches any agent how to parse and compose Brand Intent layers.
+      </p>
+      <p>
+        Once installed, an agent understands the derivation chain:
+        how <code>identity-filter</code> narrows the composed upstream,
+        how to validate content against <code>voice.never</code> and <code>pillars.avoid</code>.
+        Brand knowledge becomes infrastructure — not a prompt you write each time.
+      </p>
+      <p>
+        Complementary to <a href="https://impeccable.style">Impeccable</a>:
+        where Impeccable teaches agents <em>how to design well</em>,
+        Brand Intent teaches them <em>what this brand's expression intent is</em>.
+      </p>
+    </div>
+    <div>
+      <div class="install-block">
+        <div class="install-label">Install skills (once, org-wide)</div>
+        <div class="install-cmd">
+          <span class="prompt">$</span>npx brand-intent install-skills
+        </div>
+      </div>
+      <div class="install-block">
+        <div class="install-label">Add a brand to a project</div>
+        <div class="install-cmd">
+          <span class="prompt">$</span>npx brand-intent add fehmarn/brand
+        </div>
+      </div>
+      <div class="install-block">
+        <div class="install-label">Works with</div>
+        <div style="font-family:var(--font-monospace);font-size:var(--font-size-small);color:var(--color-secondary);line-height:2;">
+          Claude Code &middot; Cursor &middot; Gemini CLI<br>
+          VS Code Copilot &middot; Codex CLI
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ GET STARTED ═══ -->
+<section id="start" class="landing-section">
+  <span class="section-label">05 — Get Started</span>
+  <h2>Three steps to a machine-readable brand.</h2>
+
+  <div class="two-col" style="margin-top:1.5rem;">
+    <div>
+      <h3 style="margin-top:0;">1. Install the VS Code extension</h3>
+      <p>Syntax highlighting, autocomplete, and validation for all five file types.</p>
+      <div class="install-block">
+        <div class="install-cmd">
+          <span class="prompt">ext</span>install stoll.bif-language
+        </div>
+      </div>
+
+      <h3>2. Install agent skills</h3>
+      <p>Teach your AI harness how to read Brand Intent layers.</p>
+      <div class="install-block">
+        <div class="install-cmd">
+          <span class="prompt">$</span>npx brand-intent install-skills
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">3. Author your brand</h3>
+      <p>
+        Start with <code>.identity</code> — the reasoning, the voice, the always/never rules.
+        Then derive the expression intent in <code>.brand</code>.
+        Add formats for the platforms your brand inhabits.
+        Purposes and compositions follow.
+      </p>
+      <p>
+        The Fehmarn brand is included as a fully commented reference implementation.
+      </p>
+      <div class="install-block">
+        <div class="install-cmd">
+          <span class="prompt">$</span>npx brand-intent init --from fehmarn
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

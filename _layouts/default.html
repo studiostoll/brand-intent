@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page.title %}{{ page.title }} — {% endif %}{{ site.title }}</title>
+    <meta name="description" content="{{ page.description | default: site.description }}">
+    <meta name="author" content="{{ site.author }}">
+    {% if page.noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
+    <meta name="theme-color" content="#ffff00" />
+    <link rel="canonical" href="{{ page.url | absolute_url }}">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ page.url | absolute_url }}">
+    <meta property="og:title" content="{{ page.title | default: site.title }}">
+    <meta property="og:description" content="{{ page.description | default: site.description }}">
+    <meta property="og:site_name" content="{{ site.title }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ '/css/base.css' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/css/landing.css' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/_themes/css/themes.css' | relative_url }}">
+
+    <!-- Critical theme script - prevent flash -->
+    <script>
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var theme = params.get('theme');
+        if (theme && theme !== 'light') {
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+</head>
+
+<body>
+    <!-- Main Container -->
+    <div class="container content">
+        <!-- Skip Navigation -->
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+
+        <!-- Header -->
+        <header class="masthead" role="banner">
+            <h1 class="masthead-title">
+                <a href="{{ '/' | relative_url }}" class="sitename" title="Home">Brand Intent</a>
+                <small class="tagline">open specification</small>
+            </h1>
+            <nav class="nav" role="navigation" aria-label="Main navigation">
+                <ul>
+                    <li><a href="#framework">Framework</a></li>
+                    <li><a href="#layers">Layers</a></li>
+                    <li><a href="#agents">For Agents</a></li>
+                    <li><a href="https://github.com/" class="nav-github">GitHub</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Content -->
+        <main id="main-content" role="main">
+        {{ content }}
+        </main>
+
+        <!-- Footer -->
+        <hr />
+        <footer class="footer" role="contentinfo">
+            <small class="footer-text">
+              Brand Intent — open specification by <a href="https://stoll.studio">Christophe Stoll</a>
+            </small>
+            <small class="theme-switcher" aria-label="Theme switcher">
+              <span class="theme-links">
+                <a href="?theme=light" data-theme-switch="light">Light</a>
+                <a href="?theme=dark" data-theme-switch="dark">Dark</a>
+                <a href="?theme=vibrant" data-theme-switch="vibrant">Vibrant</a>
+                <a href="?theme=terminal" data-theme-switch="terminal">Terminal</a>
+              </span>
+              <select class="theme-select" aria-label="Choose theme">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="vibrant">Vibrant</option>
+                <option value="terminal">Terminal</option>
+              </select>
+            </small>
+        </footer>
+    </div>
+
+    <!-- Theme Switcher -->
+    <script src="{{ '/_themes/js/theme-switcher.js' | relative_url }}"></script>
+
+    <!-- Footer theme switcher -->
+    <script>
+    (function() {
+      var switcher = document.querySelector('.theme-switcher');
+      if (!switcher) return;
+
+      function getActiveTheme() {
+        return document.documentElement.getAttribute('data-theme') || 'light';
+      }
+
+      function markActive() {
+        var current = getActiveTheme();
+        switcher.querySelectorAll('[data-theme-switch]').forEach(function(a) {
+          a.classList.toggle('active', a.getAttribute('data-theme-switch') === current);
+        });
+        var sel = document.querySelector('.theme-select');
+        if (sel) sel.value = current;
+      }
+
+      switcher.addEventListener('click', function(e) {
+        var link = e.target.closest('[data-theme-switch]');
+        if (!link) return;
+        e.preventDefault();
+        var theme = link.getAttribute('data-theme-switch');
+        var html = document.documentElement;
+        if (theme && theme !== 'light') {
+          html.setAttribute('data-theme', theme);
+        } else {
+          html.removeAttribute('data-theme');
+        }
+        var url = new URL(window.location);
+        if (theme && theme !== 'light') {
+          url.searchParams.set('theme', theme);
+        } else {
+          url.searchParams.delete('theme');
+        }
+        history.replaceState(null, '', url);
+        markActive();
+      });
+
+      var themeSelect = document.querySelector('.theme-select');
+      if (themeSelect) {
+        themeSelect.value = getActiveTheme();
+        themeSelect.addEventListener('change', function() {
+          var theme = themeSelect.value;
+          var html = document.documentElement;
+          if (theme && theme !== 'light') {
+            html.setAttribute('data-theme', theme);
+          } else {
+            html.removeAttribute('data-theme');
+          }
+          var url = new URL(window.location);
+          if (theme && theme !== 'light') {
+            url.searchParams.set('theme', theme);
+          } else {
+            url.searchParams.delete('theme');
+          }
+          history.replaceState(null, '', url);
+          markActive();
+        });
+      }
+
+      markActive();
+    })();
+    </script>
+</body>
+</html>
