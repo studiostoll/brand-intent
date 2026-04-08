@@ -1,0 +1,66 @@
+# krume.identity
+# Krume — neighborhood sourdough bakery, Berlin-Neukölln.
+# This file is the reference implementation for Brand Intent.
+# Every decision is commented to explain its derivation.
+
+# ── Positioning ──
+# Krume exists because its founder believes bread is craft,
+# not lifestyle. The bakery is small, the hours are early,
+# the sourdough is slow. Nothing about this is "curated."
+
+essence:  Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.
+
+promise:  Wer reinkommt, riecht sofort, dass hier seit vier Uhr
+          morgens jemand steht.
+
+# ── Voice ──
+# The voice is the baker herself: direct, dry, proud of the work.
+# Not warm-and-fuzzy. Not educational. Not performative.
+# She talks the way she'd talk to someone across the counter.
+
+voice
+  register:  informal, Du
+  persona:   Bäckerin hinterm Tresen — direkt, trocken, stolz auf das Handwerk
+  rhythm:    kurze Sätze, konkrete Angaben, kein Erklären
+
+  # always/never: concrete, testable rules.
+  # An AI agent can evaluate any text against these with a yes/no answer.
+
+  always:
+    - Sauerteig, not "artisan bread"
+    - konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"
+    - Backzeit in Stunden, nicht "lange Teigführung"
+    - Kiez-Bezug (Neukölln, Weserstraße) over "unser Standort"
+    - Gewicht in Gramm bei jedem Brot
+
+  never:
+    - Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)
+    - "Artisan" oder "Craft" — wir sagen Handwerk
+    - Englische Begriffe wenn ein deutsches Wort existiert
+    - Superlative ohne Substanz (bestes Brot, einzigartiger Geschmack)
+    - Wellness- oder Gesundheitsversprechen (gut für dich, clean eating)
+
+# ── Content Pillars ──
+# What Krume talks about, and what it explicitly avoids.
+
+pillars
+  primary:   Sauerteig, Handwerk, Zutaten, Kiez
+  secondary: Saisonales, Nachhaltigkeit, Backwissen
+  avoid:     Lifestyle-Gastronomie, Wellness-Ernährung, Influencer-Kultur
+
+# ── Audiences ──
+# Two audiences with genuinely different language needs.
+# The regulars don't need explanations. The newcomers do —
+# but never in a condescending way.
+
+audience regulars
+  label:       Stammkunden aus dem Kiez
+  profile:     25–65, täglich oder wöchentlich, kennen die Sorten
+  motivation:  ihr Brot, ihr Laden, verlässlicher Rhythmus
+  language:    knapp, direkt, kein Erklären — die wissen Bescheid
+
+audience newcomers
+  label:       Neugierige und Laufkundschaft
+  profile:     Touristen, neue Nachbarn, Marktbesucher
+  motivation:  gutes Brot finden, verstehen was anders ist
+  language:    einladend, konkret, erklärt ohne belehrend zu sein

@@ -1,0 +1,135 @@
+# krume.brand — expression intent derived from krume.identity
+# Every decision here should be traceable to a statement in the identity file.
+# No strategic reasoning. No audience definitions. No prose.
+
+id:       krume
+name:     Krume
+language: de
+locale:   de-DE
+
+# ── Color Primitives ──
+# Derived from the bakery's material world: dark roasted crust,
+# warm wood, flour dust, rye. No corporate blue, no lifestyle pastels.
+
+brand-colors
+  primary:   #2C1810   # dark roast — the color of a well-baked crust
+  secondary: #5C3A28   # walnut — warm wood of the shop counter
+  accent1:   #C8A47E   # crust — golden, used for dividers and highlights
+  accent2:   #8B4513   # rye — deep warm brown for CTAs
+  white:     #FAF6F0   # flour — not pure white, slightly warm
+
+# ── Themes ──
+# Laden (shop): light background, dark text. The everyday.
+# Tafel (chalkboard): dark background, light text. Announcements, specials.
+
+theme Laden
+  background:     $white
+  text-primary:   $primary
+  text-secondary: $secondary
+  text-tertiary:  $accent1
+  logo:           $primary
+  cta:            $accent2
+  label-bg:       $accent1
+  label-fg:       $primary
+  divider:        $accent1
+
+theme Tafel
+  background:     $primary
+  text-primary:   $white
+  text-secondary: #D4C4B0
+  text-tertiary:  #8A7A68
+  logo:           $accent1
+  cta:            $accent1
+  label-bg:       $accent2
+  label-fg:       $white
+  divider:        $accent1
+
+# ── Typography ──
+# Libre Franklin: utilitarian, no-nonsense, legible.
+# Not a display typeface. Not decorative. Feels like signage.
+
+font primary
+  name:     Libre Franklin
+  fallback: sans-serif
+  source:   google
+
+typography headline
+  weight:      700
+  strong:      800
+  size:        6          # cqh — large but not shouting
+  lineHeight:  1.15
+  autofit-min: 4
+  autofit-max: 10
+
+typography kicker
+  weight:      500
+  size:        3.5
+  lineHeight:  1.3
+
+typography body
+  weight:      400
+  size:        2.8
+  lineHeight:  1.5
+
+typography caption
+  weight:      400
+  size:        2.2
+  lineHeight:  1.4
+
+typography label
+  weight:      600
+  size:        2
+  lineHeight:  1.2
+  uppercase
+
+typography number
+  weight:      300
+  size:        14        # intentionally large — display element
+  lineHeight:  0.9
+  letterSpacing: -0.03
+
+# ── Spacing ──
+
+spacing:
+  unit: cqmin
+  xs: 1.5
+  s: 2
+  m: 3
+  l: 5
+  xl: 6.5
+
+# ── Dividers ──
+
+divider line
+  thickness: 0.15
+  width: 100%
+  color: divider
+  align: left
+  spacing: xs
+
+divider short
+  thickness: 0.2
+  width: 25%
+  color: divider
+  align: left
+  spacing: s
+
+# ── Voice Constraints ──
+# Operationalized from identity voice reasoning.
+# These are enforceable limits, not restated strategy.
+# Derived from: persona is direct, rhythm is short sentences.
+
+voice-constraints
+  register:         informal
+  sentence-max:     8         # words — short, direct, like the baker talks
+  headline-pattern: noun-first
+  number-format:    cardinal  # "drei", not "3"
+
+# ── Content Defaults ──
+# Derived from identity: this is a small bakery, not a media brand.
+# Low density. Natural images. Simple dividers.
+
+content-defaults
+  density:         low
+  image-treatment: natural
+  divider:         line

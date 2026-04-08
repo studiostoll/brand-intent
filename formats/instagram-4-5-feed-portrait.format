@@ -1,0 +1,21 @@
+# instagram-4-5-feed-portrait.format
+# Instagram feed post, portrait orientation.
+# This format knows nothing about what content means —
+# only where it appears and what fits.
+
+id:       4:5
+label:    4:5
+sublabel: Feed Portrait
+category: instagram
+
+size:     1080 1350
+grid:     5 4           # 5 rows × 4 columns
+
+# Safe zones — platform-specific, not brand decisions.
+danger:   0 0 0 0       # px — nothing always cropped on feed posts
+crop:     0 34 0 34     # px — profile grid crops top/bottom
+comfort:  40            # px — safe reading margin
+
+# Which purposes are editorially valid here.
+# This is a brand decision, not a technical constraint.
+purposes: daily-bread, seasonal-special, baking-tip

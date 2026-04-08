@@ -1,0 +1,70 @@
+# daily-bread.purpose
+# A single bread announcement — today's bread, name and facts.
+# Used for daily Instagram posts: what's fresh, what's available.
+
+id:   daily-bread
+name: Tagesbrot
+
+# Which compositions can render this purpose.
+archetypes: editorial, simple-stack
+
+density: low
+
+# ── Identity Composition ──
+# Filter the composed upstream: both audiences, primary pillars only.
+# voice.always, voice.never, and voice-constraints are included automatically.
+
+identity-filter
+  audience: regulars, newcomers
+  pillars:  primary
+
+# Extension: only what is genuinely specific to this content type.
+# These are slot-level instructions — not voice, not production params.
+identity-extension
+  primary is the bread name, 1–3 words (e.g. "Roggenlaib").
+  secondary is the weight and price ("750 g · 5,80 €").
+  meta is one sentence: what makes this bread specific today.
+  Never describe the bread as "delicious" or "special" —
+  state a fact (flour type, fermentation time, seasonal ingredient).
+
+# ── Slots ──
+
+slot primary
+  label:      Brotname
+  typography: headline
+  color:      text-primary
+  maxLength:  30
+  samples:
+    - Roggenlaib
+    - Weizenmisch
+    - Dinkelvollkorn
+
+slot secondary
+  label:      Gewicht & Preis
+  typography: kicker
+  color:      text-secondary
+  maxLength:  25
+  samples:
+    - 750 g · 5,80 €
+    - 500 g · 4,20 €
+    - 1 kg · 7,50 €
+
+slot meta
+  label:      Beschreibung
+  typography: caption
+  color:      text-secondary
+  maxLength:  100
+  samples:
+    - Roggen 1150, 18 Stunden Teigführung, Kümmel aus dem Wendland.
+    - Tipo 1 aus der Drax-Mühle, 72 % Hydration.
+    - Saisonale Walnüsse vom Wochenmarkt, Emmer-Vollkorn.
+
+slot label
+  label:      Badge
+  typography: label
+  color:      label-fg
+  maxLength:  20
+  samples:
+    - Heute frisch
+    - Nur samstags
+    - Neu im Laden
