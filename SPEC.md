@@ -1,4 +1,4 @@
-# Brand Intent - Specification v0.1
+# Brand Intent / Specification v0.1
 
 This document defines the formal grammar for all five Brand Intent file types. For the reasoning behind these decisions, see [DESIGN.md](DESIGN.md).
 
@@ -13,7 +13,7 @@ All Brand Intent files share these rules:
 - **`#` comments.** Whole-line comments are ignored by the parser. Inline comments (after a value) are allowed.
 - **No quotes required** for simple string values. Quotes are only needed when a value contains `#` (which would otherwise start a comment).
 - **`$reference` syntax** for cross-referencing named values within the same file (e.g., `$primary` referencing a color named `primary` in `brand-colors`).
-- **Presence as boolean.** Some flags (e.g., `italic`, `uppercase`) are set by presence alone - no `: true` needed.
+- **Presence as boolean.** Some flags (e.g., `italic`, `uppercase`) are set by presence alone (no `: true` needed).
 - **Named blocks** use the form `keyword NAME` (e.g., `theme Laden`, `audience regulars`), not `keyword: { NAME: { ... } }`.
 
 ### Value Types
@@ -32,7 +32,7 @@ All Brand Intent files share these rules:
 
 ---
 
-## Layer 1 - Identity (`.identity`)
+## Layer 1: Identity (`.identity`)
 
 **Cardinality:** One per brand.
 **File extension:** `.identity`
@@ -45,11 +45,11 @@ The identity file encodes brand strategy in machine-readable form. It contains n
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `essence:` | string | Yes | One-sentence brand essence (2-5 words ideal) |
-| `promise:` | string | Yes | Brand promise - the commitment to the audience |
+| `promise:` | string | Yes | Brand promise: the commitment to the audience |
 | `tagline:` | string | No | Public-facing brand claim (also known as "Claim" in DACH) |
-| `positioning:` | string | No | Competitive positioning - what makes this brand the only one of its kind |
-| `mission:` | string | No | Organizational mission - what the brand does, for whom |
-| `vision:` | string | No | Aspirational future state - what the world looks like if the brand succeeds |
+| `positioning:` | string | No | Competitive positioning: what makes this brand the only one of its kind |
+| `mission:` | string | No | Organizational mission: what the brand does, for whom |
+| `vision:` | string | No | Aspirational future state: what the world looks like if the brand succeeds |
 | `archetype:` | string | No | Brand archetype shorthand (e.g., `craftsman`, `sage`, `explorer`) |
 | `narrative` | block | No | Brand origin story or ongoing narrative (multi-line) |
 | `voice` | block | Yes | Voice and tone definition |
@@ -75,7 +75,7 @@ always:
   - konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"
 ```
 
-**Design principle:** Every item in `always` and `never` should be a concrete, testable rule - not a description or aspiration. An AI agent should be able to evaluate any piece of content against these rules with a yes/no answer.
+**Design principle:** Every item in `always` and `never` should be a concrete, testable rule, not a description or aspiration. An AI agent should be able to evaluate any piece of content against these rules with a yes/no answer.
 
 ### `narrative` Block
 
@@ -90,7 +90,7 @@ narrative
 
 ### `values` Block
 
-Repeatable named entries. Each value has a name and a behavior statement that makes it actionable - not just a keyword.
+Repeatable named entries. Each value has a name and a behavior statement that makes it actionable, not just a keyword.
 
 ```yaml
 values
@@ -184,13 +184,13 @@ audience newcomers
 
 ---
 
-## Layer 2 - Brand (`.brand`)
+## Layer 2: Brand (`.brand`)
 
 **Cardinality:** One per brand.
 **File extension:** `.brand`
 **Filename convention:** `brandname.brand` (e.g., `krume.brand`)
 
-The brand file encodes derived expression intent - visual language and operationalized voice parameters. Every decision should be traceable to a statement in `.identity`.
+The brand file encodes derived expression intent: visual language and operationalized voice parameters. Every decision should be traceable to a statement in `.identity`.
 
 ### Top-Level Keys
 
@@ -291,7 +291,7 @@ Operationalized voice parameters derived from `.identity` voice reasoning. These
 | `register:` | string | Formality level (must match `.identity`) |
 | `sentence-max:` | int | Maximum words per sentence |
 | `headline-pattern:` | string | Headline structure pattern (e.g., `noun-first`, `verb-first`) |
-| `number-format:` | enum | `cardinal` \| `digit` - "drei" vs "3" |
+| `number-format:` | enum | `cardinal` \| `digit` ("drei" vs "3") |
 
 This vocabulary is extensible. Custom keys are allowed and passed through to AI context.
 
@@ -338,13 +338,13 @@ A `.brand` file must NOT contain: identity reasoning, audience definitions, cont
 
 ---
 
-## Layer 3 - Format (`.format`)
+## Layer 3: Format (`.format`)
 
 **Cardinality:** Multiple per brand.
 **File extension:** `.format`
 **Filename convention:** descriptive kebab-case (e.g., `instagram-4-5-feed-portrait.format`)
 
-The format file describes a canvas - platform, dimensions, safe zones. It knows nothing about what content means or how elements should be arranged.
+The format file describes a canvas: platform, dimensions, safe zones. It knows nothing about what content means or how elements should be arranged.
 
 ### Keys
 
@@ -354,7 +354,7 @@ The format file describes a canvas - platform, dimensions, safe zones. It knows 
 | `label:` | string | Yes | Display label |
 | `sublabel:` | string | Yes | Secondary label (e.g., `Feed Portrait`) |
 | `category:` | enum | Yes | `instagram` \| `linkedin` \| `print` \| `signage` |
-| `size:` | string | Yes | Dimensions - pixels (e.g., `1080 1350`) or mm (e.g., `210mm 297mm`) |
+| `size:` | string | Yes | Dimensions in pixels (e.g., `1080 1350`) or mm (e.g., `210mm 297mm`) |
 | `grid:` | string | Yes | Row × column grid (e.g., `5 4`) |
 | `danger:` | insets | No | Pixels/mm always cropped by platform (default: `0`) |
 | `crop:` | insets or `none` | No | Pixels/mm that may be cropped by UI (default: `none`) |
@@ -383,9 +383,9 @@ The format file describes a canvas - platform, dimensions, safe zones. It knows 
 
 ### Inset Shorthand
 
-- **1 value:** all sides - `40` → top/right/bottom/left = 40
-- **2 values:** vertical horizontal - `40 80` → top/bottom = 40, left/right = 80
-- **4 values:** top right bottom left - `40 80 50 60`
+- **1 value:** all sides (`40` → top/right/bottom/left = 40)
+- **2 values:** vertical horizontal (`40 80` → top/bottom = 40, left/right = 80)
+- **4 values:** top right bottom left (`40 80 50 60`)
 
 ### Exclusion Rule
 
@@ -393,7 +393,7 @@ A `.format` file must NOT contain: color values, typography, voice, brand strate
 
 ---
 
-## Layer 4 - Purpose (`.purpose`)
+## Layer 4: Purpose (`.purpose`)
 
 **Cardinality:** Multiple per brand. Can be shared across brands.
 **File extension:** `.purpose`
@@ -426,7 +426,7 @@ The following slot IDs are valid:
 | `cta` | Call to action |
 | `label` | Orientation marker (category badge, tag) |
 
-These names are fixed. They travel through the entire stack - a composition places `primary` without knowing what it contains; a purpose defines what `primary` means without knowing where it sits.
+These names are fixed. They travel through the entire stack: a composition places `primary` without knowing what it contains; a purpose defines what `primary` means without knowing where it sits.
 
 ### `slot SLOTID` Block
 
@@ -469,18 +469,18 @@ Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight
 
 ### `identity-filter` Block
 
-Selects a relevant subset of the composed upstream (`.identity` + `.brand` resolved together) for this content type. Narrows - does not add.
+Selects a relevant subset of the composed upstream (`.identity` + `.brand` resolved together) for this content type. It narrows, but does not add.
 
 | Key | Type | Description |
 |-----|------|-------------|
 | `audience:` | list | Audience IDs to include from `.identity` |
-| `pillars:` | enum | `primary` \| `secondary` \| `all` - pillar scope |
+| `pillars:` | enum | `primary` \| `secondary` \| `all` (pillar scope) |
 
 Voice rules (`always`, `never`) and `voice-constraints` from `.brand` are always included unless explicitly excluded.
 
 ### `identity-extension` Block
 
-Adds only what is genuinely specific to this content type - what cannot be derived from identity or brand. Written as free-form text, indented under the block header.
+Adds only what is genuinely specific to this content type, what cannot be derived from identity or brand. Written as free-form text, indented under the block header.
 
 **The test for what belongs here:**
 - Sounds like voice guidance → belongs in `.identity`
@@ -501,9 +501,9 @@ A `.purpose` file must NOT contain: color values (only named theme slots), absol
 
 ---
 
-## Layer 5 - Composition (`.composition`)
+## Layer 5: Composition (`.composition`)
 
-**Cardinality:** Multiple. The most reusable layer - zero brand-specific information.
+**Cardinality:** Multiple. The most reusable layer, with zero brand-specific information.
 **File extension:** `.composition`
 **Filename convention:** descriptive kebab-case (e.g., `editorial.composition`, `panel.composition`)
 
@@ -571,9 +571,9 @@ sticky: bottom s
 #### `flow: [TYPE] [PROPERTIES]` Block
 
 **Types:**
-- `flow:` - default fill
-- `flow: panel POSITION WIDTH HEIGHT` - floating panel (e.g., `panel bottom-left 2/3 1/1`)
-- `flow: split EDGE FRACTION` - split layout (e.g., `split bottom 1/2`)
+- `flow:` default fill
+- `flow: panel POSITION WIDTH HEIGHT` floating panel (e.g., `panel bottom-left 2/3 1/1`)
+- `flow: split EDGE FRACTION` split layout (e.g., `split bottom 1/2`)
 
 **Properties** (indented, no pipe):
 - `direction: vertical | horizontal`
@@ -581,11 +581,11 @@ sticky: bottom s
 - `column-gap: TOKEN`
 
 **Items** (2-space indent + `|` prefix):
-- `| spacer-TOKEN` - spacing (TOKEN: `auto`, `xs`, `s`, `m`, `l`, `xl`)
-- `| divider-VARIANT` - divider (VARIANT: `ruler`, `hairline`)
-- `| SLOTID ALIGN [VALIGN]` - text slot with alignment
-- `| logo ALIGN [SIZE]` - logo
-- `| icon ALIGN [SIZE]` - icon
+- `| spacer-TOKEN` spacing (TOKEN: `auto`, `xs`, `s`, `m`, `l`, `xl`)
+- `| divider-VARIANT` divider (VARIANT: `ruler`, `hairline`)
+- `| SLOTID ALIGN [VALIGN]` text slot with alignment
+- `| logo ALIGN [SIZE]` logo
+- `| icon ALIGN [SIZE]` icon
 
 ```yaml
 # panel.composition - flow mode
@@ -607,9 +607,9 @@ flow: panel bottom-left 2/3 1/1
 
 ### `image:` Values
 
-- `full` - full-bleed background image
-- `none` - no background image
-- Grid region - e.g., `top--center cols 1--2`
+- `full` full-bleed background image
+- `none` no background image
+- Grid region, e.g., `top--center cols 1--2`
 
 ### `logo:` / `icon:` Placement
 
@@ -644,7 +644,7 @@ composed upstream
 .format + .composition (condition the specific act of expression)
 ```
 
-The purpose does not filter `.identity` and `.brand` separately. It filters the **composed upstream** - which includes both the strategic reasoning from `.identity` and the operationalized parameters from `.brand`. The parser resolves which layer each key originates from.
+The purpose does not filter `.identity` and `.brand` separately. It filters the **composed upstream**, which includes both the strategic reasoning from `.identity` and the operationalized parameters from `.brand`. The parser resolves which layer each key originates from.
 
 ### Composition Rules
 
@@ -704,5 +704,5 @@ Formats, purposes, and compositions are brand-independent by design. They are sh
 
 ---
 
-*Brand Intent Specification v0.1 - April 2026*
+*Brand Intent Specification v0.1 / April 2026*
 *See [DESIGN.md](DESIGN.md) for reasoning behind these decisions.*
