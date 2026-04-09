@@ -77,9 +77,9 @@ description: An open file format specification for making brand intent machine-r
   <span class="section-label">02 / The Framework</span>
   <h2>Every brand system answers five independent questions.</h2>
   <p>
-    Most tools collapse them into one place. Brand Intent keeps them separate.
+    Most tools collapse them into one document. Brand Intent keeps them separate.
     Each question has its own file type. Each file type has one job.
-    That separation is what makes the system composable.
+    That separation is what keeps the reasoning intact as expression evolves.
   </p>
 
   <div class="questions-row">
@@ -116,12 +116,12 @@ description: An open file format specification for making brand intent machine-r
 <!-- ═══ CONTEXT ENGINEERING ═══ -->
 <section id="context" class="landing-section">
   <span class="section-label">03 / Context Engineering</span>
-  <h2>Write your brand once. Every agent reads it.</h2>
+  <h2>Write your brand once. People and agents read the same source.</h2>
 
   <p style="margin-top:1.5rem;">
-    Brand Intent files are structured, composable, versionable context.
-    Not prompts you rewrite each session, but infrastructure that lives
-    in your repo and compounds over time.
+    Brand Intent files are plain text that lives in your repo, version-controlled and diffable.
+    Not a PDF that rots in a shared drive, not prompts you rewrite each session.
+    Infrastructure that compounds over time.
   </p>
 
   <div class="workflow-steps">
@@ -149,7 +149,7 @@ description: An open file format specification for making brand intent machine-r
         <strong>Reference a purpose.</strong>
         Tell your agent: <em>"write content for the daily-bread purpose, Instagram 4:5."</em>
         It reads the layers, composes the context, enforces <code>voice.never</code>
-        and <code>sentence-max</code>, and validates every slot against the spec.
+        and <code>pillars.avoid</code>, and validates every slot against the spec.
       </div>
     </div>
   </div>
