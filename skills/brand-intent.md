@@ -98,9 +98,6 @@ When generating content for a specific purpose, read all layers silently (do not
 
 ### Output format:
 
-For each brand that has the requested purpose:
-
-- If multiple brands exist, show the **brand name** as a heading
 - Show each **slot** with its generated content — nothing else
 - After the content, show a **compact validation summary** (pass/fail per rule, only call out failures in detail)
 
@@ -132,19 +129,11 @@ After generating or reviewing content, validate against these rules in order:
 Brand Intent files follow this structure:
 
 ```
-# Single brand
 brandname.identity
 brandname.brand
 formats/*.format
 purposes/*.purpose
 compositions/*.composition
-
-# Multi-brand
-brands/brandname/brandname.identity
-brands/brandname/brandname.brand
-formats/*.format           ← shared
-purposes/*.purpose         ← shared
-compositions/*.composition ← shared
 ```
 
-To find the active brand, look for `.identity` and `.brand` files. There is exactly one of each per brand.
+To find the active brand, look for the `.identity` and `.brand` files at the project root. There is exactly one of each per project.
