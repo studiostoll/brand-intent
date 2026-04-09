@@ -229,8 +229,6 @@ The brand file encodes derived expression intent: visual language and operationa
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
-| `voice-constraints` | block | No | Operationalized voice parameters |
-| `content-defaults` | block | No | Production-level defaults |
 | `spacing:` | block | No | Spacing token scale |
 | `divider NAME` | block | No | Named divider style (repeatable) |
 
@@ -306,29 +304,6 @@ theme Laden
 | `autofit-max:` | float | No | Maximum autofit size (cqh) |
 | `italic` | flag | No | Enable italic |
 | `uppercase` | flag | No | Enable uppercase transform |
-
-### `voice-constraints` Block
-
-Operationalized voice parameters derived from `.identity` voice reasoning. These are production-enforceable constraints, not restated strategy.
-
-| Key | Type | Description |
-|-----|------|-------------|
-| `register:` | string | Formality level (must match `.identity`) |
-| `sentence-max:` | int | Maximum words per sentence |
-| `headline-pattern:` | string | Headline structure pattern (e.g., `noun-first`, `verb-first`) |
-| `number-format:` | enum | `cardinal` \| `digit` ("drei" vs "3") |
-
-This vocabulary is extensible. Custom keys are allowed and passed through to AI context.
-
-### `content-defaults` Block
-
-Production-level defaults derived from identity.
-
-| Key | Type | Values |
-|-----|------|--------|
-| `density:` | enum | `low` \| `medium` \| `high` |
-| `image-treatment:` | enum | `full-bleed` \| `natural` \| `contained` |
-| `divider:` | string | Named divider style or `none` |
 
 ### `spacing:` Block
 

@@ -153,22 +153,3 @@ divider ruler
   align: left
   spacing: m
 
-# ── Voice Constraints ──
-# Operationalized from identity voice reasoning.
-# These are enforceable limits, not restated strategy.
-# Derived from: persona is direct, rhythm is short sentences.
-
-voice-constraints
-  register:         informal
-  sentence-max:     8         # words - short, direct, like the baker talks
-  headline-pattern: noun-first
-  number-format:    cardinal  # "drei", not "3"
-
-# ── Content Defaults ──
-# Derived from identity: this is a small bakery, not a media brand.
-# Low density. Natural images. Simple dividers.
-
-content-defaults
-  density:         low
-  image-treatment: natural
-  divider:         line
