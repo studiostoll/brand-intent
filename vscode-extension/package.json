@@ -3,12 +3,17 @@
   "displayName": "Brand Intent \u2014 .identity, .brand, .format, .purpose, .composition",
   "description": "Syntax highlighting and autocomplete for the Brand Intent specification \u2014 .identity, .brand, .format, .purpose, and .composition files that define brand identity, visual language, and content architecture.",
   "version": "0.1.0",
-  "publisher": "stoll",
+  "publisher": "studiostoll",
   "author": {
     "name": "Studio Stoll",
     "url": "https://stoll.studio"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/studiostoll/brand-intent.git",
+    "directory": "vscode-extension"
+  },
   "engines": { "vscode": "^1.70.0" },
   "categories": ["Programming Languages"],
   "main": "./extension.js",
