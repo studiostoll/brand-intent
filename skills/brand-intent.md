@@ -6,6 +6,8 @@ description: Generate and validate on-brand content using Brand Intent files
 
 **Scope:** `$ARGUMENTS`
 
+> If `$ARGUMENTS` is "onboard": run the guided brand onboarding interview (see Onboarding section below).
+> If `$ARGUMENTS` is "example": scaffold the Krume bakery reference implementation into `examples/krume/` and explain what each file does.
 > If `$ARGUMENTS` names a purpose (e.g. "daily-bread", "event", "quote"): compose context from the five layers and generate content for that purpose.
 > If `$ARGUMENTS` is "validate": read the most recent generated or provided content and run the validation checklist against the brand files.
 > If `$ARGUMENTS` is empty: discover all `.identity`, `.brand`, `.purpose` files in the project, summarize the brand voice and list available purposes.
@@ -137,3 +139,107 @@ compositions/*.composition
 ```
 
 To find the active brand, look for the `.identity` and `.brand` files at the project root. There is exactly one of each per project.
+
+## Onboarding: Create a New Brand
+
+When `$ARGUMENTS` is "onboard", guide the user through a structured interview to create their brand files. Do NOT jump to file creation — the interview comes first.
+
+### Interview Flow
+
+Have a natural conversation. Don't dump all questions at once — adapt based on answers. Group questions into rounds of 2-4.
+
+**Round 1: Identity**
+- Brand name? (and brand ID — lowercase, no spaces, used in filenames)
+- What does this brand do? One sentence.
+- Language? (e.g., de, en)
+- Essence — the irreducible truth in 3-8 words?
+
+Listen for tone, confidence, specificity. A founder who says "we make artisan coffee" vs "we roast single-origin in a garage in Kreuzberg" gives you very different brands.
+
+**Round 2: Voice & Personality**
+- If this brand were a person talking to a customer, who would they be?
+- Formal or informal?
+- What does this brand ALWAYS do in communication? (2-3 concrete rules)
+- What does this brand NEVER do? (2-3 concrete anti-patterns)
+
+The user will often describe what the brand is NOT before what it IS. Capture both.
+
+**Round 3: Visual Direction**
+- Describe the color palette. Hex values, or a mood? (e.g., "warm earth tones", "cold Nordic blue")
+- What fonts define this brand? (primary + body. If unknown: serif or sans-serif? Heavy or light?)
+
+If the user describes a mood: propose a palette of 4-5 colors (primary, secondary, accent1, accent2, white/background) and confirm before proceeding.
+
+**Round 4: Content & Audience**
+- Who are the 1-2 main audiences? For each: who are they, what do they want, how should you talk to them?
+- Anti-audience — someone this brand is explicitly NOT for?
+- What content topics are on-brand? (primary pillars)
+- What topics should the brand avoid?
+
+### Synthesis
+
+After the interview, present a Brand Brief for confirmation:
+
+```
+## Brand Brief: [Brand Name]
+ID: [brandid] | Language: [language]
+Essence: [essence]
+
+Voice: [persona], [register]
+Always: [rules]
+Never: [anti-patterns]
+
+Colors: primary [hex], secondary [hex], accent [hex], background [hex]
+Font: [primary font name]
+
+Audiences: [summaries]
+Pillars: [topics] | Avoid: [topics]
+```
+
+Ask the user to confirm or adjust. Iterate until they're happy.
+
+### File Generation
+
+Once confirmed, generate these files at the project root:
+
+1. **`[brandid].identity`** — essence, promise, tagline, archetype, voice (register, persona, rhythm, always/never), pillars, audience blocks, anti-audience blocks. Follow the structure of the Krume reference.
+
+2. **`[brandid].brand`** — id, name, language, locale, brand-colors, at least one theme (mapping semantic slots to color references), font blocks, typography blocks (headline, body, caption, label at minimum), spacing, dividers. Use `$name` references for theme colors.
+
+3. **`purposes/starter.purpose`** — a starter purpose with slots that have on-brand sample content derived from the identity. Samples must be in the brand's language and respect voice rules.
+
+### Rules
+
+- **Every voice rule, value, and narrative must come from the user's answers.** Don't invent brand personality.
+- **Sample content in purposes must match the brand's language.**
+- **Don't skip the interview.** Even if the user says "just make a brand called X" — ask at least the essentials (essence, voice, colors, one audience).
+- **Typography sizes use `cqmin` units.** Use these sensible defaults unless the user specified otherwise: headline 6, body 2.8, caption 2.2, label 2.
+- **Spacing defaults:** unit cqmin, xs 1.5, s 2, m 3, l 5, xl 6.5.
+
+## Example: Scaffold the Krume Reference
+
+When `$ARGUMENTS` is "example", copy the Krume bakery reference files into `examples/krume/` in the current project. The Krume files are distributed with the npm package.
+
+Run this shell command to copy them:
+
+```bash
+node -e "
+const pkg = require.resolve('brand-intent/package.json');
+const root = require('path').dirname(pkg);
+const { cpSync, mkdirSync } = require('fs');
+const dest = 'examples/krume';
+mkdirSync(dest, { recursive: true });
+for (const d of ['brands/krume', 'formats', 'purposes', 'compositions']) {
+  const src = require('path').join(root, d);
+  try { cpSync(src, require('path').join(dest, d.replace('brands/krume', '')), { recursive: true }); } catch {}
+}
+console.log('Krume example scaffolded into examples/krume/');
+"
+```
+
+Then explain to the user what each file does:
+- **`.identity`** — the strategic layer: essence, voice, values, audiences. Read this first.
+- **`.brand`** — derived expression: colors, themes, typography, spacing. Every decision traces back to identity.
+- **`.format`** — canvas dimensions, safe zones, grid. Where content appears.
+- **`.purpose`** — content type with semantic slots, samples, constraints. What content does.
+- **`.composition`** — spatial arrangement of slots. How elements are placed.

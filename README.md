@@ -34,7 +34,7 @@ ext install studiostoll.brand-intent-lang
 
 ### 2. Run init
 
-The CLI walks you through everything: explore the Krume bakery reference, create your own brand from scratch, or just install the AI skill if you already have brand files.
+Installs the Brand Intent skill for your AI agent. The skill handles everything else: onboard your brand through a guided interview, explore the Krume bakery reference, generate and validate on-brand content.
 
 ```bash
 npx brand-intent init
