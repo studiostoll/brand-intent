@@ -32,20 +32,12 @@ Syntax highlighting, autocomplete, and validation for all five file types.
 ext install studiostoll.brand-intent-lang
 ```
 
-### 2. Install skills for your AI agent
+### 2. Run init
+
+The CLI walks you through everything: explore the Krume bakery reference, or create your own brand from scratch. It also offers to install AI skills at the end.
 
 ```bash
-npx brand-intent install-skills
-```
-
-Works with Claude Code, Cursor, Gemini CLI, VS Code Copilot, Codex CLI, and any MCP-compatible agent.
-
-### 3. Author your brand
-
-Start with `.identity` (strategy, voice, audiences), then derive `.brand` (expression intent). Add formats, purposes, and compositions as needed. The Krume bakery brand in `brands/krume/` is a fully commented reference implementation.
-
-```bash
-npx brand-intent init --from krume
+npx brand-intent init
 ```
 
 ## Documentation

@@ -671,21 +671,19 @@ description: An open file format specification for making brand intent machine-r
         Or <a href="https://marketplace.visualstudio.com/items?itemName=studiostoll.brand-intent-lang">download manually</a> from the VS Code Marketplace.
       </p>
 
-      <h3>2. Install skills for your AI agent</h3>
+      <h3>2. Run init</h3>
       <p>
-        Teaches any agent how to compose Brand Intent layers into context,
-        validate content against <code>voice.never</code> and <code>pillars.avoid</code>,
-        and respect <code>anti-audience</code> boundaries.
-        Brand knowledge becomes infrastructure, not a prompt you write each time.
+        One command. The CLI asks the rest: explore the Krume bakery reference implementation,
+        or create your own brand through a guided interview. AI skill installation is offered at the end.
       </p>
       <div class="install-block">
-        <div class="install-cmd" data-copy="npx brand-intent install-skills">
-          <span class="prompt">$</span>npx brand-intent install-skills
+        <div class="install-cmd" data-copy="npx brand-intent init">
+          <span class="prompt">$</span>npx brand-intent init
           <button class="copy-btn" aria-label="Copy command">Copy</button>
         </div>
       </div>
       <p class="works-with">
-        Works with: Claude Code, Cursor, Gemini CLI, VS Code Copilot, Codex CLI
+        Skills work with: Claude Code, Cursor, Gemini CLI, VS Code Copilot, Codex CLI
       </p>
       <p style="margin-top:var(--space-md); font-size:var(--font-size-small); color:var(--color-tertiary);">
         Complementary to <a href="https://impeccable.style">Impeccable</a>:
@@ -694,23 +692,16 @@ description: An open file format specification for making brand intent machine-r
       </p>
     </div>
     <div>
-      <h3 style="margin-top:0;">3. Author your brand</h3>
+      <h3 style="margin-top:0;">What you get</h3>
       <p>
-        Start with <code>.identity</code>: essence, promise, positioning, narratives,
-        voice with always/never rules, values, audiences, anti-audiences.
-        Then derive the expression intent in <code>.brand</code>.
-        Add formats for the platforms your brand inhabits.
-        Purposes and compositions follow.
+        <strong>Explore the example:</strong> The Krume bakery brand &mdash; a fully commented reference
+        showing all five layers. Identity, brand expression, format, purpose, composition.
       </p>
       <p>
-        The Krume bakery brand is included as a fully commented reference implementation.
+        <strong>Create your own:</strong> A guided interview covers essence, voice (always/never rules),
+        colors, typography, audiences. Scaffolds <code>.identity</code> + <code>.brand</code> +
+        a starter <code>.purpose</code>. Add formats and compositions when you're ready.
       </p>
-      <div class="install-block">
-        <div class="install-cmd" data-copy="npx brand-intent init --from krume">
-          <span class="prompt">$</span>npx brand-intent init --from krume
-          <button class="copy-btn" aria-label="Copy command">Copy</button>
-        </div>
-      </div>
     </div>
   </div>
 </section>
