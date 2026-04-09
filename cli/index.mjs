@@ -107,30 +107,24 @@ if (!command || command === '--help' || command === '-h') {
   process.exit(0);
 }
 
-// Both "init" and "install-skills" do the same thing now
-const installed = await installSkills(cwd);
-closeRl();
+// Ask for project folder
+console.log('  Brand Intent \u2014 What a brand means. Authored, structured, shared.\n');
+const folder = await ask('  Project folder (. for current directory): ');
+const targetDir = resolve(cwd, folder.trim() || '.');
+if (targetDir !== cwd) {
+  mkdirSync(targetDir, { recursive: true });
+}
+console.log('');
 
-// Show next steps with skill-specific commands
-const hasClaudeCode = installed.some(h => h.id === 'claude');
-const hasCursor = installed.some(h => h.id === 'cursor');
+await installSkills(targetDir);
+closeRl();
 
 console.log('\n  Done. Now open your AI agent and try:\n');
 console.log('    "Onboard my brand"');
 console.log('    "Show me the Krume bakery example"');
-
-if (hasClaudeCode || hasCursor) {
-  console.log('\n  Or use the skill directly:\n');
-  if (hasClaudeCode) {
-    console.log('    /brand-intent onboard     Create your brand through a guided interview');
-    console.log('    /brand-intent example     Scaffold the Krume reference implementation');
-    console.log('    /brand-intent validate    Validate content against your brand rules');
-    console.log('    /brand-intent             Discover brand files and available purposes');
-  }
-  if (hasCursor) {
-    console.log('    @brand-intent onboard     Create your brand through a guided interview');
-    console.log('    @brand-intent example     Scaffold the Krume reference implementation');
-  }
-}
-
+console.log('\n  Skill commands:\n');
+console.log('    /brand-intent onboard     Create your brand through a guided interview');
+console.log('    /brand-intent example     Scaffold the Krume reference implementation');
+console.log('    /brand-intent validate    Validate content against your brand rules');
+console.log('    /brand-intent             Discover brand files and available purposes');
 console.log('');
