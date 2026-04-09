@@ -111,14 +111,20 @@
 .workflow-steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-lg);
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
   margin: var(--space-lg) 0;
 }
 .workflow-step {
   display: flex;
   gap: var(--space-sm);
   align-items: baseline;
+  padding: var(--space-md);
+  border-right: 1px solid var(--color-border);
 }
+.workflow-step:last-child { border-right: none; }
 .ws-number {
   font-family: var(--font-monospace);
   font-size: var(--font-size-small);
@@ -377,6 +383,8 @@ details.code-example > summary:hover {
   .question-card { border-right: none; border-bottom: 1px solid var(--color-border); }
   .question-card:last-child { border-bottom: none; }
   .workflow-steps { grid-template-columns: 1fr; }
+  .workflow-step { border-right: none; border-bottom: 1px solid var(--color-border); }
+  .workflow-step:last-child { border-bottom: none; }
   .usecase-row { grid-template-columns: 1fr; }
   .usecase-card { border-right: none; border-bottom: 1px solid var(--color-border); }
   .usecase-card:last-child { border-bottom: none; }
