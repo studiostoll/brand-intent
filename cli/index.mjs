@@ -153,6 +153,14 @@ const targetDir = resolve(cwd, folder.trim() || '.');
 if (targetDir !== cwd) {
   mkdirSync(targetDir, { recursive: true });
 }
+console.log('\n  This will:');
+console.log('  \u2014 Copy the Krume bakery reference into examples/krume/');
+console.log('  \u2014 Install the Brand Intent skill for your AI agent\n');
+const proceed = await ask('  Proceed? (Y/n) ');
+if (proceed.trim().toLowerCase() === 'n') {
+  closeRl();
+  process.exit(0);
+}
 console.log('');
 
 scaffoldExample(targetDir);
