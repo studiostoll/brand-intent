@@ -20,6 +20,9 @@
     "brand-identity",
     "design-system"
   ],
+  "scripts": {
+    "release": "./scripts/release.sh"
+  },
   "files": [
     "cli/",
     "skills/",
