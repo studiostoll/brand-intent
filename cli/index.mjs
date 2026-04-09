@@ -120,7 +120,8 @@ const args = process.argv.slice(2);
 const command = args[0];
 const cwd = process.cwd();
 
-console.log('Brand Intent v0.1.0\n');
+const pkg = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'));
+console.log(`Brand Intent v${pkg.version}\n`);
 
 switch (command) {
   case 'install-skills':
