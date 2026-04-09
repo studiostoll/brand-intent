@@ -51,7 +51,7 @@ The identity file encodes brand strategy in machine-readable form. It contains n
 | `mission:` | string | No | Organizational mission: what the brand does, for whom |
 | `vision:` | string | No | Aspirational future state: what the world looks like if the brand succeeds |
 | `archetype:` | string | No | Brand archetype shorthand (e.g., `craftsman`, `sage`, `explorer`) |
-| `narrative` | block | No | Brand origin story or ongoing narrative (multi-line) |
+| `narrative NAME` | block | No | Named brand narrative (repeatable; exactly one should carry `primary` flag) |
 | `voice` | block | Yes | Voice and tone definition |
 | `values` | block | No | Core brand values with behavior statements (repeatable) |
 | `pillars` | block | Yes | Content pillar definitions |
@@ -77,15 +77,30 @@ always:
 
 **Design principle:** Every item in `always` and `never` should be a concrete, testable rule, not a description or aspiration. An AI agent should be able to evaluate any piece of content against these rules with a yes/no answer.
 
-### `narrative` Block
+### `narrative NAME` Block
 
-Free-form multi-line text, indented under the block header. The brand's origin story, founding narrative, or ongoing story arc.
+Named brand narratives. Each narrative has a lowercase identifier, an optional `primary` flag (exactly one narrative should be marked primary), and free-form multi-line text.
+
+`NAME` is a free-form title — natural language is encouraged (e.g., `Im besonderen Licht`, `Origin Story`, `Mehl Wasser Zeit`).
+
+| Element | Type | Required | Description |
+|---------|------|----------|-------------|
+| `NAME` | string | Yes | Narrative title (free-form, after `narrative` keyword) |
+| `primary` | flag | No | Marks this as the brand's dominant narrative (exactly one) |
+| *(text lines)* | string | Yes | Free-form narrative content (indented, multi-line) |
+
+The `primary` narrative is the brand's default story — the one AI agents use when no specific narrative is requested. Supporting narratives serve specific contexts (editorial, campaigns, internal culture).
 
 ```yaml
-narrative
-  Founded in 2019 when the baker quit her agency job
-  to do the one thing she'd done every morning since
-  she was sixteen: bake bread.
+narrative Mehl Wasser Zeit
+  primary
+  Gegründet 2019, als die Bäckerin ihren Agenturjob
+  kündigte, um das zu tun, was sie jeden Morgen seit
+  ihrem sechzehnten Lebensjahr getan hat: Brot backen.
+
+narrative Achtzehn Stunden
+  Das Brot entsteht in achtzehn Stunden. Kein Schritt
+  wird abgekürzt, kein Mehl wird ersetzt.
 ```
 
 ### `values` Block
@@ -163,6 +178,16 @@ voice
     - Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)
     - "Artisan" oder "Craft" - wir sagen Handwerk
     - Englische Begriffe wenn ein deutsches Wort existiert
+
+narrative Mehl Wasser Zeit
+  primary
+  Gegründet 2019, als die Bäckerin ihren Agenturjob
+  kündigte, um das zu tun, was sie jeden Morgen seit
+  ihrem sechzehnten Lebensjahr getan hat: Brot backen.
+
+narrative Achtzehn Stunden
+  Das Brot entsteht in achtzehn Stunden. Kein Schritt
+  wird abgekürzt, kein Mehl wird ersetzt.
 
 pillars
   primary:   Sauerteig, Handwerk, Zutaten, Kiez

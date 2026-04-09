@@ -32,8 +32,8 @@ export interface ParsedIdentity {
   vision?: string;
   /** Brand archetype shorthand (e.g. "craftsman", "sage") */
   archetype?: string;
-  /** Brand origin story or ongoing narrative */
-  narrative?: string;
+  /** Named brand narratives (one should be marked primary) */
+  narratives?: ParsedNarrative[];
   /** Core brand values with behavior statements */
   values?: ParsedValue[];
   /** Explicitly not-our-audience segments keyed by ID */
@@ -80,6 +80,15 @@ export interface ParsedAntiAudience {
   description: string;
 }
 
+export interface ParsedNarrative {
+  /** Narrative title (e.g. "Origin Story", "Im besonderen Licht") */
+  name: string;
+  /** Whether this is the brand's dominant narrative */
+  primary: boolean;
+  /** Free-form narrative text */
+  text: string;
+}
+
 export interface ParsedValue {
   /** Value name (e.g. "Handwerk", "Ehrlichkeit") */
   name: string;
@@ -90,6 +99,7 @@ export interface ParsedValue {
 // ── Parser ────────────────────────────────────────────────────────────────────
 
 type Block = 'top' | 'voice' | 'pillars' | 'audience' | 'anti-audience' | 'values' | 'narrative';
+type NarrativeState = { name: string; primary: boolean; text: string };
 type ListTarget = 'always' | 'never' | 'primary' | 'secondary' | 'avoid';
 
 export function parseIdentityFile(content: string, fileName: string): ParsedIdentity {
@@ -102,7 +112,8 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
   let mission = '';
   let vision = '';
   let archetype = '';
-  let narrative = '';
+  const narratives: ParsedNarrative[] = [];
+  let currentNarrative: NarrativeState | null = null;
   const voice: Partial<ParsedVoice> = { always: [], never: [] };
   const pillars: Partial<ParsedPillars> = { primary: [], avoid: [] };
   const audiences: Record<string, Partial<ParsedAudience>> = {};
@@ -116,6 +127,17 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
   let currentValueBehavior = '';
   let listTarget: ListTarget | null = null;
   let continuationKey: string | null = null;
+
+  function flushNarrative() {
+    if (currentNarrative && currentNarrative.text) {
+      narratives.push({
+        name: currentNarrative.name,
+        primary: currentNarrative.primary,
+        text: currentNarrative.text.trim(),
+      });
+    }
+    currentNarrative = null;
+  }
 
   function flushValue() {
     if (currentValueName && currentValueBehavior) {
@@ -153,9 +175,14 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
       continue;
     }
 
-    // ── Narrative block: all indented lines are narrative text ──
-    if (block === 'narrative' && /^\s{2,}/.test(raw) && !raw.trim().startsWith('#')) {
-      narrative += (narrative ? '\n' : '') + raw.trim();
+    // ── Narrative block: primary flag or text lines ──
+    if (block === 'narrative' && currentNarrative && /^\s{2,}/.test(raw) && !raw.trim().startsWith('#')) {
+      const trimmed = raw.trim();
+      if (trimmed === 'primary') {
+        currentNarrative.primary = true;
+      } else {
+        currentNarrative.text += (currentNarrative.text ? '\n' : '') + trimmed;
+      }
       continue;
     }
 
@@ -252,6 +279,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
       const [, key, value] = topMatch;
       const val = value.trim();
       if (block === 'values') flushValue();
+      if (block === 'narrative') flushNarrative();
       block = 'top';
       listTarget = null;
       continuationKey = null;
@@ -292,6 +320,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     // ── Block headers ──
     if (raw.match(/^voice\s*$/)) {
       if (block === 'values') flushValue();
+      if (block === 'narrative') flushNarrative();
       block = 'voice';
       listTarget = null;
       continuationKey = null;
@@ -300,6 +329,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
     if (raw.match(/^pillars\s*$/)) {
       if (block === 'values') flushValue();
+      if (block === 'narrative') flushNarrative();
       block = 'pillars';
       listTarget = null;
       continuationKey = null;
@@ -308,15 +338,19 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
     if (raw.match(/^values\s*$/)) {
       if (block === 'values') flushValue();
+      if (block === 'narrative') flushNarrative();
       block = 'values';
       listTarget = null;
       continuationKey = null;
       continue;
     }
 
-    if (raw.match(/^narrative\s*$/)) {
+    const narrativeMatch = raw.match(/^narrative\s+(.+?)\s*$/);
+    if (narrativeMatch) {
       if (block === 'values') flushValue();
+      if (block === 'narrative') flushNarrative();
       block = 'narrative';
+      currentNarrative = { name: narrativeMatch[1].trim(), primary: false, text: '' };
       listTarget = null;
       continuationKey = null;
       continue;
@@ -325,6 +359,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     const audienceMatch = raw.match(/^audience\s+(\S+)\s*$/);
     if (audienceMatch) {
       if (block === 'values') flushValue();
+      if (block === 'narrative') flushNarrative();
       block = 'audience';
       currentAudience = audienceMatch[1];
       audiences[currentAudience] ??= {};
@@ -336,6 +371,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     const antiAudienceMatch = raw.match(/^anti-audience\s+(\S+)\s*$/);
     if (antiAudienceMatch) {
       if (block === 'values') flushValue();
+      if (block === 'narrative') flushNarrative();
       block = 'anti-audience';
       currentAntiAudience = antiAudienceMatch[1];
       antiAudiences[currentAntiAudience] ??= {};
@@ -345,8 +381,9 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     }
   }
 
-  // Flush last value if in values block
+  // Flush last value/narrative if in those blocks
   if (block === 'values') flushValue();
+  if (block === 'narrative') flushNarrative();
 
   // ── Validation ──────────────────────────────────────────────────────────────
 
@@ -391,7 +428,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
   if (mission) result.mission = mission;
   if (vision) result.vision = vision;
   if (archetype) result.archetype = archetype;
-  if (narrative) result.narrative = narrative;
+  if (narratives.length > 0) result.narratives = narratives;
   if (values.length > 0) result.values = values;
   if (Object.keys(antiAudiences).length > 0) {
     result.antiAudiences = antiAudiences as Record<string, ParsedAntiAudience>;

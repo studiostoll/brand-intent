@@ -267,6 +267,7 @@ pre .num { color: var(--color-info); }
 pre .ref { color: var(--color-error); }
 pre .sl  { color: var(--color-primary); font-weight: var(--font-weight-medium); }
 pre .meta{ color: var(--color-tertiary); }
+pre .flag{ color: var(--color-info); font-style: italic; }
 
 /* ── Install blocks ── */
 .install-block {

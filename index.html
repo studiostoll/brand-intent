@@ -231,33 +231,72 @@ description: An open file format specification for making brand intent machine-r
   <div class="layer-detail">
     <h3>Identity</h3>
     <p>
-      The only place brand strategy lives in machine-readable form.
-      Essence, promise, voice with <code>always</code>/<code>never</code> rules,
-      content pillars, audiences, and optionally: values with behavior statements,
-      positioning, anti-audiences, narrative.
+      The strategic core. Essence, promise, positioning, mission, vision, archetype.
+      Voice with machine-checkable <code>always</code>/<code>never</code> rules.
+      Named narratives — the brand's stories, one marked primary.
+      Values as behavior statements, not keywords. Content pillars.
+      Audiences with language guidance. Anti-audiences as exclusion signals.
       Nothing visual. Nothing compositional.
     </p>
 
     <details class="code-example">
       <summary>krume.identity</summary>
-<pre><span class="kw">essence:</span>  <span class="val">Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.</span>
+<pre><span class="cm"># ── Positioning ──</span>
+
+<span class="kw">essence:</span>  <span class="val">Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.</span>
 <span class="kw">promise:</span>  <span class="val">Wer reinkommt, riecht sofort, dass hier seit vier Uhr
           morgens jemand steht.</span>
 <span class="kw">tagline:</span>  <span class="val">Mehl, Wasser, Zeit.</span>
 <span class="kw">positioning:</span>  <span class="val">Krume ist die einzige Bäckerei im Kiez, die jedes
               Brot beim Mehl nennt, nicht beim Marketing.</span>
+<span class="kw">mission:</span>  <span class="val">Ehrliches Brot für den Kiez - jeden Tag, aus dem
+          gleichen Ofen, mit den gleichen Händen.</span>
+<span class="kw">vision:</span>  <span class="val">Eine Nachbarschaft, in der niemand mehr erklären muss,
+         warum gutes Brot sechs Euro kostet.</span>
 <span class="kw">archetype:</span> <span class="val">craftsman</span>
+
+<span class="cm"># ── Narratives ──</span>
+
+<span class="kw">narrative</span> <span class="sl">Mehl Wasser Zeit</span>
+  <span class="flag">primary</span>
+  <span class="val">Gegründet 2019, als die Bäckerin ihren Agenturjob
+  kündigte, um das zu tun, was sie jeden Morgen seit
+  ihrem sechzehnten Lebensjahr getan hat: Brot backen.
+  Der Laden in der Weserstraße war vorher ein Copyshop.
+  Die erste Woche war der Ofen zu klein. Die zweite
+  Woche war das Brot zu schnell ausverkauft.
+  Beides hat sich nicht geändert.</span>
+
+<span class="kw">narrative</span> <span class="sl">Achtzehn Stunden</span>
+  <span class="val">Das Brot entsteht in achtzehn Stunden. Kein Schritt
+  wird abgekürzt, kein Mehl wird ersetzt. Drei Sorten
+  am Tag, nicht dreißig. Was weg ist, ist weg - morgen
+  gibt es neues.</span>
+
+<span class="kw">narrative</span> <span class="sl">Weserstraße</span>
+  <span class="val">Die Weserstraße hat sich verändert. Die Mieten steigen,
+  die Spätis verschwinden. Krume bleibt. Nicht weil wir
+  uns gegen irgendwas stemmen, sondern weil der Ofen
+  morgens um vier an ist und die Stammkunden um sieben
+  vor der Tür stehen. Das ist der ganze Widerstand.</span>
+
+<span class="cm"># ── Voice ──</span>
 
 <span class="kw">voice</span>
   <span class="meta">register:</span>  <span class="val">informal, Du</span>
   <span class="meta">persona:</span>   <span class="val">Bäckerin hinterm Tresen - direkt, trocken, stolz auf das Handwerk</span>
+  <span class="meta">rhythm:</span>    <span class="val">kurze Sätze, konkrete Angaben, kein Erklären</span>
   <span class="meta">always:</span>
     - <span class="val">Sauerteig, not "artisan bread"</span>
     - <span class="val">konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"</span>
     - <span class="val">Backzeit in Stunden, nicht "lange Teigführung"</span>
+    - <span class="val">Kiez-Bezug (Neukölln, Weserstraße) over "unser Standort"</span>
   <span class="meta">never:</span>
     - <span class="val">Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)</span>
     - <span class="val">"Artisan" oder "Craft" - wir sagen Handwerk</span>
+    - <span class="val">Englische Begriffe wenn ein deutsches Wort existiert</span>
+
+<span class="cm"># ── Values ──</span>
 
 <span class="kw">values</span>
   <span class="sl">Handwerk</span>
@@ -266,19 +305,43 @@ description: An open file format specification for making brand intent machine-r
   <span class="sl">Ehrlichkeit</span>
     <span class="val">Kein Brot ohne Zutatenliste. Keine Versprechen
     die der Teig nicht halten kann.</span>
+  <span class="sl">Kiez</span>
+    <span class="val">Der Laden gehört zur Weserstraße wie der Späti
+    nebenan. Wir kennen die Stammkunden beim Namen
+    und die Nachbarn beim Brot.</span>
+
+<span class="cm"># ── Pillars ──</span>
 
 <span class="kw">pillars</span>
   <span class="meta">primary:</span>   <span class="val">Sauerteig, Handwerk, Zutaten, Kiez</span>
-  <span class="meta">avoid:</span>     <span class="val">Lifestyle-Gastronomie, Wellness-Ernährung</span>
+  <span class="meta">secondary:</span> <span class="val">Saisonales, Nachhaltigkeit, Backwissen</span>
+  <span class="meta">avoid:</span>     <span class="val">Lifestyle-Gastronomie, Wellness-Ernährung, Influencer-Kultur</span>
+
+<span class="cm"># ── Audiences ──</span>
 
 <span class="kw">audience</span> regulars
   <span class="meta">label:</span>       <span class="val">Stammkunden aus dem Kiez</span>
-  <span class="meta">language:</span>    <span class="val">knapp, direkt, kein Erklären</span>
+  <span class="meta">profile:</span>     <span class="val">25-65, täglich oder wöchentlich, kennen die Sorten</span>
+  <span class="meta">motivation:</span>  <span class="val">ihr Brot, ihr Laden, verlässlicher Rhythmus</span>
+  <span class="meta">language:</span>    <span class="val">knapp, direkt, kein Erklären - die wissen Bescheid</span>
+
+<span class="kw">audience</span> newcomers
+  <span class="meta">label:</span>       <span class="val">Neugierige und Laufkundschaft</span>
+  <span class="meta">profile:</span>     <span class="val">Touristen, neue Nachbarn, Marktbesucher</span>
+  <span class="meta">motivation:</span>  <span class="val">gutes Brot finden, verstehen was anders ist</span>
+  <span class="meta">language:</span>    <span class="val">einladend, konkret, erklärt ohne belehrend zu sein</span>
+
+<span class="cm"># ── Anti-Audiences ──</span>
 
 <span class="kw">anti-audience</span> influencers
   <span class="meta">label:</span>       <span class="val">Lifestyle-Influencer</span>
   <span class="meta">description:</span> <span class="val">Menschen die Brot als Aesthetic posten,
-               nicht als Lebensmittel essen.</span></pre>
+               nicht als Lebensmittel essen.</span>
+
+<span class="kw">anti-audience</span> discount-hunters
+  <span class="meta">label:</span>       <span class="val">Schnäppchenjäger</span>
+  <span class="meta">description:</span> <span class="val">Wer den Preis eines Sauerteigbrots mit dem
+               Supermarkt-Toastbrot vergleicht, ist hier falsch.</span></pre>
     </details>
   </div>
 
@@ -294,28 +357,119 @@ description: An open file format specification for making brand intent machine-r
     </p>
 
     <details class="code-example">
-      <summary>krume.brand (excerpt)</summary>
-<pre><span class="kw">brand-colors</span>
-  <span class="meta">primary:</span>   <span class="val">#2C1810</span>  <span class="cm"># dark roast</span>
-  <span class="meta">accent1:</span>   <span class="val">#C8A47E</span>  <span class="cm"># crust</span>
-  <span class="meta">accent2:</span>   <span class="val">#8B4513</span>  <span class="cm"># rye</span>
-  <span class="meta">white:</span>     <span class="val">#FAF6F0</span>  <span class="cm"># flour</span>
+      <summary>krume.brand</summary>
+<pre><span class="kw">id:</span>       <span class="val">krume</span>
+<span class="kw">name:</span>     <span class="val">Krume</span>
+<span class="kw">language:</span> <span class="val">de</span>
+<span class="kw">locale:</span>   <span class="val">de-DE</span>
+
+<span class="cm"># ── Color Primitives ──</span>
+
+<span class="kw">brand-colors</span>
+  <span class="meta">primary:</span>   <span class="val">#2C1810</span>   <span class="cm"># dark roast</span>
+  <span class="meta">secondary:</span> <span class="val">#5C3A28</span>   <span class="cm"># walnut</span>
+  <span class="meta">accent1:</span>   <span class="val">#C8A47E</span>   <span class="cm"># crust</span>
+  <span class="meta">accent2:</span>   <span class="val">#8B4513</span>   <span class="cm"># rye</span>
+  <span class="meta">white:</span>     <span class="val">#FAF6F0</span>   <span class="cm"># flour</span>
+
+<span class="cm"># ── Themes ──</span>
 
 <span class="kw">theme</span> Laden
   <span class="meta">background:</span>     <span class="ref">$white</span>
   <span class="meta">text-primary:</span>   <span class="ref">$primary</span>
+  <span class="meta">text-secondary:</span> <span class="ref">$secondary</span>
+  <span class="meta">text-tertiary:</span>  <span class="ref">$accent1</span>
+  <span class="meta">logo:</span>           <span class="ref">$primary</span>
   <span class="meta">cta:</span>            <span class="ref">$accent2</span>
+  <span class="meta">label-bg:</span>       <span class="ref">$accent1</span>
+  <span class="meta">label-fg:</span>       <span class="ref">$primary</span>
+  <span class="meta">divider:</span>        <span class="ref">$accent1</span>
+
+<span class="kw">theme</span> Tafel
+  <span class="meta">background:</span>     <span class="ref">$primary</span>
+  <span class="meta">text-primary:</span>   <span class="ref">$white</span>
+  <span class="meta">text-secondary:</span> <span class="val">#D4C4B0</span>
+  <span class="meta">logo:</span>           <span class="ref">$accent1</span>
+  <span class="meta">cta:</span>            <span class="ref">$accent1</span>
+  <span class="meta">label-bg:</span>       <span class="ref">$accent2</span>
+  <span class="meta">label-fg:</span>       <span class="ref">$white</span>
+  <span class="meta">divider:</span>        <span class="ref">$accent1</span>
+
+<span class="cm"># ── Typography ──</span>
+
+<span class="kw">font</span> primary
+  <span class="meta">name:</span>     <span class="val">Libre Franklin</span>
+  <span class="meta">fallback:</span> <span class="val">sans-serif</span>
+  <span class="meta">source:</span>   <span class="val">google</span>
 
 <span class="kw">typography</span> headline
   <span class="meta">weight:</span>       <span class="num">700</span>
-  <span class="meta">size:</span>         <span class="num">6</span>      <span class="cm"># cqh</span>
+  <span class="meta">strong:</span>       <span class="num">800</span>
+  <span class="meta">size:</span>         <span class="num">6</span>
+  <span class="meta">lineHeight:</span>   <span class="num">1.15</span>
   <span class="meta">autofit-min:</span>  <span class="num">4</span>
   <span class="meta">autofit-max:</span>  <span class="num">10</span>
+
+<span class="kw">typography</span> body
+  <span class="meta">weight:</span>       <span class="num">400</span>
+  <span class="meta">size:</span>         <span class="num">2.8</span>
+  <span class="meta">lineHeight:</span>   <span class="num">1.5</span>
+
+<span class="kw">typography</span> caption
+  <span class="meta">weight:</span>       <span class="num">400</span>
+  <span class="meta">size:</span>         <span class="num">2.2</span>
+  <span class="meta">lineHeight:</span>   <span class="num">1.4</span>
+
+<span class="kw">typography</span> label
+  <span class="meta">weight:</span>       <span class="num">600</span>
+  <span class="meta">size:</span>         <span class="num">2</span>
+  <span class="meta">lineHeight:</span>   <span class="num">1.2</span>
+  <span class="flag">uppercase</span>
+
+<span class="kw">typography</span> number
+  <span class="meta">weight:</span>          <span class="num">300</span>
+  <span class="meta">size:</span>            <span class="num">14</span>
+  <span class="meta">lineHeight:</span>      <span class="num">0.9</span>
+  <span class="meta">letterSpacing:</span>   <span class="num">-0.03</span>
+
+<span class="cm"># ── Spacing ──</span>
+
+<span class="kw">spacing:</span>
+  <span class="meta">unit:</span> <span class="val">cqmin</span>
+  <span class="meta">xs:</span> <span class="num">1.5</span>
+  <span class="meta">s:</span>  <span class="num">2</span>
+  <span class="meta">m:</span>  <span class="num">3</span>
+  <span class="meta">l:</span>  <span class="num">5</span>
+  <span class="meta">xl:</span> <span class="num">6.5</span>
+
+<span class="cm"># ── Dividers ──</span>
+
+<span class="kw">divider</span> line
+  <span class="meta">thickness:</span> <span class="num">0.15</span>
+  <span class="meta">width:</span>     <span class="val">100%</span>
+  <span class="meta">color:</span>     <span class="val">divider</span>
+  <span class="meta">align:</span>     <span class="val">left</span>
+
+<span class="kw">divider</span> short
+  <span class="meta">thickness:</span> <span class="num">0.2</span>
+  <span class="meta">width:</span>     <span class="val">25%</span>
+  <span class="meta">color:</span>     <span class="val">divider</span>
+  <span class="meta">align:</span>     <span class="val">left</span>
+
+<span class="cm"># ── Voice Constraints ──</span>
 
 <span class="kw">voice-constraints</span>
   <span class="meta">register:</span>         <span class="val">informal</span>
   <span class="meta">sentence-max:</span>     <span class="num">8</span>
-  <span class="meta">headline-pattern:</span> <span class="val">noun-first</span></pre>
+  <span class="meta">headline-pattern:</span> <span class="val">noun-first</span>
+  <span class="meta">number-format:</span>    <span class="val">cardinal</span>
+
+<span class="cm"># ── Content Defaults ──</span>
+
+<span class="kw">content-defaults</span>
+  <span class="meta">density:</span>         <span class="val">low</span>
+  <span class="meta">image-treatment:</span> <span class="val">natural</span>
+  <span class="meta">divider:</span>         <span class="val">line</span></pre>
     </details>
   </div>
 
@@ -331,18 +485,25 @@ description: An open file format specification for making brand intent machine-r
 
     <details class="code-example">
       <summary>instagram-4-5-feed-portrait.format</summary>
-<pre><span class="kw">id:</span>       <span class="val">4:5</span>
+<pre><span class="cm"># Platform, dimensions, safe zones, grid spec.</span>
+<span class="cm"># Knows nothing about content — only where it appears.</span>
+
+<span class="kw">id:</span>       <span class="val">4:5</span>
 <span class="kw">label:</span>    <span class="val">4:5</span>
 <span class="kw">sublabel:</span> <span class="val">Feed Portrait</span>
 <span class="kw">category:</span> <span class="val">instagram</span>
 
 <span class="kw">size:</span>     <span class="num">1080 1350</span>
-<span class="kw">grid:</span>     <span class="num">5 4</span>        <span class="cm"># rows × cols</span>
+<span class="kw">grid:</span>     <span class="num">5 4</span>           <span class="cm"># rows × cols</span>
 
-<span class="kw">danger:</span>   <span class="num">0 0 0 0</span>
-<span class="kw">crop:</span>     <span class="num">0 34 0 34</span>  <span class="cm"># profile grid crops top/bottom</span>
-<span class="kw">comfort:</span>  <span class="num">40</span>
+<span class="cm"># ── Safe Zone Model ──</span>
+<span class="cm"># danger → crop → comfort → content area</span>
 
+<span class="kw">danger:</span>   <span class="num">0 0 0 0</span>       <span class="cm"># always cropped by platform</span>
+<span class="kw">crop:</span>     <span class="num">0 34 0 34</span>     <span class="cm"># profile grid crops top/bottom</span>
+<span class="kw">comfort:</span>  <span class="num">40</span>            <span class="cm"># safe reading margin</span>
+
+<span class="cm"># Which purposes are editorially valid for this surface.</span>
 <span class="kw">purposes:</span> <span class="val">daily-bread, seasonal-special, baking-tip</span></pre>
     </details>
   </div>
@@ -355,40 +516,79 @@ description: An open file format specification for making brand intent machine-r
     <p>
       Defines a content type through semantic slots (<code>primary</code>, <code>secondary</code>,
       <code>meta</code>, <code>label</code>, <code>cta</code>).
-      Uses <code>scope</code> to narrow the composed upstream
-      and <code>context</code> to add only what is genuinely slot-specific.
+      Narrows the composed upstream with <code>scope</code>,
+      adds slot-specific AI context, and purpose-level voice overrides.
+      Palette control determines how colors are assigned.
     </p>
 
     <details class="code-example">
       <summary>daily-bread.purpose</summary>
 <pre><span class="kw">id:</span>   <span class="val">daily-bread</span>
+<span class="kw">name:</span> <span class="val">Tagesbrot</span>
 <span class="kw">compositions:</span> <span class="val">editorial, simple-stack</span>
-<span class="kw">density:</span> <span class="val">low</span>
+<span class="kw">density:</span> <span class="val">light</span>
+<span class="kw">palette:</span> <span class="val">dynamic</span>
+
+<span class="cm"># ── Voice ──</span>
+<span class="cm"># Purpose-specific writing rules for AI text generation.</span>
+
+<span class="kw">voice</span>
+  <span class="meta">headline-pattern:</span> <span class="val">noun-first</span>
+  <span class="meta">number-format:</span>    <span class="val">digit</span>
+  <span class="meta">sentence-max:</span>     <span class="num">8</span>
+
+<span class="cm"># ── Identity Composition ──</span>
 
 <span class="kw">scope</span>
   <span class="meta">audience:</span> <span class="val">regulars, newcomers</span>
   <span class="meta">pillars:</span>  <span class="val">primary</span>
 
 <span class="kw">context</span>
-  <span class="val">primary is the bread name, 1-3 words.
+  <span class="val">primary is the bread name, 1-3 words (e.g. "Roggenlaib").
   secondary is the weight and price ("750 g · 5,80 €").
-  meta is one sentence: what makes this bread specific.</span>
+  meta is one sentence: what makes this bread specific today.
+  Never describe the bread as "delicious" or "special" -
+  state a fact (flour type, fermentation time, seasonal ingredient).</span>
+
+<span class="cm"># ── Slots ──</span>
 
 <span class="kw">slot</span> <span class="sl">primary</span>
   <span class="meta">label:</span>      <span class="val">Brotname</span>
   <span class="meta">typography:</span> <span class="val">headline</span>
+  <span class="meta">color:</span>      <span class="val">text-primary</span>
   <span class="meta">maxLength:</span>  <span class="num">30</span>
   <span class="meta">samples:</span>
     - <span class="val">Roggenlaib</span>
+    - <span class="val">Weizenmisch</span>
     - <span class="val">Dinkelvollkorn</span>
+
+<span class="kw">slot</span> <span class="sl">secondary</span>
+  <span class="meta">label:</span>      <span class="val">Gewicht & Preis</span>
+  <span class="meta">typography:</span> <span class="val">kicker</span>
+  <span class="meta">color:</span>      <span class="val">text-secondary</span>
+  <span class="meta">maxLength:</span>  <span class="num">25</span>
+  <span class="meta">samples:</span>
+    - <span class="val">750 g · 5,80 €</span>
+    - <span class="val">500 g · 4,20 €</span>
 
 <span class="kw">slot</span> <span class="sl">meta</span>
   <span class="meta">label:</span>      <span class="val">Beschreibung</span>
   <span class="meta">typography:</span> <span class="val">caption</span>
+  <span class="meta">color:</span>      <span class="val">text-secondary</span>
   <span class="meta">maxLength:</span>  <span class="num">100</span>
   <span class="meta">samples:</span>
-    - <span class="val">Roggen 1150, 18 Stunden Teigführung.</span>
-    - <span class="val">Tipo 1 aus der Drax-Mühle, 72 % Hydration.</span></pre>
+    - <span class="val">Roggen 1150, 18 Stunden Teigführung, Kümmel aus dem Wendland.</span>
+    - <span class="val">Tipo 1 aus der Drax-Mühle, 72 % Hydration.</span>
+
+<span class="kw">slot</span> <span class="sl">label</span>
+  <span class="meta">label:</span>      <span class="val">Badge</span>
+  <span class="meta">typography:</span> <span class="val">label</span>
+  <span class="meta">color:</span>      <span class="val">label-fg</span>
+  <span class="meta">maxLength:</span>  <span class="num">20</span>
+  <span class="meta">samples:</span>
+    - <span class="val">Heute frisch</span>
+    - <span class="val">Nur samstags</span>
+    - <span class="val">Neu im Laden</span></pre>
     </details>
   </div>
 
@@ -405,7 +605,10 @@ description: An open file format specification for making brand intent machine-r
 
     <details class="code-example">
       <summary>editorial.composition (grid mode)</summary>
-<pre><span class="kw">id:</span>    <span class="val">editorial</span>
+<pre><span class="cm"># Explicit row/column placement. Newspaper style:</span>
+<span class="cm"># secondary above primary, label badge top-right.</span>
+
+<span class="kw">id:</span>    <span class="val">editorial</span>
 <span class="kw">mode:</span>  <span class="val">grid</span>
 <span class="kw">image:</span> <span class="val">full</span>
 <span class="kw">logo:</span>  <span class="val">top left</span>
@@ -413,12 +616,16 @@ description: An open file format specification for making brand intent machine-r
 <span class="sl">label</span>      <span class="val">row 1  cols 3--4  right</span>
 <span class="sl">secondary</span>  <span class="val">row 2  cols 1--4  left center</span>
 <span class="sl">primary</span>    <span class="val">row 3  cols 1--4  left</span>
-<span class="sl">meta</span>       <span class="val">row 5  cols 1--3  left bottom</span></pre>
+<span class="sl">meta</span>       <span class="val">row 5  cols 1--3  left bottom</span>
+<span class="sl">cta</span>        <span class="val">row 5  cols 4--4  right bottom</span></pre>
     </details>
 
     <details class="code-example" style="margin-top:0.5rem;">
       <summary>simple-stack.composition (flow mode)</summary>
-<pre><span class="kw">id:</span>    <span class="val">simple-stack</span>
+<pre><span class="cm"># Content-driven arrangement: sticky bars + flow regions.</span>
+<span class="cm"># Vertical stack in a bottom panel over full-bleed image.</span>
+
+<span class="kw">id:</span>    <span class="val">simple-stack</span>
 <span class="kw">mode:</span>  <span class="val">flow</span>
 <span class="kw">image:</span> <span class="val">full</span>
 
@@ -431,6 +638,8 @@ description: An open file format specification for making brand intent machine-r
   | <span class="sl">primary</span> <span class="val">left</span>
   | <span class="val">divider-line</span>
   | <span class="sl">secondary</span> <span class="val">left</span>
+  | <span class="val">spacer-s</span>
+  | <span class="sl">meta</span> <span class="val">left</span>
   | <span class="val">spacer-auto</span></pre>
     </details>
   </div>
@@ -485,8 +694,8 @@ description: An open file format specification for making brand intent machine-r
     <div>
       <h3 style="margin-top:0;">3. Author your brand</h3>
       <p>
-        Start with <code>.identity</code>: the reasoning, the voice, the always/never rules,
-        values, audiences, anti-audiences.
+        Start with <code>.identity</code>: essence, promise, positioning, narratives,
+        voice with always/never rules, values, audiences, anti-audiences.
         Then derive the expression intent in <code>.brand</code>.
         Add formats for the platforms your brand inhabits.
         Purposes and compositions follow.

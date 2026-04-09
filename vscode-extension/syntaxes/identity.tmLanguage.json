@@ -6,6 +6,7 @@
     { "include": "#top-level-keyword" },
     { "include": "#named-block" },
     { "include": "#indented-property" },
+    { "include": "#flag" },
     { "include": "#value-name" },
     { "include": "#list-item" },
     { "include": "#continuation-line" }
@@ -24,16 +25,16 @@
       }
     },
     "named-block": {
-      "comment": "Block headers: voice, pillars, narrative, values, audience NAME, anti-audience NAME",
+      "comment": "Block headers: voice, pillars, values, narrative NAME, audience NAME, anti-audience NAME",
       "patterns": [
         {
-          "match": "^(voice|pillars|narrative|values)\\s*$",
+          "match": "^(voice|pillars|values)\\s*$",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-identity" }
           }
         },
         {
-          "match": "^(audience|anti-audience)\\s+(\\S.*)",
+          "match": "^(narrative|audience|anti-audience)\\s+(\\S.*)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-identity" },
             "2": { "name": "entity.name.type.brand-intent-identity" }
@@ -47,6 +48,13 @@
         "2": { "name": "support.type.property-name.brand-intent-identity" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-identity" },
         "4": { "name": "string.unquoted.brand-intent-identity" }
+      }
+    },
+    "flag": {
+      "comment": "Bare flags: primary (presence = true)",
+      "match": "^(\\s{2,})(primary)\\s*$",
+      "captures": {
+        "2": { "name": "constant.language.brand-intent-identity" }
       }
     },
     "value-name": {
