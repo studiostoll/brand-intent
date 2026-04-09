@@ -86,45 +86,25 @@ Contains: slot-to-position mappings in grid or flow mode.
 
 ## Composing Context for Content Generation
 
-When generating content for a specific purpose, compose your context by reading layers in order:
+When generating content for a specific purpose, read all layers silently (do not dump file contents or context notes to the user), then lead with the generated content.
 
-### Step 1: Read `.identity`
+### Reading layers (internal, not shown to user):
 
-Load the full identity. Pay special attention to:
-- `voice.always` and `voice.never`: these are your hard constraints
-- `voice.persona`: adopt this voice
-- `voice.register`: match this formality level
-- `pillars.avoid`: never generate content in these topic areas
-- `anti-audience`: never sound like you're addressing these people
-- `values`: use behavior statements to guide decisions when voice rules don't cover a situation
-- `positioning`: use when content needs to differentiate
+1. **Read `.identity`** — voice.always/never (hard constraints), persona, register, pillars.avoid, anti-audience, values, positioning
+2. **Read `.brand`** — voice-constraints: sentence-max, headline-pattern, number-format, register
+3. **Apply `scope` from `.purpose`** — audience and pillar filters narrow the upstream context
+4. **Apply `context` from `.purpose`** — slot-specific instructions, follow literally
+5. **Generate per-slot content** — respect maxLength, use samples as structural reference (match pattern, not words), follow context instructions
 
-### Step 2: Read `.brand`
+### Output format:
 
-Load voice-constraints and content-defaults:
-- Enforce `sentence-max` on all generated text
-- Follow `headline-pattern` for headlines
-- Use `number-format` for numbers
-- Apply `density` from content-defaults
+For each brand that has the requested purpose:
 
-### Step 3: Apply `scope` from `.purpose`
+- If multiple brands exist, show the **brand name** as a heading
+- Show each **slot** with its generated content — nothing else
+- After the content, show a **compact validation summary** (pass/fail per rule, only call out failures in detail)
 
-The purpose file's `scope` narrows the composed upstream:
-- `audience:` only use language guidance from these audience blocks
-- `pillars:` restrict to this pillar scope (`primary`, `secondary`, or `all`)
-
-If no filter is specified, include everything.
-
-### Step 4: Apply `context` from `.purpose`
-
-Read the `context` block. This contains slot-specific instructions that cannot be derived from identity or brand. Follow them literally; they are precise, not general.
-
-### Step 5: Generate per-slot content
-
-For each slot in the purpose:
-- Respect `maxLength` (hard character limit)
-- Use `samples` as structural reference (match the pattern, not the words)
-- Follow the `context` instructions for this slot
+Do NOT show: layer contents, file paths, context notes, voice constraint values, scope details, or step-by-step reasoning. The user wants content, not process.
 
 ## Validation Checklist
 
