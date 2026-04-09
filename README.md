@@ -29,7 +29,7 @@ Brand Intent is a set of five composable file types that encode brand knowledge 
 Syntax highlighting, autocomplete, and validation for all five file types.
 
 ```
-ext install stoll.brand-intent-lang
+ext install studiostoll.brand-intent-lang
 ```
 
 ### 2. Install skills for your AI agent
