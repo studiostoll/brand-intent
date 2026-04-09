@@ -146,9 +146,72 @@ description: An open file format specification for making brand intent machine-r
 </section>
 
 
+<!-- ═══ CONTEXT ENGINEERING ═══ -->
+<section id="context" class="landing-section">
+  <span class="section-label">03 / Context Engineering</span>
+  <h2>Write your brand once. Every agent reads it.</h2>
+
+  <div class="two-col" style="margin-top:1.5rem;">
+    <div>
+      <p>
+        Brand Intent files are context — structured, composable, versionable.
+        Not prompts you rewrite each session, but infrastructure that lives
+        in your repo and compounds over time.
+      </p>
+      <p>
+        The five layers compose into a single context object:
+        identity reasoning &rarr; expression intent &rarr; scoped for this audience
+        &rarr; conditioned for this platform &rarr; arranged in this composition.
+        The agent receives exactly the constraints it needs, nothing more.
+      </p>
+    </div>
+    <div>
+      <p>
+        No app required. Brand Intent files are plain text. Point your agent at them —
+        Claude project knowledge, Cursor repo context, ChatGPT upload,
+        or <code>system</code> prompt in any LLM API.
+      </p>
+      <p>
+        The installed skill teaches agents how to compose the layers,
+        validate against <code>voice.never</code> and <code>pillars.avoid</code>,
+        and respect <code>anti-audience</code> boundaries.
+        Without it, the files are still readable context.
+      </p>
+    </div>
+  </div>
+
+  <div class="usecase-row">
+    <div class="usecase-card">
+      <div class="uc-title">Content generation</div>
+      <div class="uc-body">
+        <code>.identity</code> + <code>.brand</code> + <code>.purpose</code> &rarr; any&nbsp;LLM.
+        Voice rules, audience definitions, and pillar constraints keep output on-brand.
+        The spec <em>is</em> the brief.
+      </div>
+    </div>
+    <div class="usecase-card">
+      <div class="uc-title">Design systems</div>
+      <div class="uc-body">
+        <code>.brand</code> is the source of truth for colors, typography, spacing.
+        Push tokens to Figma — not the other way around.
+        <span class="uc-soon">Official Figma plugin coming soon.</span>
+      </div>
+    </div>
+    <div class="usecase-card">
+      <div class="uc-title">Brand governance</div>
+      <div class="uc-body">
+        <code>voice.never</code>, <code>pillars.avoid</code>, and <code>anti-audience</code>
+        are machine-checkable rules. Validate generated content before publish.
+        Brand compliance becomes automated.
+      </div>
+    </div>
+  </div>
+</section>
+
+
 <!-- ═══ LAYERS ═══ -->
 <section id="layers" class="landing-section">
-  <span class="section-label">03 / The Layers</span>
+  <span class="section-label">04 / The Layers</span>
   <h2>From identity to composition, in plain text.</h2>
 
   <!-- IDENTITY -->
@@ -367,7 +430,7 @@ description: An open file format specification for making brand intent machine-r
 
 <!-- ═══ GET STARTED ═══ -->
 <section id="start" class="landing-section">
-  <span class="section-label">04 / Get Started</span>
+  <span class="section-label">05 / Get Started</span>
   <h2>Your brand as infrastructure.</h2>
 
   <div class="two-col" style="margin-top:1.5rem;">
