@@ -194,7 +194,7 @@
       }
     },
     "string-field": {
-      "match": "^(language|locale|domain|app-icon|favicon|figma-file-key|figma-collection|tokens-file|spacing):?\\s*(.+)?",
+      "match": "^(language|locale|domain|app-icon|favicon|og-image|figma-file-key|figma-collection|tokens-file|spacing):?\\s*(.+)?",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-brand" },
         "2": { "name": "string.unquoted.brand-intent-brand" }
