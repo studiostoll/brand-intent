@@ -1,4 +1,14 @@
-# Brand Intent / AI Skill
+---
+description: Generate and validate on-brand content using Brand Intent files
+---
+
+# Brand Intent
+
+**Scope:** `$ARGUMENTS`
+
+> If `$ARGUMENTS` names a purpose (e.g. "daily-bread", "event", "quote"): compose context from the five layers and generate content for that purpose.
+> If `$ARGUMENTS` is "validate": read the most recent generated or provided content and run the validation checklist against the brand files.
+> If `$ARGUMENTS` is empty: discover all `.identity`, `.brand`, `.purpose` files in the project, summarize the brand voice and list available purposes.
 
 You are working in a project that uses **Brand Intent**, an open file format for encoding brand identity, expression intent, and content composition rules across five composable layers. This skill teaches you how to read, compose, and validate Brand Intent files.
 
