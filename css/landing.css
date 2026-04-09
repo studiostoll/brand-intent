@@ -157,15 +157,25 @@
   margin: var(--space-lg) 0;
 }
 .usecase-card {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: baseline;
   padding: var(--space-md);
   border-right: 1px solid var(--color-border);
 }
 .usecase-card:last-child { border-right: none; }
+.uc-number {
+  font-family: var(--font-monospace);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-link);
+  flex-shrink: 0;
+}
 .uc-title {
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-bold);
   color: var(--color-primary);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 .uc-body {
   font-size: var(--font-size-small);
