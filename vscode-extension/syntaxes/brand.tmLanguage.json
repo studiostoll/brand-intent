@@ -20,6 +20,8 @@
     { "include": "#font-value" },
     { "include": "#typography-header" },
     { "include": "#typography-value" },
+    { "include": "#asset-header" },
+    { "include": "#asset-value" },
     { "include": "#string-field" },
     { "include": "#keyword-partial" }
   ],
@@ -158,7 +160,7 @@
     },
     "typography-value": {
       "comment": "Indented typography block properties; font ref colored teal as a cross-reference",
-      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$",
+      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing|autofit-min|autofit-max)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -167,6 +169,28 @@
         "7": { "name": "punctuation.separator.key-value.brand-intent-brand" },
         "8": { "name": "constant.numeric.brand-intent-brand" },
         "10": { "name": "support.type.property-name.brand-intent-brand" }
+      }
+    },
+    "asset-header": {
+      "match": "^(logo|photo|video)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "asset-value": {
+      "match": "^(\\s{2,})(label|src|lottie)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "string.unquoted.brand-intent-brand" },
+        "6": { "name": "support.type.property-name.brand-intent-brand" },
+        "7": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "8": { "name": "constant.numeric.brand-intent-brand" },
+        "10": { "name": "support.type.property-name.brand-intent-brand" },
+        "12": { "name": "support.type.property-name.brand-intent-brand" },
+        "13": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "14": { "name": "constant.language.boolean.brand-intent-brand" }
       }
     },
     "string-field": {
@@ -178,7 +202,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|brand-colors|theme|divider|font|typography)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|brand-colors|theme|divider|font|typography|logo|photo|video)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

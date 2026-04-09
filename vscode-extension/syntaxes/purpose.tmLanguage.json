@@ -12,6 +12,8 @@
     { "include": "#voice-header" },
     { "include": "#voice-property" },
     { "include": "#palette-header" },
+    { "include": "#asset-field" },
+    { "include": "#camera-field" },
     { "include": "#context-header" },
     { "include": "#slot-header" },
     { "include": "#override-header" },
@@ -100,6 +102,20 @@
           }
         }
       ]
+    },
+    "asset-field": {
+      "match": "^(logo:|photo:|video:)\\s+([\\w-]+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "entity.name.type.brand-intent-purpose" }
+      }
+    },
+    "camera-field": {
+      "match": "^(camera:)\\s+(true|false)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "constant.language.brand-intent-purpose" }
+      }
     },
     "context-header": {
       "match": "^(context)\\s*$",
@@ -193,7 +209,7 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|context|slot)(?=\\s|$)",
+          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|camera:|context|slot)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-purpose" }
           }
