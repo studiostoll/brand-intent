@@ -157,26 +157,32 @@
   margin: var(--space-lg) 0;
 }
 .usecase-card {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: baseline;
   padding: var(--space-md);
   border-right: 1px solid var(--color-border);
 }
 .usecase-card:last-child { border-right: none; }
 .uc-letter {
   font-family: var(--font-monospace);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-link);
-  margin-right: 0.4em;
-}
-.uc-title {
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-  margin-bottom: 0.3rem;
+  color: var(--color-link);
+  flex-shrink: 0;
 }
-.uc-body {
+.uc-content {
   font-size: var(--font-size-small);
   color: var(--color-secondary);
   line-height: 1.6;
+}
+.uc-content strong {
+  color: var(--color-primary);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.uc-content code {
+  font-size: 0.8em;
 }
 .uc-soon {
   font-style: italic;
