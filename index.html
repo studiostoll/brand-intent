@@ -379,58 +379,103 @@ description: An open file format specification for making brand intent machine-r
   <span class="meta">text-primary:</span>   <span class="ref">$primary</span>
   <span class="meta">text-secondary:</span> <span class="ref">$secondary</span>
   <span class="meta">text-tertiary:</span>  <span class="ref">$accent1</span>
+  <span class="meta">text-subtle:</span>    <span class="val">#A89282</span>
+  <span class="meta">text-muted:</span>     <span class="val">#C4B5A7</span>
   <span class="meta">logo:</span>           <span class="ref">$primary</span>
+  <span class="meta">sticker-bg:</span>     <span class="ref">$accent1</span>
+  <span class="meta">sticker-fg:</span>     <span class="ref">$primary</span>
   <span class="meta">cta:</span>            <span class="ref">$accent2</span>
   <span class="meta">label-bg:</span>       <span class="ref">$accent1</span>
   <span class="meta">label-fg:</span>       <span class="ref">$primary</span>
+  <span class="meta">icon:</span>           <span class="ref">$secondary</span>
   <span class="meta">divider:</span>        <span class="ref">$accent1</span>
 
 <span class="kw">theme</span> Tafel
   <span class="meta">background:</span>     <span class="ref">$primary</span>
   <span class="meta">text-primary:</span>   <span class="ref">$white</span>
   <span class="meta">text-secondary:</span> <span class="val">#D4C4B0</span>
+  <span class="meta">text-tertiary:</span>  <span class="val">#8A7A68</span>
+  <span class="meta">text-subtle:</span>    <span class="val">#6A5A48</span>
+  <span class="meta">text-muted:</span>     <span class="val">#4A3A28</span>
   <span class="meta">logo:</span>           <span class="ref">$accent1</span>
+  <span class="meta">sticker-bg:</span>     <span class="ref">$accent2</span>
+  <span class="meta">sticker-fg:</span>     <span class="ref">$white</span>
   <span class="meta">cta:</span>            <span class="ref">$accent1</span>
   <span class="meta">label-bg:</span>       <span class="ref">$accent2</span>
   <span class="meta">label-fg:</span>       <span class="ref">$white</span>
+  <span class="meta">icon:</span>           <span class="val">#D4C4B0</span>
   <span class="meta">divider:</span>        <span class="ref">$accent1</span>
 
 <span class="cm"># ── Typography ──</span>
 
 <span class="kw">font</span> primary
-  <span class="meta">name:</span>     <span class="val">Libre Franklin</span>
+  <span class="meta">name:</span>     <span class="val">Hanken Grotesk</span>
   <span class="meta">fallback:</span> <span class="val">sans-serif</span>
   <span class="meta">source:</span>   <span class="val">google</span>
 
+<span class="kw">font</span> secondary
+  <span class="meta">name:</span>     <span class="val">ABC Stefan Simple</span>
+  <span class="meta">fallback:</span> <span class="val">sans-serif</span>
+  <span class="meta">source:</span>   <span class="val">local</span>
+
+<span class="kw">typography</span> display
+  <span class="meta">font:</span>        <span class="ref">$secondary</span>
+  <span class="meta">weight:</span>      <span class="num">400</span>
+  <span class="meta">size:</span>        <span class="num">8</span>
+  <span class="meta">lineHeight:</span>  <span class="num">1.1</span>
+  <span class="meta">autofit-min:</span> <span class="num">5</span>
+  <span class="meta">autofit-max:</span> <span class="num">12</span>
+
 <span class="kw">typography</span> headline
-  <span class="meta">weight:</span>       <span class="num">700</span>
-  <span class="meta">strong:</span>       <span class="num">800</span>
-  <span class="meta">size:</span>         <span class="num">6</span>
-  <span class="meta">lineHeight:</span>   <span class="num">1.15</span>
-  <span class="meta">autofit-min:</span>  <span class="num">4</span>
-  <span class="meta">autofit-max:</span>  <span class="num">10</span>
+  <span class="meta">weight:</span>      <span class="num">700</span>
+  <span class="meta">strong:</span>      <span class="num">800</span>
+  <span class="meta">size:</span>        <span class="num">6</span>
+  <span class="meta">lineHeight:</span>  <span class="num">1.15</span>
+  <span class="meta">autofit-min:</span> <span class="num">4</span>
+  <span class="meta">autofit-max:</span> <span class="num">10</span>
+
+<span class="kw">typography</span> kicker
+  <span class="meta">weight:</span>      <span class="num">400</span>
+  <span class="meta">size:</span>        <span class="num">2.6</span>
+  <span class="meta">lineHeight:</span>  <span class="num">1.3</span>
+  <span class="meta">autofit-min:</span> <span class="num">2.5</span>
+  <span class="meta">autofit-max:</span> <span class="num">3.5</span>
+
+<span class="kw">typography</span> quote
+  <span class="meta">weight:</span>      <span class="num">700</span>
+  <span class="meta">strong:</span>      <span class="num">800</span>
+  <span class="meta">size:</span>        <span class="num">5.5</span>
+  <span class="meta">lineHeight:</span>  <span class="num">1.2</span>
+  <span class="meta">autofit-min:</span> <span class="num">4</span>
+  <span class="meta">autofit-max:</span> <span class="num">8</span>
 
 <span class="kw">typography</span> body
-  <span class="meta">weight:</span>       <span class="num">400</span>
-  <span class="meta">size:</span>         <span class="num">2.8</span>
-  <span class="meta">lineHeight:</span>   <span class="num">1.5</span>
+  <span class="meta">weight:</span>      <span class="num">400</span>
+  <span class="meta">size:</span>        <span class="num">2.8</span>
+  <span class="meta">lineHeight:</span>  <span class="num">1.5</span>
 
 <span class="kw">typography</span> caption
-  <span class="meta">weight:</span>       <span class="num">400</span>
-  <span class="meta">size:</span>         <span class="num">2.2</span>
-  <span class="meta">lineHeight:</span>   <span class="num">1.4</span>
+  <span class="meta">weight:</span>      <span class="num">400</span>
+  <span class="meta">size:</span>        <span class="num">2.2</span>
+  <span class="meta">lineHeight:</span>  <span class="num">1.4</span>
+
+<span class="kw">typography</span> attribution
+  <span class="meta">weight:</span>         <span class="num">300</span>
+  <span class="meta">size:</span>           <span class="num">2.2</span>
+  <span class="meta">lineHeight:</span>     <span class="num">1.4</span>
+  <span class="meta">letterSpacing:</span>  <span class="num">0.08</span>
 
 <span class="kw">typography</span> label
-  <span class="meta">weight:</span>       <span class="num">600</span>
-  <span class="meta">size:</span>         <span class="num">2</span>
-  <span class="meta">lineHeight:</span>   <span class="num">1.2</span>
+  <span class="meta">weight:</span>      <span class="num">600</span>
+  <span class="meta">size:</span>        <span class="num">2</span>
+  <span class="meta">lineHeight:</span>  <span class="num">1.2</span>
   <span class="flag">uppercase</span>
 
 <span class="kw">typography</span> number
-  <span class="meta">weight:</span>          <span class="num">300</span>
-  <span class="meta">size:</span>            <span class="num">14</span>
-  <span class="meta">lineHeight:</span>      <span class="num">0.9</span>
-  <span class="meta">letterSpacing:</span>   <span class="num">-0.03</span>
+  <span class="meta">weight:</span>         <span class="num">300</span>
+  <span class="meta">size:</span>           <span class="num">14</span>
+  <span class="meta">lineHeight:</span>     <span class="num">0.9</span>
+  <span class="meta">letterSpacing:</span>  <span class="num">-0.03</span>
 
 <span class="cm"># ── Spacing ──</span>
 
@@ -449,12 +494,14 @@ description: An open file format specification for making brand intent machine-r
   <span class="meta">width:</span>     <span class="val">100%</span>
   <span class="meta">color:</span>     <span class="val">divider</span>
   <span class="meta">align:</span>     <span class="val">left</span>
+  <span class="meta">spacing:</span>   <span class="val">s</span>
 
-<span class="kw">divider</span> short
-  <span class="meta">thickness:</span> <span class="num">0.2</span>
-  <span class="meta">width:</span>     <span class="val">25%</span>
+<span class="kw">divider</span> ruler
+  <span class="meta">thickness:</span> <span class="num">0.8</span>
+  <span class="meta">width:</span>     <span class="val">20%</span>
   <span class="meta">color:</span>     <span class="val">divider</span>
   <span class="meta">align:</span>     <span class="val">left</span>
+  <span class="meta">spacing:</span>   <span class="val">m</span>
 
 <span class="cm"># ── Voice Constraints ──</span>
 
