@@ -179,8 +179,6 @@
   line-height: 1.6;
 }
 .uc-soon {
-  display: block;
-  margin-top: 0.4rem;
   font-style: italic;
   color: var(--color-tertiary);
 }
