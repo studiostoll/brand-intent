@@ -46,10 +46,6 @@ npx brand-intent init
 - [Design Decisions](DESIGN.md): reasoning behind the framework
 - [intent.stoll.studio](https://intent.stoll.studio): project landing page
 
-## Relationship to Impeccable
-
-Brand Intent is complementary to [Impeccable](https://impeccable.style). Where Impeccable teaches agents *how to design well* (general craft), Brand Intent teaches them *what this brand's expression intent is* (specific identity). Together: execution quality and brand specificity.
-
 ## License
 
 MIT

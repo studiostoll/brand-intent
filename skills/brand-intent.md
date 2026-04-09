@@ -148,11 +148,3 @@ compositions/*.composition ← shared
 ```
 
 To find the active brand, look for `.identity` and `.brand` files. There is exactly one of each per brand.
-
-## Relationship to Impeccable
-
-If this project also uses [Impeccable](https://impeccable.style), the two are complementary:
-- **Impeccable** teaches you how to design well (general craft)
-- **Brand Intent** teaches you what this brand's expression intent is (specific identity)
-
-Apply both. Impeccable governs execution quality. Brand Intent governs brand specificity.
