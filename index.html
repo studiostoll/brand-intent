@@ -451,8 +451,9 @@ description: An open file format specification for making brand intent machine-r
       <h3 style="margin-top:0;">1. Install the VS Code extension</h3>
       <p>Syntax highlighting, autocomplete, and hover docs for all five file types.</p>
       <div class="install-block">
-        <div class="install-cmd">
+        <div class="install-cmd" data-copy="ext install studiostoll.brand-intent-lang">
           <span class="prompt">ext</span>install studiostoll.brand-intent-lang
+          <button class="copy-btn" aria-label="Copy command">Copy</button>
         </div>
       </div>
 
@@ -464,16 +465,14 @@ description: An open file format specification for making brand intent machine-r
         Brand knowledge becomes infrastructure, not a prompt you write each time.
       </p>
       <div class="install-block">
-        <div class="install-cmd">
+        <div class="install-cmd" data-copy="npx brand-intent install-skills">
           <span class="prompt">$</span>npx brand-intent install-skills
+          <button class="copy-btn" aria-label="Copy command">Copy</button>
         </div>
       </div>
-      <div class="install-block">
-        <div class="install-label">Works with</div>
-        <div style="font-family:var(--font-monospace);font-size:var(--font-size-small);color:var(--color-secondary);line-height:2;">
-          Claude Code &middot; Cursor &middot; Gemini CLI &middot; VS Code Copilot &middot; Codex CLI
-        </div>
-      </div>
+      <p class="works-with">
+        Works with: Claude Code &middot; Cursor &middot; Gemini CLI &middot; VS Code Copilot &middot; Codex CLI
+      </p>
       <p style="margin-top:var(--space-md); font-size:var(--font-size-small); color:var(--color-tertiary);">
         Complementary to <a href="https://impeccable.style">Impeccable</a>:
         where Impeccable teaches agents <em>how to design well</em>,
@@ -493,8 +492,9 @@ description: An open file format specification for making brand intent machine-r
         The Krume bakery brand is included as a fully commented reference implementation.
       </p>
       <div class="install-block">
-        <div class="install-cmd">
+        <div class="install-cmd" data-copy="npx brand-intent init --from krume">
           <span class="prompt">$</span>npx brand-intent init --from krume
+          <button class="copy-btn" aria-label="Copy command">Copy</button>
         </div>
       </div>
     </div>

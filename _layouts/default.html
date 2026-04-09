@@ -92,6 +92,24 @@
         </footer>
     </div>
 
+    <!-- Copy buttons -->
+    <script>
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      var cmd = btn.parentElement.getAttribute('data-copy');
+      if (!cmd) return;
+      navigator.clipboard.writeText(cmd).then(function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+    </script>
+
     <!-- Theme Switcher -->
     <script src="{{ '/_themes/js/theme-switcher.js' | relative_url }}"></script>
 
