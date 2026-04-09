@@ -146,44 +146,6 @@
   font-size: 0.8em;
 }
 
-/* ── Use-case cards (3-col) ── */
-.usecase-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
-  margin: var(--space-lg) 0;
-}
-.usecase-card {
-  display: flex;
-  gap: var(--space-sm);
-  align-items: baseline;
-  padding: var(--space-md);
-  border-right: 1px solid var(--color-border);
-}
-.usecase-card:last-child { border-right: none; }
-.uc-letter {
-  font-family: var(--font-monospace);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-link);
-  flex-shrink: 0;
-}
-.uc-content {
-  font-size: var(--font-size-small);
-  color: var(--color-secondary);
-  line-height: 1.6;
-}
-.uc-content strong {
-  color: var(--color-primary);
-  display: block;
-  margin-bottom: 0.3rem;
-}
-.uc-content code {
-  font-size: 0.8em;
-}
 .uc-soon {
   font-style: italic;
   color: var(--color-tertiary);
@@ -395,9 +357,6 @@ details.code-example > summary:hover {
   .workflow-steps { grid-template-columns: 1fr; }
   .workflow-step { border-right: none; border-bottom: 1px solid var(--color-border); }
   .workflow-step:last-child { border-bottom: none; }
-  .usecase-row { grid-template-columns: 1fr; }
-  .usecase-card { border-right: none; border-bottom: 1px solid var(--color-border); }
-  .usecase-card:last-child { border-bottom: none; }
   .two-col { grid-template-columns: 1fr; }
   .layer-chain { flex-wrap: wrap; gap: 0.25rem; }
   .chain-arrow { margin: 0 0.3rem; }
