@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { createInterface } from 'readline';
@@ -42,6 +42,45 @@ function closeRl() {
 
 function ask(q) {
   return new Promise((res) => rl().question(q, res));
+}
+
+// ── File operations ──
+
+function copyDirRecursive(src, dest) {
+  mkdirSync(dest, { recursive: true });
+  for (const entry of readdirSync(src)) {
+    const srcPath = join(src, entry);
+    const destPath = join(dest, entry);
+    if (statSync(srcPath).isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function scaffoldExample(targetDir) {
+  const brandSrc = join(PKG_ROOT, 'brands', 'krume');
+  const exampleDest = join(targetDir, 'examples', 'krume');
+
+  copyDirRecursive(brandSrc, exampleDest);
+
+  const layers = [
+    { layer: 'formats', file: 'instagram-4-5-feed-portrait.format' },
+    { layer: 'purposes', file: 'daily-bread.purpose' },
+    { layer: 'compositions', file: 'editorial.composition' },
+  ];
+
+  for (const { layer, file } of layers) {
+    const src = join(PKG_ROOT, layer, file);
+    if (existsSync(src)) {
+      const dest = join(exampleDest, layer, file);
+      mkdirSync(dirname(dest), { recursive: true });
+      copyFileSync(src, dest);
+    }
+  }
+
+  console.log('  \u2713 examples/krume/ \u2014 reference implementation (identity, brand, format, purpose, composition)');
 }
 
 // ── Install skill ──
@@ -116,6 +155,7 @@ if (targetDir !== cwd) {
 }
 console.log('');
 
+scaffoldExample(targetDir);
 await installSkills(targetDir);
 closeRl();
 

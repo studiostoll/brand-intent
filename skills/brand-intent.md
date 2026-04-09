@@ -216,30 +216,16 @@ Once confirmed, generate these files at the project root:
 - **Typography sizes use `cqmin` units.** Use these sensible defaults unless the user specified otherwise: headline 6, body 2.8, caption 2.2, label 2.
 - **Spacing defaults:** unit cqmin, xs 1.5, s 2, m 3, l 5, xl 6.5.
 
-## Example: Scaffold the Krume Reference
+## Example: Explore the Krume Reference
 
-When `$ARGUMENTS` is "example", copy the Krume bakery reference files into `examples/krume/` in the current project. The Krume files are distributed with the npm package.
+When `$ARGUMENTS` is "example", the Krume bakery reference is already in `examples/krume/` (copied there by `npx brand-intent init`).
 
-Run this shell command to copy them:
+Read the files and walk the user through them:
 
-```bash
-node -e "
-const pkg = require.resolve('brand-intent/package.json');
-const root = require('path').dirname(pkg);
-const { cpSync, mkdirSync } = require('fs');
-const dest = 'examples/krume';
-mkdirSync(dest, { recursive: true });
-for (const d of ['brands/krume', 'formats', 'purposes', 'compositions']) {
-  const src = require('path').join(root, d);
-  try { cpSync(src, require('path').join(dest, d.replace('brands/krume', '')), { recursive: true }); } catch {}
-}
-console.log('Krume example scaffolded into examples/krume/');
-"
-```
+- **`krume.identity`** — the strategic layer: essence, voice, values, audiences. Start here.
+- **`krume.brand`** — derived expression: colors, themes, typography, spacing. Every decision traces back to identity.
+- **`formats/`** — canvas dimensions, safe zones, grid. Where content appears.
+- **`purposes/`** — content type with semantic slots, samples, constraints. What content does.
+- **`compositions/`** — spatial arrangement of slots. How elements are placed.
 
-Then explain to the user what each file does:
-- **`.identity`** — the strategic layer: essence, voice, values, audiences. Read this first.
-- **`.brand`** — derived expression: colors, themes, typography, spacing. Every decision traces back to identity.
-- **`.format`** — canvas dimensions, safe zones, grid. Where content appears.
-- **`.purpose`** — content type with semantic slots, samples, constraints. What content does.
-- **`.composition`** — spatial arrangement of slots. How elements are placed.
+If `examples/krume/` doesn't exist, tell the user to run `npx brand-intent init` first.
