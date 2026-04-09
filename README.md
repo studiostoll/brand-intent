@@ -17,9 +17,9 @@ Brand Intent is a set of five composable file types that encode brand knowledge 
 | Layer | File | Question |
 |-------|------|----------|
 | Identity | `.identity` | Who is this brand? |
-| Brand | `.brand` | What expression intent does it derive? |
-| Format | `.format` | Where does this content appear? |
-| Purpose | `.purpose` | What is this content trying to do? |
+| Brand | `.brand` | How is it expressed? |
+| Format | `.format` | Where does it appear? |
+| Purpose | `.purpose` | What is this content for? |
 | Composition | `.composition` | How are elements composed? |
 
 ## Get started
