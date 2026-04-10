@@ -10,7 +10,7 @@ description: Generate and validate on-brand content using Brand Intent files
 > If `$ARGUMENTS` is "example": scaffold the Krume bakery reference implementation into `examples/krume/` and explain what each file does.
 > If `$ARGUMENTS` names a purpose (e.g. "daily-bread", "event", "quote"): compose context from the five layers and generate content for that purpose.
 > If `$ARGUMENTS` is "validate": read the most recent generated or provided content and run the validation checklist against the brand files.
-> If `$ARGUMENTS` is empty: discover all `.identity`, `.brand`, `.purpose` files in the project, summarize the brand voice and list available purposes.
+> If `$ARGUMENTS` is empty: find the active brand (see File Discovery below), summarize the brand voice and list available purposes.
 
 You are working in a project that uses **Brand Intent**, an open file format for encoding brand identity, expression intent, and content composition rules across five composable layers. This skill teaches you how to read, compose, and validate Brand Intent files.
 
@@ -128,17 +128,28 @@ After generating or reviewing content, validate against these rules in order:
 
 ## File Discovery
 
-Brand Intent files follow this structure:
+A Brand Intent brand lives in its own folder, named after the brand:
 
 ```
-brandname.identity
-brandname.brand
-formats/*.format
-purposes/*.purpose
-compositions/*.composition
+brandname/
+├── brandname.identity
+├── brandname.brand
+├── formats/*.format
+├── purposes/*.purpose
+└── compositions/*.composition
 ```
 
-To find the active brand, look for the `.identity` and `.brand` files at the project root. There is exactly one of each per project.
+### Finding the active brand
+
+A **brand folder** is a directory that contains both a `*.identity` and a `*.brand` file whose base name matches the folder name. To find the active brand:
+
+1. Search the project for brand folders, but **skip anything under `examples/`** — those are reference material, not the user's real brand.
+2. **If exactly one non-example brand folder exists**, use it silently. That is the active brand.
+3. **If multiple exist**, ask the user which brand they want to work on. Don't guess.
+4. **If none exist but an example brand does** (e.g. `examples/krume/`), treat the example as the active brand — the user is in learning mode. Before doing work, say one line: *"Working with the Krume example brand — run `/brand-intent onboard` when you want to create your own."* Then proceed normally.
+5. **If nothing exists at all**, suggest running `/brand-intent onboard` to create a brand, or `npx brand-intent init` to scaffold the Krume example.
+
+Explicit references to an example brand (e.g. "show me the Krume example", "how does Krume handle headlines?") always reach into `examples/` directly, regardless of what the active brand is.
 
 ## Onboarding: Create a New Brand
 
@@ -200,13 +211,15 @@ Ask the user to confirm or adjust. Iterate until they're happy.
 
 ### File Generation
 
-Once confirmed, generate these files at the project root:
+Once confirmed, create a folder named after the brand ID and generate these files inside it:
 
-1. **`[brandid].identity`** — essence, promise, tagline, archetype, voice (register, persona, rhythm, always/never), pillars, audience blocks, anti-audience blocks. Follow the structure of the Krume reference.
+1. **`[brandid]/[brandid].identity`** — essence, promise, tagline, archetype, voice (register, persona, rhythm, always/never), pillars, audience blocks, anti-audience blocks. Follow the structure of the Krume reference.
 
-2. **`[brandid].brand`** — id, name, language, locale, brand-colors, at least one theme (mapping semantic slots to color references), font blocks, typography blocks (headline, body, caption, label at minimum), spacing, dividers. Use `$name` references for theme colors.
+2. **`[brandid]/[brandid].brand`** — id, name, language, locale, brand-colors, at least one theme (mapping semantic slots to color references), font blocks, typography blocks (headline, body, caption, label at minimum), spacing, dividers. Use `$name` references for theme colors.
 
-3. **`purposes/starter.purpose`** — a starter purpose with slots that have on-brand sample content derived from the identity. Samples must be in the brand's language and respect voice rules.
+3. **`[brandid]/purposes/starter.purpose`** — a starter purpose with slots that have on-brand sample content derived from the identity. Samples must be in the brand's language and respect voice rules.
+
+The brand folder sits at the project root (or wherever the user invoked the skill). If a folder with that name already exists and contains brand files, stop and ask before overwriting.
 
 ### Rules
 

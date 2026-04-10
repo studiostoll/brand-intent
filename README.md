@@ -43,7 +43,6 @@ npx brand-intent init
 ## Documentation
 
 - [Specification](SPEC.md): formal grammar for all five file types
-- [Design Decisions](DESIGN.md): reasoning behind the framework
 - [intent.stoll.studio](https://intent.stoll.studio): project landing page
 
 ## License

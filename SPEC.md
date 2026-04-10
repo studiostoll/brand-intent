@@ -703,39 +703,42 @@ A parser should warn when:
 
 ## File Organization
 
-### Single-Brand Project
+### Your Brand
+
+A brand lives in its own folder, named after the brand. The folder contains the brand's `.identity` and `.brand` files alongside its formats, purposes, and compositions:
 
 ```
 project/
-├── brandname.identity
-├── brandname.brand
-├── formats/
-│   └── instagram-4-5-feed-portrait.format
-├── purposes/
-│   └── daily-bread.purpose
-└── compositions/
-    └── editorial.composition
+└── brandname/
+    ├── brandname.identity
+    ├── brandname.brand
+    ├── formats/
+    │   └── instagram-4-5-feed-portrait.format
+    ├── purposes/
+    │   └── daily-bread.purpose
+    └── compositions/
+        └── editorial.composition
 ```
 
-### Multi-Brand Project
+Every brand is fully self-contained. Formats, purposes, and compositions are specific to one brand's identity and voice — there are no shared files between brands.
+
+### Examples
+
+Reference brands for learning and inspiration live under `examples/`. They mirror the "your brand" structure but are clearly labeled as reference material — not production, not something to build on directly:
 
 ```
 project/
-├── brands/
-│   ├── krume/
-│   │   ├── krume.identity
-│   │   └── krume.brand
-│   └── otherbrand/
-│       ├── otherbrand.identity
-│       └── otherbrand.brand
-├── formats/          ← shared across brands
-├── purposes/         ← shared across brands
-└── compositions/     ← shared across brands
+└── examples/
+    └── krume/
+        ├── krume.identity
+        ├── krume.brand
+        ├── formats/
+        ├── purposes/
+        └── compositions/
 ```
 
-Formats, purposes, and compositions are brand-independent by design. They are shared at the project root. Only `.identity` and `.brand` files are brand-specific.
+The `brand-intent` npm package ships example brands under `examples/`. Run `brand-intent init` to copy them into your own project.
 
 ---
 
 *Brand Intent Specification v0.1 / April 2026*
-*See [DESIGN.md](DESIGN.md) for reasoning behind these decisions.*
