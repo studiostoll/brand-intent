@@ -2,14 +2,41 @@
 <html lang="en">
 
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYR501JZVX"></script>
+    <!-- Analytics Exclusion Check -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+      (function() {
+        // Auto-exclude localhost and development environments
+        var isLocalhost = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.startsWith('192.168.') ||
+                         window.location.hostname.endsWith('.local');
 
-      gtag('config', 'G-BYR501JZVX');
+        // Check for manual exclusion flag (set by /exclude-me/)
+        var excludeAnalytics = localStorage.getItem('exclude_analytics') === 'true' ||
+                               document.cookie.includes('exclude_analytics=true');
+
+        // Auto-exclude automated browsers (Playwright, MCP chrome-devtools)
+        var isAutomated = navigator.webdriver === true;
+
+        if (isLocalhost || excludeAnalytics || isAutomated) {
+          console.log('Analytics excluded:',
+            isLocalhost ? 'localhost/development' :
+            excludeAnalytics ? 'internal flag' :
+            'automated browser');
+          return;
+        }
+
+        // Google tag (gtag.js)
+        var gaScript = document.createElement('script');
+        gaScript.async = true;
+        gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-BYR501JZVX';
+        document.head.appendChild(gaScript);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-BYR501JZVX');
+      })();
     </script>
 
     <meta charset="utf-8">

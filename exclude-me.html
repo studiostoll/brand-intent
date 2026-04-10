@@ -1,0 +1,43 @@
+---
+layout: default
+title: Exclude My Traffic
+noindex: true
+---
+
+<section class="two-col">
+  <div class="two-col-label">Analytics Exclusion</div>
+  <div class="two-col-content">
+    <h2 id="status">Setting exclusion flag...</h2>
+    <p>Your traffic will now be excluded from Google Analytics on all stoll.studio sites.</p>
+    <p><small>This sets a persistent flag in your browser that lasts for 1 year. You'll need to visit this page once in each browser/device you use.</small></p>
+    <p><a href="/">← Back to Home</a></p>
+  </div>
+</section>
+
+<script>
+(function() {
+  // Set localStorage flag
+  localStorage.setItem('exclude_analytics', 'true');
+
+  // Set long-lived cookies for all stoll.studio domains
+  var domains = [
+    '.stoll.studio',
+    '.intent.stoll.studio'
+  ];
+
+  domains.forEach(function(domain) {
+    document.cookie = 'exclude_analytics=true; domain=' + domain + '; path=/; max-age=31536000; SameSite=Lax';
+  });
+
+  // Also set for current domain without subdomain specification
+  document.cookie = 'exclude_analytics=true; path=/; max-age=31536000; SameSite=Lax';
+
+  // Update status
+  document.getElementById('status').textContent = '✓ Analytics Excluded Successfully';
+  document.getElementById('status').style.color = 'var(--color-success, green)';
+
+  console.log('Analytics exclusion flags set:');
+  console.log('- localStorage: exclude_analytics = true');
+  console.log('- Cookies set for all stoll.studio domains');
+})();
+</script>
