@@ -55,7 +55,11 @@
                 <a href="{{ '/' | relative_url }}" class="sitename" title="Home">Brand Intent</a>
                 <small class="tagline">An open specification</small>
             </h1>
-            <nav class="nav" role="navigation" aria-label="Main navigation">
+            <!-- Mobile nav toggle -->
+            <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+                <span class="nav-toggle-icon" aria-hidden="true"></span>
+            </button>
+            <nav class="nav" id="nav-menu" role="navigation" aria-label="Main navigation">
                 <ul>
                     <li><a href="#framework">Framework</a></li>
                     <li><a href="#context">Context Engineering</a></li>
@@ -178,6 +182,41 @@
       }
 
       markActive();
+    })();
+    </script>
+
+    <!-- Mobile Navigation -->
+    <script>
+    (function() {
+      var toggle = document.querySelector('.nav-toggle');
+      var nav = document.querySelector('#nav-menu');
+      if (!toggle || !nav) return;
+
+      toggle.addEventListener('click', function() {
+        var isOpen = nav.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', isOpen);
+        toggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && nav.classList.contains('is-open')) {
+          nav.classList.remove('is-open');
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.setAttribute('aria-label', 'Open menu');
+          document.body.style.overflow = '';
+          toggle.focus();
+        }
+      });
+
+      nav.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A') {
+          nav.classList.remove('is-open');
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.setAttribute('aria-label', 'Open menu');
+          document.body.style.overflow = '';
+        }
+      });
     })();
     </script>
 </body>

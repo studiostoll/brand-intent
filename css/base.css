@@ -206,6 +206,50 @@ nav ul li a:hover {
   opacity: 1;
 }
 
+/* Mobile Navigation Toggle (hamburger) */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-toggle-icon,
+.nav-toggle-icon::before,
+.nav-toggle-icon::after {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-primary);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.nav-toggle-icon {
+  position: relative;
+}
+.nav-toggle-icon::before,
+.nav-toggle-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+.nav-toggle-icon::before { top: -7px; }
+.nav-toggle-icon::after { top: 7px; }
+
+/* Animate to X when open */
+.nav-toggle[aria-expanded="true"] .nav-toggle-icon {
+  background-color: transparent;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-icon::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-icon::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
 /* Footer */
 .footer {
   display: flex;
@@ -238,8 +282,40 @@ nav ul li a:hover {
   h2 { font-size: 1.8rem; }
   h3 { font-size: 1.4rem; }
   .container { padding-left: 1.2rem; padding-right: 1.2rem; }
-  .masthead { flex-direction: column; gap: 0.5rem; }
-  nav ul { flex-wrap: wrap; gap: 0.75rem; }
+
+  /* Mobile nav: hamburger + overlay */
+  .masthead { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .nav-toggle { display: block; position: relative; z-index: 99998; }
+  .nav-toggle[aria-expanded="true"] { z-index: 100002; }
+  nav.nav { display: none; margin-top: 0; }
+
+  /* Full-screen overlay when open */
+  nav.nav.is-open {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100001;
+    background-color: var(--color-surface);
+    margin: 0;
+    padding: 3rem 1.5rem;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    animation: fadein 0.2s ease;
+  }
+  nav.nav.is-open ul {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+  }
+  nav.nav.is-open ul li { display: block; }
+  nav.nav.is-open ul li a { font-size: 1.5rem; }
+
   .footer { flex-direction: column; align-items: flex-end; gap: 0.5rem; }
   .theme-links { display: none; }
   .theme-select {
@@ -252,4 +328,9 @@ nav ul li a:hover {
     border-radius: 3px;
     padding: 0.25rem 0.5rem;
   }
+}
+
+@keyframes fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
