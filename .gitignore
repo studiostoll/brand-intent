@@ -1,2 +1,14 @@
 node_modules/
 *.vsix
+
+# Jekyll build artifacts
+_site/
+.jekyll-cache/
+.jekyll-metadata
+vendor/
+Gemfile.lock
+
+# Internal / local-only (repo is public)
+DESIGN.md
+CLAUDE.md
+.claude/
