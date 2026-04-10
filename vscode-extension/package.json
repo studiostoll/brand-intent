@@ -1,8 +1,8 @@
 {
   "name": "brand-intent-lang",
-  "displayName": "Brand Intent \u2014 .identity, .brand, .format, .purpose, .composition",
-  "description": "Syntax highlighting and autocomplete for the Brand Intent specification \u2014 .identity, .brand, .format, .purpose, and .composition files that define brand identity, visual language, and content architecture.",
-  "version": "0.1.0",
+  "displayName": "Brand Intent — .identity, .brand, .format, .purpose, .composition",
+  "description": "Syntax highlighting and autocomplete for the Brand Intent specification — .identity, .brand, .format, .purpose, and .composition files that define brand identity, visual language, and content architecture.",
+  "version": "0.2.0",
   "publisher": "studiostoll",
   "author": {
     "name": "Studio Stoll",
@@ -14,8 +14,12 @@
     "url": "https://github.com/studiostoll/brand-intent.git",
     "directory": "vscode-extension"
   },
-  "engines": { "vscode": "^1.70.0" },
-  "categories": ["Programming Languages"],
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
   "main": "./extension.js",
   "activationEvents": [
     "onLanguage:brand-intent-identity",
@@ -28,32 +32,52 @@
     "languages": [
       {
         "id": "brand-intent-identity",
-        "aliases": ["Brand Intent Identity"],
-        "extensions": [".identity"],
+        "aliases": [
+          "Brand Intent Identity"
+        ],
+        "extensions": [
+          ".identity"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "brand-intent-brand",
-        "aliases": ["Brand Intent Brand"],
-        "extensions": [".brand"],
+        "aliases": [
+          "Brand Intent Brand"
+        ],
+        "extensions": [
+          ".brand"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "brand-intent-format",
-        "aliases": ["Brand Intent Format"],
-        "extensions": [".format"],
+        "aliases": [
+          "Brand Intent Format"
+        ],
+        "extensions": [
+          ".format"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "brand-intent-purpose",
-        "aliases": ["Brand Intent Purpose"],
-        "extensions": [".purpose"],
+        "aliases": [
+          "Brand Intent Purpose"
+        ],
+        "extensions": [
+          ".purpose"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "brand-intent-composition",
-        "aliases": ["Brand Intent Composition"],
-        "extensions": [".composition"],
+        "aliases": [
+          "Brand Intent Composition"
+        ],
+        "extensions": [
+          ".composition"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
