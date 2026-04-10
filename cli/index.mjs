@@ -60,26 +60,9 @@ function copyDirRecursive(src, dest) {
 }
 
 function scaffoldExample(targetDir) {
-  const brandSrc = join(PKG_ROOT, 'brands', 'krume');
-  const exampleDest = join(targetDir, 'examples', 'krume');
-
-  copyDirRecursive(brandSrc, exampleDest);
-
-  const layers = [
-    { layer: 'formats', file: 'instagram-4-5-feed-portrait.format' },
-    { layer: 'purposes', file: 'daily-bread.purpose' },
-    { layer: 'compositions', file: 'editorial.composition' },
-  ];
-
-  for (const { layer, file } of layers) {
-    const src = join(PKG_ROOT, layer, file);
-    if (existsSync(src)) {
-      const dest = join(exampleDest, layer, file);
-      mkdirSync(dirname(dest), { recursive: true });
-      copyFileSync(src, dest);
-    }
-  }
-
+  const src = join(PKG_ROOT, 'examples', 'krume');
+  const dest = join(targetDir, 'examples', 'krume');
+  copyDirRecursive(src, dest);
   console.log('  \u2713 examples/krume/ \u2014 reference implementation (identity, brand, format, purpose, composition)');
 }
 

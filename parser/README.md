@@ -21,12 +21,12 @@ import { readFileSync } from 'fs';
 import { parseIdentityFile, parseBrandFile } from './parser';
 
 const identity = parseIdentityFile(
-  readFileSync('brands/krume/krume.identity', 'utf-8'),
+  readFileSync('examples/krume/krume.identity', 'utf-8'),
   'krume.identity'
 );
 
 const brand = parseBrandFile(
-  readFileSync('brands/krume/krume.brand', 'utf-8'),
+  readFileSync('examples/krume/krume.brand', 'utf-8'),
   'krume.brand'
 );
 ```
