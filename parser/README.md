@@ -10,7 +10,7 @@ TypeScript parsers for all five Brand Intent file types.
 | `brandParser.ts` | `.brand` | `parseBrandFile(content, fileName)` |
 | `formatParser.ts` | `.format` | `parseFormatFile(content, fileName)` |
 | `purposeParser.ts` | `.purpose` | `parsePurposeFile(content, fileName)` |
-| `compositionParser.ts` | `.composition` | `parseLayoutFile(content, fileName)` |
+| `compositionParser.ts` | `.composition` | `parseCompositionFile(content, fileName)` |
 
 All parsers are **pure functions**: they take a string (file content) and a filename (for error messages), and return a parsed object. No I/O, no side effects, no dependencies beyond `types.ts`.
 
@@ -33,5 +33,4 @@ const brand = parseBrandFile(
 
 ## Notes
 
-- The composition parser exports `parseLayoutFile()` - the function name will be updated to `parseCompositionFile()` in a future version.
 - These parsers throw on validation errors, with the filename and line number included in the error message.

@@ -1,8 +1,9 @@
 /**
  * Parser for .brand brand definition files.
  *
- * Line-based format, same conventions as .purpose / .layout / .format.
- * Multi-line values (like ai-context) use indented continuation lines.
+ * Line-based format, same conventions as .purpose / .composition / .format / .identity.
+ * Strategic/narrative content belongs in the sibling `.identity` file — this parser
+ * handles expression-layer primitives only (colors, typography, dividers, assets, badge styles).
  */
 
 // ── Parsed type ────────────────────────────────────────────────────────────────
@@ -12,7 +13,8 @@ export interface ParsedBrand {
   name: string;
   language: string;
   locale: string;
-  domain: string;
+  /** Canonical domain for this brand (used for OG meta, favicon paths, share links). */
+  domain?: string;
   /** Named font primitives: name → font definition. First entry is the brand default. */
   fonts?: Record<string, ParsedFontDef>;
   /** Token source type: 'figma' | 'inline' */
@@ -23,12 +25,12 @@ export interface ParsedBrand {
   figmaCollection?: string;
   /** Path to the runtime tokens file (relative to /src) */
   tokensFile: string;
-  /** AI context — multi-line narrative text for Claude prompts */
-  aiContext: string;
   /** Path to app icon asset (relative to /public), used for PWA icon */
   appIcon?: string;
   /** Path to favicon asset (relative to /public), used for browser tab icon */
   favicon?: string;
+  /** Path to OG image asset (relative to /public), used for social sharing previews */
+  ogImage?: string;
   /** Core brand color primitives: name → hex (e.g. primary, secondary, accent1, accent2, white) */
   brandColors?: Record<string, string>;
   /** Structured print specs per brand color: name → {pantone?, hks?, cmyk?} */
@@ -43,6 +45,30 @@ export interface ParsedBrand {
   dividers?: Record<string, ParsedDividerDef>;
   /** Named typography styles: name → style definition */
   typographies?: Record<string, ParsedTypographyDef>;
+  /** Brand-declared assets: curated logos, photos, videos with labels and metadata */
+  assets?: { logos?: ParsedAssetDef[]; photos?: ParsedAssetDef[]; videos?: ParsedAssetDef[] };
+  /** Label badge style — padding (top/right/bottom/left in cqh) and corner radius (cqh) */
+  label?: ParsedBadgeStyle;
+  /** CTA pill style — padding (top/right/bottom/left in cqh) and corner radius (cqh, or 999 for full pill) */
+  cta?: ParsedBadgeStyle;
+}
+
+export interface ParsedAssetDef {
+  id: string;
+  label: string;
+  src: string;
+  aspectRatio?: number;
+  scale?: number;
+  lottieSrc?: string;
+  animated?: boolean;
+  loop?: boolean;
+}
+
+export interface ParsedBadgeStyle {
+  /** Padding in cqh: [top, right, bottom, left] */
+  padding: [number, number, number, number];
+  /** Corner radius in cqh. Use 999 for a full pill. */
+  radius: number;
 }
 
 export interface ParsedFontDef {
@@ -107,16 +133,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const result: Partial<ParsedBrand> = {
     tokensFile: 'tokens.json',
     tokensSource: 'figma',
-    aiContext: '',
   };
 
-  type ActiveBlock = 'none' | 'ai-context' | 'brand-colors' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font';
+  type ActiveBlock = 'none' | 'brand-colors' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'label' | 'cta';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
   let currentTypographyName = '';
   let currentFontName = '';
-  const aiContextLines: string[] = [];
   const brandColors: Record<string, string> = {};
   const brandColorPrint: Record<string, BrandColorPrintSpec> = {};
   let currentBrandColorName = '';
@@ -126,6 +150,12 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const dividersRaw: Record<string, Record<string, string>> = {};
   const typographiesRaw: Record<string, Record<string, string>> = {};
   const fontsRaw: Array<{ name: string; props: Record<string, string> }> = [];
+  const logosRaw: Array<{ id: string; props: Record<string, string> }> = [];
+  const photosRaw: Array<{ id: string; props: Record<string, string> }> = [];
+  const videosRaw: Array<{ id: string; props: Record<string, string> }> = [];
+  let currentAssetId = '';
+  const labelRaw: Record<string, string> = {};
+  const ctaRaw: Record<string, string> = {};
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -140,10 +170,6 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
     // Indented continuation line — route to the active block
     if (isIndented) {
-      if (activeBlock === 'ai-context') {
-        aiContextLines.push(raw.trim());
-        continue;
-      }
       if (activeBlock === 'brand-colors') {
         const trimmed = raw.trimStart();
         const indentLen = raw.length - trimmed.length;
@@ -227,6 +253,34 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         continue;
       }
+      if ((activeBlock === 'logo' || activeBlock === 'photo' || activeBlock === 'video') && currentAssetId) {
+        const colonIdx = raw.indexOf(':');
+        if (colonIdx !== -1) {
+          const key = raw.slice(0, colonIdx).trim();
+          const value = raw.slice(colonIdx + 1).trim();
+          const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : videosRaw;
+          const last = arr[arr.length - 1];
+          if (last && last.id === currentAssetId) last.props[key] = value;
+        } else {
+          const trimmed = raw.trim();
+          if (trimmed === 'animated' || trimmed === 'loop') {
+            const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : videosRaw;
+            const last = arr[arr.length - 1];
+            if (last && last.id === currentAssetId) last.props[trimmed] = 'true';
+          }
+        }
+        continue;
+      }
+      if (activeBlock === 'label' || activeBlock === 'cta') {
+        const colonIdx = raw.indexOf(':');
+        if (colonIdx !== -1) {
+          const key = raw.slice(0, colonIdx).trim();
+          const value = raw.slice(colonIdx + 1).trim();
+          const target = activeBlock === 'label' ? labelRaw : ctaRaw;
+          target[key] = value;
+        }
+        continue;
+      }
       // Indented line with no active block — ignore
       continue;
     }
@@ -276,6 +330,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       continue;
     }
 
+    // logo/photo/video <id> — starts an asset block
+    const assetMatch = raw.match(/^(logo|photo|video)\s+(\S+)/);
+    if (assetMatch) {
+      const [, type, id] = assetMatch;
+      currentAssetId = id;
+      activeBlock = type as 'logo' | 'photo' | 'video';
+      const arr = type === 'logo' ? logosRaw : type === 'photo' ? photosRaw : videosRaw;
+      arr.push({ id, props: {} });
+      continue;
+    }
+
     const colonIdx = raw.indexOf(':');
     if (colonIdx === -1) continue;
 
@@ -300,21 +365,21 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       case 'tokens-file':       result.tokensFile = value; break;
       case 'app-icon':          result.appIcon = value; break;
       case 'favicon':           result.favicon = value; break;
-      case 'ai-context':
-        activeBlock = 'ai-context';
-        // value on the same line as ai-context: is ignored (block starts on next lines)
-        break;
+      case 'og-image':          result.ogImage = value; break;
       case 'spacing':
         activeBlock = 'spacing';
+        break;
+      case 'label':
+        activeBlock = 'label';
+        break;
+      case 'cta':
+        activeBlock = 'cta';
         break;
       default:
         // Unknown keys silently ignored for forward compatibility
         break;
     }
   }
-
-  // Finalise ai-context
-  result.aiContext = aiContextLines.join('\n').trim();
 
   // Store brand colors
   if (Object.keys(brandColors).length > 0) {
@@ -415,8 +480,47 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     result.typographies = typographies;
   }
 
+  // Finalise brand-declared assets
+  const toAssetDef = (raw: { id: string; props: Record<string, string> }): ParsedAssetDef => {
+    const def: ParsedAssetDef = { id: raw.id, label: raw.props['label'] ?? raw.id, src: raw.props['src'] ?? '' };
+    if (raw.props['aspect']) def.aspectRatio = parseFloat(raw.props['aspect']);
+    if (raw.props['scale']) def.scale = parseFloat(raw.props['scale']);
+    if (raw.props['lottie']) def.lottieSrc = raw.props['lottie'];
+    if (raw.props['animated'] === 'true') def.animated = true;
+    if (raw.props['loop'] === 'true') def.loop = true;
+    return def;
+  };
+  if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0) {
+    result.assets = {};
+    if (logosRaw.length > 0) result.assets.logos = logosRaw.map(toAssetDef);
+    if (photosRaw.length > 0) result.assets.photos = photosRaw.map(toAssetDef);
+    if (videosRaw.length > 0) result.assets.videos = videosRaw.map(toAssetDef);
+  }
+
+  // Finalise label / cta badge styles
+  const parseBadgeStyle = (raw: Record<string, string>, defaults: ParsedBadgeStyle): ParsedBadgeStyle => {
+    const padding = (() => {
+      const p = raw['padding'];
+      if (!p) return defaults.padding;
+      const nums = p.split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
+      if (nums.length === 1) return [nums[0], nums[0], nums[0], nums[0]] as [number, number, number, number];
+      if (nums.length === 2) return [nums[0], nums[1], nums[0], nums[1]] as [number, number, number, number];
+      if (nums.length === 3) return [nums[0], nums[1], nums[2], nums[1]] as [number, number, number, number];
+      if (nums.length >= 4) return [nums[0], nums[1], nums[2], nums[3]] as [number, number, number, number];
+      return defaults.padding;
+    })();
+    const radius = raw['radius'] !== undefined ? parseFloat(raw['radius']) : defaults.radius;
+    return { padding, radius: isNaN(radius) ? defaults.radius : radius };
+  };
+  if (Object.keys(labelRaw).length > 0) {
+    result.label = parseBadgeStyle(labelRaw, { padding: [0.5, 1, 0.7, 1], radius: 0 });
+  }
+  if (Object.keys(ctaRaw).length > 0) {
+    result.cta = parseBadgeStyle(ctaRaw, { padding: [0.8, 2.5, 0.8, 2.5], radius: 999 });
+  }
+
   // Validate required fields
-  const required: (keyof ParsedBrand)[] = ['id', 'name', 'language', 'locale', 'domain'];
+  const required: (keyof ParsedBrand)[] = ['id', 'name', 'language', 'locale'];
   for (const field of required) {
     if (!result[field]) {
       throw new Error(`${fileName}: missing required field "${field}"`);

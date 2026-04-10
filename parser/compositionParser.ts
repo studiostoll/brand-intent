@@ -1,5 +1,5 @@
 /**
- * Parser for .layout archetype definition files.
+ * Parser for .composition definition files.
  *
  * Strict, line-based format. Every line must match a known pattern or be blank.
  * Throws on parse errors with file name and line number.
@@ -22,7 +22,7 @@ export interface ParsedImageRegion {
   colEnd?: number;    // 0-based column (undefined = full width)
 }
 
-export interface ParsedArchetype {
+export interface ParsedComposition {
   /** Programmatic ID (from `id:` line, or fallback from first `#` line). */
   id: string;
   /** Human-readable display name (from `name:` line, or falls back to id). */
@@ -38,9 +38,9 @@ export interface ParsedArchetype {
   logoNone?: boolean;
   /** Icon slot placement (optional). */
   icon?: { row: number | GridYKeyword; col: 'left' | 'center' | 'right'; size?: 's' | 'm' | 'l' };
-  /** Ungrouped slots (empty if archetype uses a group or flow). */
+  /** Ungrouped slots (empty if composition uses a group or flow). */
   slots: ParsedSlot[];
-  /** Grouped layout — legacy syntax (null if archetype uses ungrouped slots or flow:). */
+  /** Grouped layout — legacy syntax (null if composition uses ungrouped slots or flow:). */
   group: ParsedGroup | null;
   /** Sticky regions — composed repetition areas (logo, label). */
   sticky: ParsedStickyRegion[];
@@ -189,18 +189,18 @@ function resolveColKeyword(raw: string, fileName: string, lineNum: number): 'lef
 
 // ── Main parser ───────────────────────────────────────────────────────────────
 
-export function parseLayoutFile(content: string, fileName: string): ParsedArchetype {
+export function parseCompositionFile(content: string, fileName: string): ParsedComposition {
   const lines = content.split('\n');
 
   let id = '';
   let name = '';
   let description = '';
   let mode: 'flow' | 'compose' | null = null;
-  let image: ParsedArchetype['image'] | null = null;
+  let image: ParsedComposition['image'] | null = null;
   let imageExplicit = false;
-  let logo: ParsedArchetype['logo'] = null;
+  let logo: ParsedComposition['logo'] = null;
   let logoNone = false;
-  let icon: ParsedArchetype['icon'] | undefined = undefined;
+  let icon: ParsedComposition['icon'] | undefined = undefined;
   const slots: ParsedSlot[] = [];
   let group: ParsedGroup | null = null; // deprecated — kept for type compat only
   const sticky: ParsedStickyRegion[] = [];
@@ -563,7 +563,7 @@ export function parseLayoutFile(content: string, fileName: string): ParsedArchet
       console.warn(`${fileName}: deprecated — add "id: ${firstHashText}" line (first # line used as fallback id)`);
       id = firstHashText;
     } else {
-      throw new Error(`${fileName}: missing archetype id (add "id:" line)`);
+      throw new Error(`${fileName}: missing composition id (add "id:" line)`);
     }
   }
 

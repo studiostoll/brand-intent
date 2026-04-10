@@ -22,6 +22,8 @@
     { "include": "#typography-value" },
     { "include": "#asset-header" },
     { "include": "#asset-value" },
+    { "include": "#badge-header" },
+    { "include": "#badge-value" },
     { "include": "#string-field" },
     { "include": "#keyword-partial" }
   ],
@@ -193,6 +195,22 @@
         "14": { "name": "constant.language.boolean.brand-intent-brand" }
       }
     },
+    "badge-header": {
+      "comment": "Bare `label:` or `cta:` line that introduces a badge style block.",
+      "match": "^(label|cta):\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "badge-value": {
+      "comment": "Indented badge style properties: padding (CSS shorthand) + radius",
+      "match": "^(\\s{2,})(padding|radius)(:\\s*)(.+)$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
     "string-field": {
       "match": "^(language|locale|domain|app-icon|favicon|og-image|figma-file-key|figma-collection|tokens-file|spacing):?\\s*(.+)?",
       "captures": {
@@ -202,7 +220,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|brand-colors|theme|divider|font|typography|logo|photo|video)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|brand-colors|theme|divider|font|typography|logo|photo|video)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

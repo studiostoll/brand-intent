@@ -225,12 +225,21 @@ The brand file encodes derived expression intent: visual language and operationa
 | `name:` | string | Yes | Display name |
 | `language:` | string | Yes | ISO 639-1 language code (e.g., `de`) |
 | `locale:` | string | Yes | BCP 47 locale (e.g., `de-DE`) |
+| `domain:` | string | No | Canonical domain (used for OG meta, share links) |
+| `app-icon:` | string | No | Path to PWA app icon (relative to /public) |
+| `favicon:` | string | No | Path to favicon (relative to /public) |
+| `og-image:` | string | No | Path to social sharing image (relative to /public) |
 | `brand-colors` | block | Yes | Color primitive definitions |
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
 | `spacing:` | block | No | Spacing token scale |
 | `divider NAME` | block | No | Named divider style (repeatable) |
+| `label:` | block | No | Label badge style (padding + radius) |
+| `cta:` | block | No | CTA pill style (padding + radius) |
+| `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
+| `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
+| `video NAME` | block | No | Brand-declared video asset (repeatable) |
 
 ### `brand-colors` Block
 
@@ -331,6 +340,60 @@ spacing:
 | `color:` | string | `text-tertiary` | Theme slot name or hex |
 | `align:` | enum | `left` | `left` \| `center` \| `right` |
 | `spacing:` | string | `xs` | Spacing token name |
+
+### `label:` and `cta:` Blocks
+
+Badge/pill style for `label` and `cta` slot rendering. Both optional; both fall back to sensible defaults when omitted.
+
+```yaml
+label:
+  padding: 0.5 1 0.7 1
+  radius: 0
+
+cta:
+  padding: 0.8 2.5
+  radius: 999
+```
+
+| Key        | Type          | Description                                            |
+|------------|---------------|--------------------------------------------------------|
+| `padding:` | CSS shorthand | 1–4 values in cqh, CSS order (top/right/bottom/left)   |
+| `radius:`  | float         | Corner radius in cqh; `999` = full pill                |
+
+**Defaults** when a block is omitted or a field is missing:
+
+- `label` — padding `0.5 1 0.7 1`, radius `0`
+- `cta` — padding `0.8 2.5`, radius `999`
+
+### `logo NAME`, `photo NAME`, `video NAME` Blocks
+
+Brand-declared assets — curated logos, photos, and videos that ship with the brand. Each asset has an id (block header), a display label, and a source file path.
+
+```yaml
+logo primary
+  label: Primary Logo
+  src: logos/primary.svg
+  aspect: 5.25
+
+photo hero
+  label: Hero Shot
+  src: photos/hero.jpg
+
+video intro
+  label: Intro Clip
+  src: videos/intro.mp4
+  loop
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `label:` | string | No | Display label (defaults to block id) |
+| `src:` | string | Yes | Path to asset file (relative to brand base) |
+| `aspect:` | float | No | Aspect ratio (width / height) |
+| `scale:` | float | No | Size multiplier when rendered |
+| `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
+| `animated` | flag | No | Marks asset as animated |
+| `loop` | flag | No | Marks video/lottie as looping |
 
 ### Exclusion Rule
 

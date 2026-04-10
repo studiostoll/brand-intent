@@ -15,7 +15,7 @@ export interface ParsedPurpose {
   id: string;
   name: string;
   description: string;
-  preferredArchetypes: string[];
+  preferredCompositions: string[];
   slots: ParsedPurposeSlot[];
   /** Content density — how much content this purpose typically carries. */
   density?: Density;
@@ -31,6 +31,14 @@ export interface ParsedPurpose {
   defaultIcon?: string;
   /** Default icon weight. */
   defaultIconWeight?: string;
+  /** Default logo asset id — pre-selects a brand-declared logo when this purpose is created. */
+  defaultLogo?: string;
+  /** Default photo asset id — pre-selects a brand-declared photo. */
+  defaultPhoto?: string;
+  /** Default video asset id — pre-selects a brand-declared video. */
+  defaultVideo?: string;
+  /** Whether the camera capture UI is enabled for this purpose. Default: true. */
+  camera?: boolean;
 }
 
 export interface ParsedPurposeSlot {
@@ -100,7 +108,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let id = '';
   let name = '';
   let description = '';
-  let archetypes: string[] | null = null;
+  let compositions: string[] | null = null;
   let scope: { audience?: string[]; pillars?: string } | undefined;
   let context: string | undefined;
   let voice: Record<string, string> | undefined;
@@ -112,6 +120,10 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let density: Density | undefined;
   let defaultIcon: string | undefined;
   let defaultIconWeight: string | undefined;
+  let defaultLogo: string | undefined;
+  let defaultPhoto: string | undefined;
+  let defaultVideo: string | undefined;
+  let camera: boolean | undefined;
   const slots: ParsedPurposeSlot[] = [];
   // For backward compat: track first # line text for fallback id
   let firstHashText = '';
@@ -243,8 +255,29 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     if (line.startsWith('compositions:') || line.startsWith('archetypes:')) {
       const colonIdx = line.indexOf(':');
       const value = line.slice(colonIdx + 1).trim();
-      archetypes = value.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
-      if (archetypes.length === 0) throw new Error(`${fileName}:${lineNum}: empty compositions list`);
+      compositions = value.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
+      if (compositions.length === 0) throw new Error(`${fileName}:${lineNum}: empty compositions list`);
+      continue;
+    }
+
+    // Asset pre-selection — references to brand-declared logos/photos/videos
+    if (line.startsWith('logo:')) {
+      defaultLogo = line.slice(5).trim();
+      continue;
+    }
+    if (line.startsWith('photo:')) {
+      defaultPhoto = line.slice(6).trim();
+      continue;
+    }
+    if (line.startsWith('video:')) {
+      defaultVideo = line.slice(6).trim();
+      continue;
+    }
+
+    // Camera UI toggle — "camera: true" / "camera: false"
+    if (line.startsWith('camera:')) {
+      const value = line.slice(7).trim();
+      camera = value === 'true';
       continue;
     }
 
@@ -548,7 +581,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   }
 
   // Validate required fields
-  if (!archetypes) throw new Error(`${fileName}: missing "compositions:" line`);
+  if (!compositions) throw new Error(`${fileName}: missing "compositions:" line`);
   if (slots.length === 0) throw new Error(`${fileName}: no slots defined`);
 
   // Derive display name from id if not provided: capitalize first letter of each word
@@ -561,5 +594,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredArchetypes: archetypes, slots, density, palette, scope, context, voice, defaultIcon, defaultIconWeight };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultIcon, defaultIconWeight, defaultLogo, defaultPhoto, defaultVideo, camera };
 }

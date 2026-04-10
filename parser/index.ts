@@ -6,7 +6,7 @@ export { parseIdentityFile } from './identityParser';
 export type { ParsedIdentity, ParsedVoice, ParsedPillars, ParsedAudience, ParsedAntiAudience, ParsedValue } from './identityParser';
 
 export { parseBrandFile } from './brandParser';
-export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec } from './brandParser';
+export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle } from './brandParser';
 
 export { parseFormatFile } from './formatParser';
 export type { ParsedFormat } from './formatParser';
@@ -14,7 +14,7 @@ export type { ParsedFormat } from './formatParser';
 export { parsePurposeFile } from './purposeParser';
 export type { ParsedPurpose, ParsedPurposeSlot, Density } from './purposeParser';
 
-export { parseLayoutFile } from './compositionParser';
-export type { ParsedArchetype, ParsedFlowRegion, ParsedStickyRegion } from './compositionParser';
+export { parseCompositionFile } from './compositionParser';
+export type { ParsedComposition, ParsedFlowRegion, ParsedStickyRegion } from './compositionParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';
