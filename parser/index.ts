@@ -15,6 +15,13 @@ export { parsePurposeFile } from './purposeParser';
 export type { ParsedPurpose, ParsedPurposeSlot, Density } from './purposeParser';
 
 export { parseCompositionFile } from './compositionParser';
-export type { ParsedComposition, ParsedFlowRegion, ParsedStickyRegion } from './compositionParser';
+export type {
+  ParsedComposition,
+  ParsedFlowRegion,
+  ParsedStickyRegion,
+  ParsedFlowItem,
+  ParsedImageRegion,
+  GridYKeyword,
+} from './compositionParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';
