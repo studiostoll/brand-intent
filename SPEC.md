@@ -295,6 +295,23 @@ theme Laden
 | `name:` | string | Yes | Font family name |
 | `fallback:` | string | Yes | CSS fallback (e.g., `sans-serif`) |
 | `source:` | enum | Yes | `local` \| `system` \| `google` |
+| `variable:` | path | No | Variable font filename (relative to brand `fonts/`). Used by preview where weight interpolation matters. |
+| `variable-italic:` | path | No | Italic variable font filename, when the family ships separate Roman/Italic variable files. |
+| `static-{weight}:` | path | No | Static font instance for the given CSS weight (100–900). E.g. `static-400:`, `static-700:`. |
+| `static-{weight}i:` | path | No | Italic static instance for the given weight. E.g. `static-400i:`. |
+
+Static instances are required for export pipelines that cannot embed variable or WOFF2 fonts (Chromium PDF, print). Filenames are relative to the brand's `fonts/` directory and may include subdirectories.
+
+```yaml
+font primary
+  name:            Helvetica
+  fallback:        sans-serif
+  source:          local
+  variable:        Helvetica-Variable.ttf
+  static-400:      Helvetica-Regular.ttf
+  static-600:      Helvetica-SemiBold.ttf
+  static-400i:     Helvetica-Italic.ttf
+```
 
 ### `typography NAME` Block
 

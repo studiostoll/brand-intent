@@ -27,18 +27,18 @@ export interface ParsedPurpose {
   voice?: Record<string, string>;
   /** Palette strategy: 'dynamic' (default), a theme name, or 'rotate T1, T2'. */
   palette?: string;
+  /** Default logo asset ID — pre-selects this logo on page creation. */
+  defaultLogo?: string;
+  /** Default photo asset ID — pre-selects this photo on page creation. */
+  defaultPhoto?: string;
+  /** Default video asset ID — pre-selects this video on page creation. */
+  defaultVideo?: string;
+  /** When false, hides Take Photo / Upload buttons for this purpose. Default: true. */
+  camera?: boolean;
   /** Default icon (Phosphor PascalCase name, e.g. "ArrowRight"). */
   defaultIcon?: string;
   /** Default icon weight. */
   defaultIconWeight?: string;
-  /** Default logo asset id — pre-selects a brand-declared logo when this purpose is created. */
-  defaultLogo?: string;
-  /** Default photo asset id — pre-selects a brand-declared photo. */
-  defaultPhoto?: string;
-  /** Default video asset id — pre-selects a brand-declared video. */
-  defaultVideo?: string;
-  /** Whether the camera capture UI is enabled for this purpose. Default: true. */
-  camera?: boolean;
 }
 
 export interface ParsedPurposeSlot {
@@ -95,8 +95,6 @@ const VALID_SLOTS = new Set<string>(['primary', 'secondary', 'detail', 'meta', '
 
 /** Map short font family names to CSS font-family strings. */
 function resolveFontFamily(name: string): string {
-  // Currently only Die Grotesk — extensible later
-  if (name === 'Die Grotesk') return "'Die Grotesk', sans-serif";
   return `'${name}', sans-serif`;
 }
 
@@ -111,19 +109,19 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let compositions: string[] | null = null;
   let scope: { audience?: string[]; pillars?: string } | undefined;
   let context: string | undefined;
-  let voice: Record<string, string> | undefined;
-  let palette: string | undefined;
   let inScopeBlock = false;
   let inContextBlock = false;
   let inVoiceBlock = false;
   const contextLines: string[] = [];
+  let voice: Record<string, string> | undefined;
+  let palette: string | undefined;
   let density: Density | undefined;
-  let defaultIcon: string | undefined;
-  let defaultIconWeight: string | undefined;
   let defaultLogo: string | undefined;
   let defaultPhoto: string | undefined;
   let defaultVideo: string | undefined;
   let camera: boolean | undefined;
+  let defaultIcon: string | undefined;
+  let defaultIconWeight: string | undefined;
   const slots: ParsedPurposeSlot[] = [];
   // For backward compat: track first # line text for fallback id
   let firstHashText = '';
@@ -187,15 +185,18 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     }
 
     // scope block header
-    if (line === 'scope') {
+    if (line === 'scope' && !raw.startsWith(' ')) {
+      finalizeSlot(lineNum);
       inScopeBlock = true;
       inContextBlock = false;
+      inVoiceBlock = false;
       scope = scope ?? {};
       continue;
     }
 
     // context block header
-    if (line === 'context') {
+    if (line === 'context' && !raw.startsWith(' ')) {
+      finalizeSlot(lineNum);
       inContextBlock = true;
       inScopeBlock = false;
       inVoiceBlock = false;
@@ -203,7 +204,8 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     }
 
     // voice block header
-    if (line === 'voice') {
+    if (line === 'voice' && !raw.startsWith(' ')) {
+      finalizeSlot(lineNum);
       inVoiceBlock = true;
       inScopeBlock = false;
       inContextBlock = false;
@@ -211,7 +213,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // scope block properties (indented)
+    // scope block properties (2-space indent)
     if (inScopeBlock && raw.startsWith('  ') && !raw.startsWith('    ')) {
       if (line.startsWith('audience:')) {
         scope = scope ?? {};
@@ -221,7 +223,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         scope.pillars = line.slice(8).trim();
       }
       continue;
-    } else if (inScopeBlock && !raw.startsWith('  ')) {
+    } else if (inScopeBlock && !raw.startsWith(' ')) {
       inScopeBlock = false;
     }
 
@@ -233,51 +235,23 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         voice[line.slice(0, colonIdx).trim()] = line.slice(colonIdx + 1).trim();
       }
       continue;
-    } else if (inVoiceBlock && !raw.startsWith('  ')) {
+    } else if (inVoiceBlock && !raw.startsWith(' ')) {
       inVoiceBlock = false;
     }
 
-    // context block lines (indented free-form text)
+    // context block lines (2-space indent, free-form text)
     if (inContextBlock && raw.startsWith('  ')) {
       contextLines.push(line);
       continue;
-    } else if (inContextBlock && !raw.startsWith('  ')) {
+    } else if (inContextBlock && !raw.startsWith(' ')) {
       inContextBlock = false;
     }
 
-    // Legacy: ai-context field (backward compat, maps to context)
-    if (line.startsWith('ai-context:')) {
-      context = line.slice(11).trim();
-      continue;
-    }
-
-    // Compositions (accepts "compositions:" and legacy "archetypes:")
-    if (line.startsWith('compositions:') || line.startsWith('archetypes:')) {
+    if (line.startsWith('compositions:')) {
       const colonIdx = line.indexOf(':');
       const value = line.slice(colonIdx + 1).trim();
       compositions = value.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
       if (compositions.length === 0) throw new Error(`${fileName}:${lineNum}: empty compositions list`);
-      continue;
-    }
-
-    // Asset pre-selection — references to brand-declared logos/photos/videos
-    if (line.startsWith('logo:')) {
-      defaultLogo = line.slice(5).trim();
-      continue;
-    }
-    if (line.startsWith('photo:')) {
-      defaultPhoto = line.slice(6).trim();
-      continue;
-    }
-    if (line.startsWith('video:')) {
-      defaultVideo = line.slice(6).trim();
-      continue;
-    }
-
-    // Camera UI toggle — "camera: true" / "camera: false"
-    if (line.startsWith('camera:')) {
-      const value = line.slice(7).trim();
-      camera = value === 'true';
       continue;
     }
 
@@ -292,6 +266,30 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       const value = line.slice(8).trim() as Density;
       if (!['light', 'medium', 'full'].includes(value)) throw new Error(`${fileName}:${lineNum}: invalid density "${value}" — expected light, medium, or full`);
       density = value;
+      continue;
+    }
+
+    // Default logo asset ID
+    if (line.startsWith('logo:')) {
+      defaultLogo = line.slice(5).trim();
+      continue;
+    }
+
+    // Default photo asset ID
+    if (line.startsWith('photo:')) {
+      defaultPhoto = line.slice(6).trim();
+      continue;
+    }
+
+    // Default video asset ID
+    if (line.startsWith('video:')) {
+      defaultVideo = line.slice(6).trim();
+      continue;
+    }
+
+    // Camera control
+    if (line.startsWith('camera:')) {
+      camera = line.slice(7).trim() !== 'false';
       continue;
     }
 
@@ -538,7 +536,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         continue;
       }
       if (prop.startsWith('align:')) {
-        // Ignored — textAlign is a layout concern, defined in .layout files
+        // Ignored — textAlign is a layout concern, defined in .composition files
         continue;
       }
       if (prop.startsWith('lineHeight:')) {
@@ -594,5 +592,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultIcon, defaultIconWeight, defaultLogo, defaultPhoto, defaultVideo, camera };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, defaultIcon, defaultIconWeight };
 }

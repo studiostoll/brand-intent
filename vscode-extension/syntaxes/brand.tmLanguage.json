@@ -146,7 +146,7 @@
     },
     "font-value": {
       "comment": "Indented font block properties",
-      "match": "^(\\s{2,})(name|fallback|source)(:\\s*)(\\S+)",
+      "match": "^(\\s{2,})(name|fallback|source|variable|variable-italic|static-\\d{3}i?)(:\\s*)(\\S+)",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

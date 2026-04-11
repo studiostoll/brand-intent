@@ -78,6 +78,17 @@ export interface ParsedFontDef {
   fallback: string;
   /** Font source: 'local' (bundled in public/fonts/), 'system' (no @font-face), 'google' (future) */
   source: 'local' | 'system' | 'google';
+  /** Variable font filename, relative to the brand's fonts/ directory. Used by preview where weight interpolation matters. */
+  variable?: string;
+  /** Variable italic font filename, when the family ships separate Roman/Italic variable files. */
+  variableItalic?: string;
+  /**
+   * Static font instances, keyed by `{weight}` or `{weight}i` (italic).
+   * E.g. `{ "400": "Pangea-Regular.ttf", "400i": "Pangea-Italic.ttf", "600": "Pangea-SemiBold.ttf" }`.
+   * Required for export pipelines (Chromium PDF, print) that cannot embed variable or WOFF2 fonts.
+   * Filenames are relative to the brand's `fonts/` directory and may contain subdirectories.
+   */
+  static?: Record<string, string>;
 }
 
 export interface BrandColorPrintSpec {
@@ -450,7 +461,16 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       const source: ParsedFontDef['source'] =
         rawSource === 'system' ? 'system' : rawSource === 'google' ? 'google' : 'local';
       const fallback = props['fallback'] ?? 'sans-serif';
-      fonts[name] = { name: fontName, fallback, source };
+      const def: ParsedFontDef = { name: fontName, fallback, source };
+      if (props['variable']) def.variable = props['variable'];
+      if (props['variable-italic']) def.variableItalic = props['variable-italic'];
+      const staticInstances: Record<string, string> = {};
+      for (const [key, value] of Object.entries(props)) {
+        const match = key.match(/^static-(\d{3})(i)?$/);
+        if (match) staticInstances[match[1] + (match[2] ?? '')] = value;
+      }
+      if (Object.keys(staticInstances).length > 0) def.static = staticInstances;
+      fonts[name] = def;
     }
     if (Object.keys(fonts).length > 0) result.fonts = fonts;
   }

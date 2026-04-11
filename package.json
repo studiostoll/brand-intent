@@ -12,6 +12,18 @@
   "bin": {
     "brand-intent": "./cli/index.mjs"
   },
+  "exports": {
+    ".": {
+      "types": "./parser/index.ts",
+      "default": "./parser/index.ts"
+    },
+    "./parser": {
+      "types": "./parser/index.ts",
+      "default": "./parser/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./parser/index.ts",
   "keywords": [
     "brand",
     "design-tokens",
@@ -25,6 +37,7 @@
   },
   "files": [
     "cli/",
+    "parser/",
     "skills/",
     "examples/"
   ]

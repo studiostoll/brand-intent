@@ -28,8 +28,8 @@ export interface ParsedComposition {
   /** Human-readable display name (from `name:` line, or falls back to id). */
   name: string;
   description: string;
-  /** Explicit layout mode. 'flow' | 'compose' | null (inferred from structure). */
-  mode: 'flow' | 'compose' | null;
+  /** Explicit layout mode. 'flow' | 'grid' | null (inferred from structure). */
+  mode: 'flow' | 'grid' | null;
   image: 'full' | 'none' | ParsedImageRegion;
   /** Whether `image:` was explicitly written (vs. defaulted to 'full'). */
   imageExplicit: boolean;
@@ -38,10 +38,8 @@ export interface ParsedComposition {
   logoNone?: boolean;
   /** Icon slot placement (optional). */
   icon?: { row: number | GridYKeyword; col: 'left' | 'center' | 'right'; size?: 's' | 'm' | 'l' };
-  /** Ungrouped slots (empty if composition uses a group or flow). */
+  /** Standalone slots (empty if composition uses flow:). */
   slots: ParsedSlot[];
-  /** Grouped layout — legacy syntax (null if composition uses ungrouped slots or flow:). */
-  group: ParsedGroup | null;
   /** Sticky regions — composed repetition areas (logo, label). */
   sticky: ParsedStickyRegion[];
   /** Flow regions — content-driven flow areas. */
@@ -84,8 +82,7 @@ export interface ParsedFlowRegion {
   columns?: number;
   /** Gap between columns — spacing token name (default: 'm'). */
   columnGap?: string;
-  /** Flow items (same as group items). */
-  items: ParsedGroupItem[];
+  items: ParsedFlowItem[];
 }
 
 export interface ParsedSlot {
@@ -97,26 +94,6 @@ export interface ParsedSlot {
   verticalAlign?: 'top' | 'center' | 'bottom';
 }
 
-export interface ParsedStandardGroup {
-  kind: 'standard';
-  yStart: GridYKeyword;
-  yEnd: GridYKeyword;
-  items: ParsedGroupItem[];
-}
-
-export interface ParsedPanelGroup {
-  kind: 'panel';
-  vPosition: 'top' | 'center' | 'bottom';
-  hPosition: 'left' | 'center' | 'right';
-  /** Width as fraction of card (default 2/3). */
-  widthFraction: number;
-  /** Height as fraction of card (default 2/3). */
-  heightFraction: number;
-  items: ParsedGroupItem[];
-}
-
-export type ParsedGroup = ParsedStandardGroup | ParsedPanelGroup;
-
 export interface ParsedFlowIcon {
   type: 'icon';
   align: 'left' | 'center' | 'right';
@@ -124,9 +101,9 @@ export interface ParsedFlowIcon {
   size: 's' | 'm' | 'l';
 }
 
-export type ParsedGroupItem = ParsedGroupSlot | ParsedSpacer | ParsedDivider | ParsedFlowIcon;
+export type ParsedFlowItem = ParsedFlowSlot | ParsedSpacer | ParsedDivider | ParsedFlowIcon;
 
-export interface ParsedGroupSlot {
+export interface ParsedFlowSlot {
   type: 'slot';
   id: SlotId;
   textAlign: 'left' | 'center' | 'right';
@@ -195,14 +172,13 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   let id = '';
   let name = '';
   let description = '';
-  let mode: 'flow' | 'compose' | null = null;
+  let mode: 'flow' | 'grid' | null = null;
   let image: ParsedComposition['image'] | null = null;
   let imageExplicit = false;
   let logo: ParsedComposition['logo'] = null;
   let logoNone = false;
   let icon: ParsedComposition['icon'] | undefined = undefined;
   const slots: ParsedSlot[] = [];
-  let group: ParsedGroup | null = null; // deprecated — kept for type compat only
   const sticky: ParsedStickyRegion[] = [];
   let flow: ParsedFlowRegion | null = null;
 
@@ -246,11 +222,12 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       continue;
     }
 
-    // mode: flow | compose
+    // mode: flow | grid (accepts legacy "compose" as alias for "grid")
     if (line.startsWith('mode:')) {
-      const value = line.slice(5).trim();
-      if (value !== 'flow' && value !== 'compose') {
-        throw new Error(`${fileName}:${lineNum}: invalid mode "${value}" (expected "flow" or "compose")`);
+      const raw = line.slice(5).trim();
+      const value = raw === 'compose' ? 'grid' : raw;
+      if (value !== 'flow' && value !== 'grid') {
+        throw new Error(`${fileName}:${lineNum}: invalid mode "${value}" (expected "flow" or "grid")`);
       }
       mode = value;
       continue;
@@ -439,7 +416,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         split = { edge, fraction };
       }
 
-      const flowItems: ParsedGroupItem[] = [];
+      const flowItems: ParsedFlowItem[] = [];
       // Read indented items (| prefix or "direction:" property) — skip blank lines within the block
       while (i + 1 < lines.length) {
         const nextLine = lines[i + 1].trim();
@@ -467,7 +444,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         if (!nextLine.startsWith('|')) break;
         i++;
         const itemStr = nextLine.slice(1).trim();
-        // Parse same item syntax as group items
+        // Parse flow item syntax
         if (itemStr.startsWith('icon')) {
           const iconParts = itemStr.split(/\s+/);
           const align = (iconParts[1] as 'left' | 'center' | 'right') ?? 'center';
@@ -575,5 +552,5 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   // Validate required fields
   if (!image) image = 'full'; // default to full-bleed image
   if (!logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
-  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || undefined, icon, slots, group, sticky, flow };
+  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || undefined, icon, slots, sticky, flow };
 }
