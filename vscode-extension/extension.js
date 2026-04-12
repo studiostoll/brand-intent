@@ -238,7 +238,7 @@ function activate(context) {
             ['center-left', 'Text centered, left-aligned'],
             ['center-right', 'Text centered, right-aligned'],
             ['top-right', 'Text top-right, logo bottom'],
-            ['bottom-bar', 'Text in bottom band'],
+            ['bottom-bar', 'Text in bottom row'],
             ['split-horizontal', 'Primary offset from logo'],
             ['diagonal-top-left', 'Primary top-left, secondary bottom-right'],
             ['diagonal-top-right', 'Primary top-right, secondary bottom-left'],

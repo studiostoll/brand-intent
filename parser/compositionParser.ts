@@ -128,8 +128,6 @@ export interface ParsedDivider {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-/** Backward-compat map: band letters A-F → 0-based row indices */
-const LEGACY_BAND_MAP: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5 };
 const GRID_Y_KEYWORDS = new Set<string>(['top', 'center', 'bottom']);
 
 const VALID_SLOTS = new Set<string>(['primary', 'secondary', 'detail', 'meta', 'cta', 'label']);
@@ -292,16 +290,6 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         logo = { row: parseInt(rowMatch[1], 10) - 1, col, size: (rowMatch[3] as 's' | 'm' | 'l') ?? undefined };
         continue;
       }
-      // Backward compat: "logo: band A [col] X"
-      const bandMatch = line.match(/^logo:\s+band\s+([A-F])\s+(?:col\s+)?(left|center|right)(?:\s+(s|m|l))?\s*$/);
-      if (bandMatch) {
-        const row = LEGACY_BAND_MAP[bandMatch[1]];
-        if (row === undefined) throw new Error(`${fileName}:${lineNum}: unknown band "${bandMatch[1]}"`);
-        console.warn(`${fileName}:${lineNum}: deprecated "band ${bandMatch[1]}" syntax — use "row ${row + 1}" instead`);
-        const col = resolveColKeyword(bandMatch[2], fileName, lineNum);
-        logo = { row, col, size: (bandMatch[3] as 's' | 'm' | 'l') ?? undefined };
-        continue;
-      }
       throw new Error(`${fileName}:${lineNum}: invalid logo line "${line}" (expected "logo: row N left|center|right" or "logo: top/center/bottom left|center|right")`);
     }
 
@@ -317,15 +305,6 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       if (rowMatch) {
         const col = resolveColKeyword(rowMatch[2], fileName, lineNum);
         icon = { row: parseInt(rowMatch[1], 10) - 1, col, size: (rowMatch[3] as 's' | 'm' | 'l') ?? undefined };
-        continue;
-      }
-      const bandMatch = line.match(/^icon:\s+band\s+([A-F])\s+(?:col\s+)?(left|center|right)(?:\s+(s|m|l))?\s*$/);
-      if (bandMatch) {
-        const row = LEGACY_BAND_MAP[bandMatch[1]];
-        if (row === undefined) throw new Error(`${fileName}:${lineNum}: unknown band "${bandMatch[1]}"`);
-        console.warn(`${fileName}:${lineNum}: deprecated "band ${bandMatch[1]}" syntax — use "row ${row + 1}" instead`);
-        const col = resolveColKeyword(bandMatch[2], fileName, lineNum);
-        icon = { row, col, size: (bandMatch[3] as 's' | 'm' | 'l') ?? undefined };
         continue;
       }
       throw new Error(`${fileName}:${lineNum}: invalid icon line "${line}"`);
@@ -507,25 +486,6 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         colEnd: cols.end,
         textAlign: hAlign as 'left' | 'center' | 'right',
         ...(vAlign ? { verticalAlign: vAlign as 'top' | 'center' | 'bottom' } : {}),
-      });
-      continue;
-    }
-
-    // Backward compat: "primary  band D  cols 1--4  left"
-    const bandSlotMatch = line.match(/^(\w+)\s+band\s+([A-F])\s+cols\s+(\S+)\s+(left|center|right)$/);
-    if (bandSlotMatch) {
-      const [, slotId, bandLetter, colRange, align] = bandSlotMatch;
-      if (!VALID_SLOTS.has(slotId)) throw new Error(`${fileName}:${lineNum}: unknown slot "${slotId}"`);
-      const row = LEGACY_BAND_MAP[bandLetter];
-      if (row === undefined) throw new Error(`${fileName}:${lineNum}: unknown band "${bandLetter}"`);
-      console.warn(`${fileName}:${lineNum}: deprecated "band ${bandLetter}" syntax — use "row ${row + 1}" instead`);
-      const cols = parseColRange(colRange, fileName, lineNum, 12);
-      slots.push({
-        id: slotId as SlotId,
-        row,
-        colStart: cols.start,
-        colEnd: cols.end,
-        textAlign: align as 'left' | 'center' | 'right',
       });
       continue;
     }

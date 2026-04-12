@@ -29,7 +29,7 @@ export interface ParsedFormat {
   dpi?: number;
   bleedMm?: number;
   // Optional grid override — absent means auto portrait/landscape selection
-  grid?: { bands: number; cols: number };
+  grid?: { rows: number; cols: number };
   // Zones — always stored in px (mm values converted during parse)
   danger: ZoneInsets;
   gridCrop: ZoneInsets | null;
@@ -183,12 +183,12 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
 
       case 'grid': {
         const parts = value.split(/\s+/);
-        if (parts.length !== 2) throw new Error(`${fileName}:${lineNum}: grid requires "bands cols", got "${value}"`);
-        const bands = parseInt(parts[0], 10);
+        if (parts.length !== 2) throw new Error(`${fileName}:${lineNum}: grid requires "rows cols", got "${value}"`);
+        const rows = parseInt(parts[0], 10);
         const cols  = parseInt(parts[1], 10);
-        if (isNaN(bands) || bands < 1 || isNaN(cols) || cols < 1)
-          throw new Error(`${fileName}:${lineNum}: grid bands and cols must be positive integers`);
-        grid = { bands, cols };
+        if (isNaN(rows) || rows < 1 || isNaN(cols) || cols < 1)
+          throw new Error(`${fileName}:${lineNum}: grid rows and cols must be positive integers`);
+        grid = { rows, cols };
         break;
       }
 
