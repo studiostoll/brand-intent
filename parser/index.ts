@@ -21,6 +21,8 @@ export type {
   ParsedStickyRegion,
   ParsedFlowItem,
   ParsedImageRegion,
+  ParsedIllustration,
+  IllustrationAnchor,
   GridYKeyword,
 } from './compositionParser';
 

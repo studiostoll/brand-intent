@@ -12,6 +12,7 @@
     { "include": "#logo-row" },
     { "include": "#icon-keyword" },
     { "include": "#icon-row" },
+    { "include": "#illustration" },
     { "include": "#mode" },
     { "include": "#flow" },
     { "include": "#flow-panel" },
@@ -103,6 +104,16 @@
         "3": { "name": "constant.numeric.row.brand-intent-composition" },
         "4": { "name": "variable.parameter.brand-intent-composition" },
         "5": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "illustration": {
+      "match": "^(illustration:)\\s+(top-left|top-center|top-right|center-left|center|center-right|bottom-left|bottom-center|bottom-right)\\s+(fit-width|fit-height)\\s+(\\d+(?:\\.\\d+)?)(%)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "variable.parameter.brand-intent-composition" },
+        "3": { "name": "variable.parameter.brand-intent-composition" },
+        "4": { "name": "constant.numeric.brand-intent-composition" },
+        "5": { "name": "keyword.operator.brand-intent-composition" }
       }
     },
     "mode": {
@@ -211,7 +222,7 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|image:|grid:|logo:|icon:|mode:|flow:|sticky:|primary|secondary|detail|meta|cta|label)(?=\\s|$)",
+          "match": "^(id:|name:|image:|grid:|logo:|icon:|illustration:|mode:|flow:|sticky:|primary|secondary|detail|meta|cta|label)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-composition" }
           }

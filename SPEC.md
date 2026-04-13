@@ -276,6 +276,7 @@ Maps semantic slot names to colors. Colors are hex values or `$references` to `b
 | `sticker-fg` | Sticker foreground |
 | `icon` | Icon color |
 | `divider` | Divider color |
+| `illustration` | Illustration line color (optional, only for brands with illustrations) |
 
 ```yaml
 theme Laden
@@ -632,6 +633,7 @@ The composition file describes how slots are arranged on the canvas. It knows sl
 | `image:` | string | No | Background image placement (default: `full`) |
 | `logo:` | string | No | Logo placement |
 | `icon:` | string | No | Icon placement |
+| `illustration:` | string | No | Illustration placement (anchor, fit, scale) |
 | `sticky: POSITION [SIZE]` | block | No | Sticky bar (flow mode, repeatable) |
 | `flow: [TYPE] [PROPS]` | block | No | Flow region (flow mode) |
 | Slot placement lines | - | Yes (grid mode) | Grid slot placements |
@@ -734,6 +736,24 @@ logo: POSITION ALIGN [SIZE]
 - **Align:** `left` \| `center` \| `right`
 - **Size** (optional, default `m`): `s` \| `m` \| `l`
 - **Special:** `logo: none` disables the logo
+
+### `illustration:` Placement
+
+Decorative illustration asset anchored to a canvas edge. Grid mode only. The illustration overflows the canvas intentionally — it is not clipped.
+
+```
+illustration: ANCHOR FIT SCALE
+```
+
+- **Anchor:** `top-left` \| `top-center` \| `top-right` \| `center-left` \| `center` \| `center-right` \| `bottom-left` \| `bottom-center` \| `bottom-right`
+- **Fit:** `fit-width` \| `fit-height` — which canvas dimension the scale is relative to
+- **Scale:** percentage, e.g. `90%` (1%–200%)
+
+```yaml
+illustration: bottom-center fit-width 90%
+```
+
+SVG illustrations are colorized at runtime using the `illustration` theme color slot (single color, all fills replaced). PNG illustrations render as-is.
 
 ### Exclusion Rule
 

@@ -22,6 +22,26 @@ export interface ParsedImageRegion {
   colEnd?: number;    // 0-based column (undefined = full width)
 }
 
+/** Anchor keywords for illustration placement. */
+export type IllustrationAnchor =
+  | 'top-left' | 'top-center' | 'top-right'
+  | 'center-left' | 'center' | 'center-right'
+  | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
+/** Parsed illustration placement from `illustration:` line. */
+export interface ParsedIllustration {
+  anchor: IllustrationAnchor;
+  fit: 'width' | 'height';
+  /** Scale as fraction 0–1 (e.g. 0.9 = 90% of canvas dimension). */
+  scale: number;
+}
+
+const ILLUSTRATION_ANCHORS = new Set<string>([
+  'top-left', 'top-center', 'top-right',
+  'center-left', 'center', 'center-right',
+  'bottom-left', 'bottom-center', 'bottom-right',
+]);
+
 export interface ParsedComposition {
   /** Programmatic ID (from `id:` line, or fallback from first `#` line). */
   id: string;
@@ -44,6 +64,8 @@ export interface ParsedComposition {
   sticky: ParsedStickyRegion[];
   /** Flow regions — content-driven flow areas. */
   flow: ParsedFlowRegion | null;
+  /** Illustration placement (grid mode only for now). */
+  illustration?: ParsedIllustration;
 }
 
 /** A sticky (repetition) region — composed elements that don't participate in flow. */
@@ -179,6 +201,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   const slots: ParsedSlot[] = [];
   const sticky: ParsedStickyRegion[] = [];
   let flow: ParsedFlowRegion | null = null;
+  let illustration: ParsedIllustration | undefined = undefined;
 
   /** Parse a fraction string like "2/3" → 0.667. */
   function parseFraction(s: string, ctx: string): number {
@@ -257,6 +280,23 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         }
         image = parsed;
       }
+      continue;
+    }
+
+    // Illustration placement: "illustration: bottom-center fit-width 90%"
+    if (line.startsWith('illustration:')) {
+      const parts = line.slice(13).trim().split(/\s+/);
+      if (parts.length < 3) throw new Error(`${fileName}:${lineNum}: invalid illustration line — expected "illustration: <anchor> <fit-width|fit-height> <N%>"`);
+      const anchor = parts[0];
+      if (!ILLUSTRATION_ANCHORS.has(anchor)) throw new Error(`${fileName}:${lineNum}: invalid illustration anchor "${anchor}" (expected ${[...ILLUSTRATION_ANCHORS].join(', ')})`);
+      const fitStr = parts[1];
+      if (fitStr !== 'fit-width' && fitStr !== 'fit-height') throw new Error(`${fileName}:${lineNum}: invalid illustration fit "${fitStr}" (expected fit-width or fit-height)`);
+      const scaleStr = parts[2];
+      const scaleMatch = scaleStr.match(/^(\d+(?:\.\d+)?)%$/);
+      if (!scaleMatch) throw new Error(`${fileName}:${lineNum}: invalid illustration scale "${scaleStr}" (expected e.g. "90%")`);
+      const scale = parseFloat(scaleMatch[1]) / 100;
+      if (scale <= 0 || scale > 2) throw new Error(`${fileName}:${lineNum}: illustration scale out of range (expected 1%–200%)`);
+      illustration = { anchor: anchor as IllustrationAnchor, fit: fitStr === 'fit-width' ? 'width' : 'height', scale };
       continue;
     }
 
@@ -512,5 +552,5 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   // Validate required fields
   if (!image) image = 'full'; // default to full-bleed image
   if (!logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
-  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || undefined, icon, slots, sticky, flow };
+  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || undefined, icon, slots, sticky, flow, illustration };
 }
