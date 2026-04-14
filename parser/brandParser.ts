@@ -45,8 +45,8 @@ export interface ParsedBrand {
   dividers?: Record<string, ParsedDividerDef>;
   /** Named typography styles: name → style definition */
   typographies?: Record<string, ParsedTypographyDef>;
-  /** Brand-declared assets: curated logos, photos, videos with labels and metadata */
-  assets?: { logos?: ParsedAssetDef[]; photos?: ParsedAssetDef[]; videos?: ParsedAssetDef[] };
+  /** Brand-declared assets: curated logos, photos, videos, illustrations with labels and metadata */
+  assets?: { logos?: ParsedAssetDef[]; photos?: ParsedAssetDef[]; videos?: ParsedAssetDef[]; illustrations?: ParsedAssetDef[] };
   /** Label badge style — padding (top/right/bottom/left in cqh) and corner radius (cqh) */
   label?: ParsedBadgeStyle;
   /** CTA pill style — padding (top/right/bottom/left in cqh) and corner radius (cqh, or 999 for full pill) */
@@ -146,7 +146,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'label' | 'cta';
+  type ActiveBlock = 'none' | 'brand-colors' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -164,6 +164,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const logosRaw: Array<{ id: string; props: Record<string, string> }> = [];
   const photosRaw: Array<{ id: string; props: Record<string, string> }> = [];
   const videosRaw: Array<{ id: string; props: Record<string, string> }> = [];
+  const illustrationsRaw: Array<{ id: string; props: Record<string, string> }> = [];
   let currentAssetId = '';
   const labelRaw: Record<string, string> = {};
   const ctaRaw: Record<string, string> = {};
@@ -264,18 +265,18 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         continue;
       }
-      if ((activeBlock === 'logo' || activeBlock === 'photo' || activeBlock === 'video') && currentAssetId) {
+      if ((activeBlock === 'logo' || activeBlock === 'photo' || activeBlock === 'video' || activeBlock === 'illustration') && currentAssetId) {
         const colonIdx = raw.indexOf(':');
         if (colonIdx !== -1) {
           const key = raw.slice(0, colonIdx).trim();
           const value = raw.slice(colonIdx + 1).trim();
-          const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : videosRaw;
+          const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : activeBlock === 'video' ? videosRaw : illustrationsRaw;
           const last = arr[arr.length - 1];
           if (last && last.id === currentAssetId) last.props[key] = value;
         } else {
           const trimmed = raw.trim();
           if (trimmed === 'animated' || trimmed === 'loop') {
-            const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : videosRaw;
+            const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : activeBlock === 'video' ? videosRaw : illustrationsRaw;
             const last = arr[arr.length - 1];
             if (last && last.id === currentAssetId) last.props[trimmed] = 'true';
           }
@@ -341,13 +342,13 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       continue;
     }
 
-    // logo/photo/video <id> — starts an asset block
-    const assetMatch = raw.match(/^(logo|photo|video)\s+(\S+)/);
+    // logo/photo/video/illustration <id> — starts an asset block
+    const assetMatch = raw.match(/^(logo|photo|video|illustration)\s+(\S+)/);
     if (assetMatch) {
       const [, type, id] = assetMatch;
       currentAssetId = id;
-      activeBlock = type as 'logo' | 'photo' | 'video';
-      const arr = type === 'logo' ? logosRaw : type === 'photo' ? photosRaw : videosRaw;
+      activeBlock = type as 'logo' | 'photo' | 'video' | 'illustration';
+      const arr = type === 'logo' ? logosRaw : type === 'photo' ? photosRaw : type === 'video' ? videosRaw : illustrationsRaw;
       arr.push({ id, props: {} });
       continue;
     }
@@ -510,11 +511,12 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['loop'] === 'true') def.loop = true;
     return def;
   };
-  if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0) {
+  if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0 || illustrationsRaw.length > 0) {
     result.assets = {};
     if (logosRaw.length > 0) result.assets.logos = logosRaw.map(toAssetDef);
     if (photosRaw.length > 0) result.assets.photos = photosRaw.map(toAssetDef);
     if (videosRaw.length > 0) result.assets.videos = videosRaw.map(toAssetDef);
+    if (illustrationsRaw.length > 0) result.assets.illustrations = illustrationsRaw.map(toAssetDef);
   }
 
   // Finalise label / cta badge styles
