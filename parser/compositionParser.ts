@@ -34,6 +34,8 @@ export interface ParsedIllustration {
   fit: 'width' | 'height';
   /** Scale as fraction 0–1 (e.g. 0.9 = 90% of canvas dimension). */
   scale: number;
+  /** Offset from anchor position in % of canvas [x, y]. Positive = right/down. */
+  offset?: [number, number];
 }
 
 const ILLUSTRATION_ANCHORS = new Set<string>([
@@ -296,7 +298,14 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       if (!scaleMatch) throw new Error(`${fileName}:${lineNum}: invalid illustration scale "${scaleStr}" (expected e.g. "90%")`);
       const scale = parseFloat(scaleMatch[1]) / 100;
       if (scale <= 0 || scale > 2) throw new Error(`${fileName}:${lineNum}: illustration scale out of range (expected 1%–200%)`);
-      illustration = { anchor: anchor as IllustrationAnchor, fit: fitStr === 'fit-width' ? 'width' : 'height', scale };
+      const illu: ParsedIllustration = { anchor: anchor as IllustrationAnchor, fit: fitStr === 'fit-width' ? 'width' : 'height', scale };
+      // Optional: "offset X Y" in % of canvas (positive = right/down)
+      if (parts.length >= 5 && parts[3] === 'offset') {
+        const ox = parseFloat(parts[4]);
+        const oy = parts.length >= 6 ? parseFloat(parts[5]) : 0;
+        if (!isNaN(ox) && !isNaN(oy)) illu.offset = [ox, oy];
+      }
+      illustration = illu;
       continue;
     }
 
