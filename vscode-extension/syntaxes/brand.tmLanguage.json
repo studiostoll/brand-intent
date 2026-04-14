@@ -174,7 +174,7 @@
       }
     },
     "asset-header": {
-      "match": "^(logo|photo|video)\\s+(\\S+)",
+      "match": "^(logo|photo|video|illustration)\\s+(\\S+)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" },
         "2": { "name": "entity.name.type.brand-intent-brand" }
@@ -220,7 +220,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|brand-colors|theme|divider|font|typography|logo|photo|video)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|brand-colors|theme|divider|font|typography|logo|photo|video|illustration)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

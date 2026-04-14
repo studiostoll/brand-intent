@@ -107,13 +107,16 @@
       }
     },
     "illustration": {
-      "match": "^(illustration:)\\s+(top-left|top-center|top-right|center-left|center|center-right|bottom-left|bottom-center|bottom-right)\\s+(fit-width|fit-height)\\s+(\\d+(?:\\.\\d+)?)(%)",
+      "match": "^(illustration:)\\s+(top-left|top-center|top-right|center-left|center|center-right|bottom-left|bottom-center|bottom-right)\\s+(fit-width|fit-height)\\s+(\\d+(?:\\.\\d+)?)(%)(?:\\s+(offset)\\s+(-?\\d+(?:\\.\\d+)?)(?:\\s+(-?\\d+(?:\\.\\d+)?))?)?",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-composition" },
         "2": { "name": "variable.parameter.brand-intent-composition" },
         "3": { "name": "variable.parameter.brand-intent-composition" },
         "4": { "name": "constant.numeric.brand-intent-composition" },
-        "5": { "name": "keyword.operator.brand-intent-composition" }
+        "5": { "name": "keyword.operator.brand-intent-composition" },
+        "6": { "name": "keyword.control.brand-intent-composition" },
+        "7": { "name": "constant.numeric.brand-intent-composition" },
+        "8": { "name": "constant.numeric.brand-intent-composition" }
       }
     },
     "mode": {
