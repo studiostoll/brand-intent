@@ -1,6 +1,6 @@
 {
   "name": "brand-intent",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "An open file format specification for making brand intent machine-readable.",
   "author": "Christophe Stoll <christophe@stoll.studio>",
   "license": "MIT",
