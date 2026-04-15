@@ -39,6 +39,8 @@ export interface ParsedPurpose {
   defaultIcon?: string;
   /** Default icon weight. */
   defaultIconWeight?: string;
+  /** Optional prompt text shown in the empty background placeholder. Default: "Select a background". */
+  bgPrompt?: string;
 }
 
 export interface ParsedPurposeSlot {
@@ -122,6 +124,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let camera: boolean | undefined;
   let defaultIcon: string | undefined;
   let defaultIconWeight: string | undefined;
+  let bgPrompt: string | undefined;
   const slots: ParsedPurposeSlot[] = [];
   // For backward compat: track first # line text for fallback id
   let firstHashText = '';
@@ -290,6 +293,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     // Camera control
     if (line.startsWith('camera:')) {
       camera = line.slice(7).trim() !== 'false';
+      continue;
+    }
+
+    // Background placeholder prompt: "bg-prompt: Mach dein Selfie"
+    if (line.startsWith('bg-prompt:')) {
+      bgPrompt = line.slice(10).trim().replace(/^["']|["']$/g, '');
       continue;
     }
 
@@ -592,5 +601,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, defaultIcon, defaultIconWeight };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, defaultIcon, defaultIconWeight, bgPrompt };
 }
