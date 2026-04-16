@@ -35,6 +35,8 @@ export interface ParsedPurpose {
   defaultVideo?: string;
   /** When false, hides Take Photo / Upload buttons for this purpose. Default: true. */
   camera?: boolean;
+  /** When false, photo/video analysis skips this purpose (no AI text generation). Default: true. */
+  analyze?: boolean;
   /** Default icon (Phosphor PascalCase name, e.g. "ArrowRight"). */
   defaultIcon?: string;
   /** Default icon weight. */
@@ -48,6 +50,8 @@ export interface ParsedPurposeSlot {
   label: string;
   /** Sample text variants for this slot. Picked randomly on page creation. */
   samples: string[];
+  /** Fixed value — when set, this slot is never AI-generated or shuffled. Mutually exclusive with samples. */
+  value?: string;
   maxLength: number;
   /** 'text' (default) or 'list'. */
   slotType?: 'text' | 'list';
@@ -124,6 +128,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let defaultPhoto: string | undefined;
   let defaultVideo: string | undefined;
   let camera: boolean | undefined;
+  let analyze: boolean | undefined;
   let defaultIcon: string | undefined;
   let defaultIconWeight: string | undefined;
   let bgPrompt: string | undefined;
@@ -145,7 +150,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     const s = currentSlot;
     if (!s.id) throw new Error(`${fileName}:${lineNum}: slot missing id`);
     if (!s.label) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing label`);
-    if ((!s.samples || s.samples.length === 0) && !s.iconOnly) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing samples`);
+    if ((!s.samples || s.samples.length === 0) && !s.iconOnly && !s.value) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing samples or value`);
     if (!s.maxLength) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing maxLength`);
     const t = s.typography as ParsedPurposeSlot['typography'];
     if (!s.typographyRef) {
@@ -295,6 +300,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     // Camera control
     if (line.startsWith('camera:')) {
       camera = line.slice(7).trim() !== 'false';
+      continue;
+    }
+
+    // Photo/video analysis control
+    if (line.startsWith('analyze:')) {
+      analyze = line.slice(8).trim() !== 'false';
       continue;
     }
 
@@ -503,6 +514,14 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         currentSlot.label = prop.slice(6).trim();
         continue;
       }
+      if (prop.startsWith('value:')) {
+        const val = prop.slice(6).trim();
+        if (!val) throw new Error(`${fileName}:${lineNum}: empty value`);
+        currentSlot.value = val;
+        // value implies a single-entry samples array for backward compat
+        currentSlot.samples = [val];
+        continue;
+      }
       if (prop.startsWith('samples:')) {
         const raw = prop.slice(8).trim();
         if (!raw) {
@@ -605,5 +624,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, defaultIcon, defaultIconWeight, bgPrompt };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, analyze, defaultIcon, defaultIconWeight, bgPrompt };
 }

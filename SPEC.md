@@ -494,6 +494,8 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `scope` | block | No | Narrows the composed upstream |
 | `context` | block | No | Adds purpose-specific AI context |
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
+| `camera:` | bool | No | Show Take Photo / Upload buttons. Default: `true` |
+| `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable) |
 
 ### Semantic Slots
@@ -519,9 +521,13 @@ These names are fixed. They travel through the entire stack: a composition place
 | `typography:` | string | Yes | Named typography style from `.brand` |
 | `color:` | string | No | Theme slot name (e.g., `text-primary`, `cta`) |
 | `maxLength:` | int | Yes | Character limit |
-| `samples:` | list | Yes | Example content (pipe-separated or multi-line) |
+| `samples:` | list | * | Example content (pipe-separated or multi-line) |
+| `value:` | string | * | Fixed text — never AI-generated or shuffled. Mutually exclusive with `samples:` |
+| `editable` | flag | No | Slot is editable by users in consume mode |
 | `type:` | enum | No | `text` (default) or `list` |
 | `override:` | block | No | Typography property overrides (4-space indent) |
+
+\* Either `samples:` or `value:` is required (not both). `value:` sets a fixed, immutable text.
 
 #### Samples Format
 
