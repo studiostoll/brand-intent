@@ -523,7 +523,7 @@ These names are fixed. They travel through the entire stack: a composition place
 | `maxLength:` | int | Yes | Character limit |
 | `samples:` | list | * | Example content (pipe-separated or multi-line) |
 | `value:` | string | * | Fixed text — never AI-generated or shuffled. Mutually exclusive with `samples:` |
-| `editable` | flag | No | Slot is editable by users in consume mode |
+| `editable` | bool | No | When `false`, slot is locked (no user editing in any mode). Default: `true` |
 | `type:` | enum | No | `text` (default) or `list` |
 | `override:` | block | No | Typography property overrides (4-space indent) |
 

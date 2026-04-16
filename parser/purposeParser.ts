@@ -67,7 +67,7 @@ export interface ParsedPurposeSlot {
   itemGap?: number;
   /** List layout direction: 'vertical' (default) or 'horizontal'. */
   listDirection?: 'vertical' | 'horizontal';
-  /** When true, this slot is editable by the user in consume mode. Default: false. */
+  /** When false, this slot is locked — users cannot edit it in any mode. Default: true (editable). */
   editable?: boolean;
   typography: {
     fontFamily: string;
