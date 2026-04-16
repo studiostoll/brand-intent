@@ -14,6 +14,7 @@
     { "include": "#palette-header" },
     { "include": "#asset-field" },
     { "include": "#camera-field" },
+    { "include": "#analyze-field" },
     { "include": "#bg-prompt-field" },
     { "include": "#context-header" },
     { "include": "#slot-header" },
@@ -118,6 +119,13 @@
         "2": { "name": "constant.language.brand-intent-purpose" }
       }
     },
+    "analyze-field": {
+      "match": "^(analyze:)\\s+(true|false)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" },
+        "2": { "name": "constant.language.brand-intent-purpose" }
+      }
+    },
     "bg-prompt-field": {
       "match": "^(bg-prompt:)\\s+(.*)",
       "captures": {
@@ -190,7 +198,7 @@
       ]
     },
     "property": {
-      "match": "^\\s+(label|samples|maxLength|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|editable)(:)\\s+(.*)",
+      "match": "^\\s+(label|samples|value|maxLength|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|editable)(:)\\s+(.*)",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-purpose" },
         "2": { "name": "punctuation.separator.brand-intent-purpose" },
@@ -217,13 +225,13 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|camera:|bg-prompt:|context|slot)(?=\\s|$)",
+          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|camera:|analyze:|bg-prompt:|context|slot)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-purpose" }
           }
         },
         {
-          "match": "^\\s+(label|samples|maxLength|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|override|audience|pillars|editable)(?=:|\\s|$)",
+          "match": "^\\s+(label|samples|value|maxLength|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|override|audience|pillars|editable)(?=:|\\s|$)",
           "captures": {
             "1": { "name": "support.type.property-name.brand-intent-purpose" }
           }
