@@ -72,20 +72,11 @@ echo ""
 echo "Pushed v$NEW. Now publishing..."
 echo ""
 
-# ── Collect OTP upfront ──
-
-echo -n "npm OTP code: "
-read -r OTP
-if [ -z "$OTP" ]; then
-  echo "Error: OTP required for npm publish."
-  exit 1
-fi
-
-# ── Publish npm ──
+# ── Publish npm (browser-based OTP) ──
 
 echo "── npm publish ──"
 cd "$ROOT"
-npm publish --otp="$OTP"
+npm publish
 echo ""
 
 # ── Publish VS Code extension ──
