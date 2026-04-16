@@ -63,6 +63,8 @@ export interface ParsedPurposeSlot {
   itemGap?: number;
   /** List layout direction: 'vertical' (default) or 'horizontal'. */
   listDirection?: 'vertical' | 'horizontal';
+  /** When true, this slot is editable by the user in consume mode. Default: false. */
+  editable?: boolean;
   typography: {
     fontFamily: string;
     fontWeight: number;
@@ -526,6 +528,8 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         currentSlot.colorRef = prop.slice(6).trim();
         continue;
       }
+      if (prop === 'editable' || prop === 'editable: true' || prop === 'editable:true') { currentSlot.editable = true; continue; }
+      if (prop === 'editable: false' || prop === 'editable:false') { currentSlot.editable = false; continue; }
       if (prop.startsWith('font:')) {
         // "Die Grotesk 800" → family="Die Grotesk", weight=800  (legacy direct path)
         const value = prop.slice(5).trim();
