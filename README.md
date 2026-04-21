@@ -34,11 +34,20 @@ ext install studiostoll.brand-intent-lang
 
 ### 2. Run init
 
-Installs the Brand Intent skill for your AI agent. The skill handles everything else: onboard your brand through a guided interview, explore the Krume bakery reference, generate and validate on-brand content.
+Installs two skills into your AI agent: `/brand-intent` and `/brief`. Together they cover the full loop. Onboard your brand, explore the Krume bakery reference, generate and validate on-brand content, and export a portable brief.
 
 ```bash
 npx brand-intent init
 ```
+
+### 3. Use your brand
+
+Two skills are now installed in your AI agent.
+
+- **`/brand-intent`** authors, validates, and generates on-brand content from your DSL files.
+- **`/brief`** exports a portable `{brand-id}-brief.md`. Use it to hand the brand to a tool that doesn't read Brand Intent directly, like a Claude design project, another LLM, or a collaborator.
+
+Edit your DSL files whenever strategy or expression evolves. Regenerate briefs after any change.
 
 ## Documentation
 

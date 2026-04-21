@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PKG_ROOT = resolve(__dirname, '..');
 
-const SKILL_FILE = join(PKG_ROOT, 'skills', 'brand-intent.md');
+const SKILL_FILES = ['brand-intent.md', 'brief.md'];
 
 // ── Harness detection ──
 
@@ -69,12 +69,15 @@ function scaffoldExample(targetDir) {
 // ── Install skill ──
 
 async function installSkills(cwd) {
-  if (!existsSync(SKILL_FILE)) {
-    console.error('Error: skill file not found at', SKILL_FILE);
-    process.exit(1);
-  }
+  const skills = SKILL_FILES.map(name => {
+    const path = join(PKG_ROOT, 'skills', name);
+    if (!existsSync(path)) {
+      console.error('Error: skill file not found at', path);
+      process.exit(1);
+    }
+    return { name, content: readFileSync(path, 'utf-8') };
+  });
 
-  const skill = readFileSync(SKILL_FILE, 'utf-8');
   let harnesses = detectHarnesses(cwd);
 
   if (harnesses.length === 0) {
@@ -98,9 +101,11 @@ async function installSkills(cwd) {
   for (const { label, dir } of harnesses) {
     const target = join(cwd, dir);
     mkdirSync(target, { recursive: true });
-    const dest = join(target, 'brand-intent.md');
-    writeFileSync(dest, skill, 'utf-8');
-    console.log(`  \u2713 ${label} \u2014 ${dir}/brand-intent.md`);
+    for (const { name, content } of skills) {
+      const dest = join(target, name);
+      writeFileSync(dest, content, 'utf-8');
+      console.log(`  ✓ ${label} — ${dir}/${name}`);
+    }
   }
 
   return harnesses;
@@ -121,7 +126,7 @@ if (command && command !== 'init' && command !== 'install-skills' && command !==
 
 if (!command || command === '--help' || command === '-h') {
   console.log('Usage:');
-  console.log('  brand-intent init              Install the Brand Intent skill for your AI agent');
+  console.log('  brand-intent init              Install the Brand Intent and Brief skills for your AI agent');
   console.log('  brand-intent install-skills     Same as init (alias)');
   console.log('');
   console.log('Example:');
@@ -138,7 +143,7 @@ if (targetDir !== cwd) {
 }
 console.log('\n  This will:');
 console.log('  \u2014 Copy the Krume bakery reference into examples/krume/');
-console.log('  \u2014 Install the Brand Intent skill for your AI agent\n');
+console.log('  \u2014 Install the Brand Intent and Brief skills for your AI agent\n');
 const proceed = await ask('  Proceed? (Y/n) ');
 if (proceed.trim().toLowerCase() === 'n') {
   closeRl();
@@ -158,4 +163,5 @@ console.log('    /brand-intent onboard     Create your brand through a guided in
 console.log('    /brand-intent example     Scaffold the Krume reference implementation');
 console.log('    /brand-intent validate    Validate content against your brand rules');
 console.log('    /brand-intent             Discover brand files and available purposes');
+console.log('    /brief                    Generate a portable brand brief');
 console.log('');
