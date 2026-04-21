@@ -12,6 +12,9 @@
     { "include": "#color-mode-enum" },
     { "include": "#color-strategy-enum" },
     { "include": "#color-adherence-enum" },
+    { "include": "#state-colors-entry" },
+    { "include": "#color-bounds-entry" },
+    { "include": "#color-adherence-override" },
     { "include": "#color-group-header" },
     { "include": "#color-group-property" },
     { "include": "#color-group-entry" },
@@ -102,6 +105,33 @@
         "2": { "name": "entity.name.tag.brand-intent-brand" }
       }
     },
+    "state-colors-entry": {
+      "comment": "Indented entries under state-colors: problem/warning/success/info/inactive → hex",
+      "match": "^(\\s{2,})(problem|warning|success|info|inactive)(:\\s*)(#[0-9A-Fa-f]{3,8})\\s*$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" }
+      }
+    },
+    "color-bounds-entry": {
+      "comment": "Indented entries under color-bounds: light/dark (0–1) + saturation-floor (0–100)",
+      "match": "^(\\s{2,})(light|dark|saturation-floor)(:\\s*)(\\S+)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
+    "color-adherence-override": {
+      "comment": "Optional tolerance overrides under color-adherence: hue-tolerance / sat-tolerance",
+      "match": "^(\\s{2,})(hue-tolerance|sat-tolerance)(:\\s*)(\\S+)",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
     "color-group-header": {
       "comment": "Grouped brand-colors: 2-space indent, bare group keyword",
       "match": "^( {2})(primary|secondary|accent|neutral)\\s*$",
@@ -110,12 +140,15 @@
       }
     },
     "color-group-property": {
-      "comment": "Group-level property (4-space indent): meaning / distribution",
-      "match": "^( {4})(meaning|distribution)(:\\s*)(.*)$",
+      "comment": "Group-level property (4-space indent): meaning / distribution. distribution's value is numeric (0–100).",
+      "match": "^( {4})(distribution)(:\\s*)(\\d+(?:\\.\\d+)?%?)\\s*$|^( {4})(meaning)(:\\s*)(.*)$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
-        "4": { "name": "string.unquoted.brand-intent-brand" }
+        "4": { "name": "constant.numeric.brand-intent-brand" },
+        "6": { "name": "support.type.property-name.brand-intent-brand" },
+        "7": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "8": { "name": "string.unquoted.brand-intent-brand" }
       }
     },
     "color-group-entry": {
