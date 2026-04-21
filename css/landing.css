@@ -37,26 +37,7 @@
   flex-wrap: wrap;
   margin-bottom: var(--space-2xl);
 }
-.btn-primary {
-  font-family: var(--font-monospace);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-medium);
-  background: var(--color-accent-2);
-  color: var(--color-surface);
-  padding: 0.6rem 1.2rem;
-  border-radius: 3px;
-  text-decoration: none;
-}
-.btn-primary:hover { opacity: 0.85; }
-.btn-ghost {
-  font-family: var(--font-monospace);
-  font-size: var(--font-size-small);
-  color: var(--color-tertiary);
-  text-decoration: none;
-  border-bottom: 1px solid var(--color-border-strong);
-  padding-bottom: 0.1rem;
-}
-.btn-ghost:hover { color: var(--color-primary); opacity: 1; }
+/* .btn-primary, .btn-ghost live in _themes/css/components.css (shared) */
 
 /* Layer chain */
 .layer-chain {
@@ -79,7 +60,7 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 0;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   margin: var(--space-lg) 0;
 }
@@ -113,7 +94,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   margin: var(--space-lg) 0;
 }
@@ -160,13 +141,7 @@
 .check { color: var(--color-success); }
 .cross { color: var(--color-light); }
 
-/* ── Two column layout ── */
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-xl);
-  align-items: start;
-}
+/* Use .columns .columns-2 from _themes/css/layout.css for two-up layouts */
 
 /* ── Layer detail ── */
 .layer-detail {
@@ -211,11 +186,11 @@
   border: 1px solid var(--color-border);
   border-bottom: none;
   padding: 0.3rem 0.9rem;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   display: inline-block;
 }
 .file-label + pre {
-  border-radius: 0 4px 4px 4px;
+  border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
   margin-top: 0;
 }
 
@@ -251,7 +226,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 .install-block {
   background: var(--color-surface-secondary);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   margin: var(--space-md) 0;
 }
@@ -277,7 +252,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   margin-left: auto;
   background: none;
   border: 1px solid var(--color-border);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   padding: 0.2rem 0.5rem;
   font-family: var(--font-monospace);
   font-size: 0.7rem;
@@ -290,8 +265,8 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   border-color: var(--color-primary);
 }
 .copy-btn.copied {
-  color: var(--color-accent, #22c55e);
-  border-color: var(--color-accent, #22c55e);
+  color: var(--color-success);
+  border-color: var(--color-success);
 }
 .works-with {
   font-family: var(--font-monospace);
@@ -315,7 +290,7 @@ details.code-example > summary {
   background: var(--color-surface-emphasized);
   border: 1px solid var(--color-border);
   padding: 0.4rem 0.9rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -337,12 +312,12 @@ details.code-example[open] > summary::before {
   transform: rotate(45deg);
 }
 details.code-example[open] > summary {
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   border-bottom: none;
 }
 details.code-example > pre {
   margin-top: 0;
-  border-radius: 0 4px 4px 4px;
+  border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
 }
 details.code-example > summary:hover {
   color: var(--color-secondary);

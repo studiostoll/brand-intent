@@ -52,13 +52,13 @@ code {
   color: var(--color-code);
   background-color: var(--color-surface-secondary);
   padding: 0.1em 0.35em;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   font-size: 0.85em;
 }
 pre {
   background-color: var(--color-surface-secondary);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   padding: 1.25rem 1.5rem;
   overflow-x: auto;
   font-size: 0.78rem;
@@ -145,7 +145,7 @@ tbody tr:nth-child(odd) td { background-color: var(--color-surface-secondary); }
   background: var(--color-black);
   color: var(--color-white);
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 14px;
 }
 .skip-link:focus { top: 6px; }
@@ -325,7 +325,7 @@ nav ul li a:hover {
     color: var(--color-quaternary);
     background-color: var(--color-surface);
     border: 1px solid var(--color-divider);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     padding: 0.25rem 0.5rem;
   }
 }
