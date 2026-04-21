@@ -142,14 +142,12 @@ spacing:
 divider line
   thickness: 0.15
   width: 100%
-  color: divider
   align: left
   spacing: s
 
 divider ruler
   thickness: 0.8
   width: 20%
-  color: divider
   align: left
   spacing: m
 

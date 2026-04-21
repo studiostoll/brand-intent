@@ -245,6 +245,8 @@ The brand file encodes derived expression intent: visual language and operationa
 
 Named color primitives. Each entry is `name: hex`. Optional 4-space indented print specs below each color.
 
+**Brand colors must be solid hex values.** Alpha/opacity is not allowed in this block — alpha expresses *usage*, not a primitive, and belongs in theme slots. Writing `#FFFFFF 50%` or `rgba(...)` as a brand color is a hard parser error.
+
 ```yaml
 brand-colors
   primary:   #2C1810
@@ -256,7 +258,23 @@ brand-colors
 
 ### `theme NAME` Block
 
-Maps semantic slot names to colors. Colors are hex values or `$references` to `brand-colors` names.
+Maps semantic slot names to colors. Values are `$references` to `brand-colors` names, raw hex, or either of those with an optional alpha suffix.
+
+**Value grammar:**
+
+| Form | Example | Renders as |
+|------|---------|-----------|
+| `$ref` | `$white` | resolved hex of the brand color |
+| `#HEX` | `#FFFFFF` | pass-through hex |
+| `$ref NN%` | `$white 75%` | `rgba(...)` with alpha |
+| `#HEX NN%` | `#FFFFFF 30%` | `rgba(...)` with alpha |
+
+**Alpha rules:**
+
+- Separator between base and alpha is exactly one space. `$white/75%`, `$white@75%`, `$white75%` are parser errors.
+- Alpha is `0`–`100`, integer or decimal (`12.5%` is valid).
+- `100%` emits solid hex, not `rgba()`, to keep output clean.
+- Raw `rgba(...)` literals are tolerated for backwards compatibility but discouraged — they bypass the `$ref` chain.
 
 **Valid theme slots:**
 
@@ -283,8 +301,10 @@ theme Laden
   background:     $white
   text-primary:   $primary
   text-secondary: $secondary
+  text-tertiary:  $primary 60%
+  text-muted:     $primary 30%
   cta:            $accent2
-  divider:        $accent1
+  divider:        $accent1 40%
 ```
 
 ### `font NAME` Block
@@ -351,11 +371,12 @@ spacing:
 
 ### `divider NAME` Block
 
+Divider color is **not configurable per-divider** — it is always sourced from the active theme's `divider` slot. Adding a `color:` line to a divider block is a hard parser error.
+
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `thickness:` | float | `0.2` | Line thickness (cqmin) |
 | `width:` | string | `100%` | Width as percentage |
-| `color:` | string | `text-tertiary` | Theme slot name or hex |
 | `align:` | enum | `left` | `left` \| `center` \| `right` |
 | `spacing:` | string | `xs` | Spacing token name |
 

@@ -85,31 +85,34 @@
       }
     },
     "token-slot-ref": {
-      "comment": "Indented token slot with $ref value",
-      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(\\$[\\w]+)",
+      "comment": "Indented token slot with $ref value, optional alpha suffix",
+      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(\\$[\\w-]+)(?:\\s+([0-9]+(?:\\.[0-9]+)?%))?",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
-        "4": { "name": "entity.name.tag.brand-intent-brand" }
+        "4": { "name": "entity.name.tag.brand-intent-brand" },
+        "5": { "name": "constant.numeric.brand-intent-brand" }
       }
     },
     "token-slot-with-comment": {
-      "comment": "Indented token slot: background: #HEX  # annotation",
-      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(#[0-9A-Fa-f]{3,8})(\\s+#.*)?$",
+      "comment": "Indented token slot: background: #HEX (optional NN%) (optional # annotation)",
+      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(#[0-9A-Fa-f]{3,8})(?:\\s+([0-9]+(?:\\.[0-9]+)?%))?(\\s+#.*)?$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
         "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
-        "5": { "name": "comment.line.number-sign.brand-intent-brand" }
+        "5": { "name": "constant.numeric.brand-intent-brand" },
+        "6": { "name": "comment.line.number-sign.brand-intent-brand" }
       }
     },
     "token-slot": {
-      "comment": "Indented token slot without comment",
-      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(#[0-9A-Fa-f]{3,8})\\s*$",
+      "comment": "Indented token slot without comment, optional alpha suffix",
+      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(#[0-9A-Fa-f]{3,8})(?:\\s+([0-9]+(?:\\.[0-9]+)?%))?\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
-        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" }
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
+        "5": { "name": "constant.numeric.brand-intent-brand" }
       }
     },
     "spacing-value": {
@@ -129,8 +132,8 @@
       }
     },
     "divider-value": {
-      "comment": "Indented divider property key-value pairs",
-      "match": "^(\\s{2,})(thickness|width|color|spacing|align)(:\\s*)(\\S+)",
+      "comment": "Indented divider property key-value pairs (color removed in 0.6.0 — sourced from theme)",
+      "match": "^(\\s{2,})(thickness|width|spacing|align)(:\\s*)(\\S+)",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

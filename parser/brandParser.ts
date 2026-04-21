@@ -123,17 +123,115 @@ export interface ParsedDividerDef {
   thickness: number;
   /** Line width — percentage string (e.g. '15%') or '100%' */
   width: string;
-  /**
-   * Resolved color value. Supports:
-   * - Brand color names: 'accent1', 'accent2', 'primary', 'secondary', etc. (resolved to hex at parse time)
-   * - Raw hex: '#E32D39'
-   * - Theme slot names: 'logo' | 'cta' | 'sticker' | 'background' | 'text-primary' | … (resolved at render time via resolveDividerColor)
-   */
-  color: string;
   /** Spacing token name applied above and below the divider (xs | s | m | l | xl) */
   spacing: string;
   /** Horizontal alignment of a partial-width divider (default: 'left') */
   align: 'left' | 'center' | 'right';
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+/**
+ * Expand a 3-digit hex to 6-digit. Pass-through for 6 or 8-digit.
+ * Returns null for invalid input.
+ */
+function normalizeHex(hex: string): string | null {
+  const m = hex.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/);
+  if (!m) return null;
+  const body = m[1];
+  if (body.length === 3) {
+    return '#' + body.split('').map(c => c + c).join('').toUpperCase();
+  }
+  return '#' + body.toUpperCase();
+}
+
+/** Parse a 6-digit hex into [r, g, b]. Input must be normalised to 6 digits. */
+function hexToRgb(hex6: string): [number, number, number] {
+  const body = hex6.slice(1);
+  return [
+    parseInt(body.slice(0, 2), 16),
+    parseInt(body.slice(2, 4), 16),
+    parseInt(body.slice(4, 6), 16),
+  ];
+}
+
+/**
+ * Resolve a theme-slot value string to a final CSS color.
+ *
+ * Supports: `$ref`, `$ref NN%`, `#HEX`, `#HEX NN%`, raw rgba(...) pass-through.
+ * Throws on malformed alpha or unresolved `$ref`.
+ */
+function resolveThemeSlotValue(
+  raw: string,
+  brandColors: Record<string, string>,
+  fileName: string,
+  slot: string,
+): string {
+  const value = raw.trim();
+
+  // Legacy rgba(...) literal — pass through unchanged.
+  if (/^rgba?\s*\(/i.test(value)) return value;
+
+  // Detect an alpha suffix: "<base> NN%" (one or more spaces, numeric, trailing %).
+  // If the line contains a % but the shape doesn't match, it's malformed.
+  let base = value;
+  let alpha: number | null = null;
+  const alphaMatch = value.match(/^(\S+)\s+([0-9]+(?:\.[0-9]+)?)%$/);
+  if (alphaMatch) {
+    base = alphaMatch[1];
+    alpha = parseFloat(alphaMatch[2]);
+    if (alpha < 0 || alpha > 100) {
+      throw new Error(
+        `${fileName}: theme slot "${slot}" alpha must be between 0 and 100, got ${alpha}`,
+      );
+    }
+  } else if (value.includes('%')) {
+    throw new Error(
+      `${fileName}: theme slot "${slot}" alpha syntax is "<value> NN%" with a single space, got "${value}"`,
+    );
+  }
+
+  // Resolve base to a hex string.
+  let hex: string | null = null;
+  if (base.startsWith('$')) {
+    const refName = base.slice(1);
+    const resolved = brandColors[refName];
+    if (!resolved) {
+      throw new Error(
+        `${fileName}: theme slot "${slot}" references unknown brand color "$${refName}"`,
+      );
+    }
+    hex = normalizeHex(resolved);
+    if (!hex) {
+      throw new Error(
+        `${fileName}: theme slot "${slot}" base "$${refName}" resolves to "${resolved}", which is not a valid hex color`,
+      );
+    }
+  } else {
+    hex = normalizeHex(base);
+    if (!hex) {
+      // Not a hex, not a $ref — but it might be a bare keyword like "currentColor" or
+      // a semantic slot name used for dividers historically. Pass through only when
+      // no alpha was requested; with alpha, the base must be concrete.
+      if (alpha !== null) {
+        throw new Error(
+          `${fileName}: theme slot "${slot}" base "${base}" must be "$ref" or "#HEX" when using alpha`,
+        );
+      }
+      return value;
+    }
+  }
+
+  // No alpha → solid hex.
+  if (alpha === null) return hex;
+
+  // 100% alpha → emit solid hex (keep output clean).
+  if (alpha === 100) return hex;
+
+  const [r, g, b] = hexToRgb(hex);
+  // Drop trailing zeros for cleanliness: 0.7 not 0.70, 0.5 not 0.50.
+  const a = Number((alpha / 100).toFixed(4)).toString();
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
 // ── Parser ─────────────────────────────────────────────────────────────────────
@@ -191,6 +289,12 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
           const value = trimmed.slice(colonIdx + 1).trim();
           if (indentLen <= 2) {
             // Top-level color line: "  primary: #0324B1"
+            // Brand colors are solid primitives only — alpha belongs in theme slots.
+            if (/%/.test(value) || /rgba\s*\(/i.test(value)) {
+              throw new Error(
+                `${fileName}:${lineNum}: brand color "${key}" must be a solid hex — alpha syntax (e.g. "$ref 75%" or rgba()) is only allowed in theme slots`,
+              );
+            }
             brandColors[key] = value;
             currentBrandColorName = key;
           } else if (currentBrandColorName) {
@@ -236,6 +340,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         if (colonIdx !== -1) {
           const key = raw.slice(0, colonIdx).trim();
           const value = raw.slice(colonIdx + 1).trim();
+          if (key === 'color') {
+            throw new Error(
+              `${fileName}:${lineNum}: divider "${currentDividerName}": color is no longer configurable. Remove the "color:" line — divider color is sourced from the theme's "divider" slot.`,
+            );
+          }
           if (!dividersRaw[currentDividerName]) dividersRaw[currentDividerName] = {};
           dividersRaw[currentDividerName][key] = value;
         }
@@ -399,19 +508,21 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (Object.keys(brandColorPrint).length > 0) result.brandColorPrint = brandColorPrint;
   }
 
-  // Finalise inline tokens — resolve $ref values against brandColors
+  // Finalise inline tokens — resolve $ref values against brandColors, apply optional alpha.
+  //
+  // Theme slot grammar:
+  //   slot: $ref              → resolve ref to hex
+  //   slot: $ref 75%          → resolve ref, then apply alpha (rgba)
+  //   slot: #HEX              → pass through
+  //   slot: #HEX 30%          → apply alpha (rgba)
+  //   slot: rgba(...)         → pass through (legacy, discouraged)
+  //
+  // Alpha is expressed as `<number>%`, 0–100, separated from the base value by exactly one space.
+  // 100% emits solid hex (not rgba) to keep output clean.
   if (Object.keys(themes).length > 0) {
     for (const theme of Object.values(themes)) {
       for (const [slot, value] of Object.entries(theme)) {
-        if (value.startsWith('$')) {
-          const refName = value.slice(1);
-          const resolved = brandColors[refName];
-          if (resolved) {
-            theme[slot] = resolved;
-          } else {
-            console.warn(`${fileName}: unresolved brand color reference "$${refName}" in theme slot "${slot}"`);
-          }
-        }
+        theme[slot] = resolveThemeSlotValue(value, brandColors, fileName, slot);
       }
     }
     result.themes = themes;
@@ -428,12 +539,9 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     };
   }
 
-  // Finalise dividers
+  // Finalise dividers — color is always sourced from the active theme's "divider" slot.
   if (Object.keys(dividersRaw).length > 0) {
     const dividers: Record<string, ParsedDividerDef> = {};
-    // Resolve a color value: brand color name (accent1, accent2, …) → hex,
-    // semantic slot names → kept as-is for resolveDividerColor(), raw hex → pass through.
-    const resolveColor = (c: string): string => brandColors[c] ?? c;
     for (const [name, raw] of Object.entries(dividersRaw)) {
       const alignRaw = raw['align'] ?? 'left';
       const align: ParsedDividerDef['align'] =
@@ -441,7 +549,6 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       dividers[name] = {
         thickness: parseFloat(raw['thickness'] ?? '0.2'),
         width: raw['width'] ?? '100%',
-        color: resolveColor(raw['color'] ?? 'text-tertiary'),
         spacing: raw['spacing'] ?? 'xs',
         align,
       };
