@@ -229,7 +229,12 @@ The brand file encodes derived expression intent: visual language and operationa
 | `app-icon:` | string | No | Path to PWA app icon (relative to /public) |
 | `favicon:` | string | No | Path to favicon (relative to /public) |
 | `og-image:` | string | No | Path to social sharing image (relative to /public) |
-| `brand-colors` | block | Yes | Color primitive definitions |
+| `brand-colors` | block | Yes | Color primitive definitions (flat or grouped) |
+| `state-colors` | block | No | Per-brand fixed state colors (problem/warning/success/info/inactive) |
+| `color-bounds` | block | No | Luminance + saturation bounds for guided derivation |
+| `color-mode:` | enum | No | `static` \| `dynamic` \| `guided` — color resolution mode |
+| `color-strategy:` | enum | No | `monochrome` \| `duotone` \| `tricolor` \| `spectrum` — default palette strategy for guided shuffle |
+| `color-adherence:` | enum + block | No | `strict` \| `on-brand` \| `flexible` — guided derivation tightness, with optional tolerance overrides |
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
@@ -255,6 +260,118 @@ brand-colors
   accent1:   #C8A47E
   white:     #FAF6F0
 ```
+
+#### Grouped Syntax (v0.8.0+)
+
+As of v0.8.0, `brand-colors` also accepts a **grouped** shape that expresses color relationships, roles, meanings, and distributions. The parser auto-detects the shape from the first non-blank indented line: a bare group keyword (`primary`, `secondary`, `accent`, `neutral`) triggers grouped mode; otherwise the block stays flat. The two shapes are mutually exclusive within a single block.
+
+The grouped shape unlocks **guided color mode** (`color-mode: guided`), which requires at minimum: the `primary` group with ≥1 color, and the `neutral` group with both `role: light` and `role: dark` entries.
+
+```
+brand-colors
+
+  primary
+    meaning: identity, recognition, authority
+    distribution: 60%
+
+    #2C1810  Espresso
+      meaning: the core mark, anchoring
+    #5C3A28  Walnut
+      role: warmth
+      meaning: softer companion, supporting weight
+
+  secondary
+    meaning: warmth, craft, natural quality
+    distribution: 30%
+
+    #C8A47E  Wheat
+
+  accent
+    meaning: distinction, sparingly used surprise
+    distribution: 10%
+
+    #D4A574  Honey
+
+  neutral
+    meaning: structure, readability, quiet presence
+
+    #FAF6F0  Flour
+      role: light
+      meaning: base canvas
+    $primary.default
+      role: dark
+      meaning: text, headings, structural weight
+```
+
+**Group rules:**
+
+- Groups are declared in this order: `primary`, `secondary`, `accent`, `neutral`. Declaration order is load-bearing for references — a group can only reference colors in earlier groups.
+- `meaning:` is authored prose — engine ignores it.
+- `distribution:` is a selection-probability weight (0–100), valid only on identity groups (`primary`, `secondary`, `accent`). Declaring `distribution:` on `neutral` is a hard error.
+
+**Entry rules:**
+
+- Each entry header is either `#HEX  Display Name` (two spaces between hex and name) or a `$group.role` reference line.
+- Sub-properties (4-space indent): `role:`, `meaning:`, and the existing print specs `pantone:`, `hks:`, `cmyk:`.
+- In identity groups, `role:` is authored freely (`depth`, `warmth`, `signal`, …). The single reserved role is `default` — it marks the group representative. If no entry has `role: default`, the first-declared entry is the default implicitly.
+- In the `neutral` group, `role:` is a fixed vocabulary: `light | subtle | mid | muted | dark`. Endpoints `light` and `dark` are required. Other values raise a parser error.
+
+**Layer 2 references:**
+
+- The header line `$group.role` replaces `#HEX  Name`. The target color contributes its hex + display name; the reference entry authors its own `role:` and `meaning:` locally.
+- References may only point to groups declared earlier. Forward and self-references are hard errors.
+- Neutrals may reference identity groups; identity groups may not reference neutrals.
+
+**Flat projection:** grouped-syntax brands continue to expose `brandColors` (flat map) so legacy consumers work unchanged. The key is the entry's display name lowercased with whitespace replaced by hyphens.
+
+### `state-colors` Block
+
+Per-brand fixed colors for interface states. All values are solid hex. Optional — if omitted, consumers use sensible defaults.
+
+```
+state-colors
+  problem:   #C62828
+  warning:   #E65100
+  success:   #2E7D32
+  info:      #1565C0
+  inactive:  #757575
+```
+
+State colors are perceptual anchors (red = problem, green = success). Always strict — never shifted in hue by guided derivation regardless of adherence level.
+
+### `color-bounds` Block
+
+Constraints for all guided derivation — brand color scales, state color variants, neutral interpolation. All fields are optional; sensible defaults apply when omitted.
+
+```
+color-bounds
+  light: 0.95
+  dark: 0.04
+  saturation-floor: 15
+```
+
+- `light` — maximum luminance for derived tints (0–1).
+- `dark` — minimum luminance for derived shades (0–1).
+- `saturation-floor` — minimum saturation (0–100) for derived colors, preventing washed-out grays in warm brands.
+
+### `color-mode:`, `color-strategy:`, `color-adherence:`
+
+Top-level keys that configure the color resolution engine.
+
+```
+color-mode: guided
+color-strategy: duotone
+
+color-adherence: on-brand
+  hue-tolerance: 4
+  sat-tolerance: 8
+```
+
+- `color-mode:` — `static` (themes only, today's default), `dynamic` (random moods + photo derivation, today's behavior), or `guided` (algorithmic within brand constraints).
+- `color-strategy:` — the default palette strategy for Path A (guided shuffle). Values: `monochrome`, `duotone`, `tricolor`, `spectrum`. Optional; derived from distribution when absent.
+- `color-adherence:` — how tightly guided derivation follows brand groups. Values: `strict`, `on-brand`, `flexible`. Accepts an indented override block with `hue-tolerance:` (degrees) and `sat-tolerance:` (percentage points) to dial the level without switching it.
+
+`color-mode: guided` requires grouped `brand-colors` syntax with the minimum structure above. Flat-syntax brands that declare `color-mode: guided` raise a parse error.
 
 ### `theme NAME` Block
 

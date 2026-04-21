@@ -7,6 +7,16 @@
     { "include": "#name-field" },
     { "include": "#tokens-enum" },
     { "include": "#brand-colors-header" },
+    { "include": "#state-colors-header" },
+    { "include": "#color-bounds-header" },
+    { "include": "#color-mode-enum" },
+    { "include": "#color-strategy-enum" },
+    { "include": "#color-adherence-enum" },
+    { "include": "#color-group-header" },
+    { "include": "#color-group-property" },
+    { "include": "#color-group-entry" },
+    { "include": "#color-group-reference" },
+    { "include": "#color-group-entry-property" },
     { "include": "#theme-header" },
     { "include": "#brand-color-entry" },
     { "include": "#brand-color-print-sub" },
@@ -57,6 +67,79 @@
       "match": "^(brand-colors)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "state-colors-header": {
+      "match": "^(state-colors)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "color-bounds-header": {
+      "match": "^(color-bounds)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "color-mode-enum": {
+      "match": "^(color-mode:)\\s+(static|dynamic|guided)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.tag.brand-intent-brand" }
+      }
+    },
+    "color-strategy-enum": {
+      "match": "^(color-strategy:)\\s+(monochrome|duotone|tricolor|spectrum)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.tag.brand-intent-brand" }
+      }
+    },
+    "color-adherence-enum": {
+      "match": "^(color-adherence:)\\s+(strict|on-brand|flexible)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "entity.name.tag.brand-intent-brand" }
+      }
+    },
+    "color-group-header": {
+      "comment": "Grouped brand-colors: 2-space indent, bare group keyword",
+      "match": "^( {2})(primary|secondary|accent|neutral)\\s*$",
+      "captures": {
+        "2": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "color-group-property": {
+      "comment": "Group-level property (4-space indent): meaning / distribution",
+      "match": "^( {4})(meaning|distribution)(:\\s*)(.*)$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "string.unquoted.brand-intent-brand" }
+      }
+    },
+    "color-group-entry": {
+      "comment": "Color entry header inside a group: 4-space indent, #HEX  Name",
+      "match": "^( {4})(#[0-9A-Fa-f]{3,8})\\s+(.+?)\\s*$",
+      "captures": {
+        "2": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
+        "3": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "color-group-reference": {
+      "comment": "Layer 2 cross-group reference: $group.role",
+      "match": "^( {4})(\\$[a-z]+\\.[a-z-]+)\\s*$",
+      "captures": {
+        "2": { "name": "entity.name.tag.brand-intent-brand" }
+      }
+    },
+    "color-group-entry-property": {
+      "comment": "Per-entry sub-property: 6-space indent, role / meaning / pantone / hks / cmyk",
+      "match": "^( {6})(role|meaning|pantone|hks|cmyk)(:\\s*)(.*)$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "string.unquoted.brand-intent-brand" }
       }
     },
     "theme-header": {
@@ -223,7 +306,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|brand-colors|theme|divider|font|typography|logo|photo|video|illustration)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|theme|divider|font|typography|logo|photo|video|illustration)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

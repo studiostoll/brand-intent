@@ -7,6 +7,19 @@ export type { ParsedIdentity, ParsedVoice, ParsedPillars, ParsedAudience, Parsed
 
 export { parseBrandFile } from './brandParser';
 export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle } from './brandParser';
+export type {
+  ColorMode,
+  PaletteStrategy,
+  Adherence,
+  AdherenceTolerances,
+  ColorBounds,
+  StateColors,
+  GroupKey,
+  IdentityGroupKey,
+  NeutralRole,
+  BrandColorEntry,
+  BrandColorGroup,
+} from './types';
 
 export { parseFormatFile } from './formatParser';
 export type { ParsedFormat } from './formatParser';

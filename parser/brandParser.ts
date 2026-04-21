@@ -6,6 +6,19 @@
  * handles expression-layer primitives only (colors, typography, dividers, assets, badge styles).
  */
 
+import type {
+  BrandColorGroup,
+  BrandColorEntry,
+  ColorMode,
+  PaletteStrategy,
+  Adherence,
+  AdherenceTolerances,
+  ColorBounds,
+  StateColors,
+  GroupKey,
+  NeutralRole,
+} from './types';
+
 // ── Parsed type ────────────────────────────────────────────────────────────────
 
 export interface ParsedBrand {
@@ -31,10 +44,26 @@ export interface ParsedBrand {
   favicon?: string;
   /** Path to OG image asset (relative to /public), used for social sharing previews */
   ogImage?: string;
-  /** Core brand color primitives: name → hex (e.g. primary, secondary, accent1, accent2, white) */
+  /** Core brand color primitives: name → hex (e.g. primary, secondary, accent1, accent2, white).
+   *  Always present when any colors are declared — grouped-syntax brands get a flat projection
+   *  generated from all entries, so legacy consumers keep working unchanged. */
   brandColors?: Record<string, string>;
   /** Structured print specs per brand color: name → {pantone?, hks?, cmyk?} */
   brandColorPrint?: Record<string, BrandColorPrintSpec>;
+  /** Grouped-syntax representation (v0.8.0+). Present only when the `brand-colors` block uses the grouped form. */
+  colorGroups?: BrandColorGroup[];
+  /** Per-brand fixed state colors (problem/warning/success/info/inactive). */
+  stateColors?: StateColors;
+  /** Bounds for guided derivation (luminance + saturation floor). */
+  colorBounds?: ColorBounds;
+  /** Color resolution mode. Defaults behave as `static` when absent. */
+  colorMode?: ColorMode;
+  /** Palette strategy default for Path A (guided shuffle). Optional. */
+  colorStrategy?: PaletteStrategy;
+  /** Adherence level for guided derivation. Optional — engine-side default per level. */
+  colorAdherence?: Adherence;
+  /** Per-brand tolerance overrides for the declared adherence level. */
+  colorAdherenceOverrides?: AdherenceTolerances;
   /** Inline themes: theme name → slot name → resolved hex color (only when tokensSource === 'inline') */
   themes?: Record<string, Record<string, string>>;
   /** Print annotations from inline # comments: slot name → annotation text */
@@ -130,6 +159,13 @@ export interface ParsedDividerDef {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+const GROUP_KEYWORDS = new Set<string>(['primary', 'secondary', 'accent', 'neutral']);
+const NEUTRAL_ROLES = new Set<NeutralRole>(['light', 'subtle', 'mid', 'muted', 'dark']);
+const STATE_KEYS = new Set<string>(['problem', 'warning', 'success', 'info', 'inactive']);
+const VALID_COLOR_MODES = new Set<ColorMode>(['static', 'dynamic', 'guided']);
+const VALID_STRATEGIES = new Set<PaletteStrategy>(['monochrome', 'duotone', 'tricolor', 'spectrum']);
+const VALID_ADHERENCES = new Set<Adherence>(['strict', 'on-brand', 'flexible']);
 
 /**
  * Expand a 3-digit hex to 6-digit. Pass-through for 6 or 8-digit.
@@ -244,7 +280,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -253,6 +289,18 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const brandColors: Record<string, string> = {};
   const brandColorPrint: Record<string, BrandColorPrintSpec> = {};
   let currentBrandColorName = '';
+
+  // Grouped brand-colors state (v0.8.0+).
+  // Shape is detected lazily: when the first non-blank indented line inside `brand-colors`
+  // is a bare group keyword, the block switches to grouped mode. Otherwise it stays flat.
+  type GroupedShape = 'unknown' | 'flat' | 'grouped';
+  let brandColorsShape: GroupedShape = 'unknown';
+  const colorGroups: BrandColorGroup[] = [];
+  let currentGroup: BrandColorGroup | null = null;
+  let currentGroupedEntry: BrandColorEntry | null = null;
+  const stateColorsRaw: Record<string, string> = {};
+  const colorBoundsRaw: Record<string, string> = {};
+  const adherenceOverridesRaw: Record<string, string> = {};
   const themes: Record<string, Record<string, string>> = {};
   const themeDescriptions: Record<string, string> = {};
   const spacingRaw: Record<string, string> = {};
@@ -282,7 +330,123 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (isIndented) {
       if (activeBlock === 'brand-colors') {
         const trimmed = raw.trimStart();
+        if (trimmed === '') continue;
         const indentLen = raw.length - trimmed.length;
+
+        // Shape detection: first non-blank indented line decides.
+        // Grouped = bare group keyword (`primary`/`secondary`/`accent`/`neutral`) at 2-space indent.
+        // Flat    = `key: value` at 2-space indent.
+        if (brandColorsShape === 'unknown') {
+          if (GROUP_KEYWORDS.has(trimmed) && indentLen <= 2) {
+            brandColorsShape = 'grouped';
+          } else {
+            brandColorsShape = 'flat';
+          }
+        }
+
+        if (brandColorsShape === 'grouped') {
+          // ── Grouped shape ────────────────────────────────────────────────
+          const groupKwMatch = GROUP_KEYWORDS.has(trimmed) && indentLen <= 2;
+          if (groupKwMatch) {
+            const key = trimmed as GroupKey;
+            if (colorGroups.some(g => g.key === key)) {
+              throw new Error(`${fileName}:${lineNum}: duplicate color group "${key}"`);
+            }
+            currentGroup = { key, entries: [] };
+            colorGroups.push(currentGroup);
+            currentGroupedEntry = null;
+            continue;
+          }
+          if (!currentGroup) {
+            throw new Error(
+              `${fileName}:${lineNum}: grouped brand-colors entries must appear inside a group block (primary/secondary/accent/neutral)`,
+            );
+          }
+          // Group-level properties at 4-space indent OR color-entry header / sub-properties.
+          // We distinguish by: entry header = starts with `#` or `$`.
+          if (trimmed.startsWith('#') || trimmed.startsWith('$')) {
+            // New entry. Header forms:
+            //   "#HEX  Display Name"
+            //   "$group.role"
+            if (trimmed.startsWith('#')) {
+              // Split header: "#HEX  Name" — hex then whitespace then name
+              const headerMatch = trimmed.match(/^(#[0-9a-fA-F]{3,8})(?:\s+(.+))?$/);
+              if (!headerMatch) {
+                throw new Error(
+                  `${fileName}:${lineNum}: expected "#HEX  Name" entry header, got "${trimmed}"`,
+                );
+              }
+              const hex = normalizeHex(headerMatch[1]);
+              if (!hex) {
+                throw new Error(
+                  `${fileName}:${lineNum}: invalid hex "${headerMatch[1]}"`,
+                );
+              }
+              const name = (headerMatch[2] ?? '').trim();
+              if (!name) {
+                throw new Error(
+                  `${fileName}:${lineNum}: color entry needs a display name after the hex`,
+                );
+              }
+              currentGroupedEntry = { hex, name };
+              currentGroup.entries.push(currentGroupedEntry);
+            } else {
+              // $group.role reference — resolved in finalisation pass.
+              const refMatch = trimmed.match(/^\$([a-z]+)\.([a-z-]+)$/i);
+              if (!refMatch) {
+                throw new Error(
+                  `${fileName}:${lineNum}: expected "$group.role" reference, got "${trimmed}"`,
+                );
+              }
+              currentGroupedEntry = {
+                hex: '',
+                name: '',
+                referencedFrom: `${refMatch[1]}.${refMatch[2]}`,
+              };
+              currentGroup.entries.push(currentGroupedEntry);
+            }
+            continue;
+          }
+          // `key: value` line — either group property (indent ≤ 4) or entry sub-property.
+          const colonIdx = trimmed.indexOf(':');
+          if (colonIdx === -1) continue;
+          const key = trimmed.slice(0, colonIdx).trim();
+          const value = trimmed.slice(colonIdx + 1).trim();
+          // Group property lives at indent 4 and only appears before the first entry.
+          if (indentLen <= 4 && !currentGroupedEntry) {
+            if (key === 'meaning') {
+              currentGroup.meaning = value;
+            } else if (key === 'distribution') {
+              if (currentGroup.key === 'neutral') {
+                throw new Error(
+                  `${fileName}:${lineNum}: neutral group cannot declare distribution — it's the scale, not a selection target`,
+                );
+              }
+              const pct = parseFloat(value.replace(/%$/, ''));
+              if (isNaN(pct)) {
+                throw new Error(
+                  `${fileName}:${lineNum}: distribution "${value}" is not a number`,
+                );
+              }
+              currentGroup.distribution = pct;
+            }
+            continue;
+          }
+          // Entry sub-property.
+          if (!currentGroupedEntry) continue;
+          if (key === 'role') {
+            currentGroupedEntry.role = value;
+            if (value === 'default') currentGroupedEntry.isDefault = true;
+          } else if (key === 'meaning') {
+            currentGroupedEntry.meaning = value;
+          } else if (key === 'pantone' || key === 'hks' || key === 'cmyk') {
+            if (!currentGroupedEntry.print) currentGroupedEntry.print = {};
+            currentGroupedEntry.print[key] = value;
+          }
+          continue;
+        }
+
+        // ── Flat shape (legacy) ────────────────────────────────────────────
         const colonIdx = trimmed.indexOf(':');
         if (colonIdx !== -1) {
           const key = trimmed.slice(0, colonIdx).trim();
@@ -305,6 +469,36 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
             else if (key === 'hks') spec.hks = value;
             else if (key === 'cmyk') spec.cmyk = value;
           }
+        }
+        continue;
+      }
+      if (activeBlock === 'state-colors') {
+        const trimmed = raw.trimStart();
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx !== -1) {
+          const key = trimmed.slice(0, colonIdx).trim();
+          const value = trimmed.slice(colonIdx + 1).trim();
+          stateColorsRaw[key] = value;
+        }
+        continue;
+      }
+      if (activeBlock === 'color-bounds') {
+        const trimmed = raw.trimStart();
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx !== -1) {
+          const key = trimmed.slice(0, colonIdx).trim();
+          const value = trimmed.slice(colonIdx + 1).trim();
+          colorBoundsRaw[key] = value;
+        }
+        continue;
+      }
+      if (activeBlock === 'color-adherence') {
+        const trimmed = raw.trimStart();
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx !== -1) {
+          const key = trimmed.slice(0, colonIdx).trim();
+          const value = trimmed.slice(colonIdx + 1).trim();
+          adherenceOverridesRaw[key] = value;
         }
         continue;
       }
@@ -406,14 +600,30 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       continue;
     }
 
-    // Non-indented line ends any active block
-    activeBlock = 'none';
-
+    // Blank lines are ignored — they don't close active blocks (grouped brand-colors
+    // relies on blank lines between groups for readability).
     if (raw.trim() === '') continue;
+
+    // Non-indented non-blank line ends any active block
+    activeBlock = 'none';
 
     // brand-colors — starts the brand color primitives block
     if (raw.trim() === 'brand-colors') {
       activeBlock = 'brand-colors';
+      currentGroup = null;
+      currentGroupedEntry = null;
+      continue;
+    }
+
+    // state-colors — flat block of problem/warning/success/info/inactive
+    if (raw.trim() === 'state-colors') {
+      activeBlock = 'state-colors';
+      continue;
+    }
+
+    // color-bounds — luminance + saturation floor for guided derivation
+    if (raw.trim() === 'color-bounds') {
+      activeBlock = 'color-bounds';
       continue;
     }
 
@@ -496,16 +706,176 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       case 'cta':
         activeBlock = 'cta';
         break;
+      case 'color-mode':
+        if (!VALID_COLOR_MODES.has(value as ColorMode)) {
+          throw new Error(`${fileName}:${lineNum}: color-mode must be "static", "dynamic", or "guided", got "${value}"`);
+        }
+        result.colorMode = value as ColorMode;
+        break;
+      case 'color-strategy':
+        if (!VALID_STRATEGIES.has(value as PaletteStrategy)) {
+          throw new Error(`${fileName}:${lineNum}: color-strategy must be one of monochrome/duotone/tricolor/spectrum, got "${value}"`);
+        }
+        result.colorStrategy = value as PaletteStrategy;
+        break;
+      case 'color-adherence':
+        if (!VALID_ADHERENCES.has(value as Adherence)) {
+          throw new Error(`${fileName}:${lineNum}: color-adherence must be "strict", "on-brand", or "flexible", got "${value}"`);
+        }
+        result.colorAdherence = value as Adherence;
+        // Optional indented overrides follow.
+        activeBlock = 'color-adherence';
+        break;
       default:
         // Unknown keys silently ignored for forward compatibility
         break;
     }
   }
 
-  // Store brand colors
+  // ── Finalise grouped brand-colors (v0.8.0+) ────────────────────────────────
+  if (colorGroups.length > 0) {
+    // Resolve $group.role references in declaration order — a reference may only point
+    // to a group earlier in the list than its containing group.
+    const resolvedNames = new Set<string>();
+    for (let gi = 0; gi < colorGroups.length; gi++) {
+      const group = colorGroups[gi];
+      for (const entry of group.entries) {
+        if (!entry.referencedFrom) {
+          // Normal entry — ensure its name doesn't collide (important for flat projection).
+          if (resolvedNames.has(entry.name)) {
+            throw new Error(`${fileName}: duplicate color name "${entry.name}" in brand-colors`);
+          }
+          resolvedNames.add(entry.name);
+          continue;
+        }
+        // Reference shape: "<group>.<role>"
+        const [refGroupKey, refRole] = entry.referencedFrom.split('.');
+        const refGroupIdx = colorGroups.findIndex(g => g.key === refGroupKey);
+        if (refGroupIdx === -1) {
+          throw new Error(`${fileName}: reference "$${entry.referencedFrom}" targets unknown group "${refGroupKey}"`);
+        }
+        if (refGroupIdx >= gi) {
+          throw new Error(`${fileName}: reference "$${entry.referencedFrom}" must point to a group declared earlier (forward/self references forbidden)`);
+        }
+        const refGroup = colorGroups[refGroupIdx];
+        // Find the target entry. `default` matches explicit or first-declared default.
+        let target: BrandColorEntry | undefined;
+        if (refRole === 'default') {
+          target = refGroup.entries.find(e => e.isDefault) ?? refGroup.entries[0];
+        } else {
+          target = refGroup.entries.find(e => e.role === refRole);
+        }
+        if (!target) {
+          throw new Error(`${fileName}: reference "$${entry.referencedFrom}" — no entry with role "${refRole}" in group "${refGroupKey}"`);
+        }
+        entry.hex = target.hex;
+        entry.name = target.name;
+        // Don't add referenced name to resolvedNames — it's already registered under the target.
+      }
+
+      // Apply default selection rule for identity groups.
+      if (group.key !== 'neutral' && group.entries.length > 0) {
+        const explicit = group.entries.find(e => e.isDefault);
+        if (!explicit) {
+          // First-declared wins implicitly.
+          group.entries[0].isDefault = true;
+        }
+      }
+
+      // Neutral-group role validation.
+      if (group.key === 'neutral') {
+        for (const entry of group.entries) {
+          if (entry.role && !NEUTRAL_ROLES.has(entry.role as NeutralRole)) {
+            throw new Error(
+              `${fileName}: neutral entry "${entry.name}" role "${entry.role}" is not in the fixed vocabulary (light | subtle | mid | muted | dark)`,
+            );
+          }
+        }
+      }
+    }
+
+    result.colorGroups = colorGroups;
+
+    // Build flat projection so legacy consumers keep working unchanged.
+    // Key convention: the entry's display name lowercased, spaces → hyphens.
+    // Name collisions already rejected above, so the projection is deterministic.
+    for (const group of colorGroups) {
+      for (const entry of group.entries) {
+        const key = entry.name.toLowerCase().replace(/\s+/g, '-');
+        if (!brandColors[key]) {
+          brandColors[key] = entry.hex;
+          if (entry.print) brandColorPrint[key] = entry.print;
+        }
+      }
+    }
+  }
+
+  // Store brand colors (flat projection)
   if (Object.keys(brandColors).length > 0) {
     result.brandColors = brandColors;
     if (Object.keys(brandColorPrint).length > 0) result.brandColorPrint = brandColorPrint;
+  }
+
+  // ── Finalise state-colors / color-bounds / adherence overrides ────────────
+  if (Object.keys(stateColorsRaw).length > 0) {
+    const state: StateColors = {};
+    for (const [key, value] of Object.entries(stateColorsRaw)) {
+      if (!STATE_KEYS.has(key)) continue; // forward-compat: ignore unknown
+      const hex = normalizeHex(value);
+      if (!hex) {
+        throw new Error(`${fileName}: state-colors "${key}" value "${value}" is not a valid hex`);
+      }
+      (state as Record<string, string>)[key] = hex;
+    }
+    if (Object.keys(state).length > 0) result.stateColors = state;
+  }
+
+  if (Object.keys(colorBoundsRaw).length > 0) {
+    const bounds: ColorBounds = {};
+    if (colorBoundsRaw.light !== undefined) bounds.light = parseFloat(colorBoundsRaw.light);
+    if (colorBoundsRaw.dark !== undefined) bounds.dark = parseFloat(colorBoundsRaw.dark);
+    if (colorBoundsRaw['saturation-floor'] !== undefined) {
+      bounds.saturationFloor = parseFloat(colorBoundsRaw['saturation-floor']);
+    }
+    result.colorBounds = bounds;
+  }
+
+  if (Object.keys(adherenceOverridesRaw).length > 0) {
+    const overrides: AdherenceTolerances = {};
+    if (adherenceOverridesRaw['hue-tolerance'] !== undefined) {
+      overrides.hueTolerance = parseFloat(adherenceOverridesRaw['hue-tolerance']);
+    }
+    if (adherenceOverridesRaw['sat-tolerance'] !== undefined) {
+      overrides.satTolerance = parseFloat(adherenceOverridesRaw['sat-tolerance']);
+    }
+    if (Object.keys(overrides).length > 0) result.colorAdherenceOverrides = overrides;
+  }
+
+  // ── Minimum-structure validation for color-mode: guided ───────────────────
+  if (result.colorMode === 'guided') {
+    if (colorGroups.length === 0) {
+      throw new Error(
+        `${fileName}: color-mode: guided requires grouped brand-colors syntax — flat syntax is not sufficient. See the Minimum Structure section in the guided-colors spec.`,
+      );
+    }
+    const primary = colorGroups.find(g => g.key === 'primary');
+    const neutral = colorGroups.find(g => g.key === 'neutral');
+    if (!primary) {
+      throw new Error(`${fileName}: color-mode: guided requires a "primary" group`);
+    }
+    if (!neutral) {
+      throw new Error(`${fileName}: color-mode: guided requires a "neutral" group`);
+    }
+    const neutralRoles = new Set(neutral.entries.map(e => e.role).filter(Boolean));
+    if (!neutralRoles.has('light')) {
+      throw new Error(`${fileName}: color-mode: guided requires neutral group to declare at least role "light"`);
+    }
+    if (!neutralRoles.has('dark')) {
+      throw new Error(`${fileName}: color-mode: guided requires neutral group to declare at least role "dark"`);
+    }
+    if (primary.entries.length === 0) {
+      throw new Error(`${fileName}: color-mode: guided requires primary group to have at least one color`);
+    }
   }
 
   // Finalise inline tokens — resolve $ref values against brandColors, apply optional alpha.

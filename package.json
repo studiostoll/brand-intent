@@ -33,7 +33,11 @@
     "design-system"
   ],
   "scripts": {
-    "release": "./scripts/release.sh"
+    "release": "./scripts/release.sh",
+    "test": "tsx tests/brandParser.test.ts && tsx tests/realBrands.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
   },
   "files": [
     "cli/",
