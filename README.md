@@ -44,10 +44,10 @@ npx brand-intent init
 
 Two skills are now installed in your AI agent.
 
-- **`/brand-intent`** authors, validates, and generates on-brand content from your DSL files.
-- **`/brief`** exports a portable `{brand-id}-brief.md`. Use it to hand the brand to a tool that doesn't read Brand Intent directly, like a Claude design project, another LLM, or a collaborator.
+- **`/brand-intent`** authors, validates, and generates on-brand content from your Brand Intent files.
+- **`/brief`** exports a portable `{brand-id}-brief.md`. Use it to hand the brand to a tool that doesn't read Brand Intent directly, like a Claude Design project, another LLM, or a collaborator.
 
-Edit your DSL files whenever strategy or expression evolves. Regenerate briefs after any change.
+Edit your Brand Intent files whenever strategy or expression evolves. Regenerate briefs after any change.
 
 ## Documentation
 

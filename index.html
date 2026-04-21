@@ -690,34 +690,38 @@ description: An open file format specification for making brand intent machine-r
       <h3>3. Use your brand</h3>
       <p>
         Once initialized, the two installed skills cover the daily loop.
-        Edit your DSL files whenever strategy or expression evolves. Regenerate briefs after any change.
+        Edit your Brand Intent files whenever strategy or expression evolves. Regenerate briefs after any change.
       </p>
       <ul>
-        <li><code>/brand-intent</code> authors, validates, and generates on-brand content from your DSL files.</li>
+        <li><code>/brand-intent</code> authors, validates, and generates on-brand content from your Brand Intent files.</li>
         <li><code>/brief</code> exports a portable <code>{brand-id}-brief.md</code>. Use it to hand the brand
-          to a tool that doesn&rsquo;t read Brand Intent directly, like a Claude design project, another LLM,
+          to a tool that doesn&rsquo;t read Brand Intent directly, like a Claude Design project, another LLM,
           or a collaborator.</li>
       </ul>
     </div>
     <div>
       <h3 style="margin-top:0;">What the skills can do</h3>
       <p>
-        <strong>Onboard your brand:</strong> A guided interview covers essence, voice (always/never rules),
-        colors, typography, audiences. Your AI agent asks the questions, then scaffolds
+        <strong>Onboard your brand</strong> (<code>/brand-intent onboard</code>).
+        A guided interview covers essence, voice (always/never rules), colors, typography, audiences.
+        Your AI agent asks the questions, then scaffolds
         <code>.identity</code> + <code>.brand</code> + a starter <code>.purpose</code>.
       </p>
       <p>
-        <strong>Explore the example:</strong> The Krume bakery brand, a fully commented reference
-        showing all five layers. Identity, brand expression, format, purpose, composition.
+        <strong>Explore the example</strong> (<code>/brand-intent example</code>).
+        The Krume bakery brand, a fully commented reference showing all five layers.
+        Identity, brand expression, format, purpose, composition.
       </p>
       <p>
-        <strong>Generate &amp; validate:</strong> Compose context from all five layers and generate
-        on-brand content for any purpose. Validate against voice rules, pillars, and anti-audiences.
+        <strong>Generate &amp; validate</strong> (<code>/brand-intent</code>).
+        Compose context from all five layers and generate on-brand content for any purpose.
+        Validate against voice rules, pillars, and anti-audiences.
       </p>
       <p>
-        <strong>Export a portable brief:</strong> Run <code>/brief</code> to generate a single markdown file
-        derived from your DSL. It stays format-agnostic, usable with any LLM, human, or tool.
-        For example, drop it into a Claude design project as brand context.
+        <strong>Export a portable brief</strong> (<code>/brief</code>).
+        Generate a single markdown file derived from your Brand Intent files.
+        It stays format-agnostic, usable with any LLM, human, or tool.
+        For example, drop it into a Claude Design project as brand context.
       </p>
     </div>
   </div>
