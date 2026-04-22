@@ -304,6 +304,42 @@ test('color-adherence with tolerance overrides', () => {
   assertEq(out.colorAdherenceOverrides, { hueTolerance: 4, satTolerance: 8 }, 'overrides');
 });
 
+// ── Logo assets: gltf + generator + generator-params ─────────────────────────
+
+console.log('\nLogo asset fields:');
+
+test('parses logo gltf source', () => {
+  const src = `${HEADER}logo mark\n  label: Mark\n  src: logos/mark.svg\n  gltf: logos/mark.glb\n  aspect: 1\n  animated\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  const logo = out.assets?.logos?.[0];
+  assertEq(logo?.gltfSrc, 'logos/mark.glb', 'gltfSrc');
+  assertEq(logo?.animated, true, 'animated');
+  assertEq(logo?.src, 'logos/mark.svg', 'src (2D fallback kept)');
+});
+
+test('parses logo generator id', () => {
+  const src = `${HEADER}logo spiral\n  label: Spiral\n  src: logos/spiral.svg\n  generator: spiral\n  aspect: 1\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  const logo = out.assets?.logos?.[0];
+  assertEq(logo?.generator, 'spiral', 'generator');
+});
+
+test('parses logo generator-params sub-block', () => {
+  const src = `${HEADER}logo spiral\n  label: Spiral\n  src: logos/spiral.svg\n  generator: spiral\n  generator-params\n    turns: 3\n    radius: 0.4\n    thickness: 0.05\n  aspect: 1\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  const logo = out.assets?.logos?.[0];
+  assertEq(logo?.generatorParams, { turns: 3, radius: 0.4, thickness: 0.05 }, 'generatorParams');
+});
+
+test('generator-params sub-block closes on next top-level key', () => {
+  // label appears AFTER the sub-block to check it does not leak into generatorParams.
+  const src = `${HEADER}logo spiral\n  src: logos/spiral.svg\n  generator: spiral\n  generator-params\n    turns: 3\n  label: Spiral\n  aspect: 1\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  const logo = out.assets?.logos?.[0];
+  assertEq(logo?.generatorParams, { turns: 3 }, 'only turns in params');
+  assertEq(logo?.label, 'Spiral', 'label at logo level, not captured by sub-block');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

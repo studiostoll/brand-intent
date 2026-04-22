@@ -300,7 +300,7 @@
       }
     },
     "asset-value": {
-      "match": "^(\\s{2,})(label|src|lottie)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
+      "match": "^(\\s{2,})(label|src|lottie|gltf|generator)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

@@ -48,6 +48,7 @@ The identity file encodes brand strategy in machine-readable form. It contains n
 | `promise:` | string | Yes | Brand promise: the commitment to the audience |
 | `tagline:` | string | No | Public-facing brand claim (also known as "Claim" in DACH) |
 | `positioning:` | string | No | Competitive positioning: what makes this brand the only one of its kind |
+| `purpose:` | string | No | Brand purpose: why the brand exists, the inner motivation (distinct from `promise:`, `mission:`, `vision:`) |
 | `mission:` | string | No | Organizational mission: what the brand does, for whom |
 | `vision:` | string | No | Aspirational future state: what the world looks like if the brand succeeds |
 | `archetype:` | string | No | Brand archetype shorthand (e.g., `craftsman`, `sage`, `explorer`) |
@@ -531,6 +532,24 @@ logo primary
   src: logos/primary.svg
   aspect: 5.25
 
+logo mark-3d
+  label: Mark 3D
+  src: logos/mark.svg
+  gltf: logos/mark.glb
+  aspect: 1
+  animated
+
+logo spiral
+  label: Spiral
+  src: logos/spiral.svg
+  generator: spiral
+  generator-params
+    turns: 3
+    radius: 0.4
+    thickness: 0.05
+  aspect: 1
+  animated
+
 photo hero
   label: Hero Shot
   src: photos/hero.jpg
@@ -550,6 +569,9 @@ video intro
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
 | `animated` | flag | No | Marks asset as animated |
 | `loop` | flag | No | Marks video/lottie as looping |
+| `gltf:` | string | No | Path to a glTF/GLB 3D model (logos only). When present, the asset renders as a live 3D object; `src` stays as the 2D fallback for thumbnails and export. |
+| `generator:` | string | No | Procedural generator id (logos only). Renders live geometry from code (e.g. `spiral`, `mobius`, `ribbon`); `src` stays as the 2D fallback. |
+| `generator-params` | sub-block | No | Indented block of numeric defaults for the named generator, keyed `name: number`. Each consumer defines its own param names. |
 
 ### Exclusion Rule
 

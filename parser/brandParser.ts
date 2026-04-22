@@ -91,6 +91,12 @@ export interface ParsedAssetDef {
   lottieSrc?: string;
   animated?: boolean;
   loop?: boolean;
+  /** Path to a glTF/GLB 3D model. When present, the asset renders as a live 3D object; `src` remains the 2D fallback. */
+  gltfSrc?: string;
+  /** Procedural generator id (e.g. "mobius", "spiral", "ribbon"). Renders as live geometry; `src` is the 2D fallback. */
+  generator?: string;
+  /** Default parameters for the procedural generator, keyed by param name. Declared via the indented `generator-params` sub-block. */
+  generatorParams?: Record<string, number>;
 }
 
 export interface ParsedBadgeStyle {
@@ -312,6 +318,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const videosRaw: Array<{ id: string; props: Record<string, string> }> = [];
   const illustrationsRaw: Array<{ id: string; props: Record<string, string> }> = [];
   let currentAssetId = '';
+  let currentSubBlock: string | null = null;
   const labelRaw: Record<string, string> = {};
   const ctaRaw: Record<string, string> = {};
 
@@ -569,19 +576,33 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         continue;
       }
       if ((activeBlock === 'logo' || activeBlock === 'photo' || activeBlock === 'video' || activeBlock === 'illustration') && currentAssetId) {
+        const indent = raw.match(/^(\s*)/)?.[1].length ?? 0;
         const colonIdx = raw.indexOf(':');
         if (colonIdx !== -1) {
           const key = raw.slice(0, colonIdx).trim();
           const value = raw.slice(colonIdx + 1).trim();
           const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : activeBlock === 'video' ? videosRaw : illustrationsRaw;
           const last = arr[arr.length - 1];
-          if (last && last.id === currentAssetId) last.props[key] = value;
+          if (last && last.id === currentAssetId) {
+            // 4+ space indent after a bare sub-block keyword (e.g. generator-params) → nested param.
+            // Store under "subBlock.key" so toAssetDef can split it out.
+            if (indent >= 4 && currentSubBlock) {
+              last.props[`${currentSubBlock}.${key}`] = value;
+            } else {
+              last.props[key] = value;
+              currentSubBlock = null;
+            }
+          }
         } else {
           const trimmed = raw.trim();
           if (trimmed === 'animated' || trimmed === 'loop') {
             const arr = activeBlock === 'logo' ? logosRaw : activeBlock === 'photo' ? photosRaw : activeBlock === 'video' ? videosRaw : illustrationsRaw;
             const last = arr[arr.length - 1];
             if (last && last.id === currentAssetId) last.props[trimmed] = 'true';
+            currentSubBlock = null;
+          } else if (trimmed === 'generator-params') {
+            // Open a nested sub-block — subsequent deeper-indented key: value lines attach here.
+            currentSubBlock = 'generator-params';
           }
         }
         continue;
@@ -986,6 +1007,18 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['lottie']) def.lottieSrc = raw.props['lottie'];
     if (raw.props['animated'] === 'true') def.animated = true;
     if (raw.props['loop'] === 'true') def.loop = true;
+    if (raw.props['gltf']) def.gltfSrc = raw.props['gltf'];
+    if (raw.props['generator']) def.generator = raw.props['generator'];
+    // generator-params are stored as "generator-params.KEY" by the sub-block parser.
+    const paramEntries: [string, number][] = [];
+    for (const [k, v] of Object.entries(raw.props)) {
+      if (k.startsWith('generator-params.')) {
+        const paramKey = k.slice('generator-params.'.length);
+        const n = parseFloat(v);
+        if (!Number.isNaN(n)) paramEntries.push([paramKey, n]);
+      }
+    }
+    if (paramEntries.length > 0) def.generatorParams = Object.fromEntries(paramEntries);
     return def;
   };
   if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0 || illustrationsRaw.length > 0) {

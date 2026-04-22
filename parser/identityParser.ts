@@ -26,6 +26,8 @@ export interface ParsedIdentity {
   tagline?: string;
   /** Competitive positioning — what makes this brand the only one of its kind */
   positioning?: string;
+  /** Brand purpose — why the brand exists, the inner motivation (distinct from promise, mission, vision) */
+  purpose?: string;
   /** Organizational mission — what the brand does, for whom */
   mission?: string;
   /** Aspirational future state */
@@ -109,6 +111,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
   let promise = '';
   let tagline = '';
   let positioning = '';
+  let purpose = '';
   let mission = '';
   let vision = '';
   let archetype = '';
@@ -195,6 +198,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
         if (continuationKey === 'essence') essence += ' ' + continuation;
         else if (continuationKey === 'promise') promise += ' ' + continuation;
         else if (continuationKey === 'positioning') positioning += ' ' + continuation;
+        else if (continuationKey === 'purpose') purpose += ' ' + continuation;
         else if (continuationKey === 'mission') mission += ' ' + continuation;
         else if (continuationKey === 'vision') vision += ' ' + continuation;
         continue;
@@ -299,6 +303,10 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
         case 'positioning':
           positioning = val;
           continuationKey = 'positioning';
+          break;
+        case 'purpose':
+          purpose = val;
+          continuationKey = 'purpose';
           break;
         case 'mission':
           mission = val;
@@ -425,6 +433,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
   // Optional fields — only include if present
   if (tagline) result.tagline = tagline;
   if (positioning) result.positioning = positioning;
+  if (purpose) result.purpose = purpose;
   if (mission) result.mission = mission;
   if (vision) result.vision = vision;
   if (archetype) result.archetype = archetype;

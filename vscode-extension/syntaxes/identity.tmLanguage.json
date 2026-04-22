@@ -17,7 +17,7 @@
       "name": "comment.line.number-sign.brand-intent-identity"
     },
     "top-level-keyword": {
-      "match": "^(essence|promise|tagline|positioning|mission|vision|archetype)(:)\\s+(.*)",
+      "match": "^(essence|promise|tagline|positioning|purpose|mission|vision|archetype)(:)\\s+(.*)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-identity" },
         "2": { "name": "punctuation.separator.key-value.brand-intent-identity" },
