@@ -340,6 +340,22 @@ test('generator-params sub-block closes on next top-level key', () => {
   assertEq(logo?.label, 'Spiral', 'label at logo level, not captured by sub-block');
 });
 
+test('parses logo align variants', () => {
+  const src = `${HEADER}logo wordmark\n  label: Wordmark\n  src: logos/wordmark-centered.svg\n  aspect: 1.82\n  align-left\n    src: logos/wordmark-left.svg\n    aspect: 1.79\n  scale: 1.1\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  const logo = out.assets?.logos?.[0];
+  assertEq(logo?.src, 'logos/wordmark-centered.svg', 'base src stays');
+  assertEq(logo?.aspectRatio, 1.82, 'base aspect stays');
+  assertEq(logo?.alignVariants, { left: { src: 'logos/wordmark-left.svg', aspectRatio: 1.79 } }, 'left variant');
+  assertEq(logo?.scale, 1.1, 'key after sub-block belongs to the logo');
+});
+
+test('align sub-blocks only apply to logos', () => {
+  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n  align-left\n    src: photos/other.jpg\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.assets?.photos?.[0]?.alignVariants, undefined, 'no variants on photos');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

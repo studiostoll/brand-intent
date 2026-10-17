@@ -6,7 +6,24 @@ export { parseIdentityFile } from './identityParser';
 export type { ParsedIdentity, ParsedVoice, ParsedPillars, ParsedAudience, ParsedAntiAudience, ParsedValue } from './identityParser';
 
 export { parseBrandFile } from './brandParser';
-export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle } from './brandParser';
+export {
+  contrastRatio,
+  relativeLuminance,
+  toneClass,
+  isHex6,
+  pairRuleViolations,
+  derivePairSlots,
+  resolveTextColor,
+  reachableFamilies,
+  reachCoversAll,
+  colorOrigin,
+  familyTextCandidates,
+  checkFamilyPair,
+  enumerateFamilyPairs,
+  DEFAULT_COLOR_RULES,
+} from './colorSystem';
+export type { ReachConfig } from './colorSystem';
+export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign } from './brandParser';
 export type {
   ColorMode,
   PaletteStrategy,
@@ -19,6 +36,18 @@ export type {
   NeutralRole,
   BrandColorEntry,
   BrandColorGroup,
+  ToneClass,
+  ColorRules,
+  FamilyOrder,
+  FamilyBorrow,
+  FamilyRole,
+  FamilyColor,
+  PairOrigin,
+  PairCheck,
+  FamilyPair,
+  ColorFamily,
+  ColorFamilies,
+  ThemePair,
 } from './types';
 
 export { parseFormatFile } from './formatParser';

@@ -236,6 +236,8 @@ The brand file encodes derived expression intent: visual language and operationa
 | `color-mode:` | enum | No | `static` \| `dynamic` \| `guided` — color resolution mode |
 | `color-strategy:` | enum | No | `monochrome` \| `duotone` \| `tricolor` \| `spectrum` — default palette strategy for guided shuffle |
 | `color-adherence:` | enum + block | No | `strict` \| `on-brand` \| `flexible` — guided derivation tightness, with optional tolerance overrides |
+| `color-rules` | block | No | Contrast minimums and tone combinations to avoid |
+| `color-families` | block | No | Ordered color sets with roles, borrowing rules and curated pairs |
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
@@ -372,7 +374,77 @@ color-adherence: on-brand
 - `color-strategy:` — the default palette strategy for Path A (guided shuffle). Values: `monochrome`, `duotone`, `tricolor`, `spectrum`. Optional; derived from distribution when absent.
 - `color-adherence:` — how tightly guided derivation follows brand groups. Values: `strict`, `on-brand`, `flexible`. Accepts an indented override block with `hue-tolerance:` (degrees) and `sat-tolerance:` (percentage points) to dial the level without switching it.
 
-`color-mode: guided` requires grouped `brand-colors` syntax with the minimum structure above. Flat-syntax brands that declare `color-mode: guided` raise a parse error.
+`color-mode: guided` requires either grouped `brand-colors` syntax with the minimum structure above, or a `color-families` block with at least two families. Otherwise it raises a parse error. When families exist, guided generation draws from them and the grouped groups/distribution are not used for generation.
+
+### `color-rules` Block
+
+Brand-wide contrast and tone rules. All fields optional; when the block is absent, nothing is checked (existing brands are unaffected).
+
+```
+color-rules
+  text:   4.5            # min contrast for text on ground
+  figure: 3              # min contrast between ground and figure (logo, signet, large shapes)
+  avoid:  light+light, mid+mid
+  tones:  1.8, 4.5       # tone thresholds, contrast vs white
+```
+
+- `text:` / `figure:` — WCAG contrast ratios (1–21). Defaults `4.5` / `3`.
+- `tones:` — every color gets a tone class from its contrast against white: below the first value `light`, at or above the second `dark`, otherwise `mid`. Default `1.8, 4.5`.
+- `avoid:` — comma-separated tone combinations (`light | mid | dark` joined by `+`, unordered) a ground/figure pair must not form.
+
+Where rules apply:
+
+- **Every theme**: `text-primary` vs `background` and `logo` vs `background` are checked. Violations are **warnings**, not errors.
+- **Family pairs** (below): a pair failing a rule is rejected with a warning.
+- **Guided generation**: rules are a hard filter on generated pairs.
+
+### `color-families` Block
+
+Ordered sets of colors that belong together — seasons, times of day, sections, editions. Each family may borrow colors from its neighbours, within a configurable reach.
+
+```
+color-families
+  order:    cycle            # cycle | sequence
+  borrow:   both             # previous | next | both | none
+  distance: 1                # how many steps borrowing reaches
+  shared:   $logo-blue, $white
+
+  family Winter
+    core:     #006EFA  Blau
+    accent:   #415C55  Graugruen
+    accent:   #BCD6E2
+    contrast: #263410  Dunkeloliv
+    pairs
+      #006EFA / #F9FF9D
+      #263410 / $hellblau
+
+  family Spring
+    …
+```
+
+**Block keys** (before the first `family`):
+
+| Key | Default | Values |
+|-----|---------|--------|
+| `order:` | `cycle` | `cycle` (last family neighbours the first) \| `sequence` (no wrap-around) |
+| `borrow:` | `both` | `previous` \| `next` \| `both` \| `none` |
+| `distance:` | `1` | whole number ≥ 1 — steps borrowing may reach |
+| `shared:` | — | comma-separated `$refs` to `brand-colors`, allowed in every family |
+
+**Families:**
+
+- `family NAME` — declaration order is the family order. Names are unique.
+- Roles are a fixed vocabulary: `core` (exactly one), `accent` (zero or more), `contrast` (exactly one — the text carrier).
+- Values are `#HEX`, optionally followed by a display name. Unnamed colors get `{family}-{role}`, accents numbered (`winter-accent-2`).
+- All family colors join the flat `brandColors` projection (name lowercased, spaces → hyphens), so themes can reference them. A name colliding with an existing brand color is a hard error.
+
+**Reach:** a family may use its own colors, the `shared` colors, and colors of families up to `distance` steps away in the `borrow` direction(s). A reach that covers every family (e.g. a cycle of four with `both` and `distance: 2`) raises a warning — the borrow rule has no effect then.
+
+**Pairs:** optional `pairs` sub-block, one `ground / figure` per line (`#HEX` or `$ref`). Each pair is checked against reach and `color-rules`:
+
+- Valid pairs become pair themes named `{Family}-{n}`, where `n` is the pair's declared position (stable when the reach config changes).
+- Invalid pairs are skipped with a warning naming the reason (e.g. `#F9FF9D from Spring is out of reach`). Warnings, not errors, so changing `borrow:` to test a variant never breaks the brand.
+- Text color: the family's `contrast` color if it reaches `color-rules.text` on the ground, else the `shared` colors in order, else the neutral `dark` / `light` entries. If none passes, the highest-contrast candidate is used with a warning.
 
 ### `theme NAME` Block
 
@@ -393,6 +465,26 @@ Maps semantic slot names to colors. Values are `$references` to `brand-colors` n
 - Alpha is `0`–`100`, integer or decimal (`12.5%` is valid).
 - `100%` emits solid hex, not `rgba()`, to keep output clean.
 - Raw `rgba(...)` literals are tolerated for backwards compatibility but discouraged — they bypass the `$ref` chain.
+
+**Pair themes:** instead of writing every slot, a theme may declare a ground/figure pair. Missing slots are derived; explicitly written slots override the derived value.
+
+```
+theme Green
+  ground: $green
+  figure: $white
+  text:   $white          # optional
+```
+
+| Slot | Derived value |
+|------|---------------|
+| `background` | ground |
+| `text-primary` | text |
+| `text-secondary` / `text-tertiary` / `text-subtle` / `text-muted` | text at 85% / 70% / 55% / 40% |
+| `logo`, `cta`, `divider`, `icon`, `illustration`, `sticker-bg`, `label-bg` | figure |
+| `sticker-fg`, `label-fg` | ground |
+
+- `ground:` and `figure:` come together — one without the other is a hard error. Values must be solid (`$ref` or `#HEX`, no alpha).
+- Without `text:`, text resolves to the neutral `dark` or `light` entry (whichever reaches `color-rules.text`, default 4.5), else black or white.
 
 **Valid theme slots:**
 
@@ -539,6 +631,14 @@ logo mark-3d
   aspect: 1
   animated
 
+logo wordmark
+  label: Wordmark
+  src: logos/wordmark-centered.svg
+  aspect: 1.82
+  align-left
+    src: logos/wordmark-left.svg
+    aspect: 1.79
+
 logo spiral
   label: Spiral
   src: logos/spiral.svg
@@ -572,6 +672,7 @@ video intro
 | `gltf:` | string | No | Path to a glTF/GLB 3D model (logos only). When present, the asset renders as a live 3D object; `src` stays as the 2D fallback for thumbnails and export. |
 | `generator:` | string | No | Procedural generator id (logos only). Renders live geometry from code (e.g. `spiral`, `mobius`, `ribbon`); `src` stays as the 2D fallback. |
 | `generator-params` | sub-block | No | Indented block of numeric defaults for the named generator, keyed `name: number`. Each consumer defines its own param names. |
+| `align-left` / `align-center` / `align-right` | sub-block | No | Logos only. Artwork for that horizontal placement, with its own `src:` and optional `aspect:`. A logo placed at the left uses `align-left`, and so on. Without a matching variant, the base `src` is used. Use this when a mark is set differently per alignment (e.g. a stacked wordmark flush left vs. centred), so the brand picks the artwork, not the person placing it. |
 
 ### Exclusion Rule
 
@@ -766,11 +867,13 @@ Determines which color palette to use for this purpose. The brand defines availa
 | `dynamic` | Derive colors from photo analysis (default when omitted) |
 | `<ThemeName>` | Always use this named theme (e.g. `palette: Basic`) |
 | `rotate <T1>, <T2>, ...` | Cycle through named themes on shuffle |
+| `family <Name>` | Use a color family: its curated pairs, or pairs generated within its reach when the brand is guided |
 
 ```yaml
 palette: dynamic          # photo-derived colors (default)
 palette: Basic            # always use the Basic theme
 palette: rotate Basic, Strand   # alternate between two themes
+palette: family Winter    # pairs of the Winter color family
 ```
 
 When `palette` is absent, behaviour is `dynamic` — colors are derived from the photo when one is present, or randomized when no photo is set.

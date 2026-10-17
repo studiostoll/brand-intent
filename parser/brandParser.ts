@@ -17,7 +17,25 @@ import type {
   StateColors,
   GroupKey,
   NeutralRole,
+  ColorRules,
+  ColorFamilies,
+  ColorFamily,
+  FamilyColor,
+  FamilyRole,
+  FamilyOrder,
+  FamilyBorrow,
+  ToneClass,
+  ThemePair,
 } from './types';
+import {
+  DEFAULT_COLOR_RULES,
+  isHex6,
+  contrastRatio,
+  derivePairSlots,
+  resolveTextColor,
+  checkFamilyPair,
+  reachCoversAll,
+} from './colorSystem';
 
 // ── Parsed type ────────────────────────────────────────────────────────────────
 
@@ -64,6 +82,14 @@ export interface ParsedBrand {
   colorAdherence?: Adherence;
   /** Per-brand tolerance overrides for the declared adherence level. */
   colorAdherenceOverrides?: AdherenceTolerances;
+  /** Contrast + tone rules (`color-rules` block). Absent when not declared. */
+  colorRules?: ColorRules;
+  /** Color families (`color-families` block): ordered sets with roles, reach config and checked pairs. */
+  colorFamilies?: ColorFamilies;
+  /** Ground / figure / text for every pair theme (authored `ground:`/`figure:` themes and emitted family pairs). */
+  themePairs?: Record<string, ThemePair>;
+  /** Non-fatal color findings: rule violations, rejected family pairs, reach config hints. */
+  colorWarnings?: string[];
   /** Inline themes: theme name → slot name → resolved hex color (only when tokensSource === 'inline') */
   themes?: Record<string, Record<string, string>>;
   /** Print annotations from inline # comments: slot name → annotation text */
@@ -97,7 +123,12 @@ export interface ParsedAssetDef {
   generator?: string;
   /** Default parameters for the procedural generator, keyed by param name. Declared via the indented `generator-params` sub-block. */
   generatorParams?: Record<string, number>;
+  /** Logos only: artwork per horizontal placement, declared via `align-left` / `align-center` / `align-right`
+   *  sub-blocks. Consumers render the variant matching where the logo sits, else the base `src`. */
+  alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
 }
+
+export type LogoAlign = 'left' | 'center' | 'right';
 
 export interface ParsedBadgeStyle {
   /** Padding in cqh: [top, right, bottom, left] */
@@ -172,6 +203,16 @@ const STATE_KEYS = new Set<string>(['problem', 'warning', 'success', 'info', 'in
 const VALID_COLOR_MODES = new Set<ColorMode>(['static', 'dynamic', 'guided']);
 const VALID_STRATEGIES = new Set<PaletteStrategy>(['monochrome', 'duotone', 'tricolor', 'spectrum']);
 const VALID_ADHERENCES = new Set<Adherence>(['strict', 'on-brand', 'flexible']);
+const TONE_CLASSES = new Set<ToneClass>(['light', 'mid', 'dark']);
+const FAMILY_ROLES = new Set<FamilyRole>(['core', 'accent', 'contrast']);
+const FAMILY_ORDERS = new Set<FamilyOrder>(['cycle', 'sequence']);
+const FAMILY_BORROWS = new Set<FamilyBorrow>(['previous', 'next', 'both', 'none']);
+const PAIR_KEYS = ['ground', 'figure', 'text'] as const;
+
+/** Flat-projection key for a display name: lowercased, spaces → hyphens. */
+function colorKey(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, '-');
+}
 
 /**
  * Expand a 3-digit hex to 6-digit. Pass-through for 6 or 8-digit.
@@ -286,7 +327,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -307,6 +348,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const stateColorsRaw: Record<string, string> = {};
   const colorBoundsRaw: Record<string, string> = {};
   const adherenceOverridesRaw: Record<string, string> = {};
+  const colorRulesRaw: Record<string, string> = {};
+  let colorRulesDeclared = false;
+  type RawFamily = { name: string; line: number; colors: Array<{ role: string; value: string; line: number }>; pairs: Array<{ ground: string; figure: string; line: number }> };
+  const familiesProps: Record<string, string> = {};
+  const familiesRaw: RawFamily[] = [];
+  let familiesDeclared = false;
+  let currentFamily: RawFamily | null = null;
+  let inPairs = false;
   const themes: Record<string, Record<string, string>> = {};
   const themeDescriptions: Record<string, string> = {};
   const spacingRaw: Record<string, string> = {};
@@ -509,6 +558,56 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         continue;
       }
+      if (activeBlock === 'color-rules') {
+        const trimmed = raw.trim();
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx !== -1) {
+          colorRulesRaw[trimmed.slice(0, colonIdx).trim()] = trimmed.slice(colonIdx + 1).trim();
+        }
+        continue;
+      }
+      if (activeBlock === 'color-families') {
+        const trimmed = raw.trim();
+        if (trimmed === '') continue;
+        const familyMatch = trimmed.match(/^family\s+(\S+)$/);
+        if (familyMatch) {
+          if (familiesRaw.some(f => f.name === familyMatch[1])) {
+            throw new Error(`${fileName}:${lineNum}: duplicate family "${familyMatch[1]}"`);
+          }
+          currentFamily = { name: familyMatch[1], line: lineNum, colors: [], pairs: [] };
+          familiesRaw.push(currentFamily);
+          inPairs = false;
+          continue;
+        }
+        if (!currentFamily) {
+          const colonIdx = trimmed.indexOf(':');
+          if (colonIdx === -1) {
+            throw new Error(`${fileName}:${lineNum}: expected "key: value" or "family NAME" in color-families, got "${trimmed}"`);
+          }
+          familiesProps[trimmed.slice(0, colonIdx).trim()] = trimmed.slice(colonIdx + 1).trim();
+          continue;
+        }
+        if (trimmed === 'pairs') {
+          inPairs = true;
+          continue;
+        }
+        if (inPairs && trimmed.includes('/')) {
+          const parts = trimmed.split('/').map(p => p.trim());
+          if (parts.length !== 2 || !parts[0] || !parts[1]) {
+            throw new Error(`${fileName}:${lineNum}: pair must be "ground / figure", got "${trimmed}"`);
+          }
+          currentFamily.pairs.push({ ground: parts[0], figure: parts[1], line: lineNum });
+          continue;
+        }
+        const colonIdx = trimmed.indexOf(':');
+        const key = colonIdx !== -1 ? trimmed.slice(0, colonIdx).trim() : trimmed;
+        if (colonIdx === -1 || !FAMILY_ROLES.has(key as FamilyRole)) {
+          throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}": expected core / accent / contrast / pairs, got "${trimmed}"`);
+        }
+        inPairs = false;
+        currentFamily.colors.push({ role: key, value: trimmed.slice(colonIdx + 1).trim(), line: lineNum });
+        continue;
+      }
       if (activeBlock === 'theme' && currentThemeName) {
         // slot: #HEX or $ref  # optional comment
         const colonIdx = raw.indexOf(':');
@@ -600,9 +699,9 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
             const last = arr[arr.length - 1];
             if (last && last.id === currentAssetId) last.props[trimmed] = 'true';
             currentSubBlock = null;
-          } else if (trimmed === 'generator-params') {
+          } else if (trimmed === 'generator-params' || (activeBlock === 'logo' && /^align-(left|center|right)$/.test(trimmed))) {
             // Open a nested sub-block — subsequent deeper-indented key: value lines attach here.
-            currentSubBlock = 'generator-params';
+            currentSubBlock = trimmed;
           }
         }
         continue;
@@ -645,6 +744,23 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     // color-bounds — luminance + saturation floor for guided derivation
     if (raw.trim() === 'color-bounds') {
       activeBlock = 'color-bounds';
+      continue;
+    }
+
+    // color-rules — contrast minimums and tone rules
+    if (raw.trim() === 'color-rules') {
+      activeBlock = 'color-rules';
+      colorRulesDeclared = true;
+      continue;
+    }
+
+    // color-families — ordered color sets with roles, reach and pairs
+    if (raw.trim() === 'color-families') {
+      if (familiesDeclared) throw new Error(`${fileName}:${lineNum}: duplicate color-families block`);
+      activeBlock = 'color-families';
+      familiesDeclared = true;
+      currentFamily = null;
+      inPairs = false;
       continue;
     }
 
@@ -831,6 +947,91 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
   }
 
+  const colorWarnings: string[] = [];
+
+  // ── Finalise color-rules ──────────────────────────────────────────────────
+  const rules: ColorRules = { ...DEFAULT_COLOR_RULES, avoid: [], tones: [...DEFAULT_COLOR_RULES.tones] as [number, number] };
+  if (colorRulesDeclared) {
+    const num = (key: string) => {
+      const n = parseFloat(colorRulesRaw[key]);
+      if (isNaN(n) || n < 1 || n > 21) {
+        throw new Error(`${fileName}: color-rules "${key}" must be a contrast ratio between 1 and 21, got "${colorRulesRaw[key]}"`);
+      }
+      return n;
+    };
+    if (colorRulesRaw.text !== undefined) rules.text = num('text');
+    if (colorRulesRaw.figure !== undefined) rules.figure = num('figure');
+    if (colorRulesRaw.avoid !== undefined) {
+      for (const combo of colorRulesRaw.avoid.split(',').map(c => c.trim()).filter(Boolean)) {
+        const parts = combo.split('+').map(c => c.trim());
+        if (parts.length !== 2 || !parts.every(t => TONE_CLASSES.has(t as ToneClass))) {
+          throw new Error(`${fileName}: color-rules avoid "${combo}" must be two of light / mid / dark joined by "+"`);
+        }
+        rules.avoid.push([parts[0] as ToneClass, parts[1] as ToneClass]);
+      }
+    }
+    if (colorRulesRaw.tones !== undefined) {
+      const t = colorRulesRaw.tones.split(',').map(v => parseFloat(v.trim()));
+      if (t.length !== 2 || t.some(isNaN) || t[0] >= t[1]) {
+        throw new Error(`${fileName}: color-rules tones must be two ascending contrast values, e.g. "1.8, 4.5"`);
+      }
+      rules.tones = [t[0], t[1]];
+    }
+    result.colorRules = rules;
+  }
+
+  // ── Finalise color-families: colors + flat projection (pairs later, after themes) ──
+  let colorFamilies: ColorFamilies | undefined;
+  if (familiesDeclared) {
+    const order = (familiesProps.order ?? 'cycle') as FamilyOrder;
+    if (!FAMILY_ORDERS.has(order)) throw new Error(`${fileName}: color-families order must be "cycle" or "sequence", got "${order}"`);
+    const borrow = (familiesProps.borrow ?? 'both') as FamilyBorrow;
+    if (!FAMILY_BORROWS.has(borrow)) throw new Error(`${fileName}: color-families borrow must be previous / next / both / none, got "${borrow}"`);
+    const distance = familiesProps.distance !== undefined ? Number(familiesProps.distance) : 1;
+    if (!Number.isInteger(distance) || distance < 1) throw new Error(`${fileName}: color-families distance must be a whole number ≥ 1, got "${familiesProps.distance}"`);
+    if (familiesRaw.length === 0) throw new Error(`${fileName}: color-families declares no family`);
+
+    const shared: Array<{ name: string; hex: string }> = [];
+    for (const ref of (familiesProps.shared ?? '').split(',').map(r => r.trim()).filter(Boolean)) {
+      if (!ref.startsWith('$')) throw new Error(`${fileName}: color-families shared entries must be $refs to brand-colors, got "${ref}"`);
+      const hex = brandColors[ref.slice(1)] ? normalizeHex(brandColors[ref.slice(1)]) : null;
+      if (!hex || !isHex6(hex)) throw new Error(`${fileName}: color-families shared "${ref}" is not a known 6-digit brand color`);
+      shared.push({ name: ref.slice(1), hex });
+    }
+
+    const families: ColorFamily[] = [];
+    for (const raw of familiesRaw) {
+      const counts: Record<string, number> = {};
+      for (const c of raw.colors) counts[c.role] = (counts[c.role] ?? 0) + 1;
+      if (counts.core !== 1) throw new Error(`${fileName}:${raw.line}: family "${raw.name}" needs exactly one core color`);
+      if (counts.contrast !== 1) throw new Error(`${fileName}:${raw.line}: family "${raw.name}" needs exactly one contrast color`);
+      const seen: Record<string, number> = {};
+      const colors: FamilyColor[] = raw.colors.map(c => {
+        const m = c.value.match(/^(#[0-9a-fA-F]{3,6})(?:\s+(.+))?$/);
+        const hex = m ? normalizeHex(m[1]) : null;
+        if (!m || !hex || !isHex6(hex)) {
+          throw new Error(`${fileName}:${c.line}: family "${raw.name}" ${c.role} must be "#HEX" or "#HEX  Name", got "${c.value}"`);
+        }
+        seen[c.role] = (seen[c.role] ?? 0) + 1;
+        const generated = `${raw.name.toLowerCase()}-${c.role}${counts[c.role] > 1 ? `-${seen[c.role]}` : ''}`;
+        const name = m[2]?.trim() || generated;
+        return { role: c.role as FamilyRole, hex, name, key: colorKey(name) };
+      });
+      for (const c of colors) {
+        if (brandColors[c.key]) {
+          throw new Error(`${fileName}: family "${raw.name}" color name "${c.name}" collides with an existing brand color`);
+        }
+        brandColors[c.key] = c.hex;
+      }
+      families.push({ name: raw.name, colors, pairs: [] });
+    }
+    colorFamilies = { order, borrow, distance, shared, families };
+    if (borrow !== 'none' && reachCoversAll(families.length, { order, borrow, distance })) {
+      colorWarnings.push(`color-families: borrow "${borrow}" with distance ${distance} reaches every family — the borrow rule has no effect`);
+    }
+    result.colorFamilies = colorFamilies;
+  }
+
   // Store brand colors (flat projection)
   if (Object.keys(brandColors).length > 0) {
     result.brandColors = brandColors;
@@ -873,10 +1074,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   }
 
   // ── Minimum-structure validation for color-mode: guided ───────────────────
-  if (result.colorMode === 'guided') {
+  if (result.colorMode === 'guided' && !(colorFamilies && colorFamilies.families.length >= 2)) {
     if (colorGroups.length === 0) {
       throw new Error(
-        `${fileName}: color-mode: guided requires grouped brand-colors syntax — flat syntax is not sufficient. See the Minimum Structure section in the guided-colors spec.`,
+        `${fileName}: color-mode: guided requires grouped brand-colors syntax or a color-families block with at least two families — flat syntax alone is not sufficient.`,
       );
     }
     const primary = colorGroups.find(g => g.key === 'primary');
@@ -910,15 +1111,97 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   //
   // Alpha is expressed as `<number>%`, 0–100, separated from the base value by exactly one space.
   // 100% emits solid hex (not rgba) to keep output clean.
-  if (Object.keys(themes).length > 0) {
-    for (const theme of Object.values(themes)) {
-      for (const [slot, value] of Object.entries(theme)) {
-        theme[slot] = resolveThemeSlotValue(value, brandColors, fileName, slot);
+  //
+  // Pair themes: `ground:` + `figure:` (+ optional `text:`) derive every slot not written explicitly.
+  const themePairs: Record<string, ThemePair> = {};
+  const neutral = colorGroups.find(g => g.key === 'neutral');
+  const neutralText = ['dark', 'light']
+    .map(role => neutral?.entries.find(e => e.role === role)?.hex)
+    .filter((h): h is string => !!h);
+  for (const [name, theme] of Object.entries(themes)) {
+    const pairRaw: Partial<Record<typeof PAIR_KEYS[number], string>> = {};
+    for (const key of PAIR_KEYS) {
+      if (theme[key] !== undefined) { pairRaw[key] = theme[key]; delete theme[key]; }
+    }
+    for (const [slot, value] of Object.entries(theme)) {
+      theme[slot] = resolveThemeSlotValue(value, brandColors, fileName, slot);
+    }
+    if (Object.keys(pairRaw).length === 0) continue;
+    if (!pairRaw.ground || !pairRaw.figure) {
+      throw new Error(`${fileName}: theme "${name}" needs both "ground:" and "figure:" (pair theme), or neither`);
+    }
+    const solid = (key: string, value: string) => {
+      const hex = resolveThemeSlotValue(value, brandColors, fileName, key);
+      if (!isHex6(hex)) throw new Error(`${fileName}: theme "${name}" ${key} must be a solid 6-digit color, got "${value}"`);
+      return hex;
+    };
+    const ground = solid('ground', pairRaw.ground);
+    const figure = solid('figure', pairRaw.figure);
+    let text: string;
+    if (pairRaw.text) {
+      text = solid('text', pairRaw.text);
+    } else {
+      const resolved = resolveTextColor(ground, neutralText, rules);
+      text = resolved.text;
+      if (!resolved.passes) {
+        colorWarnings.push(`theme "${name}": no text color reaches ${rules.text}:1 on ${ground} — using ${text} (${resolved.ratio.toFixed(1)}:1)`);
       }
     }
+    themes[name] = { ...derivePairSlots(ground, figure, text), ...theme };
+    themePairs[name] = { ground, figure, text };
+  }
+
+  // Family pairs → checked; valid ones become themes named `{Family}-{n}` (n = declared position).
+  if (colorFamilies) {
+    const config = { order: colorFamilies.order, borrow: colorFamilies.borrow, distance: colorFamilies.distance };
+    colorFamilies.families.forEach((family, index) => {
+      const raw = familiesRaw[index];
+      raw.pairs.forEach((p, n) => {
+        const resolve = (value: string) => {
+          const hex = value.startsWith('$') ? (brandColors[value.slice(1)] ? normalizeHex(brandColors[value.slice(1)]) : null) : normalizeHex(value);
+          if (!hex || !isHex6(hex)) throw new Error(`${fileName}:${p.line}: pair color "${value}" is not a known 6-digit color`);
+          return hex;
+        };
+        const check = checkFamilyPair(resolve(p.ground), resolve(p.figure), index, colorFamilies!, config, rules, neutralText);
+        const themeName = `${family.name}-${n + 1}`;
+        if (check.valid) {
+          if (themes[themeName]) throw new Error(`${fileName}: family pair theme "${themeName}" collides with an authored theme`);
+          themes[themeName] = derivePairSlots(check.ground, check.figure, check.text);
+          themePairs[themeName] = { ground: check.ground, figure: check.figure, text: check.text, family: family.name };
+          family.pairs.push({ ...check, theme: themeName });
+          if (!check.textPasses) {
+            colorWarnings.push(`${themeName}: no text color reaches ${rules.text}:1 on ${check.ground} — using ${check.text} (${check.textRatio.toFixed(1)}:1)`);
+          }
+        } else {
+          family.pairs.push(check);
+          colorWarnings.push(`${themeName} (${check.ground} / ${check.figure}) rejected: ${check.reasons.join('; ')}`);
+        }
+      });
+    });
+  }
+
+  // Rule checks on every theme (only when the brand declares color-rules).
+  if (colorRulesDeclared) {
+    for (const [name, theme] of Object.entries(themes)) {
+      const bg = theme['background'];
+      if (!bg || !isHex6(bg)) continue;
+      const txt = theme['text-primary'];
+      if (txt && isHex6(txt) && contrastRatio(bg, txt) < rules.text && !themePairs[name]) {
+        colorWarnings.push(`theme "${name}": text-primary ${txt} on ${bg} is ${contrastRatio(bg, txt).toFixed(1)}:1, below ${rules.text}:1`);
+      }
+      const fig = theme['logo'];
+      if (fig && isHex6(fig) && contrastRatio(bg, fig) < rules.figure && !themePairs[name]?.family) {
+        colorWarnings.push(`theme "${name}": logo ${fig} on ${bg} is ${contrastRatio(bg, fig).toFixed(1)}:1, below ${rules.figure}:1`);
+      }
+    }
+  }
+
+  if (Object.keys(themes).length > 0) {
     result.themes = themes;
     result.themeDescriptions = themeDescriptions;
   }
+  if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
+  if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {
       unit: spacingRaw['unit'] ?? 'cqmin',
@@ -1019,6 +1302,13 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       }
     }
     if (paramEntries.length > 0) def.generatorParams = Object.fromEntries(paramEntries);
+    // align-* sub-blocks are stored as "align-left.src" / "align-left.aspect".
+    for (const align of ['left', 'center', 'right'] as const) {
+      const src = raw.props[`align-${align}.src`];
+      if (!src) continue;
+      const aspect = raw.props[`align-${align}.aspect`];
+      def.alignVariants = { ...def.alignVariants, [align]: { src, ...(aspect ? { aspectRatio: parseFloat(aspect) } : {}) } };
+    }
     return def;
   };
   if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0 || illustrationsRaw.length > 0) {

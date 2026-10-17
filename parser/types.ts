@@ -92,3 +92,88 @@ export interface BrandColorGroup {
   entries: BrandColorEntry[];
 }
 
+
+// ── Color rules, pair themes, color families (v0.10.0) ────────────────────────
+
+/** Tone class of a color, from its contrast against white. */
+export type ToneClass = 'light' | 'mid' | 'dark';
+
+/** Brand-wide contrast and tone rules. */
+export interface ColorRules {
+  /** Min contrast for text on ground. */
+  text: number;
+  /** Min contrast between ground and figure. */
+  figure: number;
+  /** Tone combinations a pair must not form (unordered). */
+  avoid: Array<[ToneClass, ToneClass]>;
+  /** Tone thresholds as contrast vs white: [light below, dark at/above]. */
+  tones: [number, number];
+}
+
+/** How families are arranged. */
+export type FamilyOrder = 'cycle' | 'sequence';
+/** Which neighbours a family may borrow from. */
+export type FamilyBorrow = 'previous' | 'next' | 'both' | 'none';
+/** Fixed role vocabulary inside a family. */
+export type FamilyRole = 'core' | 'accent' | 'contrast';
+
+/** One color declared inside a family. */
+export interface FamilyColor {
+  role: FamilyRole;
+  /** 6-digit uppercase hex. */
+  hex: string;
+  /** Display name (authored, or generated as `{family}-{role}[-n]`). */
+  name: string;
+  /** Key in the flat `brandColors` projection. */
+  key: string;
+}
+
+/** Where a pair color comes from, seen from the pair's family. */
+export type PairOrigin = 'own' | 'prev' | 'next' | 'shared' | 'outside';
+
+/** A checked ground/figure pair. */
+export interface PairCheck {
+  ground: string;
+  figure: string;
+  /** Resolved text color for this ground. */
+  text: string;
+  figureRatio: number;
+  textRatio: number;
+  /** False when no text candidate reaches the text rule (best one is used). */
+  textPasses: boolean;
+  tones: [ToneClass, ToneClass];
+  origins: [PairOrigin, PairOrigin];
+  valid: boolean;
+  /** Why the pair fails (empty when valid). */
+  reasons: string[];
+}
+
+/** A curated pair as declared in a family's `pairs` block. */
+export interface FamilyPair extends PairCheck {
+  /** Theme name the pair was emitted as (only when valid), e.g. `Winter-3`. */
+  theme?: string;
+}
+
+export interface ColorFamily {
+  name: string;
+  colors: FamilyColor[];
+  pairs: FamilyPair[];
+}
+
+export interface ColorFamilies {
+  order: FamilyOrder;
+  borrow: FamilyBorrow;
+  distance: number;
+  /** Colors allowed in every family (resolved from `shared:` refs). */
+  shared: Array<{ name: string; hex: string }>;
+  families: ColorFamily[];
+}
+
+/** Ground / figure / text of a pair theme (declared or emitted from a family pair). */
+export interface ThemePair {
+  ground: string;
+  figure: string;
+  text: string;
+  /** Family the theme was emitted from, when it came from `color-families`. */
+  family?: string;
+}

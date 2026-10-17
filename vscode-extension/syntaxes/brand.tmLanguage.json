@@ -2,6 +2,7 @@
   "scopeName": "source.brand-intent-brand",
   "name": "Brand Intent Brand",
   "patterns": [
+    { "include": "#family-pair" },
     { "include": "#comment" },
     { "include": "#id-field" },
     { "include": "#name-field" },
@@ -9,6 +10,13 @@
     { "include": "#brand-colors-header" },
     { "include": "#state-colors-header" },
     { "include": "#color-bounds-header" },
+    { "include": "#color-rules-header" },
+    { "include": "#color-families-header" },
+    { "include": "#color-rules-entry" },
+    { "include": "#color-families-property" },
+    { "include": "#family-header" },
+    { "include": "#family-role" },
+    { "include": "#family-pairs-keyword" },
     { "include": "#color-mode-enum" },
     { "include": "#color-strategy-enum" },
     { "include": "#color-adherence-enum" },
@@ -82,6 +90,68 @@
       "match": "^(color-bounds)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "color-rules-header": {
+      "match": "^(color-rules)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "color-families-header": {
+      "match": "^(color-families)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "color-rules-entry": {
+      "comment": "Entries under color-rules: text/figure (contrast), avoid (tone combos), tones (thresholds)",
+      "match": "^(\\s{2,})(text|figure|avoid|tones)(:\\s*)(.+)$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
+    "color-families-property": {
+      "comment": "Block keys under color-families: order/borrow/distance/shared",
+      "match": "^( {2})(order|borrow|distance|shared)(:\\s*)(.+)$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "entity.name.tag.brand-intent-brand" }
+      }
+    },
+    "family-header": {
+      "match": "^( {2})(family)\\s+(\\S+)\\s*$",
+      "captures": {
+        "2": { "name": "keyword.control.brand-intent-brand" },
+        "3": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "family-role": {
+      "comment": "Family color: core/accent/contrast → #HEX [Name]",
+      "match": "^(\\s{4,})(core|accent|contrast)(:\\s*)(#[0-9A-Fa-f]{3,6})(?:\\s+(.+))?$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
+        "5": { "name": "string.unquoted.brand-intent-brand" }
+      }
+    },
+    "family-pairs-keyword": {
+      "match": "^(\\s{4,})(pairs)\\s*$",
+      "captures": {
+        "2": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "family-pair": {
+      "comment": "Pair line: ground / figure (hex or $ref). Listed before #comment so indented hex is not read as a comment.",
+      "match": "^(\\s{4,})(#[0-9A-Fa-f]{3,6}|\\$[\\w-]+)(\\s*/\\s*)(#[0-9A-Fa-f]{3,6}|\\$[\\w-]+)\\s*$",
+      "captures": {
+        "2": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" }
       }
     },
     "color-mode-enum": {
@@ -300,7 +370,7 @@
       }
     },
     "asset-value": {
-      "match": "^(\\s{2,})(label|src|lottie|gltf|generator)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
+      "match": "^(\\s{2,})(label|src|lottie|gltf|generator)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params|align-left|align-center|align-right)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -339,7 +409,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|theme|divider|font|typography|logo|photo|video|illustration)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

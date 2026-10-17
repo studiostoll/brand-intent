@@ -34,7 +34,7 @@
   ],
   "scripts": {
     "release": "./scripts/release.sh",
-    "test": "tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/realBrands.test.ts"
+    "test": "tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/realBrands.test.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.0"
