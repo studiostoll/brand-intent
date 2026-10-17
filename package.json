@@ -6,11 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/studiostoll/brand-intent.git"
+    "url": "git+https://github.com/studiostoll/brand-intent.git"
   },
   "homepage": "https://intent.stoll.studio",
   "bin": {
-    "brand-intent": "./cli/index.mjs"
+    "brand-intent": "cli/index.mjs"
   },
   "exports": {
     ".": {
