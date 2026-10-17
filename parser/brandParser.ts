@@ -126,6 +126,8 @@ export interface ParsedAssetDef {
   /** Logos only: artwork per horizontal placement, declared via `align-left` / `align-center` / `align-right`
    *  sub-blocks. Consumers render the variant matching where the logo sits, else the base `src`. */
   alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
+  /** Library group (e.g. "experimental"). Consumers list each group as its own section after the ungrouped assets. */
+  group?: string;
 }
 
 export type LogoAlign = 'left' | 'center' | 'right';
@@ -1292,6 +1294,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['loop'] === 'true') def.loop = true;
     if (raw.props['gltf']) def.gltfSrc = raw.props['gltf'];
     if (raw.props['generator']) def.generator = raw.props['generator'];
+    if (raw.props['group']) def.group = raw.props['group'];
     // generator-params are stored as "generator-params.KEY" by the sub-block parser.
     const paramEntries: [string, number][] = [];
     for (const [k, v] of Object.entries(raw.props)) {

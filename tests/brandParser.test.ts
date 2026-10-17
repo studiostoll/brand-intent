@@ -356,6 +356,14 @@ test('align sub-blocks only apply to logos', () => {
   assertEq(out.assets?.photos?.[0]?.alignVariants, undefined, 'no variants on photos');
 });
 
+test('assets take an optional group', () => {
+  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n\nphoto old\n  src: photos/old.jpg\n  group: experimental\n\nvideo clip\n  src: videos/clip.mp4\n  group: experimental\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.assets?.photos?.[0]?.group, undefined, 'ungrouped photo');
+  assertEq(out.assets?.photos?.[1]?.group, 'experimental', 'grouped photo');
+  assertEq(out.assets?.videos?.[0]?.group, 'experimental', 'grouped video');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

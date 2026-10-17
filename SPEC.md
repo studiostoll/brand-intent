@@ -654,6 +654,11 @@ photo hero
   label: Hero Shot
   src: photos/hero.jpg
 
+photo old-harbour
+  label: Old Harbour
+  src: photos/harbour.jpg
+  group: experimental
+
 video intro
   label: Intro Clip
   src: videos/intro.mp4
@@ -669,6 +674,7 @@ video intro
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
 | `animated` | flag | No | Marks asset as animated |
 | `loop` | flag | No | Marks video/lottie as looping |
+| `group:` | string | No | Library group (e.g. `experimental`). Ungrouped assets come first; each group is listed as its own section after them, in order of first appearance. |
 | `gltf:` | string | No | Path to a glTF/GLB 3D model (logos only). When present, the asset renders as a live 3D object; `src` stays as the 2D fallback for thumbnails and export. |
 | `generator:` | string | No | Procedural generator id (logos only). Renders live geometry from code (e.g. `spiral`, `mobius`, `ribbon`); `src` stays as the 2D fallback. |
 | `generator-params` | sub-block | No | Indented block of numeric defaults for the named generator, keyed `name: number`. Each consumer defines its own param names. |
