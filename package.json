@@ -1,6 +1,6 @@
 {
   "name": "brand-intent",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "An open file format specification for making brand intent machine-readable.",
   "author": "Christophe Stoll <christophe@stoll.studio>",
   "license": "MIT",
@@ -21,6 +21,7 @@
       "types": "./parser/index.ts",
       "default": "./parser/index.ts"
     },
+    "./syntaxes/*": "./vscode-extension/syntaxes/*",
     "./package.json": "./package.json"
   },
   "types": "./parser/index.ts",
@@ -43,6 +44,7 @@
     "cli/",
     "parser/",
     "skills/",
-    "examples/"
+    "examples/",
+    "vscode-extension/syntaxes/"
   ]
 }
