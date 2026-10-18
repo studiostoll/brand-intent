@@ -6,10 +6,13 @@
  */
 
 import type { SlotId } from './types';
+import { parseIconRef, parseListItem } from './icons';
+import type { IconRef } from './icons';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
 export type Density = 'light' | 'medium' | 'full';
+export type ListMarker = 'none' | 'counter' | 'icon';
 
 export interface ParsedPurpose {
   id: string;
@@ -37,10 +40,8 @@ export interface ParsedPurpose {
   camera?: boolean;
   /** When false, photo/video analysis skips this purpose (no AI text generation). Default: true. */
   analyze?: boolean;
-  /** Default icon (Phosphor PascalCase name, e.g. "ArrowRight"). */
-  defaultIcon?: string;
-  /** Default icon weight. */
-  defaultIconWeight?: string;
+  /** Default icon for the icon slot. Resolves in the brand set first, then Phosphor (see resolveIconRef). */
+  defaultIcon?: IconRef;
   /** Optional prompt text shown in the empty background placeholder. Default: "Select a background". */
   bgPrompt?: string;
 }
@@ -57,11 +58,13 @@ export interface ParsedPurposeSlot {
   slotType?: 'text' | 'list';
   /** Max number of items (list slots only). */
   maxItems?: number;
-  /** Whether per-item icons are supported (list slots only). */
-  icons?: boolean;
-  /** Icon-only list — icons fill available space, text is suppressed. */
+  /** List item marker (list slots only). Default: 'none'. */
+  marker?: ListMarker;
+  /** Default icon for `marker: icon` items without an `[id]` prefix (list slots only). */
+  defaultIcon?: IconRef;
+  /** Icon-only list — icons fill available space, text is suppressed. Implies `marker: icon`. */
   iconOnly?: boolean;
-  /** Space between icon and text, in em (list slots only). Default: 0.4 */
+  /** Space between marker and text, in em (list slots only). Default: 0.4 */
   iconGap?: number;
   /** Gap between list items in em. Default: 0.5 */
   itemGap?: number;
@@ -129,8 +132,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let defaultVideo: string | undefined;
   let camera: boolean | undefined;
   let analyze: boolean | undefined;
-  let defaultIcon: string | undefined;
-  let defaultIconWeight: string | undefined;
+  let defaultIcon: IconRef | undefined;
   let bgPrompt: string | undefined;
   const slots: ParsedPurposeSlot[] = [];
   // For backward compat: track first # line text for fallback id
@@ -152,6 +154,19 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     if (!s.label) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing label`);
     if ((!s.samples || s.samples.length === 0) && !s.iconOnly && !s.value) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing samples or value`);
     if (!s.maxLength) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing maxLength`);
+    if (s.iconOnly) {
+      if (s.marker && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": iconOnly needs "marker: icon", got "${s.marker}"`);
+      s.marker = 'icon';
+    }
+    if (s.defaultIcon && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": defaultIcon needs "marker: icon"`);
+    if (s.slotType === 'list') {
+      for (const sample of s.samples ?? []) {
+        for (const item of sample.split('\n')) {
+          const { icon } = parseListItem(item);
+          if (icon && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": sample item "${item}" names an icon, but the list has no "marker: icon"`);
+        }
+      }
+    }
     const t = s.typography as ParsedPurposeSlot['typography'];
     if (!s.typographyRef) {
       // Legacy direct font: path — all fields required
@@ -315,23 +330,16 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // Default icon: "defaultIcon: warning-circle" or "defaultIcon: warning-circle duotone"
-    // Accepts kebab-case (natural for file format) and converts to PascalCase for Phosphor lookup.
-    if (line.startsWith('defaultIcon:')) {
-      const parts = line.slice(12).trim().split(/\s+/);
-      // Convert kebab-case to PascalCase: "warning-circle" → "WarningCircle"
-      defaultIcon = parts[0].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-      if (parts[1]) defaultIconWeight = parts[1];
+    // Default icon: "defaultIcon: quote", "defaultIcon: phosphor:warning-circle duotone"
+    if (line.startsWith('defaultIcon:') && !raw.startsWith(' ')) {
+      defaultIcon = parseIconRef(line.slice(12), `${fileName}:${lineNum}`);
       continue;
     }
 
     // Backward compat: "icon: warning-circle" (deprecated — use defaultIcon:)
-    if (line.startsWith('icon:')) {
+    if (line.startsWith('icon:') && !raw.startsWith(' ')) {
       console.warn(`${fileName}:${lineNum}: deprecated "icon:" — use "defaultIcon:" instead`);
-      const parts = line.slice(5).trim().split(/\s+/);
-      // Convert kebab-case to PascalCase: "warning-circle" → "WarningCircle"
-      defaultIcon = parts[0].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-      if (parts[1]) defaultIconWeight = parts[1];
+      defaultIcon = parseIconRef(line.slice(5), `${fileName}:${lineNum}`);
       continue;
     }
 
@@ -462,9 +470,27 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
           currentSlot.samples = raw.split('|').map(s => s.trim().replace(/\\n/g, '\n'));
           continue;
         }
-        if (prop === 'icons: true' || prop === 'icons:true') { currentSlot.icons = true; continue; }
-        if (prop === 'icons: false' || prop === 'icons:false') { currentSlot.icons = false; continue; }
-        if (prop === 'iconOnly: true' || prop === 'iconOnly:true') { currentSlot.iconOnly = true; currentSlot.icons = true; continue; }
+        if (prop.startsWith('marker:')) {
+          const m = prop.slice(7).trim();
+          if (m !== 'none' && m !== 'counter' && m !== 'icon') throw new Error(`${fileName}:${lineNum}: invalid marker "${m}" — must be "none", "counter" or "icon"`);
+          currentSlot.marker = m;
+          continue;
+        }
+        if (prop.startsWith('defaultIcon:')) {
+          currentSlot.defaultIcon = parseIconRef(prop.slice(12), `${fileName}:${lineNum}`);
+          continue;
+        }
+        if (prop === 'icons: true' || prop === 'icons:true') {
+          console.warn(`${fileName}:${lineNum}: deprecated "icons: true" — use "marker: counter" or "marker: icon"`);
+          currentSlot.marker = currentSlot.marker ?? 'counter';
+          continue;
+        }
+        if (prop === 'icons: false' || prop === 'icons:false') {
+          console.warn(`${fileName}:${lineNum}: deprecated "icons: false" — use "marker: none"`);
+          currentSlot.marker = currentSlot.marker ?? 'none';
+          continue;
+        }
+        if (prop === 'iconOnly: true' || prop === 'iconOnly:true') { currentSlot.iconOnly = true; continue; }
         if (prop.startsWith('iconGap:')) {
           const n = parseFloat(prop.slice(8).trim());
           if (isNaN(n) || n < 0) throw new Error(`${fileName}:${lineNum}: invalid iconGap "${prop.slice(8).trim()}"`);
@@ -624,5 +650,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, analyze, defaultIcon, defaultIconWeight, bgPrompt };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, analyze, defaultIcon, bgPrompt };
 }

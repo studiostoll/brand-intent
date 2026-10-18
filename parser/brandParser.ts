@@ -36,6 +36,8 @@ import {
   checkFamilyPair,
   reachCoversAll,
 } from './colorSystem';
+import { parseIconSource, isIconId } from './icons';
+import type { ParsedIconDef } from './icons';
 
 // ── Parsed type ────────────────────────────────────────────────────────────────
 
@@ -106,6 +108,26 @@ export interface ParsedBrand {
   label?: ParsedBadgeStyle;
   /** CTA pill style — padding (top/right/bottom/left in cqh) and corner radius (cqh, or 999 for full pill) */
   cta?: ParsedBadgeStyle;
+  /** Brand icon set (`icons` block), in declaration order. Absent → the brand has no set. */
+  icons?: ParsedIconDef[];
+  /** List counter component (`counter` block). */
+  counter?: ParsedCounterDef;
+}
+
+export type CounterFormat = '1' | '01' | '1.' | '(1)' | 'i';
+export type CounterShape = 'none' | 'circle' | 'square' | 'pill';
+
+export interface ParsedCounterDef {
+  /** Number format: 1 | 01 | 1. | (1) | i (lowercase roman). */
+  format: CounterFormat;
+  /** Typography style for the digits. Absent → the list item's typography. */
+  typography?: string;
+  /** Background shape, coloured with the theme's counter-bg / counter-fg. */
+  shape: CounterShape;
+  /** Counter height in em, relative to the list item text. */
+  size: number;
+  /** Inner padding in em. */
+  padding: number;
 }
 
 export interface ParsedAssetDef {
@@ -329,7 +351,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -372,6 +394,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let currentSubBlock: string | null = null;
   const labelRaw: Record<string, string> = {};
   const ctaRaw: Record<string, string> = {};
+  const icons: ParsedIconDef[] = [];
+  let iconsDeclared = false;
+  const counterRaw: Record<string, { value: string; line: number }> = {};
+  let counterDeclared = false;
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -718,6 +744,29 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         continue;
       }
+      if (activeBlock === 'icons') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('#')) continue;
+        const commentIdx = trimmed.search(/\s+#/);
+        const entry = commentIdx !== -1 ? trimmed.slice(0, commentIdx) : trimmed;
+        const colonIdx = entry.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: icons entry must be "ID: SOURCE", got "${trimmed}"`);
+        const id = entry.slice(0, colonIdx).trim();
+        if (!isIconId(id)) throw new Error(`${fileName}:${lineNum}: invalid icon id "${id}" — use lowercase kebab-case`);
+        if (icons.some(ic => ic.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate icon "${id}"`);
+        icons.push({ id, source: parseIconSource(entry.slice(colonIdx + 1), `${fileName}:${lineNum}`) });
+        continue;
+      }
+      if (activeBlock === 'counter') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('#')) continue;
+        const commentIdx = trimmed.search(/\s+#/);
+        const entry = commentIdx !== -1 ? trimmed.slice(0, commentIdx) : trimmed;
+        const colonIdx = entry.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: counter property must be "KEY: VALUE", got "${trimmed}"`);
+        counterRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
+        continue;
+      }
       // Indented line with no active block — ignore
       continue;
     }
@@ -763,6 +812,22 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       familiesDeclared = true;
       currentFamily = null;
       inPairs = false;
+      continue;
+    }
+
+    // icons — the brand icon set
+    if (raw.trim() === 'icons') {
+      if (iconsDeclared) throw new Error(`${fileName}:${lineNum}: duplicate icons block`);
+      iconsDeclared = true;
+      activeBlock = 'icons';
+      continue;
+    }
+
+    // counter — list counter component
+    if (raw.trim() === 'counter') {
+      if (counterDeclared) throw new Error(`${fileName}:${lineNum}: duplicate counter block`);
+      counterDeclared = true;
+      activeBlock = 'counter';
       continue;
     }
 
@@ -1182,6 +1247,12 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     });
   }
 
+  // Counter colours default to the label badge's.
+  for (const theme of Object.values(themes)) {
+    if (theme['counter-bg'] === undefined && theme['label-bg'] !== undefined) theme['counter-bg'] = theme['label-bg'];
+    if (theme['counter-fg'] === undefined && theme['label-fg'] !== undefined) theme['counter-fg'] = theme['label-fg'];
+  }
+
   // Rule checks on every theme (only when the brand declares color-rules).
   if (colorRulesDeclared) {
     for (const [name, theme] of Object.entries(themes)) {
@@ -1347,6 +1418,59 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   }
   if (Object.keys(ctaRaw).length > 0) {
     result.cta = parseBadgeStyle(ctaRaw, { padding: [0.8, 2.5, 0.8, 2.5], radius: 999 });
+  }
+
+  // Finalise icon set — font glyphs need a declared font (bare `font U+…` → first font).
+  if (iconsDeclared) {
+    if (icons.length === 0) throw new Error(`${fileName}: icons block is empty`);
+    const fontNames = Object.keys(result.fonts ?? {});
+    for (const icon of icons) {
+      if (icon.source.kind !== 'font') continue;
+      if (!icon.source.font) {
+        if (fontNames.length === 0) throw new Error(`${fileName}: icon "${icon.id}" uses a font glyph, but no font block is declared`);
+        icon.source.font = fontNames[0];
+      } else if (!fontNames.includes(icon.source.font)) {
+        throw new Error(`${fileName}: icon "${icon.id}" references unknown font "$${icon.source.font}"`);
+      }
+    }
+    result.icons = icons;
+  }
+
+  // Finalise counter component
+  if (counterDeclared) {
+    const known = new Set(['format', 'typography', 'shape', 'size', 'padding']);
+    for (const [key, { line }] of Object.entries(counterRaw)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${line}: unknown counter property "${key}"`);
+    }
+    const formats: CounterFormat[] = ['1', '01', '1.', '(1)', 'i'];
+    const shapes: CounterShape[] = ['none', 'circle', 'square', 'pill'];
+    const em = (key: string, fallback: number): number => {
+      const entry = counterRaw[key];
+      if (!entry) return fallback;
+      const m = entry.value.match(/^(\d+(?:\.\d+)?)(?:em)?$/);
+      if (!m) throw new Error(`${fileName}:${entry.line}: counter ${key} must be a number in em (e.g. "1.2em"), got "${entry.value}"`);
+      return parseFloat(m[1]);
+    };
+    const format = counterRaw['format']?.value ?? '1';
+    if (!formats.includes(format as CounterFormat)) {
+      throw new Error(`${fileName}:${counterRaw['format'].line}: counter format must be one of ${formats.join(' | ')}, got "${format}"`);
+    }
+    const shape = counterRaw['shape']?.value ?? 'circle';
+    if (!shapes.includes(shape as CounterShape)) {
+      throw new Error(`${fileName}:${counterRaw['shape'].line}: counter shape must be one of ${shapes.join(' | ')}, got "${shape}"`);
+    }
+    const counter: ParsedCounterDef = {
+      format: format as CounterFormat,
+      shape: shape as CounterShape,
+      size: em('size', 1),
+      padding: em('padding', 0.2),
+    };
+    const typo = counterRaw['typography'];
+    if (typo) {
+      if (!result.typographies?.[typo.value]) throw new Error(`${fileName}:${typo.line}: counter typography "${typo.value}" is not a declared typography`);
+      counter.typography = typo.value;
+    }
+    result.counter = counter;
   }
 
   // Validate required fields

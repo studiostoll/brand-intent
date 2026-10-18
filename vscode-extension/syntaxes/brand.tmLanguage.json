@@ -28,6 +28,9 @@
     { "include": "#color-group-entry" },
     { "include": "#color-group-reference" },
     { "include": "#color-group-entry-property" },
+    { "include": "#icons-counter-header" },
+    { "include": "#icon-entry" },
+    { "include": "#counter-value" },
     { "include": "#theme-header" },
     { "include": "#brand-color-entry" },
     { "include": "#brand-color-print-sub" },
@@ -384,6 +387,39 @@
         "14": { "name": "constant.language.boolean.brand-intent-brand" }
       }
     },
+    "icons-counter-header": {
+      "comment": "Bare `icons` / `counter` block headers.",
+      "match": "^(icons|counter)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" }
+      }
+    },
+    "icon-entry": {
+      "comment": "icons entry: ID: font [$FONT] U+XXXX|GLYPH  /  ID: phosphor NAME [WEIGHT]  /  ID: PATH.svg",
+      "match": "^(\\s{2,})(?!(?:src|lottie|gltf):)([a-z][a-z0-9-]*)(:\\s*)(?:(font)(?:\\s+(\\$[\\w-]+))?\\s+(\\S+)|(phosphor)\\s+([a-z][a-z0-9-]*)(?:\\s+(thin|light|regular|bold|fill|duotone))?|(\\S+\\.svg))\\s*(#.*)?$",
+      "captures": {
+        "2": { "name": "entity.name.function.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "keyword.other.brand-intent-brand" },
+        "5": { "name": "variable.other.brand-intent-brand" },
+        "6": { "name": "constant.character.brand-intent-brand" },
+        "7": { "name": "keyword.other.brand-intent-brand" },
+        "8": { "name": "string.unquoted.brand-intent-brand" },
+        "9": { "name": "variable.parameter.brand-intent-brand" },
+        "10": { "name": "string.unquoted.brand-intent-brand" },
+        "11": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
+    "counter-value": {
+      "comment": "counter block properties (typography: is covered by typography-value)",
+      "match": "^(\\s{2,})(format|shape|size|padding)(:\\s*)(\\S+)\\s*(#.*)?$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" },
+        "5": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
     "badge-header": {
       "comment": "Bare `label:` or `cta:` line that introduces a badge style block.",
       "match": "^(label|cta):\\s*$",
@@ -409,7 +445,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

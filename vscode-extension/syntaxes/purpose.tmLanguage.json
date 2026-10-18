@@ -22,6 +22,7 @@
     { "include": "#override-value" },
     { "include": "#list-property" },
     { "include": "#sample-item" },
+    { "include": "#sample-icon-continuation" },
     { "include": "#property" },
     { "include": "#keyword-partial" }
   ],
@@ -59,7 +60,7 @@
       }
     },
     "default-icon": {
-      "match": "^(defaultIcon:)\\s+([\\w-]+)(?:\\s+(thin|light|regular|bold|fill|duotone))?",
+      "match": "^\\s*(defaultIcon:)\\s+((?:phosphor:)?[a-z][a-z0-9-]*)(?:\\s+(thin|light|regular|bold|fill|duotone))?",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-purpose" },
         "2": { "name": "entity.name.function.brand-intent-purpose" },
@@ -207,7 +208,7 @@
     },
     "list-property": {
       "comment": "4-space indented properties under type: list blocks",
-      "match": "^\\s{4,}(icons|iconOnly|iconGap|itemGap|maxItems|direction)(:)\\s+(.*)",
+      "match": "^\\s{4,}(marker|icons|iconOnly|iconGap|itemGap|maxItems|direction)(:)\\s+(.*)",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-purpose" },
         "2": { "name": "punctuation.separator.brand-intent-purpose" },
@@ -216,9 +217,17 @@
     },
     "sample-item": {
       "comment": "Multi-line sample entries -- dim only the dash, leave text unstyled",
-      "match": "^(\\s{4,})(-)(?=\\s)",
+      "match": "^(\\s{4,})(-)(?=\\s)(?:\\s+(\\[[^\\]]+\\]))?",
       "captures": {
-        "2": { "name": "comment.line.dash.brand-intent-purpose" }
+        "2": { "name": "comment.line.dash.brand-intent-purpose" },
+        "3": { "name": "entity.name.function.brand-intent-purpose" }
+      }
+    },
+    "sample-icon-continuation": {
+      "comment": "[ID] icon prefix on list item continuation lines",
+      "match": "^(\\s{6,})(\\[[^\\]]+\\])",
+      "captures": {
+        "2": { "name": "entity.name.function.brand-intent-purpose" }
       }
     },
     "keyword-partial": {

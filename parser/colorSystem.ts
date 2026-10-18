@@ -102,11 +102,12 @@ export function derivePairSlots(ground: string, figure: string, text: string): R
     'text-primary': text,
   };
   for (const [slot, alpha] of TEXT_TIERS) slots[slot] = withAlpha(text, alpha);
-  for (const slot of ['logo', 'cta', 'divider', 'icon', 'illustration', 'sticker-bg', 'label-bg']) {
+  for (const slot of ['logo', 'cta', 'divider', 'icon', 'illustration', 'sticker-bg', 'label-bg', 'counter-bg']) {
     slots[slot] = figure;
   }
   slots['sticker-fg'] = ground;
   slots['label-fg'] = ground;
+  slots['counter-fg'] = ground;
   return slots;
 }
 

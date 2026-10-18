@@ -245,6 +245,8 @@ The brand file encodes derived expression intent: visual language and operationa
 | `divider NAME` | block | No | Named divider style (repeatable) |
 | `label:` | block | No | Label badge style (padding + radius) |
 | `cta:` | block | No | CTA pill style (padding + radius) |
+| `icons` | block | No | Brand icon set (font glyphs, SVGs, adopted Phosphor icons) |
+| `counter` | block | No | List counter component |
 | `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
 | `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
 | `video NAME` | block | No | Brand-declared video asset (repeatable) |
@@ -482,8 +484,8 @@ theme Green
 | `background` | ground |
 | `text-primary` | text |
 | `text-secondary` / `text-tertiary` / `text-subtle` / `text-muted` | text at 85% / 70% / 55% / 40% |
-| `logo`, `cta`, `divider`, `icon`, `illustration`, `sticker-bg`, `label-bg` | figure |
-| `sticker-fg`, `label-fg` | ground |
+| `logo`, `cta`, `divider`, `icon`, `illustration`, `sticker-bg`, `label-bg`, `counter-bg` | figure |
+| `sticker-fg`, `label-fg`, `counter-fg` | ground |
 
 - `ground:` and `figure:` come together — one without the other is a hard error. Values must be solid (`$ref` or `#HEX`, no alpha).
 - Without `text:`, text resolves to the neutral `dark` or `light` entry (whichever reaches `color-rules.text`, default 4.5), else black or white.
@@ -504,6 +506,8 @@ theme Green
 | `label-fg` | Label badge foreground |
 | `sticker-bg` | Sticker background |
 | `sticker-fg` | Sticker foreground |
+| `counter-bg` | List counter background. Default: `label-bg` |
+| `counter-fg` | List counter digits. Default: `label-fg` |
 | `icon` | Icon color |
 | `divider` | Divider color |
 | `illustration` | Illustration line color (optional, only for brands with illustrations) |
@@ -615,6 +619,54 @@ cta:
 
 - `label` — padding `0.5 1 0.7 1`, radius `0`
 - `cta` — padding `0.8 2.5`, radius `999`
+
+### `icons` Block
+
+The brand's icon set: one entry per icon, a semantic id plus a source. Pickers show only these icons. Without an `icons` block the brand has no set: icons come only from `defaultIcon:` references in `.purpose` files.
+
+```yaml
+icons
+  quote: font $display U+201C     # glyph by codepoint
+  pin:   font $display icon.pin   # glyph by name (unencoded glyphs are fine)
+  map:   icons/map.svg            # SVG, relative to the brand folder
+  wave:  phosphor wave light      # Phosphor icon adopted into the set
+```
+
+| Source | Description |
+|--------|-------------|
+| `font [$FONT] U+XXXX` | Glyph by codepoint (4–6 hex digits). `$FONT` names a `font` block; omitted → the first font |
+| `font [$FONT] GLYPHNAME` | Glyph by its name in the font file |
+| `PATH.svg` | SVG file, relative to the brand folder |
+| `phosphor NAME [WEIGHT]` | [Phosphor](https://phosphoricons.com) icon, kebab-case name, optional weight (`thin` \| `light` \| `regular` \| `bold` \| `fill` \| `duotone`) |
+
+- Ids are lowercase kebab-case and unique. Order is picker order.
+- Sources can be mixed, so a set can start with Phosphor picks and swap entries for brand glyphs without touching purposes or pages.
+- Brand icons have one cut; weights apply to Phosphor sources only.
+- Font glyphs are fitted to their own bounds. Implementations render them as vector paths, not text, so glyph metrics don't affect the icon box.
+- Colour comes from the theme's `icon` slot.
+
+### `counter` Block
+
+The list counter component: numbered markers for list slots with `marker: counter`. Optional; defaults apply when omitted.
+
+```yaml
+counter
+  format:     01         # 1 | 01 | 1. | (1) | i
+  typography: counter    # a typography style
+  shape:      circle     # none | circle | square | pill
+  size:       1.2em
+  padding:    0.2em
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `format:` | enum | `1` | `1` \| `01` (zero-padded) \| `1.` \| `(1)` \| `i` (lowercase roman) |
+| `typography:` | string | item typography | Typography style for the digits |
+| `shape:` | enum | `circle` | `none` \| `circle` \| `square` \| `pill` |
+| `size:` | em | `1` | Counter height relative to the list item text |
+| `padding:` | em | `0.2` | Inner padding |
+
+Colours come from the theme slots `counter-bg` (shape) and `counter-fg` (digits).
 
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
@@ -765,6 +817,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
 | `camera:` | bool | No | Show Take Photo / Upload buttons. Default: `true` |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
+| `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable) |
 
 ### Semantic Slots
@@ -817,13 +870,46 @@ samples:
 | `maxItems:` | int | - | Maximum items |
 | `maxLength:` | int | - | Max characters per item |
 | `samples:` | list | - | Example list content |
-| `icons:` | bool | `false` | Per-item icons supported |
+| `marker:` | enum | `none` | `none` \| `counter` \| `icon` (item marker) |
+| `defaultIcon:` | icon ref | - | Icon for items without an `[ID]` prefix (`marker: icon` only) |
+| `iconOnly:` | bool | `false` | Icons only, no text (implies `marker: icon`) |
+| `iconGap:` | float | `0.4` | Gap between marker and text (em) |
 | `direction:` | enum | `vertical` | `vertical` \| `horizontal` |
 | `itemGap:` | float | `0.5` | Gap between items (em) |
+
+**Markers:** `counter` numbers the items with the brand's [`counter`](#counter-block) component. `icon` puts an icon from the brand set before each item; a sample item can name its icon with an `[ID]` prefix, otherwise `defaultIcon:` applies.
+
+```yaml
+slot detail
+  label: Stops
+  typography: body
+  type: list
+    maxItems: 3
+    marker: icon
+    defaultIcon: pin
+    samples:
+      - [harbour] Hafen Burgstaaken
+        Südstrand
+        Wallnau
+```
+
+`[ID]` prefixes and `defaultIcon:` require `marker: icon`. Implementations warn when an `iconOnly` list has fewer brand icons than `maxItems`. `icons: true` is deprecated and reads as `marker: counter`.
 
 #### `override:` Sub-Block (4-space indent)
 
 Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`.
+
+### Icon References
+
+`defaultIcon:` values and `[ID]` list prefixes reference icons:
+
+| Form | Resolves to |
+|------|-------------|
+| `quote` | The brand set's `quote`; if the set has none, the Phosphor icon `quote` |
+| `phosphor:quotes [WEIGHT]` | The Phosphor icon `quotes`, skipping the brand set |
+| `map-pin bold` | Weight applies when the reference resolves to Phosphor |
+
+Ids are kebab-case. Implementations warn when a reference resolves nowhere.
 
 ### `scope` Block
 
