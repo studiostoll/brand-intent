@@ -292,6 +292,17 @@ test('color-mode and color-strategy parse', () => {
   assertEq(out.colorStrategy, 'duotone', 'colorStrategy');
 });
 
+test('color-mode: brand without themes is rejected', () => {
+  const src = `${HEADER}color-mode: brand\n`;
+  assertThrows(() => parseBrandFile(src, 'test.brand'), /color-mode: brand requires at least one theme/, 'brand without themes');
+});
+
+test('color-mode: brand with a theme parses', () => {
+  const src = `${HEADER}color-mode: brand\ntheme Light\n  background: #FAFAFA\n  text-primary: #1C1E26\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.colorMode, 'brand', 'colorMode');
+});
+
 test('color-mode rejects unknown value', () => {
   const src = `${HEADER}color-mode: magical\n`;
   assertThrows(() => parseBrandFile(src, 'test.brand'), /color-mode must be/, 'bad color-mode');

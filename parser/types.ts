@@ -19,7 +19,7 @@ export type TextAlign = 'left' | 'center' | 'right' | 'justify';
 // ── Guided colors (v0.8.0) ────────────────────────────────────────────────────
 
 /** Color resolution mode declared at the brand level. */
-export type ColorMode = 'static' | 'dynamic' | 'guided';
+export type ColorMode = 'static' | 'dynamic' | 'guided' | 'brand';
 
 /** Palette construction strategy for guided shuffle (Path A only). */
 export type PaletteStrategy = 'monochrome' | 'duotone' | 'tricolor' | 'spectrum';

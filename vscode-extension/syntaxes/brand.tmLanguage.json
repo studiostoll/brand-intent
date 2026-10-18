@@ -155,7 +155,7 @@
       }
     },
     "color-mode-enum": {
-      "match": "^(color-mode:)\\s+(static|dynamic|guided)",
+      "match": "^(color-mode:)\\s+(static|dynamic|guided|brand)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" },
         "2": { "name": "entity.name.tag.brand-intent-brand" }

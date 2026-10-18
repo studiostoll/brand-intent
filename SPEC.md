@@ -233,7 +233,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `brand-colors` | block | Yes | Color primitive definitions (flat or grouped) |
 | `state-colors` | block | No | Per-brand fixed state colors (problem/warning/success/info/inactive) |
 | `color-bounds` | block | No | Luminance + saturation bounds for guided derivation |
-| `color-mode:` | enum | No | `static` \| `dynamic` \| `guided` — color resolution mode |
+| `color-mode:` | enum | No | `static` \| `dynamic` \| `guided` \| `brand` — color resolution mode |
 | `color-strategy:` | enum | No | `monochrome` \| `duotone` \| `tricolor` \| `spectrum` — default palette strategy for guided shuffle |
 | `color-adherence:` | enum + block | No | `strict` \| `on-brand` \| `flexible` — guided derivation tightness, with optional tolerance overrides |
 | `color-rules` | block | No | Contrast minimums and tone combinations to avoid |
@@ -370,11 +370,13 @@ color-adherence: on-brand
   sat-tolerance: 8
 ```
 
-- `color-mode:` — `static` (themes only, today's default), `dynamic` (random moods + photo derivation, today's behavior), or `guided` (algorithmic within brand constraints).
+- `color-mode:` — `static` (themes only, today's default), `dynamic` (random moods + photo derivation, today's behavior), `guided` (algorithmic within brand constraints), or `brand` (new pages start from a declared theme; with `color-families`, a curated pair of the active family; shuffle stays among those themes).
 - `color-strategy:` — the default palette strategy for Path A (guided shuffle). Values: `monochrome`, `duotone`, `tricolor`, `spectrum`. Optional; derived from distribution when absent.
 - `color-adherence:` — how tightly guided derivation follows brand groups. Values: `strict`, `on-brand`, `flexible`. Accepts an indented override block with `hue-tolerance:` (degrees) and `sat-tolerance:` (percentage points) to dial the level without switching it.
 
 `color-mode: guided` requires either grouped `brand-colors` syntax with the minimum structure above, or a `color-families` block with at least two families. Otherwise it raises a parse error. When families exist, guided generation draws from them and the grouped groups/distribution are not used for generation.
+
+`color-mode: brand` requires at least one theme: an authored `theme` block or a valid family pair. Otherwise it raises a parse error. If the brand also meets the guided minimum structure, guided generation stays available as an explicit choice; `brand` only sets the default.
 
 ### `color-rules` Block
 

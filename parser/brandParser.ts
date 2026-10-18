@@ -202,7 +202,7 @@ export interface ParsedDividerDef {
 const GROUP_KEYWORDS = new Set<string>(['primary', 'secondary', 'accent', 'neutral']);
 const NEUTRAL_ROLES = new Set<NeutralRole>(['light', 'subtle', 'mid', 'muted', 'dark']);
 const STATE_KEYS = new Set<string>(['problem', 'warning', 'success', 'info', 'inactive']);
-const VALID_COLOR_MODES = new Set<ColorMode>(['static', 'dynamic', 'guided']);
+const VALID_COLOR_MODES = new Set<ColorMode>(['static', 'dynamic', 'guided', 'brand']);
 const VALID_STRATEGIES = new Set<PaletteStrategy>(['monochrome', 'duotone', 'tricolor', 'spectrum']);
 const VALID_ADHERENCES = new Set<Adherence>(['strict', 'on-brand', 'flexible']);
 const TONE_CLASSES = new Set<ToneClass>(['light', 'mid', 'dark']);
@@ -847,7 +847,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         break;
       case 'color-mode':
         if (!VALID_COLOR_MODES.has(value as ColorMode)) {
-          throw new Error(`${fileName}:${lineNum}: color-mode must be "static", "dynamic", or "guided", got "${value}"`);
+          throw new Error(`${fileName}:${lineNum}: color-mode must be "static", "dynamic", "guided", or "brand", got "${value}"`);
         }
         result.colorMode = value as ColorMode;
         break;
@@ -1196,6 +1196,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         colorWarnings.push(`theme "${name}": logo ${fig} on ${bg} is ${contrastRatio(bg, fig).toFixed(1)}:1, below ${rules.figure}:1`);
       }
     }
+  }
+
+  // color-mode: brand starts pages from a declared theme, so it needs at least one.
+  if (result.colorMode === 'brand' && Object.keys(themes).length === 0) {
+    throw new Error(`${fileName}: color-mode: brand requires at least one theme (a theme block or a valid color-families pair)`);
   }
 
   if (Object.keys(themes).length > 0) {
