@@ -897,7 +897,15 @@ slot detail
 
 #### `override:` Sub-Block (4-space indent)
 
-Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`.
+Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`, `hyphenate`.
+
+`hyphenate` sets how a slot may hyphenate (German syllables):
+
+| Value | Meaning |
+|-------|---------|
+| `true` (or bare `hyphenate`) | Hyphenate freely: lines may end at any syllable. For body text, to even out the rag or justification. |
+| `fit` | Last resort for autofit slots: shrink until the longest word fits, and hyphenate a word only if it still doesn't fit at `autofit-min`. For headlines. |
+| `false` (default) | Never hyphenate. Implementations never break inside a word; an autofit slot shrinks below `autofit-min` if a word doesn't fit otherwise. |
 
 ### Icon References
 

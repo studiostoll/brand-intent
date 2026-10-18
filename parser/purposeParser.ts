@@ -96,7 +96,8 @@ export interface ParsedPurposeSlot {
     autofitMin: number;
     autofitMax: number;
     textAlign: 'left' | 'center' | 'right' | 'justify';
-    hyphenate: boolean;
+    /** true = hyphenate freely (body text); 'fit' = only when a word doesn't fit at autofit-min. */
+    hyphenate: boolean | 'fit';
   }>;
 }
 
@@ -419,6 +420,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         if (prop === 'uppercase: false') { currentSlot.typographyOverrides.uppercase = false; continue; }
         if (prop === 'hyphenate' || prop === 'hyphenate: true') { currentSlot.typographyOverrides.hyphenate = true; continue; }
         if (prop === 'hyphenate: false') { currentSlot.typographyOverrides.hyphenate = false; continue; }
+        if (prop === 'hyphenate: fit') { currentSlot.typographyOverrides.hyphenate = 'fit'; continue; }
         if (prop === 'autofit: none' || prop === 'autofit:none') {
           currentSlot.typographyOverrides.autofitMin = -1;
           currentSlot.typographyOverrides.autofitMax = -1;

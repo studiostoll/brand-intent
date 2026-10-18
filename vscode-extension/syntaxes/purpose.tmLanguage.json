@@ -165,7 +165,15 @@
           }
         },
         {
-          "match": "^\\s{4,}(italic|uppercase|hyphenate)(?:(:)\\s+(true|false))?\\s*$",
+          "match": "^\\s{4,}(italic|uppercase)(?:(:)\\s+(true|false))?\\s*$",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-purpose" },
+            "2": { "name": "punctuation.separator.brand-intent-purpose" },
+            "3": { "name": "constant.language.brand-intent-purpose" }
+          }
+        },
+        {
+          "match": "^\\s{4,}(hyphenate)(?:(:)\\s+(true|false|fit))?\\s*$",
           "captures": {
             "1": { "name": "support.type.property-name.brand-intent-purpose" },
             "2": { "name": "punctuation.separator.brand-intent-purpose" },
