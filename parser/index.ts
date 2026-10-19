@@ -23,7 +23,7 @@ export {
   DEFAULT_COLOR_RULES,
 } from './colorSystem';
 export type { ReachConfig } from './colorSystem';
-export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape } from './brandParser';
+export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedCameraDef } from './brandParser';
 
 export { parseIconRef, parseIconSource, resolveIconRef, parseListItem, phosphorName, PHOSPHOR_WEIGHTS } from './icons';
 export type { IconRef, IconSource, ParsedIconDef, ResolvedIcon, PhosphorWeight } from './icons';

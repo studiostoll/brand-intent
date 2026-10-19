@@ -39,5 +39,23 @@ test('hyphenate: bare, true, false, fit', () => {
   assertEq(h('hyphenate: fit'), 'fit', 'fit');
 });
 
+test('camera: false hides, front | rear override facing', () => {
+  const c = (line: string) => {
+    const p = parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose');
+    return [p.camera, p.cameraFacing];
+  };
+  assertEq(c('camera: false'), [false, undefined], 'false');
+  assertEq(c('camera: true'), [true, undefined], 'true');
+  assertEq(c('camera: front'), [true, 'front'], 'front');
+  assertEq(c('camera: rear'), [true, 'rear'], 'rear');
+});
+
+test('framing: names a brand framing module', () => {
+  const f = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').framing;
+  assertEq(f('framing: naehe'), 'naehe', 'id');
+  assertEq(f('framing:'), undefined, 'empty');
+  assertEq(f(''), undefined, 'absent');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

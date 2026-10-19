@@ -112,6 +112,27 @@ export interface ParsedBrand {
   icons?: ParsedIconDef[];
   /** List counter component (`counter` block). */
   counter?: ParsedCounterDef;
+  /** Photo framing modules (`framing NAME` blocks), in declaration order. Absent → no camera guides. */
+  framings?: ParsedFramingDef[];
+  /** Camera defaults (`camera` block). Absent → rear camera, no grid. */
+  camera?: ParsedCameraDef;
+}
+
+export interface ParsedCameraDef {
+  /** Which camera opens first. */
+  facing: 'front' | 'rear';
+  /** Viewfinder grid as rows × columns of cells. Absent → no grid. */
+  grid?: { rows: number; cols: number };
+}
+
+export interface ParsedFramingDef {
+  id: string;
+  /** Display name. Defaults to the id. */
+  label: string;
+  /** Horizon position as % of image height, measured from the top. null → no horizon (close-ups). */
+  horizon: number | null;
+  /** The photographic task, one line. */
+  description?: string;
 }
 
 export type CounterFormat = '1' | '01' | '1.' | '(1)' | 'i';
@@ -351,7 +372,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -398,6 +419,9 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let iconsDeclared = false;
   const counterRaw: Record<string, { value: string; line: number }> = {};
   let counterDeclared = false;
+  const cameraRaw: Record<string, { value: string; line: number }> = {};
+  let cameraDeclared = false;
+  const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -767,6 +791,24 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         counterRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === 'camera') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('#')) continue;
+        const commentIdx = trimmed.search(/\s+#/);
+        const entry = commentIdx !== -1 ? trimmed.slice(0, commentIdx) : trimmed;
+        const colonIdx = entry.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: camera property must be "KEY: VALUE", got "${trimmed}"`);
+        cameraRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
+        continue;
+      }
+      if (activeBlock === 'framing') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('#')) continue;
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: framing property must be "KEY: VALUE", got "${trimmed}"`);
+        framingsRaw[framingsRaw.length - 1].props[trimmed.slice(0, colonIdx).trim()] = { value: trimmed.slice(colonIdx + 1).trim(), line: lineNum };
+        continue;
+      }
       // Indented line with no active block — ignore
       continue;
     }
@@ -828,6 +870,24 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (counterDeclared) throw new Error(`${fileName}:${lineNum}: duplicate counter block`);
       counterDeclared = true;
       activeBlock = 'counter';
+      continue;
+    }
+
+    // camera — camera defaults (facing, viewfinder grid)
+    if (raw.trim() === 'camera') {
+      if (cameraDeclared) throw new Error(`${fileName}:${lineNum}: duplicate camera block`);
+      cameraDeclared = true;
+      activeBlock = 'camera';
+      continue;
+    }
+
+    // framing <id> — photo framing module (horizon position)
+    const framingMatch = raw.match(/^framing\s+(\S+)\s*$/);
+    if (framingMatch) {
+      const id = framingMatch[1];
+      if (framingsRaw.some(f => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate framing "${id}"`);
+      framingsRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = 'framing';
       continue;
     }
 
@@ -1471,6 +1531,52 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       counter.typography = typo.value;
     }
     result.counter = counter;
+  }
+
+  // Finalise camera defaults
+  if (cameraDeclared) {
+    const known = new Set(['facing', 'grid']);
+    for (const [key, { line }] of Object.entries(cameraRaw)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${line}: unknown camera property "${key}"`);
+    }
+    const facing = cameraRaw['facing']?.value ?? 'rear';
+    if (facing !== 'front' && facing !== 'rear') {
+      throw new Error(`${fileName}:${cameraRaw['facing'].line}: camera facing must be front | rear, got "${facing}"`);
+    }
+    const camera: ParsedCameraDef = { facing };
+    const g = cameraRaw['grid'];
+    if (g) {
+      // "3" → 3 × 3, "3 4" → 3 rows × 4 columns
+      const nums = g.value.split(/\s+/).map(Number);
+      const [rows, cols = rows] = nums;
+      if (nums.length > 2 || ![rows, cols].every(n => Number.isInteger(n) && n >= 2 && n <= 12)) {
+        throw new Error(`${fileName}:${g.line}: camera grid must be "N" or "ROWS COLS" (2–12), got "${g.value}"`);
+      }
+      camera.grid = { rows, cols };
+    }
+    result.camera = camera;
+  }
+
+  // Finalise framing modules
+  if (framingsRaw.length > 0) {
+    const known = new Set(['label', 'horizon', 'description']);
+    result.framings = framingsRaw.map(({ id, line, props }) => {
+      for (const [key, { line: l }] of Object.entries(props)) {
+        if (!known.has(key)) throw new Error(`${fileName}:${l}: unknown framing property "${key}"`);
+      }
+      const h = props['horizon'];
+      if (!h) throw new Error(`${fileName}:${line}: framing "${id}" needs "horizon: N%" or "horizon: none"`);
+      let horizon: number | null = null;
+      if (h.value !== 'none') {
+        const m = h.value.match(/^(\d+(?:\.\d+)?)%$/);
+        const n = m ? parseFloat(m[1]) : NaN;
+        if (!(n > 0 && n < 100)) throw new Error(`${fileName}:${h.line}: framing horizon must be a percentage between 0% and 100% or "none", got "${h.value}"`);
+        horizon = n;
+      }
+      const def: ParsedFramingDef = { id, label: props['label']?.value || id, horizon };
+      if (props['description']?.value) def.description = props['description'].value;
+      return def;
+    });
   }
 
   // Validate required fields

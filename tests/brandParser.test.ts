@@ -375,6 +375,45 @@ test('assets take an optional group', () => {
   assertEq(out.assets?.videos?.[0]?.group, 'experimental', 'grouped video');
 });
 
+// ── framing ──────────────────────────────────────────────────────────────────
+
+test('parses framing modules in order', () => {
+  const src = `${HEADER}framing raum\n  label: Raum\n  horizon: 50%\n  description: Himmel und Land gleich viel Fläche.\n\nframing naehe\n  label: Nähe\n  horizon: none\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.framings, [
+    { id: 'raum', label: 'Raum', horizon: 50, description: 'Himmel und Land gleich viel Fläche.' },
+    { id: 'naehe', label: 'Nähe', horizon: null },
+  ], 'framings');
+});
+
+test('framing label defaults to id; no block → no framings', () => {
+  assertEq(parseBrandFile(`${HEADER}framing licht\n  horizon: 80%\n`, 'test.brand').framings?.[0]?.label, 'licht', 'label');
+  assertEq(parseBrandFile(HEADER, 'test.brand').framings, undefined, 'absent');
+});
+
+test('framing rejects bad horizon, missing horizon, unknown keys, duplicates', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 120%\n`, 'test.brand'), /framing horizon/, 'out of range');
+  assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 0.5\n`, 'test.brand'), /framing horizon/, 'no percent');
+  assertThrows(() => parseBrandFile(`${HEADER}framing a\n  label: A\n`, 'test.brand'), /needs "horizon/, 'missing horizon');
+  assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 50%\n  tilt: 2\n`, 'test.brand'), /unknown framing property/, 'unknown key');
+  assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 50%\nframing a\n  horizon: 30%\n`, 'test.brand'), /duplicate framing/, 'duplicate');
+});
+
+// ── camera ───────────────────────────────────────────────────────────────────
+
+test('parses camera block', () => {
+  assertEq(parseBrandFile(`${HEADER}camera\n  facing: front\n  grid: 3 4\n`, 'test.brand').camera, { facing: 'front', grid: { rows: 3, cols: 4 } }, 'full');
+  assertEq(parseBrandFile(`${HEADER}camera\n  grid: 3\n`, 'test.brand').camera, { facing: 'rear', grid: { rows: 3, cols: 3 } }, 'square grid, rear default');
+  assertEq(parseBrandFile(HEADER, 'test.brand').camera, undefined, 'absent');
+});
+
+test('camera rejects bad facing, grid and keys', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}camera\n  facing: back\n`, 'test.brand'), /camera facing/, 'facing');
+  assertThrows(() => parseBrandFile(`${HEADER}camera\n  grid: 1\n`, 'test.brand'), /camera grid/, 'grid too small');
+  assertThrows(() => parseBrandFile(`${HEADER}camera\n  grid: thirds\n`, 'test.brand'), /camera grid/, 'grid word');
+  assertThrows(() => parseBrandFile(`${HEADER}camera\n  zoom: 2\n`, 'test.brand'), /unknown camera property/, 'unknown key');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

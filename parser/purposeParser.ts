@@ -38,6 +38,10 @@ export interface ParsedPurpose {
   defaultVideo?: string;
   /** When false, hides Take Photo / Upload buttons for this purpose. Default: true. */
   camera?: boolean;
+  /** `camera: front | rear` — overrides the brand's camera facing for this purpose. */
+  cameraFacing?: 'front' | 'rear';
+  /** `framing: <id>` — the brand framing module photos for this purpose are shot in. */
+  framing?: string;
   /** When false, photo/video analysis skips this purpose (no AI text generation). Default: true. */
   analyze?: boolean;
   /** Default icon for the icon slot. Resolves in the brand set first, then Phosphor (see resolveIconRef). */
@@ -132,6 +136,8 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let defaultPhoto: string | undefined;
   let defaultVideo: string | undefined;
   let camera: boolean | undefined;
+  let cameraFacing: 'front' | 'rear' | undefined;
+  let framing: string | undefined;
   let analyze: boolean | undefined;
   let defaultIcon: IconRef | undefined;
   let bgPrompt: string | undefined;
@@ -315,7 +321,15 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // Camera control
     if (line.startsWith('camera:')) {
-      camera = line.slice(7).trim() !== 'false';
+      const value = line.slice(7).trim();
+      camera = value !== 'false';
+      if (value === 'front' || value === 'rear') cameraFacing = value;
+      continue;
+    }
+
+    // Framing module: one of the brand's `framing NAME` blocks
+    if (line.startsWith('framing:')) {
+      framing = line.slice(8).trim() || undefined;
       continue;
     }
 
@@ -652,5 +666,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, analyze, defaultIcon, bgPrompt };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, cameraFacing, framing, analyze, defaultIcon, bgPrompt };
 }

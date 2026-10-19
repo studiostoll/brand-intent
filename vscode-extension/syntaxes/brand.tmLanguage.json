@@ -31,6 +31,7 @@
     { "include": "#icons-counter-header" },
     { "include": "#icon-entry" },
     { "include": "#counter-value" },
+    { "include": "#framing-horizon" },
     { "include": "#theme-header" },
     { "include": "#brand-color-entry" },
     { "include": "#brand-color-print-sub" },
@@ -366,7 +367,7 @@
       }
     },
     "asset-header": {
-      "match": "^(logo|photo|video|illustration)\\s+(\\S+)",
+      "match": "^(logo|photo|video|illustration|framing)\\s+(\\S+)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" },
         "2": { "name": "entity.name.type.brand-intent-brand" }
@@ -410,6 +411,16 @@
         "11": { "name": "comment.line.number-sign.brand-intent-brand" }
       }
     },
+    "framing-horizon": {
+      "comment": "framing block horizon: N% | none",
+      "match": "^(\\s{2,})(horizon)(:\\s*)(\\d+(?:\\.\\d+)?%|none)\\s*(#.*)?$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" },
+        "5": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
     "counter-value": {
       "comment": "counter block properties (typography: is covered by typography-value)",
       "match": "^(\\s{2,})(format|shape|size|padding)(:\\s*)(\\S+)\\s*(#.*)?$",
@@ -445,7 +456,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

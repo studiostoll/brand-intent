@@ -247,6 +247,8 @@ The brand file encodes derived expression intent: visual language and operationa
 | `cta:` | block | No | CTA pill style (padding + radius) |
 | `icons` | block | No | Brand icon set (font glyphs, SVGs, adopted Phosphor icons) |
 | `counter` | block | No | List counter component |
+| `camera` | block | No | Camera defaults: facing and viewfinder grid |
+| `framing NAME` | block | No | Photo framing module: horizon position for camera guides (repeatable) |
 | `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
 | `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
 | `video NAME` | block | No | Brand-declared video asset (repeatable) |
@@ -668,6 +670,47 @@ counter
 
 Colours come from the theme slots `counter-bg` (shape) and `counter-fg` (digits).
 
+### `camera` Block
+
+Camera defaults. Optional; without it the rear camera opens and the viewfinder has no grid.
+
+```yaml
+camera
+  facing: rear     # rear | front
+  grid:   3        # N (N × N) or ROWS COLS, 2–12
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `facing:` | enum | `rear` | Which camera opens first. Purposes override it with `camera: front \| rear` |
+| `grid:` | int or int pair | — | Viewfinder grid as cells: `3` = thirds, `4 3` = 4 rows × 3 columns. Drawn inside the framing crop when one is active |
+
+### `framing NAME` Block
+
+Photo framing modules: where the horizon sits in the final crop. Implementations offer them as camera guides. Optional and repeatable; declaration order is picker order. A brand without `framing` blocks gets no camera guides.
+
+```yaml
+framing raum
+  label:       Raum
+  horizon:     50%
+  description: Himmel und Land oder Wasser gleich viel Fläche.
+
+framing naehe
+  label:       Nähe
+  horizon:     none
+  description: Porträts, Handgriffe, Material.
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `horizon:` | % \| `none` | required | Horizon position as a share of image height, measured from the top. `none` for close-ups without a far line |
+| `label:` | string | id | Display name |
+| `description:` | string | — | The photographic task, one line |
+
+A purpose can name its module with `framing:` (see [Purpose](#layer-4-purpose-purpose)); the camera then opens on it.
+
+The horizon is measured in the final crop, not the camera frame. Implementations show the target format's crop in the viewfinder and place the line relative to it.
+
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
 Brand-declared assets — curated logos, photos, and videos that ship with the brand. Each asset has an id (block header), a display label, and a source file path.
@@ -815,7 +858,8 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `scope` | block | No | Narrows the composed upstream |
 | `context` | block | No | Adds purpose-specific AI context |
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
-| `camera:` | bool | No | Show Take Photo / Upload buttons. Default: `true` |
+| `camera:` | bool \| enum | No | `false` hides Take Photo / Upload. `front` \| `rear` overrides the brand's camera `facing:` for this purpose. Default: `true` |
+| `framing:` | string | No | Id of a brand `framing` block. Photos for this purpose are shot in that module: implementations open the camera on it and may hide the others. Unknown ids are ignored |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable) |
