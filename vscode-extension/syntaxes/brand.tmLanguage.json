@@ -15,6 +15,7 @@
     { "include": "#color-rules-entry" },
     { "include": "#color-families-property" },
     { "include": "#family-header" },
+    { "include": "#family-from" },
     { "include": "#family-role" },
     { "include": "#family-pairs-keyword" },
     { "include": "#color-mode-enum" },
@@ -141,6 +142,15 @@
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
         "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
         "5": { "name": "string.unquoted.brand-intent-brand" }
+      }
+    },
+    "family-from": {
+      "comment": "Family start date: from: MM-DD",
+      "match": "^(\\s{4,})(from)(:\\s*)(\\d{2}-\\d{2})\\s*$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
       }
     },
     "family-pairs-keyword": {

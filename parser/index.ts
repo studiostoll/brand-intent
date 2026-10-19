@@ -20,6 +20,7 @@ export {
   familyTextCandidates,
   checkFamilyPair,
   enumerateFamilyPairs,
+  familyIndexForDate,
   DEFAULT_COLOR_RULES,
 } from './colorSystem';
 export type { ReachConfig } from './colorSystem';

@@ -193,6 +193,23 @@ export function colorOrigin(
   return null;
 }
 
+/**
+ * Family in season on `date`: the one with the latest `from:` on or before that
+ * month/day, wrapping to the year's last start before the first one. Uses the
+ * date's local calendar day. -1 when the families declare no dates.
+ */
+export function familyIndexForDate(families: Pick<ColorFamily, 'from'>[], date: Date): number {
+  if (families.length === 0 || families.some(f => !f.from)) return -1;
+  const today = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  let best = -1;
+  let latest = -1;
+  families.forEach((f, i) => {
+    if (f.from! <= today && (best === -1 || f.from! > families[best].from!)) best = i;
+    if (latest === -1 || f.from! > families[latest].from!) latest = i;
+  });
+  return best !== -1 ? best : latest;
+}
+
 /** Name of the family that declares `hex` (first match), for error messages. */
 export function owningFamily(hex: string, families: ColorFamily[]): string | undefined {
   return families.find(f => f.colors.some(c => c.hex === hex))?.name;

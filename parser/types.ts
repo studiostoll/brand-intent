@@ -156,6 +156,8 @@ export interface FamilyPair extends PairCheck {
 
 export interface ColorFamily {
   name: string;
+  /** Start date `MM-DD` (`from:`). Declared on every family or on none. */
+  from?: string;
   colors: FamilyColor[];
   pairs: FamilyPair[];
 }

@@ -250,6 +250,14 @@ const VALID_STRATEGIES = new Set<PaletteStrategy>(['monochrome', 'duotone', 'tri
 const VALID_ADHERENCES = new Set<Adherence>(['strict', 'on-brand', 'flexible']);
 const TONE_CLASSES = new Set<ToneClass>(['light', 'mid', 'dark']);
 const FAMILY_ROLES = new Set<FamilyRole>(['core', 'accent', 'contrast']);
+
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function isMonthDay(value: string): boolean {
+  const m = value.match(/^(\d{2})-(\d{2})$/);
+  if (!m) return false;
+  const month = Number(m[1]), day = Number(m[2]);
+  return month >= 1 && month <= 12 && day >= 1 && day <= DAYS_IN_MONTH[month - 1];
+}
 const FAMILY_ORDERS = new Set<FamilyOrder>(['cycle', 'sequence']);
 const FAMILY_BORROWS = new Set<FamilyBorrow>(['previous', 'next', 'both', 'none']);
 const PAIR_KEYS = ['ground', 'figure', 'text'] as const;
@@ -395,7 +403,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const adherenceOverridesRaw: Record<string, string> = {};
   const colorRulesRaw: Record<string, string> = {};
   let colorRulesDeclared = false;
-  type RawFamily = { name: string; line: number; colors: Array<{ role: string; value: string; line: number }>; pairs: Array<{ ground: string; figure: string; line: number }> };
+  type RawFamily = { name: string; line: number; from?: string; colors: Array<{ role: string; value: string; line: number }>; pairs: Array<{ ground: string; figure: string; line: number }> };
   const familiesProps: Record<string, string> = {};
   const familiesRaw: RawFamily[] = [];
   let familiesDeclared = false;
@@ -653,8 +661,16 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         const colonIdx = trimmed.indexOf(':');
         const key = colonIdx !== -1 ? trimmed.slice(0, colonIdx).trim() : trimmed;
+        if (key === 'from' && colonIdx !== -1) {
+          const value = trimmed.slice(colonIdx + 1).trim();
+          if (currentFamily.from !== undefined) throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" declares from: twice`);
+          if (!isMonthDay(value)) throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" from: must be "MM-DD" (e.g. 12-01), got "${value}"`);
+          inPairs = false;
+          currentFamily.from = value;
+          continue;
+        }
         if (colonIdx === -1 || !FAMILY_ROLES.has(key as FamilyRole)) {
-          throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}": expected core / accent / contrast / pairs, got "${trimmed}"`);
+          throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}": expected from / core / accent / contrast / pairs, got "${trimmed}"`);
         }
         inPairs = false;
         currentFamily.colors.push({ role: key, value: trimmed.slice(colonIdx + 1).trim(), line: lineNum });
@@ -1150,7 +1166,16 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         brandColors[c.key] = c.hex;
       }
-      families.push({ name: raw.name, colors, pairs: [] });
+      families.push({ name: raw.name, ...(raw.from ? { from: raw.from } : {}), colors, pairs: [] });
+    }
+    const dated = familiesRaw.filter(f => f.from !== undefined);
+    if (dated.length > 0 && dated.length < familiesRaw.length) {
+      const missing = familiesRaw.filter(f => f.from === undefined).map(f => f.name).join(', ');
+      throw new Error(`${fileName}: color-families: from: must be declared on every family or on none (missing: ${missing})`);
+    }
+    for (const f of dated) {
+      const twin = dated.find(o => o !== f && o.from === f.from);
+      if (twin) throw new Error(`${fileName}:${f.line}: families "${twin.name}" and "${f.name}" share from: ${f.from}`);
     }
     colorFamilies = { order, borrow, distance, shared, families };
     if (borrow !== 'none' && reachCoversAll(families.length, { order, borrow, distance })) {

@@ -10,6 +10,7 @@ import {
   toneClass,
   reachableFamilies,
   enumerateFamilyPairs,
+  familyIndexForDate,
   DEFAULT_COLOR_RULES,
 } from '../parser/colorSystem';
 
@@ -313,11 +314,44 @@ test('family needs exactly one core', () => {
 
 test('unknown family key is rejected', () => {
   const src = `${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    core: #000000\n    highlight: #111111\n`;
-  assertThrows(() => parseBrandFile(src, 't.brand'), /expected core \/ accent \/ contrast \/ pairs/, 'bad role');
+  assertThrows(() => parseBrandFile(src, 't.brand'), /expected from \/ core \/ accent \/ contrast \/ pairs/, 'bad role');
 });
 
 test('invalid borrow is rejected', () => {
   assertThrows(() => parseBrandFile(seasons('sideways'), 't.brand'), /borrow must be/, 'bad borrow');
+});
+
+const dated = (a: string, b: string) =>
+  `${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    from: ${a}\n    core: #000000\n    contrast: #111111\n  family B\n    ${b}\n    core: #222222\n    contrast: #333333\n`;
+
+test('family from: is parsed', () => {
+  const out = parseBrandFile(dated('12-01', 'from: 06-01'), 't.brand');
+  assertEq(out.colorFamilies!.families.map(f => f.from), ['12-01', '06-01']);
+});
+
+test('from: on some families only is rejected', () => {
+  assertThrows(() => parseBrandFile(dated('12-01', 'accent: #444444'), 't.brand'), /every family or on none \(missing: B\)/, 'partial from');
+});
+
+test('from: must be a real MM-DD', () => {
+  assertThrows(() => parseBrandFile(dated('13-01', 'from: 06-01'), 't.brand'), /must be "MM-DD"/, 'month 13');
+  assertThrows(() => parseBrandFile(dated('04-31', 'from: 06-01'), 't.brand'), /must be "MM-DD"/, 'April 31');
+});
+
+test('duplicate from: is rejected', () => {
+  assertThrows(() => parseBrandFile(dated('06-01', 'from: 06-01'), 't.brand'), /share from: 06-01/, 'same date');
+});
+
+test('familyIndexForDate picks the season, wrapping over new year', () => {
+  const fam = [{ from: '12-01' }, { from: '03-01' }, { from: '06-01' }, { from: '09-01' }];
+  const at = (m: number, d: number) => familyIndexForDate(fam, new Date(2026, m - 1, d));
+  assertEq(at(1, 15), 0, 'January → winter');
+  assertEq(at(2, 28), 0, 'end of Feb → winter');
+  assertEq(at(3, 1), 1, '1 March → spring');
+  assertEq(at(8, 31), 2, 'end of Aug → summer');
+  assertEq(at(10, 19), 3, 'October → autumn');
+  assertEq(at(12, 1), 0, '1 Dec → winter');
+  assertEq(familyIndexForDate([{}, {}], new Date()), -1, 'no dates');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -416,6 +416,7 @@ color-families
   shared:   $logo-blue, $white
 
   family Winter
+    from:     12-01          # optional start date (MM-DD)
     core:     #006EFA  Blau
     accent:   #415C55  Graugruen
     accent:   #BCD6E2
@@ -425,6 +426,7 @@ color-families
       #263410 / $hellblau
 
   family Spring
+    from:     03-01
     …
 ```
 
@@ -442,6 +444,7 @@ color-families
 - `family NAME` — declaration order is the family order. Names are unique.
 - Roles are a fixed vocabulary: `core` (exactly one), `accent` (zero or more), `contrast` (exactly one — the text carrier).
 - Values are `#HEX`, optionally followed by a display name. Unnamed colors get `{family}-{role}`, accents numbered (`winter-accent-2`).
+- `from: MM-DD` (optional) — the day the family starts, for families tied to the calendar (seasons). A family runs until the next start date, wrapping over the new year. Declared on every family or on none; dates must be unique. Apps use it to pick the family in season (`familyIndexForDate`), e.g. as the default family or for a seasonal app icon.
 - All family colors join the flat `brandColors` projection (name lowercased, spaces → hyphens), so themes can reference them. A name colliding with an existing brand color is a hard error.
 
 **Reach:** a family may use its own colors, the `shared` colors, and colors of families up to `distance` steps away in the `borrow` direction(s). A reach that covers every family (e.g. a cycle of four with `both` and `distance: 2`) raises a warning — the borrow rule has no effect then.
