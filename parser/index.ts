@@ -26,6 +26,9 @@ export {
 export type { ReachConfig } from './colorSystem';
 export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedCameraDef, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
 
+export { parseDateWindowRanges, isInDateWindow, SAMPLE_WINDOW_MARKER } from './dateWindows';
+export type { DateWindowRange } from './dateWindows';
+
 export { parseIconRef, parseIconSource, resolveIconRef, parseListItem, phosphorName, PHOSPHOR_WEIGHTS } from './icons';
 export type { IconRef, IconSource, ParsedIconDef, ResolvedIcon, PhosphorWeight } from './icons';
 export type {

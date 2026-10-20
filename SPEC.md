@@ -249,6 +249,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `counter` | block | No | List counter component |
 | `camera` | block | No | Camera defaults: facing and viewfinder grid |
 | `photo-look` | block | No | Photo treatment for user photos: saturation, contrast, warmth, fade, mono, duotone |
+| `windows` | block | No | Named yearly date windows for season-bound samples and photos |
 | `framing NAME` | block | No | Photo framing module: horizon position for camera guides (repeatable) |
 | `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
 | `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
@@ -725,7 +726,7 @@ photo-look
   contrast:   10           # -100..100
   warmth:     5            # -100 (cool) .. 100 (warm)
   fade:       20           # 0..100, lifted black point
-  # mono                   # black-and-white
+  # mono                   # grayscale
   # duotone:  $ink $sand   # shadows → highlights
   # fixed:    mono         # keys the person cannot change
 ```
@@ -736,15 +737,30 @@ photo-look
 | `contrast:` | int | `0` | `-100` (flat) to `100` (hard) |
 | `warmth:` | int | `0` | Colour temperature, `-100` (cool, blue) to `100` (warm, amber) |
 | `fade:` | int | `0` | Lifted black point for a matte look, `0` to `100` |
-| `mono` | flag | — | Black-and-white |
+| `mono` | flag | — | Grayscale (monochrome) |
 | `duotone:` | color pair | — | Maps luminance onto two colors, shadow first. Each is a `$ref` to `brand-colors` or `#HEX`. Excludes `mono` |
 | `fixed:` | key list | — | Keys the person cannot change. Each must be set in the block |
 
-**Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a mono-only or duotone brand).
+**Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a grayscale-only or duotone brand).
 
 **Scope.** Applies to photos people add (camera or library). Brand-declared `photo` assets are not affected.
 
 **Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
+
+### `windows` Block
+
+Named yearly date windows. Optional. Content that only fits part of the year references a window by name: samples with a trailing `@name` (see [Samples Format](#samples-format)), brand photos with `when:`. Content without a window fits all year.
+
+```yaml
+windows
+  rapsbluete:    05-01..05-31
+  zugvoegel:     03-01..05-31, 08-15..10-31
+  jahreswechsel: 12-27..01-06    # wraps over the year end
+```
+
+Each entry is `name: MM-DD..MM-DD`, with further ranges separated by commas. Ends are inclusive. A range whose start is after its end wraps over the year end. Names are lowercase kebab-case.
+
+**In season.** Content is in season when today's date falls in one of its window's ranges. Implementations pick and suggest only in-season content, but never remove what a person has already placed.
 
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
@@ -806,6 +822,7 @@ video intro
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
 | `animated` | flag | No | Marks asset as animated |
 | `loop` | flag | No | Marks video/lottie as looping |
+| `when:` | string | No | Photos only. Name of the [date window](#windows-block) the photo fits. Absent: all year |
 | `group:` | string | No | Library group (e.g. `experimental`). Ungrouped assets come first; each group is listed as its own section after them, in order of first appearance. |
 | `gltf:` | string | No | Path to a glTF/GLB 3D model (logos only). When present, the asset renders as a live 3D object; `src` stays as the 2D fallback for thumbnails and export. |
 | `generator:` | string | No | Procedural generator id (logos only). Renders live geometry from code (e.g. `spiral`, `mobius`, `ribbon`); `src` stays as the 2D fallback. |
@@ -940,6 +957,15 @@ samples:
   - Roggenbrot 750 g
   - Vollkornbrot 500 g
   - Dinkellaib mit Walnuss
+```
+
+**Date window:** a sample that only fits part of the year ends with ` @name`, naming a window from the `.brand` [`windows`](#windows-block) block. The marker is not part of the text. In multi-line samples it goes on the first line and applies to the whole sample.
+
+```yaml
+samples:
+  - Raps blüht im Mai  @rapsbluete
+  - Zugvögel über Wallnau  @zugvoegel
+  - Hafen Burgstaaken
 ```
 
 #### `type: list` Sub-Block (4-space indent)
@@ -1246,6 +1272,7 @@ A parser should warn when:
 - The same context text appears in 3+ purpose files (belongs upstream)
 - A `slot` references a `typography` style not defined in `.brand`
 - A `slot` references a `color` not defined as a theme slot
+- A sample `@name` marker references a window not defined in `.brand`
 - An `archetypes` entry references a non-existent `.composition` file
 - A `purposes` entry in `.format` references a non-existent `.purpose` file
 

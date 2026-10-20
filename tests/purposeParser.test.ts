@@ -57,5 +57,27 @@ test('framing: names a brand framing module', () => {
   assertEq(f(''), undefined, 'absent');
 });
 
+console.log('\nsample windows:');
+
+test('@name marker sets sampleWindows and is stripped from the text', () => {
+  const slot = (samples: string, type = '') => parsePurposeFile(`id: p\ncompositions: panel\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 80\n${type}${samples}`, 'p.purpose').slots[0];
+  const inline = slot('  samples: Raps blüht im Mai @rapsbluete | Hafen Burgstaaken\n');
+  assertEq(inline.samples, ['Raps blüht im Mai', 'Hafen Burgstaaken'], 'inline samples');
+  assertEq(inline.sampleWindows, ['rapsbluete', undefined], 'inline windows');
+  const multi = slot('  samples:\n    - Zugvögel über Wallnau  @zugvoegel\n      zweite Zeile\n    - Ganzjährig\n');
+  assertEq(multi.samples, ['Zugvögel über Wallnau\nzweite Zeile', 'Ganzjährig'], 'multi samples');
+  assertEq(multi.sampleWindows, ['zugvoegel', undefined], 'multi windows');
+  assertEq(slot('  samples: a | b\n').sampleWindows, undefined, 'no markers');
+  assertEq(slot('  samples: Mail an info@fehmarn.de\n').samples, ['Mail an info@fehmarn.de'], 'mid-word @ untouched');
+});
+
+test('@name marker on a continuation line throws', () => {
+  let threw = false;
+  try {
+    parsePurposeFile(`id: p\ncompositions: panel\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 80\n  samples:\n    - Erste Zeile\n      Raps blüht @rapsbluete\n`, 'p.purpose');
+  } catch (e) { threw = /first line/.test((e as Error).message); }
+  assertEq(threw, true, 'throws');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

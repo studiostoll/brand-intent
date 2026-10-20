@@ -6,6 +6,7 @@
  * (uses tsx — no build step, imports the parser directly)
  */
 
+import { isInDateWindow } from '../parser/dateWindows';
 import { parseBrandFile } from '../parser/brandParser';
 
 // ── Tiny test harness (no dep) ────────────────────────────────────────────────
@@ -442,6 +443,39 @@ test('photo-look rejects bad values and keys', () => {
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  fixed: grain\n`, 'test.brand'), /fixed lists unknown/, 'fixed unknown key');
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  grain: 5\n`, 'test.brand'), /unknown photo-look property/, 'unknown key');
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: -15\nphoto-look\n  saturation: 0\n`, 'test.brand'), /duplicate photo-look/, 'duplicate');
+});
+
+// ── windows ──────────────────────────────────────────────────────────────────
+
+console.log('\nwindows:');
+
+test('parses windows block and photo when:', () => {
+  const b = parseBrandFile(`${HEADER}windows\n  rapsbluete: 05-01..05-31   # peak mid-May\n  zugvoegel:  03-01..05-31, 08-15..10-31\n  jahreswechsel: 12-27..01-06\n\nphoto raps\n  src: photos/raps.jpg\n  when: rapsbluete\n`, 'test.brand');
+  assertEq(b.windows, {
+    rapsbluete: [{ from: '05-01', to: '05-31' }],
+    zugvoegel: [{ from: '03-01', to: '05-31' }, { from: '08-15', to: '10-31' }],
+    jahreswechsel: [{ from: '12-27', to: '01-06' }],
+  }, 'windows');
+  assertEq(b.assets?.photos?.[0].when, 'rapsbluete', 'photo when');
+});
+
+test('isInDateWindow: inclusive ends, year-end wrap, multiple ranges', () => {
+  const d = (m: number, day: number) => new Date(2026, m - 1, day);
+  const raps = [{ from: '05-01', to: '05-31' }];
+  assertEq([d(4, 30), d(5, 1), d(5, 31), d(6, 1)].map(x => isInDateWindow(raps, x)), [false, true, true, false], 'raps');
+  const ny = [{ from: '12-27', to: '01-06' }];
+  assertEq([d(12, 26), d(12, 31), d(1, 6), d(1, 7)].map(x => isInDateWindow(ny, x)), [false, true, true, false], 'wrap');
+  const zug = [{ from: '03-01', to: '05-31' }, { from: '08-15', to: '10-31' }];
+  assertEq([d(4, 1), d(7, 1), d(9, 20)].map(x => isInDateWindow(zug, x)), [true, false, true], 'two ranges');
+});
+
+test('rejects invalid windows and references', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01-05-31\n`, 'test.brand'), /MM-DD\.\.MM-DD/, 'bad range');
+  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 02-30..03-10\n`, 'test.brand'), /invalid date "02-30"/, 'bad day');
+  assertThrows(() => parseBrandFile(`${HEADER}windows\n  Raps: 05-01..05-31\n`, 'test.brand'), /kebab-case/, 'name');
+  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01..05-31\n  raps: 05-01..05-31\n`, 'test.brand'), /duplicate window/, 'duplicate');
+  assertThrows(() => parseBrandFile(`${HEADER}photo raps\n  src: photos/raps.jpg\n  when: raps\n`, 'test.brand'), /unknown window "raps"/, 'unknown ref');
+  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01..05-31\n\nlogo main\n  src: logos/main.svg\n  when: raps\n`, 'test.brand'), /photos only/, 'logo when');
 });
 
 // ── Summary ──────────────────────────────────────────────────────────────────

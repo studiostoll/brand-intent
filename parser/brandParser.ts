@@ -37,6 +37,8 @@ import {
   reachCoversAll,
 } from './colorSystem';
 import { parseIconSource, isIconId } from './icons';
+import { parseDateWindowRanges } from './dateWindows';
+import type { DateWindowRange } from './dateWindows';
 import type { ParsedIconDef } from './icons';
 
 // ── Parsed type ────────────────────────────────────────────────────────────────
@@ -118,6 +120,8 @@ export interface ParsedBrand {
   camera?: ParsedCameraDef;
   /** Photo treatment (`photo-look` block). Absent → photos stay as taken. */
   photoLook?: ParsedPhotoLookDef;
+  /** Named yearly date windows (`windows` block): name → ranges. Referenced by sample `@name` markers and photo `when:`. */
+  windows?: Record<string, DateWindowRange[]>;
 }
 
 export type PhotoLookKey = 'saturation' | 'contrast' | 'warmth' | 'fade' | 'mono' | 'duotone';
@@ -131,7 +135,7 @@ export interface ParsedPhotoLookDef {
   warmth: number;
   /** Lifted black point, 0..100. */
   fade: number;
-  /** Black-and-white. */
+  /** Grayscale (monochrome). */
   mono: boolean;
   /** Map luminance onto two colors (resolved hex), shadows → highlights. Excludes `mono`. */
   duotone?: { shadow: string; highlight: string };
@@ -192,6 +196,8 @@ export interface ParsedAssetDef {
   alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
   /** Library group (e.g. "experimental"). Consumers list each group as its own section after the ungrouped assets. */
   group?: string;
+  /** Photos only: name of the date window the photo fits (`when:`). Absent → all year. */
+  when?: string;
 }
 
 export type LogoAlign = 'left' | 'center' | 'right';
@@ -401,7 +407,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -452,6 +458,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let cameraDeclared = false;
   const photoLookRaw: Record<string, { value: string; line: number }> = {};
   let photoLookDeclared = false;
+  const windowsRaw: Array<{ name: string; value: string; line: number }> = [];
+  let windowsDeclared = false;
   const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -852,6 +860,15 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         else photoLookRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === 'windows') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('#')) continue;
+        const entry = trimmed.replace(/\s+#.*$/, '');
+        const colonIdx = entry.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: window must be "NAME: MM-DD..MM-DD", got "${trimmed}"`);
+        windowsRaw.push({ name: entry.slice(0, colonIdx).trim(), value: entry.slice(colonIdx + 1).trim(), line: lineNum });
+        continue;
+      }
       if (activeBlock === 'framing') {
         const trimmed = raw.trim();
         if (trimmed.startsWith('#')) continue;
@@ -937,6 +954,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (photoLookDeclared) throw new Error(`${fileName}:${lineNum}: duplicate photo-look block`);
       photoLookDeclared = true;
       activeBlock = 'photo-look';
+      continue;
+    }
+
+    // windows — named yearly date windows
+    if (raw.trim() === 'windows') {
+      if (windowsDeclared) throw new Error(`${fileName}:${lineNum}: duplicate windows block`);
+      windowsDeclared = true;
+      activeBlock = 'windows';
       continue;
     }
 
@@ -1499,6 +1524,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['gltf']) def.gltfSrc = raw.props['gltf'];
     if (raw.props['generator']) def.generator = raw.props['generator'];
     if (raw.props['group']) def.group = raw.props['group'];
+    if (raw.props['when']) def.when = raw.props['when'];
     // generator-params are stored as "generator-params.KEY" by the sub-block parser.
     const paramEntries: [string, number][] = [];
     for (const [k, v] of Object.entries(raw.props)) {
@@ -1518,6 +1544,26 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
     return def;
   };
+  // Finalise date windows (before assets: photo `when:` references them)
+  if (windowsDeclared) {
+    const windows: Record<string, DateWindowRange[]> = {};
+    for (const w of windowsRaw) {
+      if (!/^[a-z][a-z0-9-]*$/.test(w.name)) throw new Error(`${fileName}:${w.line}: window name must be lowercase kebab-case, got "${w.name}"`);
+      if (windows[w.name]) throw new Error(`${fileName}:${w.line}: duplicate window "${w.name}"`);
+      try { windows[w.name] = parseDateWindowRanges(w.value); }
+      catch (e) { throw new Error(`${fileName}:${w.line}: window "${w.name}": ${(e as Error).message}`); }
+    }
+    result.windows = windows;
+  }
+  for (const [kind, arr] of [['logo', logosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
+    const a = arr.find(r => r.props['when']);
+    if (a) throw new Error(`${fileName}: ${kind} "${a.id}": when: is for photos only`);
+  }
+  for (const p of photosRaw) {
+    const when = p.props['when'];
+    if (when && !result.windows?.[when]) throw new Error(`${fileName}: photo "${p.id}" references unknown window "${when}"`);
+  }
+
   if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0 || illustrationsRaw.length > 0) {
     result.assets = {};
     if (logosRaw.length > 0) result.assets.logos = logosRaw.map(toAssetDef);

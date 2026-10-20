@@ -24,6 +24,7 @@
     { "include": "#list-property" },
     { "include": "#sample-item" },
     { "include": "#sample-icon-continuation" },
+    { "include": "#sample-window" },
     { "include": "#property" },
     { "include": "#keyword-partial" }
   ],
@@ -244,6 +245,13 @@
       "match": "^(\\s{6,})(\\[[^\\]]+\\])",
       "captures": {
         "2": { "name": "entity.name.function.brand-intent-purpose" }
+      }
+    },
+    "sample-window": {
+      "comment": "Trailing @name date-window marker on a sample line",
+      "match": "(?<=\\s)(@[a-z][a-z0-9-]*)\\s*$",
+      "captures": {
+        "1": { "name": "variable.other.brand-intent-purpose" }
       }
     },
     "keyword-partial": {

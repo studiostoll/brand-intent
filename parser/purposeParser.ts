@@ -8,6 +8,7 @@
 import type { SlotId } from './types';
 import { parseIconRef, parseListItem } from './icons';
 import type { IconRef } from './icons';
+import { SAMPLE_WINDOW_MARKER } from './dateWindows';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -55,6 +56,9 @@ export interface ParsedPurposeSlot {
   label: string;
   /** Sample text variants for this slot. Picked randomly on page creation. */
   samples: string[];
+  /** Date window per sample (parallel to `samples`), from a trailing `@name` marker; undefined = all year.
+   *  Absent when no sample in the slot has a marker. Names resolve against the `.brand` `windows` block. */
+  sampleWindows?: (string | undefined)[];
   /** Fixed value — when set, this slot is never AI-generated or shuffled. Mutually exclusive with samples. */
   value?: string;
   maxLength: number;
@@ -166,6 +170,18 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       s.marker = 'icon';
     }
     if (s.defaultIcon && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": defaultIcon needs "marker: icon"`);
+    if (!s.value && s.samples) {
+      // Trailing `@name` window marker, on the sample's first line only
+      const windows = s.samples.map((sample, i) => {
+        const [first, ...rest] = sample.split('\n');
+        if (rest.some(l => SAMPLE_WINDOW_MARKER.test(l))) throw new Error(`${fileName}:${lineNum}: slot "${s.id}": window marker belongs on the sample's first line ("${rest.find(l => SAMPLE_WINDOW_MARKER.test(l))}")`);
+        const m = first.match(SAMPLE_WINDOW_MARKER);
+        if (!m) return undefined;
+        s.samples![i] = [first.slice(0, m.index).trimEnd(), ...rest].join('\n');
+        return m[1];
+      });
+      if (windows.some(Boolean)) s.sampleWindows = windows;
+    }
     if (s.slotType === 'list') {
       for (const sample of s.samples ?? []) {
         for (const item of sample.split('\n')) {
