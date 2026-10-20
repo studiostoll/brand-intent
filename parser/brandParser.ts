@@ -116,6 +116,27 @@ export interface ParsedBrand {
   framings?: ParsedFramingDef[];
   /** Camera defaults (`camera` block). Absent → rear camera, no grid. */
   camera?: ParsedCameraDef;
+  /** Photo treatment (`photo-look` block). Absent → photos stay as taken. */
+  photoLook?: ParsedPhotoLookDef;
+}
+
+export type PhotoLookKey = 'saturation' | 'contrast' | 'warmth' | 'fade' | 'mono' | 'duotone';
+
+export interface ParsedPhotoLookDef {
+  /** -100..100, 0 = unchanged. */
+  saturation: number;
+  /** -100..100, 0 = unchanged. */
+  contrast: number;
+  /** -100 (cool) .. 100 (warm), 0 = unchanged. */
+  warmth: number;
+  /** Lifted black point, 0..100. */
+  fade: number;
+  /** Black-and-white. */
+  mono: boolean;
+  /** Map luminance onto two colors (resolved hex), shadows → highlights. Excludes `mono`. */
+  duotone?: { shadow: string; highlight: string };
+  /** Keys the person cannot change. All others are starting values. */
+  fixed: PhotoLookKey[];
 }
 
 export interface ParsedCameraDef {
@@ -380,7 +401,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -429,6 +450,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let counterDeclared = false;
   const cameraRaw: Record<string, { value: string; line: number }> = {};
   let cameraDeclared = false;
+  const photoLookRaw: Record<string, { value: string; line: number }> = {};
+  let photoLookDeclared = false;
   const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -817,6 +840,18 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         cameraRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === 'photo-look') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('#')) continue;
+        // `# …` is a comment, but `#RGB` / `#RRGGBB` is a duotone color
+        const commentIdx = trimmed.search(/\s+#(?![0-9a-f]{3}(?:[0-9a-f]{3}(?:[0-9a-f]{2})?)?(?:\s|$))/i);
+        const entry = commentIdx !== -1 ? trimmed.slice(0, commentIdx) : trimmed;
+        const colonIdx = entry.indexOf(':');
+        // Bare flag (`mono`) or KEY: VALUE
+        if (colonIdx === -1) photoLookRaw[entry.trim()] = { value: '', line: lineNum };
+        else photoLookRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
+        continue;
+      }
       if (activeBlock === 'framing') {
         const trimmed = raw.trim();
         if (trimmed.startsWith('#')) continue;
@@ -894,6 +929,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (cameraDeclared) throw new Error(`${fileName}:${lineNum}: duplicate camera block`);
       cameraDeclared = true;
       activeBlock = 'camera';
+      continue;
+    }
+
+    // photo-look — photo treatment (saturation)
+    if (raw.trim() === 'photo-look') {
+      if (photoLookDeclared) throw new Error(`${fileName}:${lineNum}: duplicate photo-look block`);
+      photoLookDeclared = true;
+      activeBlock = 'photo-look';
       continue;
     }
 
@@ -1580,6 +1623,60 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       camera.grid = { rows, cols };
     }
     result.camera = camera;
+  }
+
+  // Finalise photo treatment
+  if (photoLookDeclared) {
+    const keys: PhotoLookKey[] = ['saturation', 'contrast', 'warmth', 'fade', 'mono', 'duotone'];
+    for (const [key, { line }] of Object.entries(photoLookRaw)) {
+      if (key !== 'fixed' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+    }
+    const int = (key: string, min: number, max: number): number => {
+      const p = photoLookRaw[key];
+      if (!p) return 0;
+      const n = Number(p.value);
+      if (!/^[+-]?\d+$/.test(p.value) || n < min || n > max) {
+        throw new Error(`${fileName}:${p.line}: photo-look ${key} must be an integer from ${min} to ${max}, got "${p.value}"`);
+      }
+      return n;
+    };
+    const look: ParsedPhotoLookDef = {
+      saturation: int('saturation', -100, 100),
+      contrast: int('contrast', -100, 100),
+      warmth: int('warmth', -100, 100),
+      fade: int('fade', 0, 100),
+      mono: false,
+      fixed: [],
+    };
+    const mono = photoLookRaw['mono'];
+    if (mono) {
+      if (mono.value !== '') throw new Error(`${fileName}:${mono.line}: photo-look mono is a flag and takes no value`);
+      look.mono = true;
+    }
+    const duo = photoLookRaw['duotone'];
+    if (duo) {
+      if (mono) throw new Error(`${fileName}:${duo.line}: photo-look cannot be both mono and duotone`);
+      const refs = duo.value.split(/\s+/);
+      if (refs.length !== 2) throw new Error(`${fileName}:${duo.line}: photo-look duotone must be "SHADOW HIGHLIGHT", got "${duo.value}"`);
+      const [shadow, highlight] = refs.map(ref => {
+        if (ref.startsWith('$') && !brandColors[ref.slice(1)]) {
+          throw new Error(`${fileName}:${duo.line}: photo-look duotone references unknown brand color "${ref}"`);
+        }
+        const hex = normalizeHex(ref.startsWith('$') ? brandColors[ref.slice(1)] : ref);
+        if (!hex) throw new Error(`${fileName}:${duo.line}: photo-look duotone colors must be $ref or #HEX, got "${ref}"`);
+        return hex;
+      });
+      look.duotone = { shadow, highlight };
+    }
+    const fixed = photoLookRaw['fixed'];
+    if (fixed) {
+      for (const key of fixed.value.split(/\s+/)) {
+        if (!keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${fixed.line}: photo-look fixed lists unknown key "${key}"`);
+        if (!photoLookRaw[key]) throw new Error(`${fileName}:${fixed.line}: photo-look fixed lists "${key}", which is not set`);
+        look.fixed.push(key as PhotoLookKey);
+      }
+    }
+    result.photoLook = look;
   }
 
   // Finalise framing modules

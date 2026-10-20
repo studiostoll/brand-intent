@@ -414,6 +414,36 @@ test('camera rejects bad facing, grid and keys', () => {
   assertThrows(() => parseBrandFile(`${HEADER}camera\n  zoom: 2\n`, 'test.brand'), /unknown camera property/, 'unknown key');
 });
 
+// ── photo-look ───────────────────────────────────────────────────────────────
+
+const LOOK_ZERO = { saturation: 0, contrast: 0, warmth: 0, fade: 0, mono: false, fixed: [] };
+
+test('parses photo-look block', () => {
+  assertEq(parseBrandFile(`${HEADER}photo-look\n  saturation: -15   # iPhone colour calmed\n`, 'test.brand').photoLook, { ...LOOK_ZERO, saturation: -15 }, 'saturation only');
+  assertEq(parseBrandFile(`${HEADER}photo-look\n  contrast: +10\n  warmth: -20\n  fade: 30\n`, 'test.brand').photoLook, { ...LOOK_ZERO, contrast: 10, warmth: -20, fade: 30 }, 'contrast, warmth, fade');
+  assertEq(parseBrandFile(`${HEADER}photo-look\n  mono\n  contrast: 20\n  fixed: mono\n`, 'test.brand').photoLook, { ...LOOK_ZERO, contrast: 20, mono: true, fixed: ['mono'] }, 'mono fixed');
+  assertEq(parseBrandFile(HEADER, 'test.brand').photoLook, undefined, 'absent');
+});
+
+test('photo-look duotone resolves brand colors', () => {
+  const src = `${HEADER}brand-colors\n  ink: #112233\nphoto-look\n  duotone: $ink #fc0\n  fixed: duotone\n`;
+  assertEq(parseBrandFile(src, 'test.brand').photoLook, { ...LOOK_ZERO, duotone: { shadow: '#112233', highlight: '#FFCC00' }, fixed: ['duotone'] }, 'ref + hex');
+});
+
+test('photo-look rejects bad values and keys', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: -150\n`, 'test.brand'), /photo-look saturation/, 'out of range');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: 15%\n`, 'test.brand'), /photo-look saturation/, 'percent');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  fade: -5\n`, 'test.brand'), /photo-look fade/, 'negative fade');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  mono: yes\n`, 'test.brand'), /mono is a flag/, 'mono value');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  mono\n  duotone: #000 #fff\n`, 'test.brand'), /both mono and duotone/, 'mono + duotone');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  duotone: $nope #fff\n`, 'test.brand'), /unknown brand color/, 'unknown ref');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  duotone: #000\n`, 'test.brand'), /SHADOW HIGHLIGHT/, 'one color');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: -15\n  fixed: contrast\n`, 'test.brand'), /not set/, 'fixed unset key');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  fixed: grain\n`, 'test.brand'), /fixed lists unknown/, 'fixed unknown key');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  grain: 5\n`, 'test.brand'), /unknown photo-look property/, 'unknown key');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: -15\nphoto-look\n  saturation: 0\n`, 'test.brand'), /duplicate photo-look/, 'duplicate');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

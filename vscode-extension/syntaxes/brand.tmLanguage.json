@@ -399,8 +399,8 @@
       }
     },
     "icons-counter-header": {
-      "comment": "Bare `icons` / `counter` block headers.",
-      "match": "^(icons|counter)\\s*$",
+      "comment": "Bare `icons` / `counter` / `camera` / `photo-look` block headers.",
+      "match": "^(icons|counter|camera|photo-look)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

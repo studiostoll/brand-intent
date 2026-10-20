@@ -248,6 +248,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `icons` | block | No | Brand icon set (font glyphs, SVGs, adopted Phosphor icons) |
 | `counter` | block | No | List counter component |
 | `camera` | block | No | Camera defaults: facing and viewfinder grid |
+| `photo-look` | block | No | Photo treatment for user photos: saturation, contrast, warmth, fade, mono, duotone |
 | `framing NAME` | block | No | Photo framing module: horizon position for camera guides (repeatable) |
 | `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
 | `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
@@ -713,6 +714,37 @@ framing mensch
 A purpose can name its module with `framing:` (see [Purpose](#layer-4-purpose-purpose)); the camera then opens on it.
 
 The horizon is measured in the final crop, not the camera frame. Implementations show the target format's crop in the viewfinder and place the line relative to it.
+
+### `photo-look` Block
+
+How user photos are treated. Optional; without it photos stay as taken. Keys follow the adjustment sliders of common phone photo editors, so a guideline ("Sättigung −15") and the DSL read the same.
+
+```yaml
+photo-look
+  saturation: -15          # -100..100
+  contrast:   10           # -100..100
+  warmth:     5            # -100 (cool) .. 100 (warm)
+  fade:       20           # 0..100, lifted black point
+  # mono                   # black-and-white
+  # duotone:  $ink $sand   # shadows → highlights
+  # fixed:    mono         # keys the person cannot change
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `saturation:` | int | `0` | Colour intensity, `-100` (grey) to `100` |
+| `contrast:` | int | `0` | `-100` (flat) to `100` (hard) |
+| `warmth:` | int | `0` | Colour temperature, `-100` (cool, blue) to `100` (warm, amber) |
+| `fade:` | int | `0` | Lifted black point for a matte look, `0` to `100` |
+| `mono` | flag | — | Black-and-white |
+| `duotone:` | color pair | — | Maps luminance onto two colors, shadow first. Each is a `$ref` to `brand-colors` or `#HEX`. Excludes `mono` |
+| `fixed:` | key list | — | Keys the person cannot change. Each must be set in the block |
+
+**Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a mono-only or duotone brand).
+
+**Scope.** Applies to photos people add (camera or library). Brand-declared `photo` assets are not affected.
+
+**Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
 
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
