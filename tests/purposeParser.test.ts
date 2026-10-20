@@ -52,7 +52,7 @@ test('camera: false hides, front | rear override facing', () => {
 
 test('framing: names a brand framing module', () => {
   const f = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').framing;
-  assertEq(f('framing: naehe'), 'naehe', 'id');
+  assertEq(f('framing: mensch'), 'mensch', 'id');
   assertEq(f('framing:'), undefined, 'empty');
   assertEq(f(''), undefined, 'absent');
 });

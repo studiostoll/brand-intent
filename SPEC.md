@@ -693,15 +693,15 @@ camera
 Photo framing modules: where the horizon sits in the final crop. Implementations offer them as camera guides. Optional and repeatable; declaration order is picker order. A brand without `framing` blocks gets no camera guides.
 
 ```yaml
-framing raum
-  label:       Raum
-  horizon:     50%
-  description: Himmel und Land oder Wasser gleich viel Fläche.
+framing landschaft
+  label:       Landschaft
+  horizon:     60%
+  description: Der Ort führt. Viel Himmel über Land oder Wasser macht Weite sichtbar.
 
-framing naehe
-  label:       Nähe
+framing mensch
+  label:       Mensch
   horizon:     none
-  description: Porträts, Handgriffe, Material.
+  description: Die Person und ihr eigener Ausdruck führen.
 ```
 
 | Key | Type | Default | Description |

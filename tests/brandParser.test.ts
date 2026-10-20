@@ -378,11 +378,11 @@ test('assets take an optional group', () => {
 // ── framing ──────────────────────────────────────────────────────────────────
 
 test('parses framing modules in order', () => {
-  const src = `${HEADER}framing raum\n  label: Raum\n  horizon: 50%\n  description: Himmel und Land gleich viel Fläche.\n\nframing naehe\n  label: Nähe\n  horizon: none\n`;
+  const src = `${HEADER}framing landschaft\n  label: Landschaft\n  horizon: 60%\n  description: Viel Himmel über Land oder Wasser.\n\nframing mensch\n  label: Mensch\n  horizon: none\n`;
   const out = parseBrandFile(src, 'test.brand');
   assertEq(out.framings, [
-    { id: 'raum', label: 'Raum', horizon: 50, description: 'Himmel und Land gleich viel Fläche.' },
-    { id: 'naehe', label: 'Nähe', horizon: null },
+    { id: 'landschaft', label: 'Landschaft', horizon: 60, description: 'Viel Himmel über Land oder Wasser.' },
+    { id: 'mensch', label: 'Mensch', horizon: null },
   ], 'framings');
 });
 
