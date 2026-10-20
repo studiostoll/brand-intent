@@ -320,6 +320,15 @@ test('unknown family key is rejected', () => {
 test('invalid borrow is rejected', () => {
   assertThrows(() => parseBrandFile(seasons('sideways'), 't.brand'), /borrow must be/, 'bad borrow');
 });
+test('photo-fallback resolves refs in declared order, absent when not declared', () => {
+  const out = parseBrandFile(seasons('both', '  photo-fallback: $weiss, $blau'), 't.brand');
+  assertEq(out.colorFamilies!.photoFallback, [{ name: 'weiss', hex: '#FFFFFF' }, { name: 'blau', hex: '#0000F8' }]);
+  assertEq(parseBrandFile(seasons('both'), 't.brand').colorFamilies!.photoFallback, undefined);
+});
+test('photo-fallback rejects unknown and non-$ refs', () => {
+  assertThrows(() => parseBrandFile(seasons('both', '  photo-fallback: $nachtblau'), 't.brand'), /photo-fallback "\$nachtblau" is not a known/, 'unknown ref');
+  assertThrows(() => parseBrandFile(seasons('both', '  photo-fallback: #000050'), 't.brand'), /photo-fallback entries must be \$refs/, 'hex');
+});
 
 const dated = (a: string, b: string) =>
   `${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    from: ${a}\n    core: #000000\n    contrast: #111111\n  family B\n    ${b}\n    core: #222222\n    contrast: #333333\n`;

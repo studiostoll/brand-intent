@@ -1202,13 +1202,16 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (!Number.isInteger(distance) || distance < 1) throw new Error(`${fileName}: color-families distance must be a whole number ≥ 1, got "${familiesProps.distance}"`);
     if (familiesRaw.length === 0) throw new Error(`${fileName}: color-families declares no family`);
 
-    const shared: Array<{ name: string; hex: string }> = [];
-    for (const ref of (familiesProps.shared ?? '').split(',').map(r => r.trim()).filter(Boolean)) {
-      if (!ref.startsWith('$')) throw new Error(`${fileName}: color-families shared entries must be $refs to brand-colors, got "${ref}"`);
-      const hex = brandColors[ref.slice(1)] ? normalizeHex(brandColors[ref.slice(1)]) : null;
-      if (!hex || !isHex6(hex)) throw new Error(`${fileName}: color-families shared "${ref}" is not a known 6-digit brand color`);
-      shared.push({ name: ref.slice(1), hex });
-    }
+    /** Comma-separated `$refs` to brand-colors (`shared:`, `photo-fallback:`). */
+    const colorRefs = (key: string): Array<{ name: string; hex: string }> =>
+      (familiesProps[key] ?? '').split(',').map(r => r.trim()).filter(Boolean).map(ref => {
+        if (!ref.startsWith('$')) throw new Error(`${fileName}: color-families ${key} entries must be $refs to brand-colors, got "${ref}"`);
+        const hex = brandColors[ref.slice(1)] ? normalizeHex(brandColors[ref.slice(1)]) : null;
+        if (!hex || !isHex6(hex)) throw new Error(`${fileName}: color-families ${key} "${ref}" is not a known 6-digit brand color`);
+        return { name: ref.slice(1), hex };
+      });
+    const shared = colorRefs('shared');
+    const photoFallback = colorRefs('photo-fallback');
 
     const families: ColorFamily[] = [];
     for (const raw of familiesRaw) {
@@ -1245,7 +1248,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       const twin = dated.find(o => o !== f && o.from === f.from);
       if (twin) throw new Error(`${fileName}:${f.line}: families "${twin.name}" and "${f.name}" share from: ${f.from}`);
     }
-    colorFamilies = { order, borrow, distance, shared, families };
+    colorFamilies = { order, borrow, distance, shared, ...(photoFallback.length > 0 ? { photoFallback } : {}), families };
     if (borrow !== 'none' && reachCoversAll(families.length, { order, borrow, distance })) {
       colorWarnings.push(`color-families: borrow "${borrow}" with distance ${distance} reaches every family — the borrow rule has no effect`);
     }

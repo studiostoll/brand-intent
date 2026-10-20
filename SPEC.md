@@ -416,6 +416,7 @@ color-families
   borrow:   both             # previous | next | both | none
   distance: 1                # how many steps borrowing reaches
   shared:   $logo-blue, $white
+  photo-fallback: $logo-blue, $white, $blue-mid, $blue-dark
 
   family Winter
     from:     12-01          # optional start date (MM-DD)
@@ -440,6 +441,7 @@ color-families
 | `borrow:` | `both` | `previous` \| `next` \| `both` \| `none` |
 | `distance:` | `1` | whole number ≥ 1 — steps borrowing may reach |
 | `shared:` | — | comma-separated `$refs` to `brand-colors`, allowed in every family |
+| `photo-fallback:` | — | comma-separated `$refs` to `brand-colors`, in order of preference: text and figure colors for a photo that no color of the pair reads on. Used only over photos, never in pairs or guided generation, so shades that would be off-brand as grounds (e.g. a very dark blue) can serve here |
 
 **Families:**
 

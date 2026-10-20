@@ -120,8 +120,8 @@
       }
     },
     "color-families-property": {
-      "comment": "Block keys under color-families: order/borrow/distance/shared",
-      "match": "^( {2})(order|borrow|distance|shared)(:\\s*)(.+)$",
+      "comment": "Block keys under color-families: order/borrow/distance/shared/photo-fallback",
+      "match": "^( {2})(order|borrow|distance|shared|photo-fallback)(:\\s*)(.+)$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

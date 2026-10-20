@@ -168,6 +168,9 @@ export interface ColorFamilies {
   distance: number;
   /** Colors allowed in every family (resolved from `shared:` refs). */
   shared: Array<{ name: string; hex: string }>;
+  /** Text and figure colors for photos no pair reads on, in order of preference (`photo-fallback:` refs).
+   *  Used only over photos, never in pairs or guided generation. Absent when not declared. */
+  photoFallback?: Array<{ name: string; hex: string }>;
   families: ColorFamily[];
 }
 
