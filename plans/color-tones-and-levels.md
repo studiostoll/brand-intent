@@ -1,10 +1,20 @@
 # Plan — Color tones and levels
 
-Status: **concept, not approved.** No code until the user signs off on the open decisions at the end.
+Status: **approved 2026-10-27.** All five decisions signed off (see the end).
 
 Bring the Fehmarn website colour model into Brand Intent as a general grammar, then into Brand Atelier. It replaces the data-only stopgap discussed on 2026-10-26 (swap contrast colours, rewrite pairs), which would have crammed a richer model into `color-families` pairs.
 
 Source of the model: Figma library 🤖 Fehmarn Designsystem (`jXxMt7DxMYU70pflZEpJ7H`, sheet „Foundation“ 3073:2), export `fehmarn.de/docs/farben/library-colour.json`, write-up `fehmarn.de/docs/farben/refactor-colour-system.md` (state 2026-10-27, refactor done).
+
+## Source of truth
+
+**Now:** the website design system, Figma library 🤖 Fehmarn Designsystem (`jXxMt7DxMYU70pflZEpJ7H`, collections Primitives, Season, Level). It is exported by `fehmarn.de/scripts/figma/export-colour.js` to `fehmarn.de/docs/farben/library-colour.json`. One export feeds every place: the fehmarn.de styleguide and prototype (`prototyp/_src/build.py`), and Brand Intent / Atelier (import script, see Change 1). Only the foundation is imported (Primitives, `Tones/*`, `Levels/*`, Level modes), never the website tokens.
+
+**Temporary.** The user (2026-10-27) may later split this into a foundation file holding only the foundation, plus one design system per touchpoint or usage context (website, print/social, …) that references it. That is too much overhead for now. So the import takes the export path as a parameter and reads only foundation sections; when the foundation moves, only the export source changes.
+
+**Sync state 2026-10-27:** a fresh export from the library matches the committed `library-colour.json` (tones, level cells per season, primitives identical; Level and Tokens identical except the variable order in the panel). `build.py` produces no diff; the online styleguide (fehmarn.stoll.studio/website/styleguide, Vercel `fehmarn-website-prototyp`) runs that commit (`69593e5`). Brand Atelier is the only place still out of sync (next section).
+
+**Replaced source (Atelier, for later context):** until now `brand-atelier/app/public/brands/fehmarn/fehmarn.brand` took its colours from the Identity Deck's Farbkreislauf (Figma „Fehmarn Visuelle Sprache“ `SK2VRgJCOqQJOnLDny9g4i`, rule 05), before the Tonleiter existed: per season `core` + two `accent` + a fixed `contrast` colour (Dunkeloliv `#263410`, Petrol `#0F4C5C`, Marine `#1A2E5C`, Dunkelbraun `#4A2215`), 28 hand-picked ground/figure pairs (7 per season), and `blau-mittel #0000B4` / `blau-dunkel #000050` as extra brand colours. The user called the fixed contrast colours outdated (2026-10-26): the dark tones of each season's own colours replace them. This state is archived in `brand-atelier/archive/brands/fehmarn-2026-10/`. The `figma-file-key: Gqmk0F06tocZCcUC2ntzki` in that file is unused (`tokens: inline`). The import replaces the colour block; it doesn't merge with it.
 
 ## Why
 
@@ -29,21 +39,20 @@ Slots (same in every level): **Ground** · On Ground/Headline, /Text, /Accent, /
 
 ## Change 1 — `tones`
 
+The Tonleiter is declared, not generated. The colour system already defines every tone (Figma library, export `library-colour.json`); Brand Intent reads them instead of computing them again, so Figma stays the only source of truth.
+
 ```
-tones
-  steps:  10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98
-  method: lab-l            # step = CIELAB L*, hue and chroma from the anchor
-  anchor: own              # the declared hex keeps its own lightness and stands for the nearest step
+tones                        # imported from library-colour.json, don't edit by hand
+  steps: 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98
+  $fehmarn-blau:    #000050 #0000b4 #0000f8 #3d3dfa #6363fb #8383fc #a2a2fc #c1c1fd #e0e0fe #efefff #f9f9ff
+  $winter-accent-1: #05201a #1b352f #314c45 #415c55 …
+  …
 ```
 
-- Every solid colour in `brand-colors` and `color-families` gets a Tonleiter. Reference: `$fehmarn-blau.10`, `$winter-accent-2.95`. Inside a family, slot shorthands `p`, `a1`, `a2` refer to its own colours (`a2.95`).
-- Explicit overrides per colour for steps the algorithm can't reach (Fehmarn: Blue 10 is `#000050`, L* 5):
-  ```
-  tones
-    …
-    fix $fehmarn-blau.10: #000050
-  ```
-- The algorithm must reproduce all 88 library tones exactly (fixture: `library-colour.json` → `modes.*.tones`). If it can't, the fallback is declaring the 11 hex values per colour.
+- One line per solid colour in `brand-colors` and `color-families`, one hex per step, in the order of `steps:`. The colour's own hex must appear on its line (the anchor); the parser checks that.
+- Reference: `$fehmarn-blau.10`, `$winter-accent-2.95`. Inside a family, slot shorthands `p`, `a1`, `a2` refer to its own colours (`a2.95`).
+- Import script (in brand-intent, `scripts/`): reads `library-colour.json` `modes.*.tones`, writes the `tones` block for the 13 Fehmarn colours (143 values). Change in Figma → export → import.
+- Checked 2026-10-27: the export is consistent (each season colour's Tonleiter is CIELAB L* steps, Blue is a mix with white plus hand-set 10 and 20), but Brand Intent doesn't need to know that.
 
 ## Change 2 — contexts without dates
 
@@ -122,10 +131,10 @@ The theme slots of a page follow from the level slots. One mapping, written once
 ### `brand-intent`
 
 - `SPEC.md`: new sections `tones` and `levels` next to `color-families` (409); `color-families` (relaxed `from:`, optional `contrast`, shorthands); `theme` (462: derived slots from levels); `color-mode` (366: `brand` satisfied by levels); `palette: level` in the `.purpose` section (1070).
-- `parser/colorSystem.ts`: tone generation and lookup, level resolution (defaults → family override), rule checks per cell, `familyIndexForDate` skips undated families, `reachableFamilies` skips undated families. `checkFamilyPair`/`colorOrigin`: reach check against level colours.
-- `parser/brandParser.ts`: blocks `tones`, `levels`, `level`, `fix`; family key `signal:`; `$name.step` and `<level>.<slot>` references.
+- `parser/colorSystem.ts`: tone lookup, level resolution (defaults → family override), rule checks per cell, `familyIndexForDate` skips undated families, `reachableFamilies` skips undated families. `checkFamilyPair`/`colorOrigin`: reach check against level colours.
+- `parser/brandParser.ts`: blocks `tones`, `levels`, `level`; family key `signal:`; `$name.step` and `<level>.<slot>` references.
 - VS Code grammar: new keywords, `.step` references.
-- Tests: tone fixture against the library export (88 values); level fixture (13 slots × 4 levels × 6 families against `library-colour.json` `level.modes` resolved per season, 1,224 CSS values already checked once in fehmarn.de); rule warnings; undated families; all existing brands parse unchanged.
+- Tests: import script against the library export (143 values, anchors on their lines); level fixture (13 slots × 4 levels × 6 families against `library-colour.json` `level.modes` resolved per season, 1,224 CSS values already checked once in fehmarn.de); rule warnings; undated families; all existing brands parse unchanged.
 
 ### `brand-atelier`
 
@@ -137,20 +146,22 @@ The theme slots of a page follow from the level slots. One mapping, written once
 ## Rollout
 
 1. User signs off this plan (decisions below).
-2. brand-intent: tones, then levels, then rules and SPEC; fixtures from `library-colour.json`; release.
+2. brand-intent: tones (declared + import script), then levels, then rules and SPEC; fixtures from `library-colour.json`; release.
 3. Atelier: bump, derive page colours from family × level, level switch, table view.
 4. `fehmarn.brand` rewrite; visual check against Figma sheet 3073:2 and the fehmarn.de styleguide (same values by construction).
-5. Later: read the export directly (`tokens: figma` or an import script) instead of copying values by hand.
+5. Later: the same import for levels (the level table from `level.modes`), so the whole colour block comes from the export.
 
-## Open decisions (user)
+## Decisions (user, 2026-10-27)
 
-1. **Levels for posters and social.** Recommendation: yes. Strong ≈ today's pairs, Medium/Light give quieter pages; same four levels as the website.
-2. **Context by date or by hand.** Recommendation: both. Seasons by date (default), Mono and Year-round by hand per page or purpose.
-3. **Curated pairs.** Recommendation: drop them for Fehmarn once levels exist. The level table is the curation. Keep `pairs` in the grammar for brands without levels.
-4. **Tone notation.** `$winter-accent-2.95` / `a2.95` (proposed) vs. `$winter-accent-2 95` (collides visually with alpha `$ref 75%`).
-5. **Generate or declare tones.** Generate with fixed exceptions (proposed) vs. declare all hex values (88 lines for Fehmarn, no algorithm to maintain).
+1. **Levels for posters and social:** yes, all four (Neutral, Light, Medium, Strong). Page = family × level.
+2. **Context:** both. Seasons by date (default), Mono and Year-round by hand per page or purpose.
+3. **Curated pairs:** dropped for Fehmarn once levels exist; `pairs` stays in the grammar for brands without levels.
+4. **Tone notation:** dot. `$winter-accent-2.95`, inside a family `a2.95`; alpha stays `$ref 75%`.
+5. **Tones:** declared, written by an import script from `library-colour.json`. No generator in Brand Intent: the colour system already defines them.
 
 ## Out of scope
+
+- Generating tones (`method: lab-l`, `mix`) for brands without a Tonleiter of their own. Possible later; the check against the library showed it would reproduce Fehmarn exactly.
 
 - Brand-identity part names beyond the Atelier slot mapping (poster ground, sticker, info box): later, on top of levels.
 - A fifth, stronger level (the model leaves room for it).
