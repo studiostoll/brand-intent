@@ -379,11 +379,11 @@ test('assets take an optional group', () => {
 // ── framing ──────────────────────────────────────────────────────────────────
 
 test('parses framing modules in order', () => {
-  const src = `${HEADER}framing landschaft\n  label: Landschaft\n  horizon: 60%\n  description: Viel Himmel über Land oder Wasser.\n\nframing mensch\n  label: Mensch\n  horizon: none\n`;
+  const src = `${HEADER}framing wide\n  label: Wide\n  horizon: 60%\n  description: The shop seen from across the square.\n\nframing close\n  label: Close\n  horizon: none\n`;
   const out = parseBrandFile(src, 'test.brand');
   assertEq(out.framings, [
-    { id: 'landschaft', label: 'Landschaft', horizon: 60, description: 'Viel Himmel über Land oder Wasser.' },
-    { id: 'mensch', label: 'Mensch', horizon: null },
+    { id: 'wide', label: 'Wide', horizon: 60, description: 'The shop seen from across the square.' },
+    { id: 'close', label: 'Close', horizon: null },
   ], 'framings');
 });
 
@@ -399,9 +399,9 @@ test('framing caption and goals', () => {
 });
 
 test('photo metadata: framing, place, person, taken', () => {
-  const src = `${HEADER}framing mensch\n  horizon: none\n\nphoto baeckerin\n  src: photos/b.jpg\n  framing: mensch\n  place: Backstube, Hauptstraße\n  person: Anna, Bäckerin\n  taken: 2026-05-14\n`;
+  const src = `${HEADER}framing close\n  horizon: none\n\nphoto baeckerin\n  src: photos/b.jpg\n  framing: close\n  place: Backstube, Hauptstraße\n  person: Anna, Bäckerin\n  taken: 2026-05-14\n`;
   const p = parseBrandFile(src, 'test.brand').assets?.photos?.[0];
-  assertEq([p?.framing, p?.place, p?.person, p?.taken], ['mensch', 'Backstube, Hauptstraße', 'Anna, Bäckerin', '2026-05-14'], 'metadata');
+  assertEq([p?.framing, p?.place, p?.person, p?.taken], ['close', 'Backstube, Hauptstraße', 'Anna, Bäckerin', '2026-05-14'], 'metadata');
 });
 
 test('photo metadata rejects unknown framing, bad date, non-photo use', () => {
@@ -479,8 +479,8 @@ test('parses windows block and photo when:', () => {
 
 test('isInDateWindow: inclusive ends, year-end wrap, multiple ranges', () => {
   const d = (m: number, day: number) => new Date(2026, m - 1, day);
-  const raps = [{ from: '05-01', to: '05-31' }];
-  assertEq([d(4, 30), d(5, 1), d(5, 31), d(6, 1)].map(x => isInDateWindow(raps, x)), [false, true, true, false], 'raps');
+  const berries = [{ from: '05-01', to: '05-31' }];
+  assertEq([d(4, 30), d(5, 1), d(5, 31), d(6, 1)].map(x => isInDateWindow(berries, x)), [false, true, true, false], 'berries');
   const ny = [{ from: '12-27', to: '01-06' }];
   assertEq([d(12, 26), d(12, 31), d(1, 6), d(1, 7)].map(x => isInDateWindow(ny, x)), [false, true, true, false], 'wrap');
   const zug = [{ from: '03-01', to: '05-31' }, { from: '08-15', to: '10-31' }];
@@ -488,8 +488,8 @@ test('isInDateWindow: inclusive ends, year-end wrap, multiple ranges', () => {
 });
 
 test('rejects invalid windows and references', () => {
-  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01-05-31\n`, 'test.brand'), /MM-DD\.\.MM-DD/, 'bad range');
-  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 02-30..03-10\n`, 'test.brand'), /invalid date "02-30"/, 'bad day');
+  assertThrows(() => parseBrandFile(`${HEADER}windows\n  berries: 05-01-05-31\n`, 'test.brand'), /MM-DD\.\.MM-DD/, 'bad range');
+  assertThrows(() => parseBrandFile(`${HEADER}windows\n  berries: 02-30..03-10\n`, 'test.brand'), /invalid date "02-30"/, 'bad day');
   assertThrows(() => parseBrandFile(`${HEADER}windows\n  Raps: 05-01..05-31\n`, 'test.brand'), /kebab-case/, 'name');
   assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01..05-31\n  raps: 05-01..05-31\n`, 'test.brand'), /duplicate window/, 'duplicate');
   assertThrows(() => parseBrandFile(`${HEADER}photo raps\n  src: photos/raps.jpg\n  when: raps\n`, 'test.brand'), /unknown window "raps"/, 'unknown ref');

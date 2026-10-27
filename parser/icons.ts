@@ -132,7 +132,7 @@ export function resolveIconRef(ref: IconRef, icons: ParsedIconDef[] | undefined)
   return resolved;
 }
 
-/** Split an optional `[id]` prefix off a list item: "[pin] Hafen Burgstaaken". */
+/** Split an optional `[id]` prefix off a list item: "[shop] Laden am Markt". */
 export function parseListItem(item: string): { icon?: IconRef; text: string } {
   const m = item.match(/^\[([^\]]+)\]\s*(.*)$/s);
   if (!m) return { text: item };

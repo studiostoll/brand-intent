@@ -30,5 +30,5 @@ export function isInDateWindow(ranges: DateWindowRange[], date: Date): boolean {
   return ranges.some(({ from, to }) => (from <= to ? key >= from && key <= to : key >= from || key <= to));
 }
 
-/** Trailing window marker on a sample line: `Raps blüht im Mai  @rapsbluete`. */
+/** Trailing window marker on a sample line: `Stollen ab Advent  @christmas`. */
 export const SAMPLE_WINDOW_MARKER = /\s+@([a-z][a-z0-9-]*)\s*$/;

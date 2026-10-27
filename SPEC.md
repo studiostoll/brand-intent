@@ -877,15 +877,15 @@ camera
 Photo framing modules: where the horizon sits in the final crop. Implementations offer them as camera guides. Optional and repeatable; declaration order is picker order. A brand without `framing` blocks gets no camera guides.
 
 ```yaml
-framing landschaft
-  label:       Landschaft
-  horizon:     60%
-  description: Der Ort führt. Viel Himmel über Land oder Wasser macht Weite sichtbar.
+framing wide
+  label:       Wide
+  horizon:     40%
+  description: The setting leads. The shop and its street, seen from across the square.
 
-framing mensch
-  label:       Mensch
+framing close
+  label:       Close
   horizon:     none
-  description: Die Person und ihr eigener Ausdruck führen.
+  description: Hands and the bread lead. No far line in the frame.
 ```
 
 | Key | Type | Default | Description |
@@ -1293,7 +1293,7 @@ Determines which color palette to use for this purpose. The brand defines availa
 ```yaml
 palette: dynamic          # photo-derived colors (default)
 palette: Basic            # always use the Basic theme
-palette: rotate Basic, Strand   # alternate between two themes
+palette: rotate Basic, Warm   # alternate between two themes
 palette: family Winter    # pairs of the Winter color family
 ```
 
