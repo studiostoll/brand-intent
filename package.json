@@ -35,10 +35,13 @@
   ],
   "scripts": {
     "release": "./scripts/release.sh",
+    "typecheck": "tsc -p .",
     "test": "tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/icons.test.ts && tsx tests/purposeParser.test.ts && tsx tests/realBrands.test.ts"
   },
   "devDependencies": {
-    "tsx": "^4.19.0"
+    "@types/node": "^26.6.5",
+    "tsx": "^4.19.0",
+    "typescript": "^6.0.3"
   },
   "files": [
     "cli/",

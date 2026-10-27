@@ -29,6 +29,7 @@ exclude:
   - node_modules/
   - package.json
   - package-lock.json
+  - tsconfig.json
 
 # Include files not processed by default
 include:

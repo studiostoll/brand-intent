@@ -564,7 +564,7 @@ theme Green
 | Slot | Derived value |
 |------|---------------|
 | `background` | ground |
-| `text-primary` | text |
+| `text-primary`, `headline` | text |
 | `text-secondary` / `text-tertiary` / `text-subtle` / `text-muted` | text at 85% / 70% / 55% / 40% |
 | `logo`, `cta`, `divider`, `icon`, `illustration`, `sticker-bg`, `label-bg`, `counter-bg` | figure |
 | `sticker-fg`, `label-fg`, `counter-fg` | ground |
@@ -578,6 +578,7 @@ theme Green
 |------|-------------|
 | `background` | Canvas background |
 | `text-primary` | Primary text color |
+| `headline` | Headline color. Default: `text-primary` |
 | `text-secondary` | Secondary text color |
 | `text-tertiary` | Tertiary text color |
 | `text-subtle` | Subtle text |

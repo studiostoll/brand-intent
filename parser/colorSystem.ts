@@ -101,6 +101,7 @@ export function derivePairSlots(ground: string, figure: string, text: string): R
   const slots: Record<string, string> = {
     'background': ground,
     'text-primary': text,
+    'headline': text,
   };
   for (const [slot, alpha] of TEXT_TIERS) slots[slot] = withAlpha(text, alpha);
   for (const slot of ['logo', 'cta', 'divider', 'icon', 'illustration', 'sticker-bg', 'label-bg', 'counter-bg']) {

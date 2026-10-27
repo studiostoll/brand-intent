@@ -1658,8 +1658,9 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     });
   }
 
-  // Counter colours default to the label badge's.
+  // Counter colours default to the label badge's, headline to text-primary.
   for (const theme of Object.values(themes)) {
+    if (theme['headline'] === undefined && theme['text-primary'] !== undefined) theme['headline'] = theme['text-primary'];
     if (theme['counter-bg'] === undefined && theme['label-bg'] !== undefined) theme['counter-bg'] = theme['label-bg'];
     if (theme['counter-fg'] === undefined && theme['label-fg'] !== undefined) theme['counter-fg'] = theme['label-fg'];
   }

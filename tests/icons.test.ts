@@ -134,6 +134,23 @@ test('explicit counter slots win', () => {
   assertEq(out.themes?.T['counter-bg'], '#EEEEEE', 'counter-bg');
 });
 
+// ── headline theme slot ──────────────────────────────────────────────────────
+
+console.log('\nheadline theme slot:');
+
+test('pair themes derive headline from text', () => {
+  const out = brand(`brand-colors\n  green: #1B4D3E\n  white: #FFFFFF\n\ntheme Green\n  ground: $green\n  figure: $white\n  text: $white\n`);
+  assertEq(out.themes?.Green['headline'], '#FFFFFF', 'headline');
+});
+test('explicit themes fall back to text-primary', () => {
+  const out = brand(`brand-colors\n  a: #111111\n  b: #EEEEEE\n\ntheme T\n  background: $b\n  text-primary: $a\n`);
+  assertEq(out.themes?.T['headline'], '#111111', 'headline');
+});
+test('explicit headline wins', () => {
+  const out = brand(`brand-colors\n  a: #111111\n  b: #EEEEEE\n  c: #222266\n\ntheme T\n  background: $b\n  text-primary: $a\n  headline: $c\n`);
+  assertEq(out.themes?.T['headline'], '#222266', 'headline');
+});
+
 // ── purpose references and markers ───────────────────────────────────────────
 
 console.log('\npurpose icons and markers:');

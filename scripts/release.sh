@@ -26,6 +26,10 @@ if [ -n "$(git -C "$ROOT" status --porcelain)" ]; then
   exit 1
 fi
 
+# ── Typecheck and tests ──
+
+(cd "$ROOT" && npm run --silent typecheck && npm test --silent)
+
 # ── Read current version ──
 
 CURRENT=$(node -p "require('$ROOT/package.json').version")

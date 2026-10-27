@@ -604,6 +604,7 @@ function activate(context) {
             for (const [slot, detail] of [
               ['background:', 'Canvas background color'],
               ['text-primary:', 'Primary text color'],
+              ['headline:', 'Headline color (default: text-primary)'],
               ['text-secondary:', 'Secondary text color'],
               ['text-tertiary:', 'Tertiary text color'],
               ['text-subtle:', 'Subtle text color'],
