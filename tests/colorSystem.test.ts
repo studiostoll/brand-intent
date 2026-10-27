@@ -59,7 +59,7 @@ test('black on white is 21:1', () => {
 test('tone classes with default thresholds', () => {
   assertEq(toneClass('#F9FF9D'), 'light');
   assertEq(toneClass('#F4A14C'), 'mid');
-  assertEq(toneClass('#263410'), 'dark');
+  assertEq(toneClass('#2C3520'), 'dark');
 });
 
 // ── Pair themes ───────────────────────────────────────────────────────────────
@@ -170,13 +170,13 @@ test('borrow none reaches nothing', () => {
   assertEq(reach(4, 1, 'cycle', 'none'), []);
 });
 
-// ── Fehmarn seasons fixture ───────────────────────────────────────────────────
+// ── Seasons fixture ──────────────────────────────────────────────────────────
 
 console.log('\ncolor-families (seasons fixture):');
 
 const seasons = (borrow: string, extra = '') => `${HEADER}brand-colors
-  blau: #0000F8
-  weiss: #FFFFFF
+  blue: #5B00F8
+  white: #FFFFFF
 
 color-rules
   text: 4.5
@@ -188,63 +188,63 @@ color-mode: guided
 color-families
   order: cycle
   borrow: ${borrow}
-  shared: $blau, $weiss
+  shared: $blue, $white
 ${extra}
   family Winter
-    core:     #006EFA  Blau-W
-    accent:   #415C55
-    accent:   #BCD6E2
-    contrast: #263410
+    core:     #0012FA  Ink
+    accent:   #41595C
+    accent:   #BCC8E2
+    contrast: #193410
     pairs
-      #006EFA / #F9FF9D
-      #263410 / #B6E1FC
-      #F9FF9D / #0000F8
-      #BCD6E2 / #0000F8
-      #263410 / #FC5529
-      #415C55 / #BCD6E2
-      #0000F8 / #BCD6E2
+      #0012FA / #D5FF9D
+      #193410 / #B6C7FC
+      #D5FF9D / #5B00F8
+      #BCC8E2 / #5B00F8
+      #193410 / #FC2949
+      #41595C / #BCC8E2
+      #5B00F8 / #BCC8E2
 
-  family Fruehling
-    core:     #B6E1FC
-    accent:   #B5E5CB
-    accent:   #F9FF9D
-    contrast: #0F4C5C
+  family Spring
+    core:     #B6C7FC
+    accent:   #B5E5DD
+    accent:   #D5FF9D
+    contrast: #0F305C
     pairs
-      #B6E1FC / #0F4C5C
-      #0F4C5C / #B5E5CB
-      #B5E5CB / #0000F8
-      #F9FF9D / #0F4C5C
-      #0000F8 / #F9FF9D
-      #0F4C5C / #F9FF9D
-      #BCD6E2 / #0F4C5C
+      #B6C7FC / #0F305C
+      #0F305C / #B5E5DD
+      #B5E5DD / #5B00F8
+      #D5FF9D / #0F305C
+      #5B00F8 / #D5FF9D
+      #0F305C / #D5FF9D
+      #BCC8E2 / #0F305C
 
-  family Sommer
-    core:     #F8EDAD
-    accent:   #558648
-    accent:   #F4A14C
-    contrast: #1A2E5C
+  family Summer
+    core:     #E8F8AD
+    accent:   #488652
+    accent:   #F4DF4C
+    contrast: #1E1A5C
     pairs
-      #F8EDAD / #558648
-      #1A2E5C / #F4A14C
-      #F4A14C / #1A2E5C
-      #F8EDAD / #0000F8
-      #4A2215 / #F4A14C
-      #1A2E5C / #B6E1FC
-      #0F4C5C / #F4A14C
+      #E8F8AD / #488652
+      #1E1A5C / #F4DF4C
+      #F4DF4C / #1E1A5C
+      #E8F8AD / #5B00F8
+      #4A3515 / #F4DF4C
+      #1E1A5C / #B6C7FC
+      #0F305C / #F4DF4C
 
-  family Herbst
-    core:     #FC5529
-    accent:   #6F927E
-    accent:   #844A33
-    contrast: #4A2215
+  family Autumn
+    core:     #FC2949
+    accent:   #6F928B
+    accent:   #846833
+    contrast: #4A3515
     pairs
-      #4A2215 / #FC5529
-      #F8EDAD / #844A33
-      #844A33 / #F4A14C
-      #844A33 / #F8EDAD
-      #FFFFFF / #FC5529
-      #F4A14C / #4A2215
-      #BCD6E2 / #844A33
+      #4A3515 / #FC2949
+      #E8F8AD / #846833
+      #846833 / #F4DF4C
+      #846833 / #E8F8AD
+      #FFFFFF / #FC2949
+      #F4DF4C / #4A3515
+      #BCC8E2 / #846833
 `;
 
 const rejectedCount = (src: string) => {
@@ -265,26 +265,26 @@ test('borrow: next rejects 8', () => assertEq(rejectedCount(seasons('next')), 8)
 
 test('family colors join the flat projection with generated names', () => {
   const out = parseBrandFile(seasons('both'), 't.brand');
-  assertEq(out.brandColors!['blau-w'], '#006EFA', 'authored name');
-  assertEq(out.brandColors!['winter-accent-2'], '#BCD6E2', 'generated accent name');
-  assertEq(out.brandColors!['herbst-contrast'], '#4A2215', 'generated contrast name');
+  assertEq(out.brandColors!['ink'], '#0012FA', 'authored name');
+  assertEq(out.brandColors!['winter-accent-2'], '#BCC8E2', 'generated accent name');
+  assertEq(out.brandColors!['autumn-contrast'], '#4A3515', 'generated contrast name');
 });
 
 test('text falls back to white when the contrast color fails', () => {
   const out = parseBrandFile(seasons('both'), 't.brand');
-  assertEq(out.themePairs!['Winter-1'], { ground: '#006EFA', figure: '#F9FF9D', text: '#FFFFFF', family: 'Winter' });
+  assertEq(out.themePairs!['Winter-1'], { ground: '#0012FA', figure: '#D5FF9D', text: '#FFFFFF', family: 'Winter' });
   assertEq(out.themes!['Winter-1']['text-primary'], '#FFFFFF');
 });
 
 test('text uses the family contrast color on light grounds', () => {
   const out = parseBrandFile(seasons('both'), 't.brand');
-  assertEq(out.themePairs!['Fruehling-1'].text, '#0F4C5C');
+  assertEq(out.themePairs!['Spring-1'].text, '#0F305C');
 });
 
 test('rejected pair names its owning family', () => {
   const out = parseBrandFile(seasons('previous'), 't.brand');
   const w = (out.colorWarnings ?? []).find(x => x.startsWith('Winter-1'));
-  assertEq(!!w && /#F9FF9D from Fruehling is out of reach/.test(w), true, `warning: ${w}`);
+  assertEq(!!w && /#D5FF9D from Spring is out of reach/.test(w), true, `warning: ${w}`);
   assertEq(out.themes!['Winter-1'], undefined, 'rejected pair emits no theme');
 });
 
@@ -303,7 +303,7 @@ test('enumeration excludes the opposite season', () => {
   const pairs = enumerateFamilyPairs(0, sys, { order: 'cycle', borrow: 'both', distance: 1 }, out.colorRules!);
   const valid = pairs.filter(p => p.valid);
   const sommer = sys.families[2].colors.map(c => c.hex);
-  assertEq(valid.some(p => sommer.includes(p.ground) || sommer.includes(p.figure)), false, 'no Sommer color in Winter');
+  assertEq(valid.some(p => sommer.includes(p.ground) || sommer.includes(p.figure)), false, 'no Summer color in Winter');
   assertEq(valid.length > 28 / 4, true, 'more valid pairs than the curated ones');
   assertEq(valid.every(p => p.figureRatio >= DEFAULT_COLOR_RULES.figure), true, 'contrast floor');
 });
@@ -322,13 +322,13 @@ test('invalid borrow is rejected', () => {
   assertThrows(() => parseBrandFile(seasons('sideways'), 't.brand'), /borrow must be/, 'bad borrow');
 });
 test('photo-fallback resolves refs in declared order, absent when not declared', () => {
-  const out = parseBrandFile(seasons('both', '  photo-fallback: $weiss, $blau'), 't.brand');
-  assertEq(out.colorFamilies!.photoFallback, [{ name: 'weiss', hex: '#FFFFFF' }, { name: 'blau', hex: '#0000F8' }]);
+  const out = parseBrandFile(seasons('both', '  photo-fallback: $white, $blue'), 't.brand');
+  assertEq(out.colorFamilies!.photoFallback, [{ name: 'white', hex: '#FFFFFF' }, { name: 'blue', hex: '#5B00F8' }]);
   assertEq(parseBrandFile(seasons('both'), 't.brand').colorFamilies!.photoFallback, undefined);
 });
 test('photo-fallback rejects unknown and non-$ refs', () => {
-  assertThrows(() => parseBrandFile(seasons('both', '  photo-fallback: $nachtblau'), 't.brand'), /photo-fallback "\$nachtblau" is not a known/, 'unknown ref');
-  assertThrows(() => parseBrandFile(seasons('both', '  photo-fallback: #000050'), 't.brand'), /photo-fallback entries must be \$refs/, 'hex');
+  assertThrows(() => parseBrandFile(seasons('both', '  photo-fallback: $night-blue'), 't.brand'), /photo-fallback "\$night-blue" is not a known/, 'unknown ref');
+  assertThrows(() => parseBrandFile(seasons('both', '  photo-fallback: #1D0050'), 't.brand'), /photo-fallback entries must be \$refs/, 'hex');
 });
 
 const dated = (a: string, b: string) =>

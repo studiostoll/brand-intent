@@ -439,13 +439,13 @@ color-families
 
   family Winter
     from:     12-01          # optional start date (MM-DD)
-    core:     #006EFA  Blau
-    accent:   #415C55  Graugruen
-    accent:   #BCD6E2
-    contrast: #263410  Dunkeloliv
+    core:     #2F6FD6  Sky
+    accent:   #4E6458  Sage
+    accent:   #C4D0D8
+    contrast: #2C3520  Olive
     pairs
-      #006EFA / #F9FF9D
-      #263410 / $hellblau
+      #2F6FD6 / #F4F7B0
+      #2C3520 / $pale-blue
 
   family Spring
     from:     03-01

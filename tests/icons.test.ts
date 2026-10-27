@@ -43,7 +43,7 @@ function assertThrows(fn: () => unknown, matcher: RegExp, label: string) {
 }
 
 const HEADER = `id: test\nname: Test\nlanguage: en\nlocale: en-US\n`;
-const FONTS = `font primary\n  name: Inter\n  fallback: sans-serif\n\nfont display\n  name: Fehmarn\n  fallback: serif\n`;
+const FONTS = `font primary\n  name: Inter\n  fallback: sans-serif\n\nfont display\n  name: Display Serif\n  fallback: serif\n`;
 const brand = (body: string) => parseBrandFile(`${HEADER}${FONTS}${body}`, 'test.brand');
 
 // ── icons block ──────────────────────────────────────────────────────────────

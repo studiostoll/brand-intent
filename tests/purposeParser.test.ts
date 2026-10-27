@@ -68,7 +68,7 @@ test('@name marker sets sampleWindows and is stripped from the text', () => {
   assertEq(multi.samples, ['Zugvögel über Wallnau\nzweite Zeile', 'Ganzjährig'], 'multi samples');
   assertEq(multi.sampleWindows, ['zugvoegel', undefined], 'multi windows');
   assertEq(slot('  samples: a | b\n').sampleWindows, undefined, 'no markers');
-  assertEq(slot('  samples: Mail an info@fehmarn.de\n').samples, ['Mail an info@fehmarn.de'], 'mid-word @ untouched');
+  assertEq(slot('  samples: Mail an info@example.org\n').samples, ['Mail an info@example.org'], 'mid-word @ untouched');
 });
 
 test('@name marker on a continuation line throws', () => {
