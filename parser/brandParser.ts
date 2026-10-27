@@ -169,6 +169,10 @@ export interface ParsedFramingDef {
   horizon: number | null;
   /** The photographic task, one line. */
   description?: string;
+  /** What a text adds to a photo in this framing, one line. */
+  caption?: string;
+  /** Identity goal ids this framing serves. */
+  goals?: string[];
 }
 
 export type CounterFormat = '1' | '01' | '1.' | '(1)' | 'i';
@@ -209,6 +213,14 @@ export interface ParsedAssetDef {
   group?: string;
   /** Photos only: name of the date window the photo fits (`when:`). Absent → all year. */
   when?: string;
+  /** Photos only: the framing module the photo was taken in. */
+  framing?: string;
+  /** Photos only: where the photo was taken. */
+  place?: string;
+  /** Photos only: who is shown, with name and role. */
+  person?: string;
+  /** Photos only: date taken, YYYY-MM-DD. */
+  taken?: string;
 }
 
 export type LogoAlign = 'left' | 'center' | 'right';
@@ -1784,6 +1796,9 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['generator']) def.generator = raw.props['generator'];
     if (raw.props['group']) def.group = raw.props['group'];
     if (raw.props['when']) def.when = raw.props['when'];
+    for (const key of ['framing', 'place', 'person', 'taken'] as const) {
+      if (raw.props[key]) def[key] = raw.props[key];
+    }
     // generator-params are stored as "generator-params.KEY" by the sub-block parser.
     const paramEntries: [string, number][] = [];
     for (const [k, v] of Object.entries(raw.props)) {
@@ -1814,13 +1829,20 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
     result.windows = windows;
   }
+  const photoOnly = ['when', 'framing', 'place', 'person', 'taken'];
   for (const [kind, arr] of [['logo', logosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
-    const a = arr.find(r => r.props['when']);
-    if (a) throw new Error(`${fileName}: ${kind} "${a.id}": when: is for photos only`);
+    for (const key of photoOnly) {
+      const a = arr.find(r => r.props[key]);
+      if (a) throw new Error(`${fileName}: ${kind} "${a.id}": ${key}: is for photos only`);
+    }
   }
   for (const p of photosRaw) {
     const when = p.props['when'];
     if (when && !result.windows?.[when]) throw new Error(`${fileName}: photo "${p.id}" references unknown window "${when}"`);
+    const taken = p.props['taken'];
+    if (taken && !/^\d{4}-\d{2}-\d{2}$/.test(taken)) throw new Error(`${fileName}: photo "${p.id}": taken: must be YYYY-MM-DD, got "${taken}"`);
+    const framing = p.props['framing'];
+    if (framing && !framingsRaw.some(f => f.id === framing)) throw new Error(`${fileName}: photo "${p.id}" references unknown framing "${framing}"`);
   }
 
   if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0 || illustrationsRaw.length > 0) {
@@ -1987,7 +2009,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   // Finalise framing modules
   if (framingsRaw.length > 0) {
-    const known = new Set(['label', 'horizon', 'description']);
+    const known = new Set(['label', 'horizon', 'description', 'caption', 'goals']);
     result.framings = framingsRaw.map(({ id, line, props }) => {
       for (const [key, { line: l }] of Object.entries(props)) {
         if (!known.has(key)) throw new Error(`${fileName}:${l}: unknown framing property "${key}"`);
@@ -2003,6 +2025,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       }
       const def: ParsedFramingDef = { id, label: props['label']?.value || id, horizon };
       if (props['description']?.value) def.description = props['description'].value;
+      if (props['caption']?.value) def.caption = props['caption'].value;
+      if (props['goals']?.value) def.goals = props['goals'].value.split(',').map(g => g.trim()).filter(Boolean);
       return def;
     });
   }

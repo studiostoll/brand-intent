@@ -58,6 +58,10 @@ The identity file encodes brand strategy in machine-readable form. It contains n
 | `pillars` | block | Yes | Content pillar definitions |
 | `audience NAME` | block | Yes (1+) | Audience segment (repeatable) |
 | `anti-audience NAME` | block | No | Explicitly not-our-audience (repeatable) |
+| `imagery` | block | No | Rules for photos and film |
+| `image-theme NAME` | block | No | Named image theme, optionally tied to a narrative (repeatable) |
+| `goal NAME` | block | No | Communication goal, e.g. one share of a content mix (repeatable) |
+| `review` | block | No | Questions to check before publishing |
 
 ### `voice` Block
 
@@ -68,6 +72,7 @@ The identity file encodes brand strategy in machine-readable form. It contains n
 | `rhythm:` | string | No | Sentence structure guidance |
 | `always:` | list | Yes | Concrete rules the brand always follows |
 | `never:` | list | Yes | Concrete rules the brand never breaks |
+| `instead:` | list | No | Phrases to replace, each as `PHRASE -> REPLACEMENT` |
 
 `always:` and `never:` use YAML-style list syntax:
 ```
@@ -77,6 +82,14 @@ always:
 ```
 
 **Design principle:** Every item in `always` and `never` should be a concrete, testable rule, not a description or aspiration. An AI agent should be able to evaluate any piece of content against these rules with a yes/no answer.
+
+`instead:` pairs a phrase the brand avoids with the wording it uses. A pair teaches the rewrite, not just the ban. Quotes around either side are optional and stripped.
+
+```
+instead:
+  - "beste Zutaten" -> Tipo 1 aus der Mühle in Dachau
+  - "mit Liebe gebacken" -> achtzehn Stunden Teigruhe
+```
 
 ### `narrative NAME` Block
 
@@ -121,6 +134,16 @@ values
 
 Each value is a named block (the value name on its own line, unindented within `values`), followed by 2-space indented behavior description lines.
 
+A value can carry examples: `say:` for a line that carries the value, `not:` for one that misses it. Both are repeatable and go after the behavior lines.
+
+```yaml
+values
+  Handwerk
+    Wir benennen den Prozess, nicht das Ergebnis.
+    say: Der Roggen steht seit gestern Abend.
+    not: Mit Liebe handgemacht.
+```
+
 ### `pillars` Block
 
 | Key | Type | Required | Description |
@@ -150,6 +173,89 @@ Defines who the brand is explicitly *not* for. This gives an AI agent a concrete
 |-----|------|----------|-------------|
 | `label:` | string | Yes | Human-readable name |
 | `description:` | string | Yes | Who they are and why the brand is not for them |
+
+### `imagery` Block
+
+What photos and film always show and never show. The image counterpart of `voice`: the same yes/no principle applies, so an AI agent can review a photo or write an image brief against it.
+
+```yaml
+imagery
+  always:
+    - echte Arbeitsschritte in der Backstube, keine nachgestellten Handgriffe
+    - Mehl, Teig und Werkzeug mit Gebrauchsspuren
+  never:
+    - gestellte Lächeln in die Kamera
+    - KI-generierte oder KI-veränderte Bildinhalte
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `always:` | list | No | What every photo and film shows |
+| `never:` | list | No | What the imagery never shows |
+
+How photos are framed and treated belongs to the `.brand` file ([`framing`](#framing-name-block), [`photo-look`](#photo-look-block)).
+
+### `image-theme NAME` Block
+
+A named subject for photos and film. `NAME` is free-form. An optional `narrative:` line ties the theme to a narrative by its exact name; the rest is free-form text. Image themes do not have to cover every narrative, and a theme can stand without one.
+
+```yaml
+image-theme Teig am Morgen
+  narrative: Achtzehn Stunden
+  Hände im Teig, Mehl auf der Arbeitsfläche,
+  das erste Licht durch das Backstubenfenster.
+```
+
+### `goal NAME` Block
+
+What a piece of content is for, as opposed to what it is (its [purpose](#layer-4-purpose-purpose)). The same purpose can serve different goals: a quote can show the craft or introduce a neighbour. `NAME` is a lowercase identifier. Goals are listed in declaration order.
+
+```yaml
+goal craft
+  label:      Handwerk zeigen
+  share:      60%
+  question:   Wie entsteht das Brot?
+  narratives: Achtzehn Stunden
+  always:
+    - einen konkreten Arbeitsschritt zeigen
+
+goal neighbours
+  label:      Nachbarschaft
+  share:      40%
+  question:   Wer kommt hierher und warum?
+  narratives: Mehl Wasser Zeit
+  always:
+    - eine Person mit Namen und ihrem Grund zu kommen
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `label:` | string | Yes | Human-readable goal name |
+| `share:` | percentage | No | Target share of produced content. Shares add up to 100% at most. Where the share applies (channel, period) goes in a comment |
+| `question:` | string | No | The question content for this goal answers |
+| `narratives:` | list | No | Narrative names this goal draws on (comma-separated, exact names) |
+| `always:` | list | No | Rules content for this goal follows |
+| `never:` | list | No | Rules content for this goal never breaks |
+
+A purpose names its default goal with `goal:`; implementations let the person change it per page. Framings name the goals they serve in the `.brand` file.
+
+### `review` Block
+
+Questions to check before publishing, as a short editorial check. Each one should be answerable with yes or no.
+
+```yaml
+review
+  copy:
+    - Ist der Anlass für Kundschaft schnell verständlich?
+    - Nennt der Text Sorte, Mehl oder Backzeit?
+  image:
+    - Zeigt das Bild einen echten Arbeitsschritt?
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `copy:` | list | No | Questions for texts |
+| `image:` | list | No | Questions for photos and film |
 
 ### Exclusion Rule
 
@@ -787,6 +893,8 @@ framing mensch
 | `horizon:` | % \| `none` | required | Horizon position as a share of image height, measured from the top. `none` for close-ups without a far line |
 | `label:` | string | id | Display name |
 | `description:` | string | — | The photographic task, one line |
+| `caption:` | string | — | What a text adds to a photo in this framing, one line (e.g. who is learning what, and how to join) |
+| `goals:` | list | — | Ids of identity [`goal`](#goal-name-block) blocks this framing serves, comma-separated. Implementations suggest the framing for content with that goal |
 
 A purpose can name its module with `framing:` (see [Purpose](#layer-4-purpose-purpose)); the camera then opens on it.
 
@@ -899,6 +1007,10 @@ video intro
 | `animated` | flag | No | Marks asset as animated |
 | `loop` | flag | No | Marks video/lottie as looping |
 | `when:` | string | No | Photos only. Name of the [date window](#windows-block) the photo fits. Absent: all year |
+| `framing:` | string | No | Photos only. Id of the [framing](#framing-name-block) module the photo was taken in |
+| `place:` | string | No | Photos only. Where the photo was taken |
+| `person:` | string | No | Photos only. Who is shown, with name and role |
+| `taken:` | date | No | Photos only. Date taken, `YYYY-MM-DD` |
 | `group:` | string | No | Library group (e.g. `experimental`). Ungrouped assets come first; each group is listed as its own section after them, in order of first appearance. |
 | `gltf:` | string | No | Path to a glTF/GLB 3D model (logos only). When present, the asset renders as a live 3D object; `src` stays as the 2D fallback for thumbnails and export. |
 | `generator:` | string | No | Procedural generator id (logos only). Renders live geometry from code (e.g. `spiral`, `mobius`, `ribbon`); `src` stays as the 2D fallback. |
@@ -988,6 +1100,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
 | `camera:` | bool \| enum | No | `false` hides Take Photo / Upload. `front` \| `rear` overrides the brand's camera `facing:` for this purpose. Default: `true` |
 | `framing:` | string | No | Id of a brand `framing` block. Photos for this purpose are shot in that module: implementations open the camera on it and may hide the others. Unknown ids are ignored |
+| `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block this purpose serves by default |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable) |
@@ -1014,7 +1127,9 @@ These names are fixed. They travel through the entire stack: a composition place
 | `label:` | string | Yes | Human-readable slot name |
 | `typography:` | string | Yes | Named typography style from `.brand` |
 | `color:` | string | No | Theme slot name (e.g., `text-primary`, `cta`) |
-| `maxLength:` | int | Yes | Character limit |
+| `maxLength:` | int | Yes | Character limit. The hard limit: layouts are built for it |
+| `words:` | range | No | Editorial word range, `N` or `MIN..MAX` (e.g. `3..8`). Guidance for writing and review on top of `maxLength` |
+| `sentences:` | range | No | Editorial sentence range, `N` or `MIN..MAX` |
 | `samples:` | list | * | Example content (pipe-separated or multi-line) |
 | `value:` | string | * | Fixed text — never AI-generated or shuffled. Mutually exclusive with `samples:` |
 | `editable` | bool | No | When `false`, slot is locked (no user editing in any mode). Default: `true` |

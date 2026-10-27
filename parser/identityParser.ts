@@ -2,7 +2,8 @@
  * Parser for .identity brand identity files.
  *
  * Line-based format with indentation-based blocks.
- * Contains brand strategy: essence, promise, voice, pillars, audiences, values.
+ * Contains brand strategy: essence, promise, voice, pillars, audiences, values,
+ * imagery, goals and review checks.
  * No visual properties of any kind.
  */
 
@@ -40,6 +41,14 @@ export interface ParsedIdentity {
   values?: ParsedValue[];
   /** Explicitly not-our-audience segments keyed by ID */
   antiAudiences?: Record<string, ParsedAntiAudience>;
+  /** Rules for photos and film: what the imagery always shows and never shows */
+  imagery?: ParsedImagery;
+  /** Named image themes, in declaration order */
+  imageThemes?: ParsedImageTheme[];
+  /** Communication goals keyed by ID (e.g. the shares of a content mix), in declaration order */
+  goals?: Record<string, ParsedGoal>;
+  /** Questions to check before publishing */
+  review?: ParsedReview;
 }
 
 export interface ParsedVoice {
@@ -53,6 +62,15 @@ export interface ParsedVoice {
   always: string[];
   /** Concrete rules the brand never breaks */
   never: string[];
+  /** Phrases to replace, each with the brand's own wording */
+  instead?: ParsedReplacement[];
+}
+
+export interface ParsedReplacement {
+  /** The phrase to avoid */
+  avoid: string;
+  /** What the brand writes instead */
+  use: string;
 }
 
 export interface ParsedPillars {
@@ -96,13 +114,56 @@ export interface ParsedValue {
   name: string;
   /** Behavior statement — what this value means in practice */
   behavior: string;
+  /** Example lines that carry this value */
+  say?: string[];
+  /** Counter-examples: lines that miss it */
+  not?: string[];
+}
+
+export interface ParsedImagery {
+  /** What every photo and film shows */
+  always: string[];
+  /** What the imagery never shows */
+  never: string[];
+}
+
+export interface ParsedImageTheme {
+  /** Theme title (free-form) */
+  name: string;
+  /** Name of the narrative this theme belongs to */
+  narrative?: string;
+  /** What the images show */
+  text: string;
+}
+
+export interface ParsedGoal {
+  /** Human-readable goal name */
+  label: string;
+  /** Target share of the content mix, 0–100 */
+  share?: number;
+  /** The question content for this goal answers */
+  question?: string;
+  /** Narratives this goal draws on */
+  narratives?: string[];
+  /** Rules content for this goal follows */
+  always?: string[];
+  /** Rules content for this goal never breaks */
+  never?: string[];
+}
+
+export interface ParsedReview {
+  /** Questions for texts */
+  copy?: string[];
+  /** Questions for photos and film */
+  image?: string[];
 }
 
 // ── Parser ────────────────────────────────────────────────────────────────────
 
-type Block = 'top' | 'voice' | 'pillars' | 'audience' | 'anti-audience' | 'values' | 'narrative';
+type Block = 'top' | 'voice' | 'pillars' | 'audience' | 'anti-audience' | 'values' | 'narrative' | 'imagery' | 'image-theme' | 'goal' | 'review';
 type NarrativeState = { name: string; primary: boolean; text: string };
-type ListTarget = 'always' | 'never' | 'primary' | 'secondary' | 'avoid';
+type ListTarget = 'always' | 'never' | 'instead' | 'primary' | 'secondary' | 'avoid'
+  | 'imagery-always' | 'imagery-never' | 'goal-always' | 'goal-never' | 'review-copy' | 'review-image';
 
 export function parseIdentityFile(content: string, fileName: string): ParsedIdentity {
   const lines = content.split('\n');
@@ -122,12 +183,22 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
   const audiences: Record<string, Partial<ParsedAudience>> = {};
   const antiAudiences: Record<string, Partial<ParsedAntiAudience>> = {};
   const values: ParsedValue[] = [];
+  const imagery: ParsedImagery = { always: [], never: [] };
+  let imageryDeclared = false;
+  const imageThemes: ParsedImageTheme[] = [];
+  let currentImageTheme: ParsedImageTheme | null = null;
+  const goals: Record<string, Partial<ParsedGoal> & { line: number }> = {};
+  let currentGoal = '';
+  const review: ParsedReview = {};
+  let reviewDeclared = false;
 
   let block: Block = 'top';
   let currentAudience = '';
   let currentAntiAudience = '';
   let currentValueName = '';
   let currentValueBehavior = '';
+  let currentValueSay: string[] = [];
+  let currentValueNot: string[] = [];
   let listTarget: ListTarget | null = null;
   let continuationKey: string | null = null;
 
@@ -144,10 +215,29 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
   function flushValue() {
     if (currentValueName && currentValueBehavior) {
-      values.push({ name: currentValueName, behavior: currentValueBehavior.trim() });
+      const value: ParsedValue = { name: currentValueName, behavior: currentValueBehavior.trim() };
+      if (currentValueSay.length > 0) value.say = currentValueSay;
+      if (currentValueNot.length > 0) value.not = currentValueNot;
+      values.push(value);
     }
     currentValueName = '';
     currentValueBehavior = '';
+    currentValueSay = [];
+    currentValueNot = [];
+  }
+
+  function flushImageTheme() {
+    if (currentImageTheme && currentImageTheme.text) {
+      imageThemes.push({ ...currentImageTheme, text: currentImageTheme.text.trim() });
+    }
+    currentImageTheme = null;
+  }
+
+  /** Close the free-text blocks before a new block or top-level key starts. */
+  function flushBlock() {
+    if (block === 'values') flushValue();
+    if (block === 'narrative') flushNarrative();
+    if (block === 'image-theme') flushImageTheme();
   }
 
   for (let i = 0; i < lines.length; i++) {
@@ -167,10 +257,13 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     if (block === 'values' && /^\s{2,}/.test(raw) && !raw.trim().startsWith('#')) {
       const indent = raw.match(/^(\s*)/)?.[1].length ?? 0;
       const text = raw.trim();
+      const example = text.match(/^(say|not):\s*(.+)$/);
       if (indent <= 2 && !text.includes(':')) {
         // New value name (2-space indent)
         flushValue();
         currentValueName = text;
+      } else if (currentValueName && example) {
+        (example[1] === 'say' ? currentValueSay : currentValueNot).push(example[2].trim());
       } else if (currentValueName) {
         // Behavior text (4+ space indent) or continuation
         currentValueBehavior += (currentValueBehavior ? ' ' : '') + text;
@@ -186,6 +279,15 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
       } else {
         currentNarrative.text += (currentNarrative.text ? '\n' : '') + trimmed;
       }
+      continue;
+    }
+
+    // ── Image theme block: optional narrative reference, then text lines ──
+    if (block === 'image-theme' && currentImageTheme && /^\s{2,}/.test(raw) && !raw.trim().startsWith('#')) {
+      const trimmed = raw.trim();
+      const ref = trimmed.match(/^narrative:\s*(.+)$/);
+      if (ref) currentImageTheme.narrative = ref[1].trim();
+      else currentImageTheme.text += (currentImageTheme.text ? '\n' : '') + trimmed;
       continue;
     }
 
@@ -215,6 +317,19 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
         case 'primary': pillars.primary!.push(value); break;
         case 'secondary': (pillars.secondary ??= []).push(value); break;
         case 'avoid': pillars.avoid!.push(value); break;
+        case 'instead': {
+          const arrow = value.indexOf('->');
+          if (arrow === -1) throw new Error(`${fileName}:${lineNum}: voice.instead item must be "PHRASE -> REPLACEMENT", got "${value}"`);
+          const unquote = (s: string) => s.trim().replace(/^["„“](.*)["“”]$/, '$1');
+          (voice.instead ??= []).push({ avoid: unquote(value.slice(0, arrow)), use: unquote(value.slice(arrow + 2)) });
+          break;
+        }
+        case 'imagery-always': imagery.always.push(value); break;
+        case 'imagery-never': imagery.never.push(value); break;
+        case 'goal-always': (goals[currentGoal].always ??= []).push(value); break;
+        case 'goal-never': (goals[currentGoal].never ??= []).push(value); break;
+        case 'review-copy': (review.copy ??= []).push(value); break;
+        case 'review-image': (review.image ??= []).push(value); break;
       }
       continuationKey = null;
       continue;
@@ -235,6 +350,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
           case 'rhythm': voice.rhythm = val; break;
           case 'always': listTarget = 'always'; break;
           case 'never': listTarget = 'never'; break;
+          case 'instead': listTarget = 'instead'; break;
           default:
             throw new Error(`${fileName}:${lineNum}: unknown voice key "${key}"`);
         }
@@ -273,6 +389,38 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
           default:
             throw new Error(`${fileName}:${lineNum}: unknown anti-audience key "${key}"`);
         }
+      } else if (block === 'imagery') {
+        switch (key) {
+          case 'always': listTarget = 'imagery-always'; break;
+          case 'never': listTarget = 'imagery-never'; break;
+          default:
+            throw new Error(`${fileName}:${lineNum}: unknown imagery key "${key}"`);
+        }
+      } else if (block === 'goal' && currentGoal) {
+        const goal = goals[currentGoal];
+        switch (key) {
+          case 'label': goal.label = val; break;
+          case 'question': goal.question = val; break;
+          case 'share': {
+            const m = val.match(/^(\d+(?:\.\d+)?)%$/);
+            const n = m ? parseFloat(m[1]) : NaN;
+            if (!(n >= 0 && n <= 100)) throw new Error(`${fileName}:${lineNum}: goal share must be a percentage between 0% and 100%, got "${val}"`);
+            goal.share = n;
+            break;
+          }
+          case 'narratives': goal.narratives = val.split(',').map(s => s.trim()).filter(Boolean); break;
+          case 'always': listTarget = 'goal-always'; break;
+          case 'never': listTarget = 'goal-never'; break;
+          default:
+            throw new Error(`${fileName}:${lineNum}: unknown goal key "${key}"`);
+        }
+      } else if (block === 'review') {
+        switch (key) {
+          case 'copy': listTarget = 'review-copy'; break;
+          case 'image': listTarget = 'review-image'; break;
+          default:
+            throw new Error(`${fileName}:${lineNum}: unknown review key "${key}"`);
+        }
       }
       continue;
     }
@@ -282,8 +430,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     if (topMatch) {
       const [, key, value] = topMatch;
       const val = value.trim();
-      if (block === 'values') flushValue();
-      if (block === 'narrative') flushNarrative();
+      flushBlock();
       block = 'top';
       listTarget = null;
       continuationKey = null;
@@ -327,8 +474,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
     // ── Block headers ──
     if (raw.match(/^voice\s*$/)) {
-      if (block === 'values') flushValue();
-      if (block === 'narrative') flushNarrative();
+      flushBlock();
       block = 'voice';
       listTarget = null;
       continuationKey = null;
@@ -336,8 +482,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     }
 
     if (raw.match(/^pillars\s*$/)) {
-      if (block === 'values') flushValue();
-      if (block === 'narrative') flushNarrative();
+      flushBlock();
       block = 'pillars';
       listTarget = null;
       continuationKey = null;
@@ -345,8 +490,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     }
 
     if (raw.match(/^values\s*$/)) {
-      if (block === 'values') flushValue();
-      if (block === 'narrative') flushNarrative();
+      flushBlock();
       block = 'values';
       listTarget = null;
       continuationKey = null;
@@ -355,8 +499,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
     const narrativeMatch = raw.match(/^narrative\s+(.+?)\s*$/);
     if (narrativeMatch) {
-      if (block === 'values') flushValue();
-      if (block === 'narrative') flushNarrative();
+      flushBlock();
       block = 'narrative';
       currentNarrative = { name: narrativeMatch[1].trim(), primary: false, text: '' };
       listTarget = null;
@@ -364,10 +507,49 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
       continue;
     }
 
+    if (raw.match(/^imagery\s*$/)) {
+      flushBlock();
+      block = 'imagery';
+      imageryDeclared = true;
+      listTarget = null;
+      continuationKey = null;
+      continue;
+    }
+
+    if (raw.match(/^review\s*$/)) {
+      flushBlock();
+      block = 'review';
+      reviewDeclared = true;
+      listTarget = null;
+      continuationKey = null;
+      continue;
+    }
+
+    const imageThemeMatch = raw.match(/^image-theme\s+(.+?)\s*$/);
+    if (imageThemeMatch) {
+      flushBlock();
+      block = 'image-theme';
+      currentImageTheme = { name: imageThemeMatch[1].trim(), text: '' };
+      listTarget = null;
+      continuationKey = null;
+      continue;
+    }
+
+    const goalMatch = raw.match(/^goal\s+(\S+)\s*$/);
+    if (goalMatch) {
+      flushBlock();
+      block = 'goal';
+      currentGoal = goalMatch[1];
+      if (goals[currentGoal]) throw new Error(`${fileName}:${lineNum}: duplicate goal "${currentGoal}"`);
+      goals[currentGoal] = { line: lineNum };
+      listTarget = null;
+      continuationKey = null;
+      continue;
+    }
+
     const audienceMatch = raw.match(/^audience\s+(\S+)\s*$/);
     if (audienceMatch) {
-      if (block === 'values') flushValue();
-      if (block === 'narrative') flushNarrative();
+      flushBlock();
       block = 'audience';
       currentAudience = audienceMatch[1];
       audiences[currentAudience] ??= {};
@@ -378,8 +560,7 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
 
     const antiAudienceMatch = raw.match(/^anti-audience\s+(\S+)\s*$/);
     if (antiAudienceMatch) {
-      if (block === 'values') flushValue();
-      if (block === 'narrative') flushNarrative();
+      flushBlock();
       block = 'anti-audience';
       currentAntiAudience = antiAudienceMatch[1];
       antiAudiences[currentAntiAudience] ??= {};
@@ -389,9 +570,8 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     }
   }
 
-  // Flush last value/narrative if in those blocks
-  if (block === 'values') flushValue();
-  if (block === 'narrative') flushNarrative();
+  // Flush the last free-text block
+  flushBlock();
 
   // ── Validation ──────────────────────────────────────────────────────────────
 
@@ -415,6 +595,23 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
     if (!aa.label) throw new Error(`${fileName}: anti-audience "${id}" missing required field "label:"`);
     if (!aa.description) throw new Error(`${fileName}: anti-audience "${id}" missing required field "description:"`);
   }
+
+  const narrativeNames = new Set(narratives.map(n => n.name));
+  for (const theme of imageThemes) {
+    if (theme.narrative && !narrativeNames.has(theme.narrative)) {
+      throw new Error(`${fileName}: image-theme "${theme.name}" references unknown narrative "${theme.narrative}"`);
+    }
+  }
+
+  let shareTotal = 0;
+  for (const [id, goal] of Object.entries(goals)) {
+    if (!goal.label) throw new Error(`${fileName}:${goal.line}: goal "${id}" missing required field "label:"`);
+    for (const name of goal.narratives ?? []) {
+      if (!narrativeNames.has(name)) throw new Error(`${fileName}:${goal.line}: goal "${id}" references unknown narrative "${name}"`);
+    }
+    shareTotal += goal.share ?? 0;
+  }
+  if (shareTotal > 100) throw new Error(`${fileName}: goal shares add up to ${shareTotal}%, more than 100%`);
 
   // ── Hex value exclusion rule ──
   const hexPattern = /#[0-9A-Fa-f]{3,8}\b/;
@@ -442,6 +639,14 @@ export function parseIdentityFile(content: string, fileName: string): ParsedIden
   if (Object.keys(antiAudiences).length > 0) {
     result.antiAudiences = antiAudiences as Record<string, ParsedAntiAudience>;
   }
+  if (imageryDeclared) result.imagery = imagery;
+  if (imageThemes.length > 0) result.imageThemes = imageThemes;
+  if (Object.keys(goals).length > 0) {
+    result.goals = Object.fromEntries(
+      Object.entries(goals).map(([id, { line: _line, ...goal }]) => [id, goal as ParsedGoal]),
+    );
+  }
+  if (reviewDeclared) result.review = review;
 
   return result;
 }

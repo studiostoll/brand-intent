@@ -39,7 +39,9 @@ The brief is a snapshot. Regenerate it after any change to `.identity`, `.brand`
 6. **Auto-derive the Guardrails section** from `.identity`:
    - every item in `voice.never`
    - every item in `voice.always`
+   - every `voice.instead` pair
    - `pillars.avoid` list
+   - every item in `imagery.never` and `imagery.always`
    - every `anti-audience` block (label + description)
 
    The Guardrails *section in the brief* is derived. Never add a `guardrails:` block to the DSL — guardrails live inside `.identity` already.
@@ -93,6 +95,26 @@ _Role: how this brand sounds._
 _Role: behavior statements, not keywords._
 
 - **{name}** — {behavior}
+  - Say: {each say: line}
+  - Not: {each not: line}
+
+## Imagery (optional)
+_Role: what photos and film show. Only emitted if `imagery` or `image-theme` is present._
+
+- **Image themes:** for each — **{name}** ({narrative, if set}) — {text}
+
+## Goals (optional)
+_Role: what a piece of content is for, independent of its format. Only emitted if `goal` blocks are present._
+
+- **{label}** ({share, if set}) — {question}
+  - Narratives: {narratives}
+  - Always: {each always item} · Never: {each never item}
+
+## Review (optional)
+_Role: yes/no questions before publishing. Only emitted if `review` is present._
+
+- **Copy:** {each review.copy question}
+- **Image:** {each review.image question}
 
 ## Content Pillars
 _Role: what the brand talks about, and what it avoids._
@@ -132,6 +154,12 @@ _Role: hard rules any generator, agent, or reviewer must enforce._
 **Always:**
 - {each voice.always item}
 
+**Instead:**
+- "{avoid}" → {use}
+
+**Imagery never / always:**
+- {each imagery.never item} / {each imagery.always item}
+
 **Avoid topics:**
 - {each pillars.avoid item}
 
@@ -151,7 +179,8 @@ For each purpose, emit **glossed** tags — not verbatim DSL values:
   - **Logo:** gloss — `text` = "wordmark (text logo)"; `mark` = "graphic mark"; other values pass through verbatim.
   - Scope: {scope audience + pillars}
   - Context: {context prose per slot}
-  - Slots: for each slot — id, typography, maxLength, samples. Omit `color:` references (theme-internal detail). Override hints (`hyphenate`, `textAlign`) pass through as-is.
+  - Goal: {goal label}, if set
+  - Slots: for each slot — id, typography, maxLength, words/sentences range if set, samples. Omit `color:` references (theme-internal detail). Override hints (`hyphenate`, `textAlign`) pass through as-is.
 
 ## Formats (optional)
 _Role: where content appears. Only emitted if any `.format` files are present._

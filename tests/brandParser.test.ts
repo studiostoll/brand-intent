@@ -392,6 +392,24 @@ test('framing label defaults to id; no block → no framings', () => {
   assertEq(parseBrandFile(HEADER, 'test.brand').framings, undefined, 'absent');
 });
 
+test('framing caption and goals', () => {
+  const out = parseBrandFile(`${HEADER}framing handlung\n  horizon: 30%\n  caption: Wer lernt hier was?\n  goals: profile, localhood\n`, 'test.brand');
+  assertEq(out.framings?.[0]?.caption, 'Wer lernt hier was?', 'caption');
+  assertEq(out.framings?.[0]?.goals, ['profile', 'localhood'], 'goals');
+});
+
+test('photo metadata: framing, place, person, taken', () => {
+  const src = `${HEADER}framing mensch\n  horizon: none\n\nphoto baeckerin\n  src: photos/b.jpg\n  framing: mensch\n  place: Backstube, Hauptstraße\n  person: Anna, Bäckerin\n  taken: 2026-05-14\n`;
+  const p = parseBrandFile(src, 'test.brand').assets?.photos?.[0];
+  assertEq([p?.framing, p?.place, p?.person, p?.taken], ['mensch', 'Backstube, Hauptstraße', 'Anna, Bäckerin', '2026-05-14'], 'metadata');
+});
+
+test('photo metadata rejects unknown framing, bad date, non-photo use', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  framing: nope\n`, 'test.brand'), /unknown framing/, 'unknown framing');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  taken: 14.05.2026\n`, 'test.brand'), /YYYY-MM-DD/, 'bad date');
+  assertThrows(() => parseBrandFile(`${HEADER}logo a\n  src: a.svg\n  place: Burg\n`, 'test.brand'), /for photos only/, 'logo');
+});
+
 test('framing rejects bad horizon, missing horizon, unknown keys, duplicates', () => {
   assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 120%\n`, 'test.brand'), /framing horizon/, 'out of range');
   assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 0.5\n`, 'test.brand'), /framing horizon/, 'no percent');

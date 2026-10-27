@@ -38,11 +38,19 @@ Identity → Brand → Format → Purpose → Composition
 
 **Required:** essence, promise, voice (register, persona, rhythm, always/never), pillars, audience segments.
 
-**Optional:** tagline, positioning, mission, vision, archetype, narrative, values (with behavior statements), anti-audience segments.
+**Optional:** tagline, positioning, mission, vision, archetype, narrative, values (with behavior statements and `say:`/`not:` examples), anti-audience segments, imagery, image-theme, goal, review.
 
 **The `always`/`never` construct is your primary guardrail.** These are concrete, testable rules. When generating or reviewing content, check every item in `never:` and confirm every item in `always:`. They are not suggestions; they are constraints.
 
-**`values`** are not just keywords; each has a behavior statement that describes how it manifests. Use these to inform decisions when voice rules don't cover a situation.
+**`voice.instead`** pairs a phrase to avoid with the brand's own wording. When a draft contains the phrase, use the replacement as the model for the rewrite.
+
+**`values`** are not just keywords; each has a behavior statement that describes how it manifests. Use these to inform decisions when voice rules don't cover a situation. `say:` lines are examples to match in tone, `not:` lines are the tone to avoid.
+
+**`imagery`** is the image counterpart of `voice`: `always`/`never` rules for photos and film. Apply them when reviewing a photo or writing an image brief or prompt. **`image-theme`** blocks name subjects for photos and film, some tied to a narrative.
+
+**`goal`** says what a piece of content is for, independent of its format. A purpose names a default goal with `goal:`. Follow the goal's `always`/`never` rules and answer its `question`. `share:` is a planning target, not a rule for a single piece.
+
+**`review`** lists yes/no questions to check before publishing: `copy` for texts, `image` for photos and film.
 
 **`anti-audience`** segments define who the brand is explicitly *not* for. Never generate content that sounds like it's addressing an anti-audience. This is as important as `voice.never`.
 
@@ -92,11 +100,11 @@ When generating content for a specific purpose, read all layers silently (do not
 
 ### Reading layers (internal, not shown to user):
 
-1. **Read `.identity`** — voice.always/never (hard constraints), persona, register, pillars.avoid, anti-audience, values, positioning
+1. **Read `.identity`** — voice.always/never/instead (hard constraints), persona, register, pillars.avoid, anti-audience, values and their examples, positioning; the goal named by the purpose
 2. **Read `.brand`** — voice-constraints: sentence-max, headline-pattern, number-format, register
 3. **Apply `scope` from `.purpose`** — audience and pillar filters narrow the upstream context
 4. **Apply `context` from `.purpose`** — slot-specific instructions, follow literally
-5. **Generate per-slot content** — respect maxLength, use samples as structural reference (match pattern, not words), follow context instructions
+5. **Generate per-slot content** — respect maxLength and any `words:`/`sentences:` range, use samples as structural reference (match pattern, not words), follow context instructions
 
 ### Output format:
 
@@ -117,7 +125,13 @@ After generating or reviewing content, validate against these rules in order:
 6. **`sentence-max`:** Count words in every sentence. Does any exceed the limit? If yes, split.
 7. **`headline-pattern`:** Does the headline follow the specified pattern? If not, restructure.
 8. **`maxLength`:** Does each slot's content fit within its character limit? If not, shorten.
-9. **`register`:** Does the formality level match? (e.g., if `informal, Du`, no formal address)
+9. **`words:` / `sentences:`:** Is each slot within its editorial range, where one is set? If not, adjust.
+10. **`register`:** Does the formality level match? (e.g., if `informal, Du`, no formal address)
+11. **`voice.instead`:** Does the text contain a phrase from the instead list? If yes, rewrite along the replacement.
+12. **`goal`:** Where a goal applies, does the text follow its rules and answer its question?
+13. **`review.copy`:** Answer each question with yes or no. Any no is a failure.
+
+When reviewing a photo, check `imagery.always`/`never`, the brand's framing (horizon position) and each `review.image` question.
 
 ## What NOT to Do
 

@@ -59,6 +59,24 @@ test('framing: names a brand framing module', () => {
 
 console.log('\nsample windows:');
 
+test('goal: names an identity goal', () => {
+  const g = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').goal;
+  assertEq(g('goal: localhood'), 'localhood', 'goal');
+  assertEq(g(''), undefined, 'absent');
+});
+
+test('words: and sentences: ranges on a slot', () => {
+  const slot = (props: string) => parsePurposeFile(`id: p\ncompositions: panel\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 60\n${props}  samples: a\n`, 'p.purpose').slots[0];
+  assertEq(slot('  words: 3..8\n').words, { min: 3, max: 8 }, 'words range');
+  assertEq(slot('  sentences: 1\n').sentences, { min: 1, max: 1 }, 'single sentence');
+  assertEq(slot('').words, undefined, 'absent');
+  for (const bad of ['  words: 8..3\n', '  words: 0\n', '  sentences: one\n']) {
+    let threw = false;
+    try { slot(bad); } catch { threw = true; }
+    assertEq(threw, true, `rejects ${bad.trim()}`);
+  }
+});
+
 test('@name marker sets sampleWindows and is stripped from the text', () => {
   const slot = (samples: string, type = '') => parsePurposeFile(`id: p\ncompositions: panel\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 80\n${type}${samples}`, 'p.purpose').slots[0];
   const inline = slot('  samples: Raps blüht im Mai @rapsbluete | Hafen Burgstaaken\n');

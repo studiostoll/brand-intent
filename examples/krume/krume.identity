@@ -65,6 +65,14 @@ voice
     - Superlative ohne Substanz (bestes Brot, einzigartiger Geschmack)
     - Wellness- oder Gesundheitsversprechen (gut für dich, clean eating)
 
+  # instead: the phrase to avoid and what Krume writes instead.
+  # A pair teaches the rewrite, not just the ban.
+
+  instead:
+    - "beste Zutaten" -> Tipo 1 und Roggen 1150 aus der Mühle in Dachau
+    - "mit Liebe gebacken" -> achtzehn Stunden Teigruhe
+    - "frisch aus dem Ofen" -> seit 6 Uhr im Regal
+
 # ── Values ──
 # Not keywords - behavior statements. Each value describes
 # how it manifests in what we say and do.
@@ -74,11 +82,15 @@ values
     Wir benennen den Prozess, nicht das Ergebnis.
     Backzeit in Stunden, Mehlsorte beim Namen.
     Kein Brot ohne nachvollziehbaren Weg vom Korn zum Laib.
+    say: Der Roggen steht seit gestern Abend.
+    not: Mit Liebe handgemacht.
 
   Ehrlichkeit
     Kein Brot ohne Zutatenliste. Keine Versprechen
     die der Teig nicht halten kann. Wenn etwas
     nicht gelungen ist, sagen wir das.
+    say: Heute kein Dinkel. Der Teig wollte nicht.
+    not: Leider ausverkauft, schau morgen wieder vorbei!
 
   Kiez
     Der Laden gehört zur Weserstraße wie der Späti
@@ -125,3 +137,61 @@ anti-audience discount-hunters
                Supermarkt-Toastbrot vergleicht, ist hier falsch.
                Wir erklären gerne warum es kostet was es kostet -
                aber wir rechtfertigen uns nicht.
+
+# ── Imagery ──
+# The image counterpart of voice: yes/no rules for photos and film.
+# Framing and colour treatment live in krume.brand.
+
+imagery
+  always:
+    - echte Arbeitsschritte in der Backstube, nichts nachgestellt
+    - Mehl, Teig und Werkzeug mit Gebrauchsspuren
+    - Tageslicht oder das Licht der Backstube
+  never:
+    - gestellte Lächeln in die Kamera
+    - Brot als Deko auf Leinen und Holzbrett
+    - KI-generierte oder KI-veränderte Bildinhalte
+
+image-theme Vier Uhr morgens
+  Die Backstube vor Ladenöffnung: Hände im Teig,
+  Mehl auf der Arbeitsfläche, der Ofen offen.
+
+image-theme Über den Tresen
+  Stammkunden und Laufkundschaft am Tresen,
+  Brot wechselt die Hand, die Weserstraße im Hintergrund.
+
+# ── Goals ──
+# What a post is for, independent of its format.
+# Shares: monthly target for Instagram.
+
+goal craft
+  label:    Handwerk zeigen
+  share:    60%
+  question: Wie entsteht das Brot?
+  always:
+    - einen konkreten Arbeitsschritt, eine Mehlsorte oder eine Zeit nennen
+
+goal kiez
+  label:    Kiez
+  share:    30%
+  question: Wer kommt hierher und warum?
+  always:
+    - eine Person mit Vornamen und ihrem Grund zu kommen
+
+goal service
+  label:    Service
+  share:    10%
+  question: Was gibt es heute, wann ist offen?
+  always:
+    - Tag, Uhrzeit und Sorte konkret nennen
+
+# ── Review ──
+# Asked before anything goes out. Each one is a yes/no question.
+
+review
+  copy:
+    - Nennt der Text Sorte, Mehl, Gewicht oder Backzeit?
+    - Klingt er wie die Bäckerin hinterm Tresen?
+  image:
+    - Zeigt das Bild einen echten Arbeitsschritt oder echte Kundschaft?
+    - Ist das Brot Lebensmittel, nicht Dekoration?

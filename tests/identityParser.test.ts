@@ -76,6 +76,146 @@ test('purpose does not swallow promise', () => {
   assertEq(out.promise, 'The promise.', 'promise');
 });
 
+console.log('\nIdentity: voice instead, value examples:');
+
+test('voice.instead parses phrase -> replacement and strips quotes', () => {
+  const src = BASE.replace('  never:\n    - nothing\n', '  never:\n    - nothing\n  instead:\n    - "beste Zutaten" -> Tipo 1 aus der Mühle\n    - frisch -> seit 4 Uhr im Ofen\n');
+  const out = parseIdentityFile(src, 'test.identity');
+  assertEq(out.voice.instead, [
+    { avoid: 'beste Zutaten', use: 'Tipo 1 aus der Mühle' },
+    { avoid: 'frisch', use: 'seit 4 Uhr im Ofen' },
+  ], 'instead');
+});
+
+test('voice.instead without arrow throws', () => {
+  const src = BASE.replace('  never:\n    - nothing\n', '  never:\n    - nothing\n  instead:\n    - just a phrase\n');
+  let threw = false;
+  try { parseIdentityFile(src, 'test.identity'); } catch { threw = true; }
+  assertEq(threw, true, 'threw');
+});
+
+test('values carry say: and not: examples', () => {
+  const src = `${BASE}values
+  Handwerk
+    Wir benennen den Prozess.
+    say: Der Roggen steht seit gestern Abend.
+    say: Achtzehn Stunden Teigruhe.
+    not: Mit Liebe gemacht.
+
+  Ehrlichkeit
+    Keine Versprechen.
+`;
+  const out = parseIdentityFile(src, 'test.identity');
+  assertEq(out.values, [
+    { name: 'Handwerk', behavior: 'Wir benennen den Prozess.', say: ['Der Roggen steht seit gestern Abend.', 'Achtzehn Stunden Teigruhe.'], not: ['Mit Liebe gemacht.'] },
+    { name: 'Ehrlichkeit', behavior: 'Keine Versprechen.' },
+  ], 'values');
+});
+
+console.log('\nIdentity: imagery, image themes, goals, review:');
+
+const NARRATIVES = `narrative Achtzehn Stunden
+  primary
+  Das Brot entsteht in achtzehn Stunden.
+
+narrative Nachbarschaft
+  Die Bäckerei gehört zum Viertel.
+`;
+
+test('imagery always/never lists', () => {
+  const src = `${BASE}imagery
+  always:
+    - Hände im Teig
+  never:
+    - gestellte Lächeln
+    - KI-generierte Bilder
+`;
+  const out = parseIdentityFile(src, 'test.identity');
+  assertEq(out.imagery, { always: ['Hände im Teig'], never: ['gestellte Lächeln', 'KI-generierte Bilder'] }, 'imagery');
+});
+
+test('image-theme with narrative reference and multi-line text', () => {
+  const src = `${BASE}${NARRATIVES}
+image-theme Teig am Morgen
+  narrative: Achtzehn Stunden
+  Hände im Teig, Mehl auf dem Tisch,
+  Licht durch das Backstubenfenster.
+
+image-theme Ladentür
+  Die Tür zur Straße, Menschen mit Brot unterm Arm.
+`;
+  const out = parseIdentityFile(src, 'test.identity');
+  assertEq(out.imageThemes, [
+    { name: 'Teig am Morgen', text: 'Hände im Teig, Mehl auf dem Tisch,\nLicht durch das Backstubenfenster.', narrative: 'Achtzehn Stunden' },
+    { name: 'Ladentür', text: 'Die Tür zur Straße, Menschen mit Brot unterm Arm.' },
+  ], 'imageThemes');
+});
+
+test('image-theme with unknown narrative throws', () => {
+  const src = `${BASE}${NARRATIVES}
+image-theme Teig
+  narrative: Gibt es nicht
+  Text.
+`;
+  let threw = false;
+  try { parseIdentityFile(src, 'test.identity'); } catch { threw = true; }
+  assertEq(threw, true, 'threw');
+});
+
+test('goals parse label, share, question, narratives and rules', () => {
+  const src = `${BASE}${NARRATIVES}
+goal craft
+  label:      Handwerk zeigen
+  share:      60%
+  question:   Wie entsteht das Brot?
+  narratives: Achtzehn Stunden
+  always:
+    - einen konkreten Arbeitsschritt zeigen
+
+goal neighbours
+  label: Nachbarschaft
+  share: 40%
+  narratives: Nachbarschaft, Achtzehn Stunden
+  never:
+    - Stammgäste ohne Einverständnis zeigen
+`;
+  const out = parseIdentityFile(src, 'test.identity');
+  assertEq(out.goals, {
+    craft: { label: 'Handwerk zeigen', share: 60, question: 'Wie entsteht das Brot?', narratives: ['Achtzehn Stunden'], always: ['einen konkreten Arbeitsschritt zeigen'] },
+    neighbours: { label: 'Nachbarschaft', share: 40, narratives: ['Nachbarschaft', 'Achtzehn Stunden'], never: ['Stammgäste ohne Einverständnis zeigen'] },
+  }, 'goals');
+});
+
+test('goal shares over 100% throw', () => {
+  const src = `${BASE}goal a\n  label: A\n  share: 70%\n\ngoal b\n  label: B\n  share: 40%\n`;
+  let threw = false;
+  try { parseIdentityFile(src, 'test.identity'); } catch { threw = true; }
+  assertEq(threw, true, 'threw');
+});
+
+test('goal without label throws', () => {
+  let threw = false;
+  try { parseIdentityFile(`${BASE}goal a\n  share: 10%\n`, 'test.identity'); } catch { threw = true; }
+  assertEq(threw, true, 'threw');
+});
+
+test('review copy/image lists', () => {
+  const src = `${BASE}review
+  copy:
+    - Ist der Anlass klar?
+  image:
+    - Ist das Brot echt?
+    - Ist der Ort erkennbar?
+`;
+  const out = parseIdentityFile(src, 'test.identity');
+  assertEq(out.review, { copy: ['Ist der Anlass klar?'], image: ['Ist das Brot echt?', 'Ist der Ort erkennbar?'] }, 'review');
+});
+
+test('new blocks are absent when not declared', () => {
+  const out = parseIdentityFile(BASE, 'test.identity');
+  assertEq([out.imagery, out.imageThemes, out.goals, out.review, out.voice.instead], [undefined, undefined, undefined, undefined, undefined], 'absent');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) {
   console.log('\nFailures:');

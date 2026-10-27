@@ -3,7 +3,7 @@
 // they take a string (file content) and filename, return a parsed object.
 
 export { parseIdentityFile } from './identityParser';
-export type { ParsedIdentity, ParsedVoice, ParsedPillars, ParsedAudience, ParsedAntiAudience, ParsedValue } from './identityParser';
+export type { ParsedIdentity, ParsedVoice, ParsedReplacement, ParsedPillars, ParsedAudience, ParsedAntiAudience, ParsedValue, ParsedImagery, ParsedImageTheme, ParsedGoal, ParsedReview } from './identityParser';
 
 export { parseBrandFile } from './brandParser';
 export {
@@ -69,7 +69,7 @@ export { parseFormatFile } from './formatParser';
 export type { ParsedFormat } from './formatParser';
 
 export { parsePurposeFile } from './purposeParser';
-export type { ParsedPurpose, ParsedPurposeSlot, Density, ListMarker } from './purposeParser';
+export type { ParsedPurpose, ParsedPurposeSlot, CountRange, Density, ListMarker } from './purposeParser';
 
 export { parseCompositionFile } from './compositionParser';
 export type {

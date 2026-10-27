@@ -25,16 +25,16 @@
       }
     },
     "named-block": {
-      "comment": "Block headers: voice, pillars, values, narrative NAME, audience NAME, anti-audience NAME",
+      "comment": "Block headers: voice, pillars, values, imagery, review, narrative NAME, audience NAME, anti-audience NAME, image-theme NAME, goal NAME",
       "patterns": [
         {
-          "match": "^(voice|pillars|values)\\s*$",
+          "match": "^(voice|pillars|values|imagery|review)\\s*$",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-identity" }
           }
         },
         {
-          "match": "^(narrative|audience|anti-audience)\\s+(\\S.*)",
+          "match": "^(narrative|audience|anti-audience|image-theme|goal)\\s+(\\S.*)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-identity" },
             "2": { "name": "entity.name.type.brand-intent-identity" }
@@ -43,7 +43,7 @@
       ]
     },
     "indented-property": {
-      "match": "^(\\s{2,})(register|persona|rhythm|always|never|primary|secondary|avoid|label|profile|motivation|language|description)(:)\\s+(.*)",
+      "match": "^(\\s{2,})(register|persona|rhythm|always|never|instead|primary|secondary|avoid|label|profile|motivation|language|description|say|not|narrative|share|question|narratives|copy|image)(:)\\s+(.*)",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-identity" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-identity" },

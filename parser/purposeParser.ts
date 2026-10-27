@@ -43,6 +43,8 @@ export interface ParsedPurpose {
   cameraFacing?: 'front' | 'rear';
   /** `framing: <id>` — the brand framing module photos for this purpose are shot in. */
   framing?: string;
+  /** `goal: <id>` — the identity goal this purpose serves by default. */
+  goal?: string;
   /** When false, photo/video analysis skips this purpose (no AI text generation). Default: true. */
   analyze?: boolean;
   /** Default icon for the icon slot. Resolves in the brand set first, then Phosphor (see resolveIconRef). */
@@ -62,6 +64,10 @@ export interface ParsedPurposeSlot {
   /** Fixed value — when set, this slot is never AI-generated or shuffled. Mutually exclusive with samples. */
   value?: string;
   maxLength: number;
+  /** Editorial word range (`words: 3..8`). Guidance on top of the hard `maxLength`. */
+  words?: CountRange;
+  /** Editorial sentence range (`sentences: 1..2`). Guidance on top of the hard `maxLength`. */
+  sentences?: CountRange;
   /** 'text' (default) or 'list'. */
   slotType?: 'text' | 'list';
   /** Max number of items (list slots only). */
@@ -109,6 +115,12 @@ export interface ParsedPurposeSlot {
   }>;
 }
 
+/** Inclusive count range; `words: 3` is { min: 3, max: 3 }. */
+export interface CountRange {
+  min: number;
+  max: number;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const VALID_SLOTS = new Set<string>(['primary', 'secondary', 'detail', 'meta', 'cta', 'label']);
@@ -142,6 +154,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let camera: boolean | undefined;
   let cameraFacing: 'front' | 'rear' | undefined;
   let framing: string | undefined;
+  let goal: string | undefined;
   let analyze: boolean | undefined;
   let defaultIcon: IconRef | undefined;
   let bgPrompt: string | undefined;
@@ -346,6 +359,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     // Framing module: one of the brand's `framing NAME` blocks
     if (line.startsWith('framing:')) {
       framing = line.slice(8).trim() || undefined;
+      continue;
+    }
+
+    // Goal: one of the identity's `goal NAME` blocks
+    if (line.startsWith('goal:') && !raw.startsWith(' ')) {
+      goal = line.slice(5).trim() || undefined;
       continue;
     }
 
@@ -597,6 +616,15 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         currentSlot.maxLength = n;
         continue;
       }
+      if (prop.startsWith('words:') || prop.startsWith('sentences:')) {
+        const key = prop.startsWith('words:') ? 'words' : 'sentences';
+        const v = prop.slice(key.length + 1).trim();
+        const m = v.match(/^(\d+)(?:\.\.(\d+))?$/);
+        const range = m ? { min: parseInt(m[1], 10), max: parseInt(m[2] ?? m[1], 10) } : null;
+        if (!range || range.min <= 0 || range.max < range.min) throw new Error(`${fileName}:${lineNum}: invalid ${key} "${v}" — expected N or MIN..MAX`);
+        currentSlot[key] = range;
+        continue;
+      }
       if (prop.startsWith('typography:')) {
         currentSlot.typographyRef = prop.slice(11).trim();
         continue;
@@ -682,5 +710,5 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, cameraFacing, framing, analyze, defaultIcon, bgPrompt };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, cameraFacing, framing, goal, analyze, defaultIcon, bgPrompt };
 }
