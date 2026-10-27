@@ -195,21 +195,46 @@ export function reachCoversAll(count: number, config: ReachConfig): boolean {
   return true;
 }
 
-/** Where a color comes from, seen from family `index`. Null = not usable there. */
+/** Where a color comes from, seen from family `index`. Null = not usable there.
+ *  `toneAnchors` maps a tone's hex to the hex of the color(s) whose ladder holds it, so a tone
+ *  counts as its color: a family color's tone is own, a shared color's tone shared, a neighbour's by reach. */
 export function colorOrigin(
   hex: string,
   index: number,
   system: Pick<ColorFamilies, 'families' | 'shared'>,
   config: ReachConfig,
+  toneAnchors: ToneAnchors = {},
 ): PairOrigin | null {
   const families = system.families;
-  if (families[index]?.colors.some(c => c.hex === hex)) return 'own';
-  if (system.shared.some(s => s.hex === hex)) return 'shared';
+  const candidates = [hex, ...(toneAnchors[hex] ?? [])];
+  const holds = (colors: Array<{ hex: string }>) => colors.some(c => candidates.includes(c.hex));
+  if (families[index] && holds(families[index].colors)) return 'own';
+  if (holds(system.shared)) return 'shared';
   const reach = reachableFamilies(families.length, index, config, cycleMembers(families));
   for (const [j, dir] of reach) {
-    if (families[j].colors.some(c => c.hex === hex)) return dir;
+    if (holds(families[j].colors)) return dir;
   }
   return null;
+}
+
+/** Tone hex → hex of every color whose declared ladder holds it (`tones` block). Empty without tones. */
+export type ToneAnchors = Record<string, string[]>;
+
+/** Build `ToneAnchors` from ladders (color name → step → hex) and the colors' own hexes. */
+export function toneAnchorsFrom(
+  ladders: Record<string, Record<number, string>> | undefined,
+  colorHex: (name: string) => string | undefined,
+): ToneAnchors {
+  const out: ToneAnchors = {};
+  for (const [name, ladder] of Object.entries(ladders ?? {})) {
+    const anchor = colorHex(name);
+    if (!anchor) continue;
+    for (const hex of Object.values(ladder)) {
+      if (hex === anchor) continue;
+      (out[hex] ??= []).includes(anchor) || out[hex].push(anchor);
+    }
+  }
+  return out;
 }
 
 /**
@@ -229,9 +254,10 @@ export function familyIndexForDate(families: Pick<ColorFamily, 'from'>[], date: 
   return best !== -1 ? best : latest;
 }
 
-/** Name of the family that declares `hex` (first match), for error messages. */
-export function owningFamily(hex: string, families: ColorFamily[]): string | undefined {
-  return families.find(f => f.colors.some(c => c.hex === hex))?.name;
+/** Name of the family that declares `hex` or the color it is a tone of (first match), for error messages. */
+export function owningFamily(hex: string, families: ColorFamily[], toneAnchors: ToneAnchors = {}): string | undefined {
+  const candidates = [hex, ...(toneAnchors[hex] ?? [])];
+  return families.find(f => f.colors.some(c => candidates.includes(c.hex)))?.name;
 }
 
 /** Text candidates for a family ground: its contrast color(s), then shared colors, then extras. */
@@ -252,15 +278,16 @@ export function checkFamilyPair(
   config: ReachConfig,
   rules: ColorRules,
   extraTextCandidates: string[] = [],
+  toneAnchors: ToneAnchors = {},
 ): PairCheck {
   const reasons: string[] = [];
   const origins: [PairOrigin | null, PairOrigin | null] = [
-    colorOrigin(ground, index, system, config),
-    colorOrigin(figure, index, system, config),
+    colorOrigin(ground, index, system, config, toneAnchors),
+    colorOrigin(figure, index, system, config, toneAnchors),
   ];
   for (const [hex, origin] of [[ground, origins[0]], [figure, origins[1]]] as const) {
     if (origin === null) {
-      const owner = owningFamily(hex, system.families);
+      const owner = owningFamily(hex, system.families, toneAnchors);
       reasons.push(owner ? `${hex} from ${owner} is out of reach` : `${hex} is not in any family or shared`);
     }
   }

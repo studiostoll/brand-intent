@@ -12,3 +12,4 @@ Gemfile.lock
 DESIGN.md
 CLAUDE.md
 .claude/
+.DS_Store

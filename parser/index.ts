@@ -21,13 +21,14 @@ export {
   levelRuleViolations,
   reachCoversAll,
   colorOrigin,
+  toneAnchorsFrom,
   familyTextCandidates,
   checkFamilyPair,
   enumerateFamilyPairs,
   familyIndexForDate,
   DEFAULT_COLOR_RULES,
 } from './colorSystem';
-export type { ReachConfig } from './colorSystem';
+export type { ReachConfig, ToneAnchors } from './colorSystem';
 export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedCameraDef, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
 
 export { parseDateWindowRanges, isInDateWindow, SAMPLE_WINDOW_MARKER } from './dateWindows';

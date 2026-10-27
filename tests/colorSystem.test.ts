@@ -10,6 +10,7 @@ import {
   toneClass,
   reachableFamilies,
   enumerateFamilyPairs,
+  toneAnchorsFrom,
   familyIndexForDate,
   cycleMembers,
   DEFAULT_COLOR_RULES,
@@ -474,3 +475,53 @@ test('levels errors', () => {
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);
+
+// ── Tones in family pairs ───────────────────────────────────────────────────
+
+console.log('\ntones in family pairs:');
+
+const TONE_PAIRS_BRAND = (tones = true) => `${HEADER}brand-colors
+  blue:  #2B4C7E
+  white: #FFFFFF
+  green: #40604B
+  sand:  #F4EBC8
+${tones ? `
+tones
+  steps: 10, 30, 95
+  $blue:  #0B1A30 #2B4C7E #F0F4FA
+  $green: #14231A #40604B #E2F2E8
+  $sand:  #2A2410 #F4EBC8 #FCF9EE
+` : ''}
+color-families
+  borrow: none
+  shared: $white, $sand
+  family Sea
+    core: $blue
+    pairs
+      ${tones ? '$blue.10 / $sand.95' : '$blue / $white'}
+      ${tones ? '$blue.95 / $green.10' : '$blue / $green'}
+  family Land
+    core: $green
+`;
+
+test('a tone counts as its color: own, shared, out of reach', () => {
+  const out = parseBrandFile(TONE_PAIRS_BRAND(), 't.brand');
+  const [own, foreign] = out.colorFamilies!.families[0].pairs;
+  assertEq(own.origins, ['own', 'shared'], 'family tone own, shared tone shared');
+  assertEq(own.valid, true, 'tone pair valid');
+  assertEq(foreign.origins, ['own', 'outside'], 'neighbour tone without reach');
+  if (!foreign.reasons.some(r => r.includes('from Land is out of reach'))) throw new Error(`reason: ${foreign.reasons.join(' | ')}`);
+});
+
+test('family pairs without tones still check exact colors', () => {
+  const out = parseBrandFile(TONE_PAIRS_BRAND(false), 't.brand');
+  const [a, b] = out.colorFamilies!.families[0].pairs;
+  assertEq([a.origins, a.valid], [['own', 'shared'], true], 'own / shared');
+  assertEq(b.origins, ['own', 'outside'], 'out of reach');
+});
+
+test('toneAnchorsFrom maps tones to their color, skips the color itself', () => {
+  const anchors = toneAnchorsFrom({ blue: { 10: '#0B1A30', 30: '#2B4C7E' } }, n => (n === 'blue' ? '#2B4C7E' : undefined));
+  assertEq(anchors, { '#0B1A30': ['#2B4C7E'] }, 'anchors');
+  assertEq(toneAnchorsFrom(undefined, () => undefined), {}, 'no tones');
+});

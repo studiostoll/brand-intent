@@ -37,6 +37,7 @@ import {
   derivePairSlots,
   resolveTextColor,
   checkFamilyPair,
+  toneAnchorsFrom,
   reachCoversAll,
   cycleMembers,
   LEVEL_SLOTS,
@@ -1626,6 +1627,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   // Family pairs → checked; valid ones become themes named `{Family}-{n}` (n = declared position).
   if (colorFamilies) {
     const config = { order: colorFamilies.order, borrow: colorFamilies.borrow, distance: colorFamilies.distance };
+    const toneAnchors = toneAnchorsFrom(tones?.colors, name => {
+      const raw = brandColors[name];
+      return raw ? normalizeHex(raw) ?? undefined : undefined;
+    });
     colorFamilies.families.forEach((family, index) => {
       const raw = familiesRaw[index];
       raw.pairs.forEach((p, n) => {
@@ -1635,7 +1640,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
           if (!hex || !isHex6(hex)) throw new Error(`${fileName}:${p.line}: pair color "${value}" is not a known 6-digit color`);
           return hex;
         };
-        const check = checkFamilyPair(resolve(p.ground), resolve(p.figure), index, colorFamilies!, config, rules, neutralText);
+        const check = checkFamilyPair(resolve(p.ground), resolve(p.figure), index, colorFamilies!, config, rules, neutralText, toneAnchors);
         const themeName = `${family.name}-${n + 1}`;
         if (check.valid) {
           if (themes[themeName]) throw new Error(`${fileName}: family pair theme "${themeName}" collides with an authored theme`);

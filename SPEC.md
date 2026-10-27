@@ -472,7 +472,7 @@ color-families
 - `signal: VALUE / VALUE` and `level NAME` overrides: see `levels` below.
 - All inline family colors join the flat `brandColors` projection (name lowercased, spaces → hyphens), so themes can reference them. A name colliding with an existing brand color is a hard error. `$ref` colors are already there and don't join again.
 
-**Reach:** a family may use its own colors, the `shared` colors, and colors of families up to `distance` steps away in the `borrow` direction(s). A reach that covers every family (e.g. a cycle of four with `both` and `distance: 2`) raises a warning — the borrow rule has no effect then.
+**Reach:** a family may use its own colors, the `shared` colors, and colors of families up to `distance` steps away in the `borrow` direction(s). A tone (`$name.step`) counts as its color: a tone of a family color is that family's own, a tone of a `shared` color is shared, a neighbour's tone follows the same reach. A reach that covers every family (e.g. a cycle of four with `both` and `distance: 2`) raises a warning — the borrow rule has no effect then.
 
 **Pairs:** optional `pairs` sub-block, one `ground / figure` per line (`#HEX` or `$ref`). Each pair is checked against reach and `color-rules`:
 
