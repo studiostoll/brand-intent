@@ -231,7 +231,9 @@ export function toneAnchorsFrom(
     if (!anchor) continue;
     for (const hex of Object.values(ladder)) {
       if (hex === anchor) continue;
-      (out[hex] ??= []).includes(anchor) || out[hex].push(anchor);
+      const list: string[] = out[hex] ?? [];
+      if (!list.includes(anchor)) list.push(anchor);
+      out[hex] = list;
     }
   }
   return out;
