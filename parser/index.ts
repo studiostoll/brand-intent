@@ -69,7 +69,7 @@ export { parseFormatFile } from './formatParser';
 export type { ParsedFormat } from './formatParser';
 
 export { parsePurposeFile } from './purposeParser';
-export type { ParsedPurpose, ParsedPurposeSlot, CountRange, Density, ListMarker } from './purposeParser';
+export type { ParsedPurpose, ParsedPurposeSlot, ParsedExample, CountRange, Density, ListMarker } from './purposeParser';
 
 export { parseCompositionFile } from './compositionParser';
 export type {

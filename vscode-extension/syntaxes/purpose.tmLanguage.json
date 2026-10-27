@@ -19,6 +19,7 @@
     { "include": "#bg-prompt-field" },
     { "include": "#context-header" },
     { "include": "#slot-header" },
+    { "include": "#example-header" },
     { "include": "#override-header" },
     { "include": "#override-value" },
     { "include": "#list-property" },
@@ -156,6 +157,12 @@
         "2": { "name": "entity.name.tag.brand-intent-purpose" }
       }
     },
+    "example-header": {
+      "match": "^(example)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-purpose" }
+      }
+    },
     "override-header": {
       "match": "^\\s+(override:)\\s*$",
       "captures": {
@@ -216,7 +223,7 @@
       ]
     },
     "property": {
-      "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|editable)(:)\\s+(.*)",
+      "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|editable|topic|goal|when|primary|secondary|detail|meta|cta)(:)\\s+(.*)",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-purpose" },
         "2": { "name": "punctuation.separator.brand-intent-purpose" },
@@ -241,8 +248,8 @@
       }
     },
     "sample-icon-continuation": {
-      "comment": "[ID] icon prefix on list item continuation lines",
-      "match": "^(\\s{6,})(\\[[^\\]]+\\])",
+      "comment": "[ID] icon prefix on list items (example blocks, legacy sample continuation lines)",
+      "match": "^(\\s{4,})(\\[[^\\]]+\\])",
       "captures": {
         "2": { "name": "entity.name.function.brand-intent-purpose" }
       }
@@ -258,13 +265,13 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|camera:|framing:|goal:|analyze:|bg-prompt:|context|slot)(?=\\s|$)",
+          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|camera:|framing:|goal:|analyze:|bg-prompt:|context|slot|example)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-purpose" }
           }
         },
         {
-          "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|override|audience|pillars|editable)(?=:|\\s|$)",
+          "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|override|audience|pillars|editable|topic|goal|when|primary|secondary|detail|meta|cta)(?=:|\\s|$)",
           "captures": {
             "1": { "name": "support.type.property-name.brand-intent-purpose" }
           }

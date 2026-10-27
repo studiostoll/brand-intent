@@ -42,37 +42,45 @@ slot primary
   typography: headline
   color:      text-primary
   maxLength:  30
-  samples:
-    - Roggenlaib
-    - Weizenmisch
-    - Dinkelvollkorn
 
 slot secondary
   label:      Gewicht & Preis
   typography: kicker
   color:      text-secondary
   maxLength:  25
-  samples:
-    - 750 g · 5,80 €
-    - 500 g · 4,20 €
-    - 1 kg · 7,50 €
 
 slot meta
   label:      Beschreibung
   typography: caption
   color:      text-secondary
   maxLength:  100
-  samples:
-    - Roggen 1150, 18 Stunden Teigführung, Kümmel aus dem Wendland.
-    - Tipo 1 aus der Drax-Mühle, 72 % Hydration.
-    - Saisonale Walnüsse vom Wochenmarkt, Emmer-Vollkorn.
 
 slot label
   label:      Badge
   typography: label
   color:      label-fg
   maxLength:  20
-  samples:
-    - Heute frisch
-    - Nur samstags
-    - Neu im Laden
+
+# ── Examples ──
+# Whole pages: all slots written together about one bread.
+
+example
+  topic: The classic rye loaf, today's bread
+  label:     Heute frisch
+  primary:   Roggenlaib
+  secondary: 750 g · 5,80 €
+  meta:      Roggen 1150, 18 Stunden Teigführung, Kümmel aus dem Wendland.
+
+example
+  topic: The wheat blend, only on Saturdays
+  label:     Nur samstags
+  primary:   Weizenmisch
+  secondary: 500 g · 4,20 €
+  meta:      Tipo 1 aus der Drax-Mühle, 72 % Hydration.
+
+example
+  topic: New in the shop: emmer bread with walnuts
+  label:     Neu im Laden
+  primary:   Emmer-Walnuss
+  secondary: 1 kg · 7,50 €
+  meta:      Saisonale Walnüsse vom Wochenmarkt, Emmer-Vollkorn.

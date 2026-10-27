@@ -180,7 +180,8 @@ For each purpose, emit **glossed** tags — not verbatim DSL values:
   - Scope: {scope audience + pillars}
   - Context: {context prose per slot}
   - Goal: {goal label}, if set
-  - Slots: for each slot — id, typography, maxLength, words/sentences range if set, samples. Omit `color:` references (theme-internal detail). Override hints (`hyphenate`, `textAlign`) pass through as-is.
+  - Examples: each `example` block as one page — topic (if set), then slot texts. For files with deprecated slot `samples:`, list them per slot and note that they are not paired.
+  - Slots: for each slot — id, typography, maxLength, words/sentences range if set. Omit `color:` references (theme-internal detail). Override hints (`hyphenate`, `textAlign`) pass through as-is.
 
 ## Formats (optional)
 _Role: where content appears. Only emitted if any `.format` files are present._

@@ -165,10 +165,10 @@ test('defaultIcon: brand id, Phosphor fallback, explicit phosphor:', () => {
 });
 
 test('marker + slot defaultIcon + [id] samples', () => {
-  const out = parsePurposeFile(PURPOSE('', '    marker: icon\n    defaultIcon: pin\n    samples:\n      - [harbour] Hafen Burgstaaken\n        Südstrand\n'), 'p.purpose');
+  const out = parsePurposeFile(PURPOSE('', '    marker: icon\n    defaultIcon: pin\n    samples:\n      - [wheat] Roggen 1150\n        Sauerteig\n'), 'p.purpose');
   const slot = out.slots[0];
   assertEq([slot.marker, slot.defaultIcon], ['icon', { id: 'pin' }], 'slot');
-  assertEq(parseListItem(slot.samples[0].split('\n')[0]), { icon: { id: 'harbour' }, text: 'Hafen Burgstaaken' }, 'item');
+  assertEq(parseListItem(slot.samples[0].split('\n')[0]), { icon: { id: 'wheat' }, text: 'Roggen 1150' }, 'item');
 });
 
 test('icons: true → marker counter (deprecated)', () => {
@@ -183,7 +183,7 @@ test('iconOnly implies marker icon, rejects counter', () => {
 });
 
 test('[id] sample and defaultIcon need marker icon', () => {
-  assertThrows(() => parsePurposeFile(PURPOSE('', '    samples: [pin] Hafen\n'), 'p.purpose'), /no "marker: icon"/, 'sample');
+  assertThrows(() => parsePurposeFile(PURPOSE('', '    samples: [pin] Laden\n'), 'p.purpose'), /no "marker: icon"/, 'sample');
   assertThrows(() => parsePurposeFile(PURPOSE('', '    marker: counter\n    defaultIcon: pin\n    samples: a\n'), 'p.purpose'), /defaultIcon needs "marker: icon"/, 'defaultIcon');
 });
 

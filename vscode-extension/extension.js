@@ -332,7 +332,9 @@ function activate(context) {
         if (prefix.match(/^\s+$/) || prefix.match(/^\s+[\w]*$/)) {
           for (const [p, detail] of [
             ['label:', 'Display name shown in UI'],
-            ['samples:', 'Sample texts (pipe-separated or multi-line with "- ")'],
+            ['topic:', 'Example: what the page is about'],
+            ['goal:', 'Example: identity goal for this page'],
+            ['when:', 'Example: season window from .brand'],
             ['maxLength:', 'Character limit'],
             ['font:', 'Font family + weight'],
             ['size:', 'Base font size (% of canvas height)'],
@@ -384,6 +386,7 @@ function activate(context) {
             ['slot meta', 'Define meta text slot'],
             ['slot cta', 'Define call-to-action slot'],
             ['slot label', 'Define label badge slot'],
+            ['example', 'One example page: texts of all slots together'],
           ]) {
             const item = new vscode.CompletionItem(kw, vscode.CompletionItemKind.Keyword);
             item.detail = detail;
@@ -818,7 +821,10 @@ function activate(context) {
     'voice': '**`voice`** -- Purpose-specific writing rules.\n\nIndented key: value pairs for AI text generation hints.\n\nCommon properties: `sentence-max`, `headline-pattern`, `number-format`.',
     'context': '**`context`** -- Add purpose-specific slot guidance.\n\nIndented text adds only what is genuinely specific to this content type — slot-level instructions that cannot be derived from identity or brand.',
     'label:': '**`label:`** -- Display name for this slot in the UI.',
-    'samples:': '**`samples:`** -- Sample texts for this slot.\n\nInline: pipe-separated (`|`) list. Multi-line: bare `samples:` followed by `- ` lines.\nOne variant is picked randomly when creating a new page.',
+    'samples:': '**`samples:`** -- Deprecated.\n\nWrite whole pages as `example` blocks instead. Parsers still read slot samples and pair them by position.',
+    'example': '**`example`** -- One example page.\n\nIndented `SLOTID: text` lines fill the slots together, about one topic. A bare `SLOTID:` takes the following 4-space lines (list items).\nOptional: `topic:`, `goal:`, `when:`.',
+    'topic:': '**`topic:`** -- What this example page is about, one sentence.\n\nBecomes the page topic for AI writing and review.',
+    'when:': '**`when:`** -- Season window.\n\nName of a `.brand` `windows` entry. The example is only picked in season.',
     'maxLength:': '**`maxLength:`** -- Maximum character count for this slot.',
     'font:': '**`font:`** -- Font family name and weight.',
     'size:': '**`size:`** -- Base font size.\n\nScaled proportionally to the canvas.',

@@ -51,17 +51,36 @@ export interface ParsedPurpose {
   defaultIcon?: IconRef;
   /** Optional prompt text shown in the empty background placeholder. Default: "Select a background". */
   bgPrompt?: string;
+  /** Example pages: all texts of one page written together, one topic each. Built from deprecated
+   *  slot `samples:` (paired by position, `legacy: true`) when the file has no `example` blocks. */
+  examples: ParsedExample[];
+  /** Deprecations and other non-fatal findings, as "file:line: message". Implementations show them. */
+  warnings: string[];
+}
+
+/** One `example` block: a whole page about one topic. */
+export interface ParsedExample {
+  /** What the page is about, one sentence. Becomes the page topic. */
+  topic?: string;
+  /** Identity goal id; overrides the purpose `goal:` for this page. */
+  goal?: string;
+  /** Date window name from the `.brand` `windows` block; undefined = all year. */
+  when?: string;
+  /** Text per slot. List items are newline-separated. Slots with `value:` never appear. */
+  texts: Partial<Record<SlotId, string>>;
+  /** True when built from deprecated slot `samples:`. */
+  legacy?: boolean;
 }
 
 export interface ParsedPurposeSlot {
   id: SlotId;
   label: string;
-  /** Sample text variants for this slot. Picked randomly on page creation. */
+  /** @deprecated Slot `samples:` from older files; content lives in `ParsedPurpose.examples`.
+   *  Empty for files with `example` blocks; `[value]` for a fixed-value slot. */
   samples: string[];
-  /** Date window per sample (parallel to `samples`), from a trailing `@name` marker; undefined = all year.
-   *  Absent when no sample in the slot has a marker. Names resolve against the `.brand` `windows` block. */
+  /** @deprecated Date window per legacy sample (parallel to `samples`), from a trailing `@name` marker. */
   sampleWindows?: (string | undefined)[];
-  /** Fixed value — when set, this slot is never AI-generated or shuffled. Mutually exclusive with samples. */
+  /** Fixed value — when set, this slot is never AI-generated or shuffled. Never part of an example. */
   value?: string;
   maxLength: number;
   /** Editorial word range (`words: 3..8`). Guidance on top of the hard `maxLength`. */
@@ -159,6 +178,13 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let defaultIcon: IconRef | undefined;
   let bgPrompt: string | undefined;
   const slots: ParsedPurposeSlot[] = [];
+  const warnings: string[] = [];
+  const examples: (ParsedExample & { line: number; keyLines: Partial<Record<string, number>> })[] = [];
+  // Example block being built, and the slot key whose multi-line value is being read (4-space lines)
+  let currentExample: (typeof examples)[number] | null = null;
+  let exampleMultiKey: SlotId | null = null;
+  // First line of a deprecated slot `samples:` (0 = none)
+  let legacySamplesLine = 0;
   // For backward compat: track first # line text for fallback id
   let firstHashText = '';
 
@@ -176,7 +202,6 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     const s = currentSlot;
     if (!s.id) throw new Error(`${fileName}:${lineNum}: slot missing id`);
     if (!s.label) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing label`);
-    if ((!s.samples || s.samples.length === 0) && !s.iconOnly && !s.value) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing samples or value`);
     if (!s.maxLength) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing maxLength`);
     if (s.iconOnly) {
       if (s.marker && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": iconOnly needs "marker: icon", got "${s.marker}"`);
@@ -217,6 +242,17 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     currentSlot = null;
   }
 
+  function finalizeExample() {
+    currentExample = null;
+    exampleMultiKey = null;
+  }
+
+  /** A top-level line closes the open slot or example block. */
+  function closeBlocks(lineNum: number) {
+    finalizeSlot(lineNum);
+    finalizeExample();
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
     const raw = lines[i];
@@ -247,7 +283,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // scope block header
     if (line === 'scope' && !raw.startsWith(' ')) {
-      finalizeSlot(lineNum);
+      closeBlocks(lineNum);
       inScopeBlock = true;
       inContextBlock = false;
       inVoiceBlock = false;
@@ -257,7 +293,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // context block header
     if (line === 'context' && !raw.startsWith(' ')) {
-      finalizeSlot(lineNum);
+      closeBlocks(lineNum);
       inContextBlock = true;
       inScopeBlock = false;
       inVoiceBlock = false;
@@ -266,12 +302,50 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // voice block header
     if (line === 'voice' && !raw.startsWith(' ')) {
-      finalizeSlot(lineNum);
+      closeBlocks(lineNum);
       inVoiceBlock = true;
       inScopeBlock = false;
       inContextBlock = false;
       voice = voice ?? {};
       continue;
+    }
+
+    // example block header: one whole page
+    if (line === 'example' && !raw.startsWith(' ')) {
+      closeBlocks(lineNum);
+      inScopeBlock = inContextBlock = inVoiceBlock = false;
+      currentExample = { texts: {}, line: lineNum, keyLines: {} };
+      examples.push(currentExample);
+      continue;
+    }
+
+    // example block lines: `key: value`, or bare `key:` followed by 4-space lines (list items, line breaks)
+    if (currentExample && raw.startsWith('  ')) {
+      if (raw.startsWith('    ')) {
+        if (!exampleMultiKey) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line)`);
+        const prev = currentExample.texts[exampleMultiKey];
+        currentExample.texts[exampleMultiKey] = prev ? `${prev}\n${line}` : line;
+        continue;
+      }
+      exampleMultiKey = null;
+      const colonIdx = line.indexOf(':');
+      if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" in example, got "${line}"`);
+      const key = line.slice(0, colonIdx).trim();
+      const value = line.slice(colonIdx + 1).trim();
+      if (key in currentExample.keyLines) throw new Error(`${fileName}:${lineNum}: duplicate "${key}" in example`);
+      currentExample.keyLines[key] = lineNum;
+      if (key === 'topic' || key === 'goal' || key === 'when') {
+        if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
+        if (key === 'when' && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid window name "${value}" (lowercase kebab-case)`);
+        currentExample[key] = value;
+        continue;
+      }
+      if (!VALID_SLOTS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when or a slot id)`);
+      if (value) currentExample.texts[key as SlotId] = value;
+      else exampleMultiKey = key as SlotId;
+      continue;
+    } else if (currentExample && !raw.startsWith(' ')) {
+      finalizeExample();
     }
 
     // scope block properties (2-space indent)
@@ -388,14 +462,14 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // Backward compat: "icon: warning-circle" (deprecated — use defaultIcon:)
     if (line.startsWith('icon:') && !raw.startsWith(' ')) {
-      console.warn(`${fileName}:${lineNum}: deprecated "icon:" — use "defaultIcon:" instead`);
+      warnings.push(`${fileName}:${lineNum}: deprecated "icon:" — use "defaultIcon:" instead`);
       defaultIcon = parseIconRef(line.slice(5), `${fileName}:${lineNum}`);
       continue;
     }
 
     // Slot start
     if (line.startsWith('slot ')) {
-      finalizeSlot(lineNum);
+      closeBlocks(lineNum);
       const slotId = line.slice(5).trim();
       if (!VALID_SLOTS.has(slotId)) throw new Error(`${fileName}:${lineNum}: unknown slot "${slotId}"`);
       currentSlot = { id: slotId as SlotId, samples: [], typography: {} as ParsedPurposeSlot['typography'] };
@@ -511,6 +585,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
           continue;
         }
         if (prop.startsWith('samples:')) {
+          legacySamplesLine ||= lineNum;
           const raw = prop.slice(8).trim();
           if (!raw) {
             // Bare `samples:` — enter multi-line mode
@@ -532,12 +607,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
           continue;
         }
         if (prop === 'icons: true' || prop === 'icons:true') {
-          console.warn(`${fileName}:${lineNum}: deprecated "icons: true" — use "marker: counter" or "marker: icon"`);
+          warnings.push(`${fileName}:${lineNum}: deprecated "icons: true" — use "marker: counter" or "marker: icon"`);
           currentSlot.marker = currentSlot.marker ?? 'counter';
           continue;
         }
         if (prop === 'icons: false' || prop === 'icons:false') {
-          console.warn(`${fileName}:${lineNum}: deprecated "icons: false" — use "marker: none"`);
+          warnings.push(`${fileName}:${lineNum}: deprecated "icons: false" — use "marker: none"`);
           currentSlot.marker = currentSlot.marker ?? 'none';
           continue;
         }
@@ -600,6 +675,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         continue;
       }
       if (prop.startsWith('samples:')) {
+        legacySamplesLine ||= lineNum;
         const raw = prop.slice(8).trim();
         if (!raw) {
           // Bare `samples:` — enter multi-line mode
@@ -683,13 +759,13 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     throw new Error(`${fileName}:${lineNum}: unexpected "${line}"`);
   }
 
-  // Finalize last slot
-  finalizeSlot(lines.length);
+  // Finalize last block
+  closeBlocks(lines.length);
 
   // Backward compat: if no id: line but we have a first # line, use it as id
   if (!id) {
     if (firstHashText) {
-      console.warn(`${fileName}: deprecated — add "id: ${firstHashText}" line (first # line used as fallback id)`);
+      warnings.push(`${fileName}: deprecated — add "id: ${firstHashText}" line (first # line used as fallback id)`);
       id = firstHashText;
     } else {
       throw new Error(`${fileName}: missing purpose id (add "id:" line)`);
@@ -710,5 +786,64 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, cameraFacing, framing, goal, analyze, defaultIcon, bgPrompt };
+  const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
+
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, cameraFacing, framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+}
+
+/** Validate `example` blocks against the declared slots, or build examples from deprecated slot
+ *  `samples:` (paired by position) when the file has none. Mixing both is an error. */
+function resolveExamples(
+  examples: (ParsedExample & { line: number; keyLines: Partial<Record<string, number>> })[],
+  slots: ParsedPurposeSlot[],
+  legacySamplesLine: number,
+  fileName: string,
+  warnings: string[],
+): ParsedExample[] {
+  const byId = new Map(slots.map(s => [s.id, s]));
+  const contentSlots = slots.filter(s => !s.value && !s.iconOnly);
+
+  if (examples.length > 0) {
+    if (legacySamplesLine) throw new Error(`${fileName}:${legacySamplesLine}: slot "samples:" next to "example" blocks — move the texts into the examples`);
+    for (const ex of examples) {
+      const at = (key: string) => `${fileName}:${ex.keyLines[key] ?? ex.line}`;
+      const filled = Object.keys(ex.texts) as SlotId[];
+      if (filled.length === 0) throw new Error(`${fileName}:${ex.line}: example without slot texts`);
+      for (const slotId of filled) {
+        const slot = byId.get(slotId);
+        if (!slot) throw new Error(`${at(slotId)}: example fills slot "${slotId}", which the purpose does not declare`);
+        if (slot.value) throw new Error(`${at(slotId)}: slot "${slotId}" has a fixed value and takes no example text`);
+        const text = ex.texts[slotId]!;
+        if (text.split('\n').some(l => SAMPLE_WINDOW_MARKER.test(l))) throw new Error(`${at(slotId)}: window marker in example text — use "when:" on the example`);
+        if (slot.slotType === 'list') {
+          for (const item of text.split('\n')) {
+            const { icon } = parseListItem(item);
+            if (icon && slot.marker !== 'icon') throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" names an icon, but the list has no "marker: icon"`);
+          }
+        }
+      }
+    }
+    for (const slot of contentSlots) {
+      if (!examples.some(ex => ex.texts[slot.id])) throw new Error(`${fileName}: slot "${slot.id}" is filled by no example`);
+    }
+    return examples.map(({ line: _line, keyLines: _keyLines, ...ex }) => ex);
+  }
+
+  for (const slot of contentSlots) {
+    if (slot.samples.length === 0) throw new Error(`${fileName}: slot "${slot.id}" has no text — add "example" blocks or a "value:"`);
+  }
+  if (!legacySamplesLine) return [];
+  warnings.push(`${fileName}:${legacySamplesLine}: deprecated slot "samples:" — write whole pages as "example" blocks`);
+  const sampled = slots.filter(s => !s.value && s.samples.length > 0);
+  const count = Math.max(...sampled.map(s => s.samples.length));
+  return Array.from({ length: count }, (_, i) => {
+    const texts: Partial<Record<SlotId, string>> = {};
+    let when: string | undefined;
+    for (const slot of sampled) {
+      const idx = i % slot.samples.length;
+      texts[slot.id] = slot.samples[idx];
+      when ??= slot.sampleWindows?.[idx];
+    }
+    return { texts, ...(when ? { when } : {}), legacy: true };
+  });
 }

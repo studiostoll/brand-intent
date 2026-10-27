@@ -149,24 +149,31 @@ scope
 
 slot primary
   label: Headline
-  samples: New Season Opening | Summer Festival 2026
   maxLength: 60
   typography: $heading
   color: $text-primary
 
 slot secondary
   label: Subline
-  samples: Join us for the grand opening
   maxLength: 120
 
 slot detail
   label: Details
-  samples: June 15, 2026 | Central Park
+  maxLength: 60
 
 slot cta
   label: Call to Action
-  samples: Learn More | Sign Up
+  maxLength: 20
+
+example
+  topic: The summer festival in the park
+  primary: Summer Festival 2026
+  secondary: Join us for a day of music and food
+  detail: June 15, 2026 | Central Park
+  cta: Sign Up
 ```
+
+Slot blocks hold the form (limits, typography, colour); `example` blocks hold whole pages, one topic each. Slot `samples:` is deprecated.
 
 ### .composition files
 

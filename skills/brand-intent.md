@@ -104,7 +104,7 @@ When generating content for a specific purpose, read all layers silently (do not
 2. **Read `.brand`** — voice-constraints: sentence-max, headline-pattern, number-format, register
 3. **Apply `scope` from `.purpose`** — audience and pillar filters narrow the upstream context
 4. **Apply `context` from `.purpose`** — slot-specific instructions, follow literally
-5. **Generate per-slot content** — respect maxLength and any `words:`/`sentences:` range, use samples as structural reference (match pattern, not words), follow context instructions
+5. **Generate per-slot content** — respect maxLength and any `words:`/`sentences:` range, use the purpose's `example` pages as structural reference (match pattern, not words; all slots of one output share one topic), follow context instructions
 
 ### Output format:
 
@@ -252,7 +252,7 @@ Read the files and walk the user through them:
 - **`krume.identity`** — the strategic layer: essence, voice, values, audiences. Start here.
 - **`krume.brand`** — derived expression: colors, themes, typography, spacing. Every decision traces back to identity.
 - **`formats/`** — canvas dimensions, safe zones, grid. Where content appears.
-- **`purposes/`** — content type with semantic slots, samples, constraints. What content does.
+- **`purposes/`** — content type with semantic slots, constraints, and example pages. What content does.
 - **`compositions/`** — spatial arrangement of slots. How elements are placed.
 
 If `examples/krume/` doesn't exist, tell the user to run `npx brand-intent init` first.

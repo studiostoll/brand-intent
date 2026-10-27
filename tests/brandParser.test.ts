@@ -468,13 +468,13 @@ test('photo-look rejects bad values and keys', () => {
 console.log('\nwindows:');
 
 test('parses windows block and photo when:', () => {
-  const b = parseBrandFile(`${HEADER}windows\n  rapsbluete: 05-01..05-31   # peak mid-May\n  zugvoegel:  03-01..05-31, 08-15..10-31\n  jahreswechsel: 12-27..01-06\n\nphoto raps\n  src: photos/raps.jpg\n  when: rapsbluete\n`, 'test.brand');
+  const b = parseBrandFile(`${HEADER}windows\n  strawberries: 05-01..05-31   # peak mid-May\n  plums:  03-01..05-31, 08-15..10-31\n  new-year: 12-27..01-06\n\nphoto berries\n  src: photos/berries.jpg\n  when: strawberries\n`, 'test.brand');
   assertEq(b.windows, {
-    rapsbluete: [{ from: '05-01', to: '05-31' }],
-    zugvoegel: [{ from: '03-01', to: '05-31' }, { from: '08-15', to: '10-31' }],
-    jahreswechsel: [{ from: '12-27', to: '01-06' }],
+    strawberries: [{ from: '05-01', to: '05-31' }],
+    plums: [{ from: '03-01', to: '05-31' }, { from: '08-15', to: '10-31' }],
+    'new-year': [{ from: '12-27', to: '01-06' }],
   }, 'windows');
-  assertEq(b.assets?.photos?.[0].when, 'rapsbluete', 'photo when');
+  assertEq(b.assets?.photos?.[0].when, 'strawberries', 'photo when');
 });
 
 test('isInDateWindow: inclusive ends, year-end wrap, multiple ranges', () => {

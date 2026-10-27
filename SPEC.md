@@ -355,7 +355,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `counter` | block | No | List counter component |
 | `camera` | block | No | Camera defaults: facing and viewfinder grid |
 | `photo-look` | block | No | Photo treatment for user photos: saturation, contrast, warmth, fade, mono, duotone |
-| `windows` | block | No | Named yearly date windows for season-bound samples and photos |
+| `windows` | block | No | Named yearly date windows for season-bound examples and photos |
 | `framing NAME` | block | No | Photo framing module: horizon position for camera guides (repeatable) |
 | `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
 | `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
@@ -933,13 +933,13 @@ photo-look
 
 ### `windows` Block
 
-Named yearly date windows. Optional. Content that only fits part of the year references a window by name: samples with a trailing `@name` (see [Samples Format](#samples-format)), brand photos with `when:`. Content without a window fits all year.
+Named yearly date windows. Optional. Content that only fits part of the year references a window by name with `when:`: purpose [`example`](#example-block) blocks and brand photos. Content without a window fits all year.
 
 ```yaml
 windows
-  rapsbluete:    05-01..05-31
-  zugvoegel:     03-01..05-31, 08-15..10-31
-  jahreswechsel: 12-27..01-06    # wraps over the year end
+  strawberries: 06-01..07-31
+  plums:        08-01..09-15, 10-01..10-15
+  christmas:    11-27..01-06    # wraps over the year end
 ```
 
 Each entry is `name: MM-DD..MM-DD`, with further ranges separated by commas. Ends are inclusive. A range whose start is after its end wraps over the year end. Names are lowercase kebab-case.
@@ -1103,7 +1103,10 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block this purpose serves by default |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
-| `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable) |
+| `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable): the form of a slot |
+| `example` | block | Yes (1+)* | One example page (repeatable): the content of all slots together |
+
+\* Not needed when every slot has a fixed `value:`.
 
 ### Semantic Slots
 
@@ -1130,34 +1133,12 @@ These names are fixed. They travel through the entire stack: a composition place
 | `maxLength:` | int | Yes | Character limit. The hard limit: layouts are built for it |
 | `words:` | range | No | Editorial word range, `N` or `MIN..MAX` (e.g. `3..8`). Guidance for writing and review on top of `maxLength` |
 | `sentences:` | range | No | Editorial sentence range, `N` or `MIN..MAX` |
-| `samples:` | list | * | Example content (pipe-separated or multi-line) |
-| `value:` | string | * | Fixed text — never AI-generated or shuffled. Mutually exclusive with `samples:` |
+| `value:` | string | No | Fixed text, never AI-generated or shuffled. The slot takes no example text |
 | `editable` | bool | No | When `false`, slot is locked (no user editing in any mode). Default: `true` |
 | `type:` | enum | No | `text` (default) or `list` |
 | `override:` | block | No | Typography property overrides (4-space indent) |
 
-\* Either `samples:` or `value:` is required (not both). `value:` sets a fixed, immutable text.
-
-#### Samples Format
-
-**Inline:** `samples: Roggenbrot | Vollkornbrot | Sauerteiglaib`
-
-**Multi-line:**
-```yaml
-samples:
-  - Roggenbrot 750 g
-  - Vollkornbrot 500 g
-  - Dinkellaib mit Walnuss
-```
-
-**Date window:** a sample that only fits part of the year ends with ` @name`, naming a window from the `.brand` [`windows`](#windows-block) block. The marker is not part of the text. In multi-line samples it goes on the first line and applies to the whole sample.
-
-```yaml
-samples:
-  - Raps blüht im Mai  @rapsbluete
-  - Zugvögel über Wallnau  @zugvoegel
-  - Hafen Burgstaaken
-```
+A slot block describes form only: limits, typography, colour. Its content comes from the purpose's [`example`](#example-block) blocks.
 
 #### `type: list` Sub-Block (4-space indent)
 
@@ -1165,7 +1146,6 @@ samples:
 |-----|------|---------|-------------|
 | `maxItems:` | int | - | Maximum items |
 | `maxLength:` | int | - | Max characters per item |
-| `samples:` | list | - | Example list content |
 | `marker:` | enum | `none` | `none` \| `counter` \| `icon` (item marker) |
 | `defaultIcon:` | icon ref | - | Icon for items without an `[ID]` prefix (`marker: icon` only) |
 | `iconOnly:` | bool | `false` | Icons only, no text (implies `marker: icon`) |
@@ -1173,7 +1153,7 @@ samples:
 | `direction:` | enum | `vertical` | `vertical` \| `horizontal` |
 | `itemGap:` | float | `0.5` | Gap between items (em) |
 
-**Markers:** `counter` numbers the items with the brand's [`counter`](#counter-block) component. `icon` puts an icon from the brand set before each item; a sample item can name its icon with an `[ID]` prefix, otherwise `defaultIcon:` applies.
+**Markers:** `counter` numbers the items with the brand's [`counter`](#counter-block) component. `icon` puts an icon from the brand set before each item; an item in an example can name its icon with an `[ID]` prefix, otherwise `defaultIcon:` applies.
 
 ```yaml
 slot detail
@@ -1183,10 +1163,12 @@ slot detail
     maxItems: 3
     marker: icon
     defaultIcon: pin
-    samples:
-      - [harbour] Hafen Burgstaaken
-        Südstrand
-        Wallnau
+
+example
+  detail:
+    [shop] Laden am Markt
+    Bäckerei im Bahnhof
+    Wochenmarkt Samstag
 ```
 
 `[ID]` prefixes and `defaultIcon:` require `marker: icon`. Implementations warn when an `iconOnly` list has fewer brand icons than `maxItems`. `icons: true` is deprecated and reads as `marker: counter`.
@@ -1202,6 +1184,47 @@ Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight
 | `true` (or bare `hyphenate`) | Hyphenate freely: lines may end at any syllable. For body text, to even out the rag or justification. |
 | `fit` | Last resort for autofit slots: shrink until the longest word fits, and hyphenate a word only if it still doesn't fit at `autofit-min`. For headlines. |
 | `false` (default) | Never hyphenate. Implementations never break inside a word; an autofit slot shrinks below `autofit-min` if a word doesn't fit otherwise. |
+
+### `example` Block
+
+One example page: the texts of all slots, written together about one topic. A page always has one purpose, one goal and one topic, so its texts belong together. Implementations fill a new page from one example and swap whole examples, never single slot texts from different examples.
+
+```yaml
+example
+  topic: The rye loaf that is back on Saturdays
+  goal: regulars
+  label: Heute frisch
+  primary: Roggenlaib
+  secondary: 750 g · 5,80 €
+  detail:
+    Roggen 1150
+    18 Stunden Teigführung
+
+example
+  topic: Christmas stollen, baked from late November
+  when: christmas
+  label: Nur im Advent
+  primary: Butterstollen
+  secondary: 1 kg · 24 €
+  detail:
+    Butter aus der Region
+    Drei Wochen gereift
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `topic:` | string | No | What the page is about, one sentence. Becomes the page topic, which people can change and which guides AI writing and review |
+| `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block. Overrides the purpose `goal:` for this page |
+| `when:` | string | No | Name of a `.brand` [`windows`](#windows-block) entry. The example is only picked in season |
+| `SLOTID:` | string | Yes (1+) | Text for a declared slot. A bare `SLOTID:` takes the following 4-space lines: list items, or line breaks in a text slot |
+
+**Rules:**
+- Slot keys must be slots the purpose declares. A slot with `value:` takes no example text.
+- An example may leave a slot out (the slot stays empty on that page), but every slot without `value:` must be filled by at least one example.
+- `maxLength`, `words:` and `sentences:` apply to example texts as they apply to any text in the slot.
+- AI writing produces whole pages in this shape, never independent variants per slot.
+
+**Deprecated: slot `samples:`.** Files written before `example` blocks list texts per slot (`samples: A | B` or multi-line `- ` entries, with a trailing ` @name` window marker). Parsers still read them, pair the samples by position into examples (`@name` becomes `when:`) and warn. Implementations should show the warning to the people editing the brand. A purpose with `example` blocks must not also have slot `samples:`.
 
 ### Icon References
 
@@ -1463,7 +1486,9 @@ A parser should warn when:
 - The same context text appears in 3+ purpose files (belongs upstream)
 - A `slot` references a `typography` style not defined in `.brand`
 - A `slot` references a `color` not defined as a theme slot
-- A sample `@name` marker references a window not defined in `.brand`
+- An example `when:` references a window not defined in `.brand`
+- An example `goal:` references a goal not defined in `.identity`
+- A `.purpose` still uses deprecated slot `samples:`
 - An `archetypes` entry references a non-existent `.composition` file
 - A `purposes` entry in `.format` references a non-existent `.purpose` file
 

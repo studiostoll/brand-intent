@@ -34,3 +34,4 @@ const brand = parseBrandFile(
 ## Notes
 
 - These parsers throw on validation errors, with the filename and line number included in the error message.
+- Non-fatal findings (deprecated syntax) are returned in `warnings` (`parsePurposeFile`) as `file:line: message`, so implementations can show them in their UI.
