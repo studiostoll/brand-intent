@@ -382,7 +382,7 @@ color-adherence: on-brand
 
 `color-mode: guided` requires either grouped `brand-colors` syntax with the minimum structure above, or a `color-families` block with at least two families. Otherwise it raises a parse error. When families exist, guided generation draws from them and the grouped groups/distribution are not used for generation.
 
-`color-mode: brand` requires at least one theme: an authored `theme` block or a valid family pair. Otherwise it raises a parse error. If the brand also meets the guided minimum structure, guided generation stays available as an explicit choice; `brand` only sets the default.
+`color-mode: brand` requires at least one theme (an authored `theme` block or a valid family pair) or a `levels` block. Otherwise it raises a parse error. If the brand also meets the guided minimum structure, guided generation stays available as an explicit choice; `brand` only sets the default.
 
 ### `color-rules` Block
 
@@ -405,6 +405,25 @@ Where rules apply:
 - **Every theme**: `text-primary` vs `background` and `logo` vs `background` are checked. Violations are **warnings**, not errors.
 - **Family pairs** (below): a pair failing a rule is rejected with a warning.
 - **Guided generation**: rules are a hard filter on generated pairs.
+
+### `tones` Block
+
+Declared tone ladders: each listed color on the same steps, from dark to light. Brands with a tone system of their own (e.g. one step per CIELAB L*) write it here instead of letting tools compute shades. The block is declared, never generated: the brand's colour system is the source.
+
+```
+tones   # imported, don't edit by hand
+  steps: 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98
+  $logo-blue: #0B1A30 #1C3558 #2B4C7E #4A6896 #6984AE #88A0C4 #A7BBD8 #C5D3E8 #E2EAF4 #F0F4FA #F9FBFD
+  $green:     #14231A #22382A #334D3C #40604B #5E7D68 #7A9884 #96B3A0 #B2CEBC #CFE8D8 #E2F2E8 #F1FAF4
+```
+
+- `steps:` — ascending whole numbers, required. Every line has one hex per step, in that order.
+- One line per color: `$name:` names a color in `brand-colors` or a named family color. The color's own hex must appear on its line (its anchor step); a line without it is a hard error.
+- Not every color needs a line (white usually has none).
+- Reference a tone as `$name.step`, e.g. `$logo-blue.10`, wherever a `$ref` is accepted: theme slots (with alpha: `$logo-blue.10 70%`), family roles and pairs, `shared:`, `photo-fallback:`, `photo-look duotone`.
+- Inline comments in this block need a space after `#` (`# note`), since hex values start with `#`.
+
+**Import:** `npx tsx scripts/import-tones.ts <export.json> <file.brand>` writes the block from a Figma colour export (ladders per mode, the anchor step aliased to a primitive). It matches ladders to `brand-colors` entries by the anchor hex, so names stay in the `.brand` file, and replaces the block in place.
 
 ### `color-families` Block
 
@@ -446,10 +465,12 @@ color-families
 **Families:**
 
 - `family NAME` — declaration order is the family order. Names are unique.
-- Roles are a fixed vocabulary: `core` (exactly one), `accent` (zero or more), `contrast` (exactly one — the text carrier).
-- Values are `#HEX`, optionally followed by a display name. Unnamed colors get `{family}-{role}`, accents numbered (`winter-accent-2`).
-- `from: MM-DD` (optional) — the day the family starts, for families tied to the calendar (seasons). A family runs until the next start date, wrapping over the new year. Declared on every family or on none; dates must be unique. Apps use it to pick the family in season (`familyIndexForDate`), e.g. as the default family or for a seasonal app icon.
-- All family colors join the flat `brandColors` projection (name lowercased, spaces → hyphens), so themes can reference them. A name colliding with an existing brand color is a hard error.
+- Roles are a fixed vocabulary: `core` (exactly one), `accent` (zero or more), `contrast` (at most one — the text carrier).
+- Values are `#HEX`, optionally followed by a display name, or a `$ref` (`$ref.step`) to a color declared elsewhere. Unnamed colors get `{family}-{role}`, accents numbered (`winter-accent-2`). Use `$ref` when families share a color: declare it once in `brand-colors`, reference it in each family.
+- `from: MM-DD` (optional) — the day the family starts, for families tied to the calendar (seasons). A family runs until the next start date, wrapping over the new year. Dates must be unique. Apps use it to pick the family in season (`familyIndexForDate`), e.g. as the default family or for a seasonal app icon.
+- Families without `from:` next to dated ones are **hand-picked contexts** (e.g. a plain context with only the logo color): never in season, off the borrow cycle (they don't borrow and aren't borrowed from). Apps offer them by hand, per page or purpose.
+- `signal: VALUE / VALUE` and `level NAME` overrides: see `levels` below.
+- All inline family colors join the flat `brandColors` projection (name lowercased, spaces → hyphens), so themes can reference them. A name colliding with an existing brand color is a hard error. `$ref` colors are already there and don't join again.
 
 **Reach:** a family may use its own colors, the `shared` colors, and colors of families up to `distance` steps away in the `borrow` direction(s). A reach that covers every family (e.g. a cycle of four with `both` and `distance: 2`) raises a warning — the borrow rule has no effect then.
 
@@ -458,6 +479,57 @@ color-families
 - Valid pairs become pair themes named `{Family}-{n}`, where `n` is the pair's declared position (stable when the reach config changes).
 - Invalid pairs are skipped with a warning naming the reason (e.g. `#F9FF9D from Spring is out of reach`). Warnings, not errors, so changing `borrow:` to test a variant never breaks the brand.
 - Text color: the family's `contrast` color if it reaches `color-rules.text` on the ground, else the `shared` colors in order, else the neutral `dark` / `light` entries. If none passes, the highest-contrast candidate is used with a warning.
+
+### `levels` Block
+
+Levels say *how much colour* a page carries, independent of *which family*. Every level fills the same 13 slots; a page is family × level. The block declares defaults per level; families override where they differ.
+
+```
+levels
+  level Neutral
+    ground:              $white
+    on-ground/headline:  $logo-blue
+    …
+  level Strong
+    ground:              required      # every family sets its own
+    on-ground/headline:  a2.95
+    on-ground/text:      $white
+    on-contrast:         strong.ground # another cell
+    …
+
+color-families
+  family Dusk
+    from:   09-01
+    core:   $ink
+    accent: $moss
+    accent: $mist
+    signal: a1.40 / $white             # signal / on-signal, same in every level
+    level Strong
+      ground: a2.20
+```
+
+**Slots** (fixed): `ground` · `on-ground/headline`, `on-ground/text`, `on-ground/accent`, `on-ground/line`, `on-ground/divider` · `contrast` · `on-contrast` · `inset` · `on-inset/text`, `on-inset/accent` · `signal` · `on-signal`. Unknown slots are errors. The vocabulary is medium-neutral: apps map their own parts (buttons, stickers, panels) onto slots.
+
+**Levels:** `level NAME`, declared from weakest to strongest (e.g. `Neutral`, `Light`, `Medium`, `Strong`). Names are unique; `p`, `a1`, `a2` are reserved.
+
+**Values:**
+
+| Form | Example | Meaning |
+|------|---------|---------|
+| `p`, `a1`, `a2` | `a1` | the family's core, first accent, second accent (a missing accent falls back to the core) |
+| `p.step`, `a1.step`, `a2.step` | `a2.95` | that tone of the family color (`tones` block) |
+| `$ref`, `$ref.step` | `$white`, `$logo-blue.10` | a brand color or its tone |
+| `#HEX` | `#FFFFFF` | a literal color |
+| `level.slot` | `strong.ground` | another cell of the same family (level name in any case) |
+| `required` | | defaults only: every family must set this slot |
+
+No alpha. Cell references resolve within the family; cycles are errors.
+
+**Resolution:** for each family × level × slot, the family's `level` override wins, then the family's `signal:` (for `signal` / `on-signal`), then the level default. A slot without a value, or `required` without an override, is a hard error. Overrides for an undeclared level are errors. `signal:` and family `level` blocks need a `levels` block.
+
+**Rules:** with a `color-rules` block, every cell is checked and violations are **warnings** naming the cell (`Dusk / Light / on-ground/accent on ground 2.1:1 < 3`): `on-ground/headline`, `on-ground/text`, `on-contrast`, `on-inset/text`, `on-signal` against `text:`; `on-ground/accent`, `on-ground/line`, `on-inset/accent` against `figure:`. Dividers are decorative and unchecked.
+
+**Output:** `levels.names` (declaration order) and `levels.cells[family][level][slot]` (6-digit hex). `color-mode: brand` is satisfied by levels; curated `pairs` become optional.
 
 ### `theme NAME` Block
 
@@ -468,6 +540,7 @@ Maps semantic slot names to colors. Values are `$references` to `brand-colors` n
 | Form | Example | Renders as |
 |------|---------|-----------|
 | `$ref` | `$white` | resolved hex of the brand color |
+| `$ref.step` | `$blue.95` | that step of the color's `tones` ladder |
 | `#HEX` | `#FFFFFF` | pass-through hex |
 | `$ref NN%` | `$white 75%` | `rgba(...)` with alpha |
 | `#HEX NN%` | `#FFFFFF 30%` | `rgba(...)` with alpha |

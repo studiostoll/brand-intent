@@ -26,6 +26,9 @@ import type {
   FamilyBorrow,
   ToneClass,
   ThemePair,
+  Tones,
+  Levels,
+  LevelSlot,
 } from './types';
 import {
   DEFAULT_COLOR_RULES,
@@ -35,6 +38,9 @@ import {
   resolveTextColor,
   checkFamilyPair,
   reachCoversAll,
+  cycleMembers,
+  LEVEL_SLOTS,
+  levelRuleViolations,
 } from './colorSystem';
 import { parseIconSource, isIconId } from './icons';
 import { parseDateWindowRanges } from './dateWindows';
@@ -88,6 +94,10 @@ export interface ParsedBrand {
   colorAdherenceOverrides?: AdherenceTolerances;
   /** Contrast + tone rules (`color-rules` block). Absent when not declared. */
   colorRules?: ColorRules;
+  /** Declared tone ladders (`tones` block). Referenced as `$name.step`. */
+  tones?: Tones;
+  /** Resolved `levels`: every family × level with all slots. Requires `color-families`. */
+  levels?: Levels;
   /** Color families (`color-families` block): ordered sets with roles, reach config and checked pairs. */
   colorFamilies?: ColorFamilies;
   /** Ground / figure / text for every pair theme (authored `ground:`/`figure:` themes and emitted family pairs). */
@@ -319,9 +329,23 @@ function hexToRgb(hex6: string): [number, number, number] {
 }
 
 /**
+ * Look up a color reference name (without `$`): a brand color, or `name.step` for a declared tone.
+ * Returns the raw stored value, undefined when unknown.
+ */
+function lookupColorRef(
+  refName: string,
+  brandColors: Record<string, string>,
+  tones?: Record<string, Record<number, string>>,
+): string | undefined {
+  if (brandColors[refName]) return brandColors[refName];
+  const m = refName.match(/^(.+)\.(\d+)$/);
+  return m ? tones?.[m[1]]?.[Number(m[2])] : undefined;
+}
+
+/**
  * Resolve a theme-slot value string to a final CSS color.
  *
- * Supports: `$ref`, `$ref NN%`, `#HEX`, `#HEX NN%`, raw rgba(...) pass-through.
+ * Supports: `$ref`, `$ref.step`, `$ref NN%`, `#HEX`, `#HEX NN%`, raw rgba(...) pass-through.
  * Throws on malformed alpha or unresolved `$ref`.
  */
 function resolveThemeSlotValue(
@@ -329,6 +353,7 @@ function resolveThemeSlotValue(
   brandColors: Record<string, string>,
   fileName: string,
   slot: string,
+  tones?: Record<string, Record<number, string>>,
 ): string {
   const value = raw.trim();
 
@@ -358,7 +383,7 @@ function resolveThemeSlotValue(
   let hex: string | null = null;
   if (base.startsWith('$')) {
     const refName = base.slice(1);
-    const resolved = brandColors[refName];
+    const resolved = lookupColorRef(refName, brandColors, tones);
     if (!resolved) {
       throw new Error(
         `${fileName}: theme slot "${slot}" references unknown brand color "$${refName}"`,
@@ -402,12 +427,24 @@ function resolveThemeSlotValue(
 export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const lines = content.split('\n');
 
+  /** `slot: value` inside a level (defaults or family override); slot must be a level slot. */
+  const parseSlotLine = (trimmed: string, lineNum: number, where: string) => {
+    const colonIdx = trimmed.indexOf(':');
+    const slot = colonIdx !== -1 ? trimmed.slice(0, colonIdx).trim() : '';
+    if (!(LEVEL_SLOTS as readonly string[]).includes(slot)) {
+      throw new Error(`${fileName}:${lineNum}: ${where}: unknown slot "${slot || trimmed}" (slots: ${LEVEL_SLOTS.join(', ')})`);
+    }
+    const value = trimmed.slice(colonIdx + 1).replace(/\s+#\s.*$/, '').trim();
+    if (!value) throw new Error(`${fileName}:${lineNum}: ${where}: slot "${slot}" has no value`);
+    return { slot, value, line: lineNum };
+  };
+
   const result: Partial<ParsedBrand> = {
     tokensFile: 'tokens.json',
     tokensSource: 'figma',
   };
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -430,7 +467,18 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const adherenceOverridesRaw: Record<string, string> = {};
   const colorRulesRaw: Record<string, string> = {};
   let colorRulesDeclared = false;
-  type RawFamily = { name: string; line: number; from?: string; colors: Array<{ role: string; value: string; line: number }>; pairs: Array<{ ground: string; figure: string; line: number }> };
+  let tonesDeclared = false;
+  let tonesStepsRaw: { value: string; line: number } | null = null;
+  const tonesRaw: Array<{ name: string; values: string[]; line: number }> = [];
+  type RawSlot = { slot: string; value: string; line: number };
+  type RawLevel = { name: string; line: number; slots: RawSlot[] };
+  type RawFamily = { name: string; line: number; from?: string; colors: Array<{ role: string; value: string; line: number }>; pairs: Array<{ ground: string; figure: string; line: number }>; signal?: { value: string; line: number }; levels: RawLevel[] };
+  const levelsRaw: RawLevel[] = [];
+  let levelsDeclared = false;
+  let currentLevel: RawLevel | null = null;
+  /** Level override inside a family (`level Strong` under `family Dusk`) and its indent. */
+  let currentFamilyLevel: RawLevel | null = null;
+  let familyLevelIndent = 0;
   const familiesProps: Record<string, string> = {};
   const familiesRaw: RawFamily[] = [];
   let familiesDeclared = false;
@@ -657,6 +705,39 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         continue;
       }
+      if (activeBlock === 'tones') {
+        // Hex values start with `#`, so only ` # ` (hash between spaces) starts a comment here.
+        const trimmed = raw.trim().replace(/\s+#\s.*$/, '');
+        if (trimmed === '' || trimmed.startsWith('# ')) continue;
+        const colonIdx = trimmed.indexOf(':');
+        const key = colonIdx !== -1 ? trimmed.slice(0, colonIdx).trim() : '';
+        const value = trimmed.slice(colonIdx + 1).trim();
+        if (key === 'steps') {
+          if (tonesStepsRaw) throw new Error(`${fileName}:${lineNum}: tones declares steps: twice`);
+          tonesStepsRaw = { value, line: lineNum };
+        } else if (key.startsWith('$') && key.length > 1) {
+          const name = key.slice(1);
+          if (tonesRaw.some(t => t.name === name)) throw new Error(`${fileName}:${lineNum}: tones declares "${key}" twice`);
+          tonesRaw.push({ name, values: value.split(/\s+/).filter(Boolean), line: lineNum });
+        } else {
+          throw new Error(`${fileName}:${lineNum}: expected "steps: …" or "$color: #HEX …" in tones, got "${trimmed}"`);
+        }
+        continue;
+      }
+      if (activeBlock === 'levels') {
+        const trimmed = raw.trim();
+        if (trimmed === '' || trimmed.startsWith('#')) continue;
+        const levelMatch = trimmed.match(/^level\s+(\S+)$/);
+        if (levelMatch) {
+          if (levelsRaw.some(l => l.name === levelMatch[1])) throw new Error(`${fileName}:${lineNum}: duplicate level "${levelMatch[1]}"`);
+          currentLevel = { name: levelMatch[1], line: lineNum, slots: [] };
+          levelsRaw.push(currentLevel);
+          continue;
+        }
+        if (!currentLevel) throw new Error(`${fileName}:${lineNum}: expected "level NAME" in levels, got "${trimmed}"`);
+        currentLevel.slots.push(parseSlotLine(trimmed, lineNum, `level ${currentLevel.name}`));
+        continue;
+      }
       if (activeBlock === 'color-families') {
         const trimmed = raw.trim();
         if (trimmed === '') continue;
@@ -665,7 +746,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
           if (familiesRaw.some(f => f.name === familyMatch[1])) {
             throw new Error(`${fileName}:${lineNum}: duplicate family "${familyMatch[1]}"`);
           }
-          currentFamily = { name: familyMatch[1], line: lineNum, colors: [], pairs: [] };
+          currentFamily = { name: familyMatch[1], line: lineNum, colors: [], pairs: [], levels: [] };
+          currentFamilyLevel = null;
           familiesRaw.push(currentFamily);
           inPairs = false;
           continue;
@@ -676,6 +758,23 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
             throw new Error(`${fileName}:${lineNum}: expected "key: value" or "family NAME" in color-families, got "${trimmed}"`);
           }
           familiesProps[trimmed.slice(0, colonIdx).trim()] = trimmed.slice(colonIdx + 1).trim();
+          continue;
+        }
+        const indent = raw.length - raw.trimStart().length;
+        if (currentFamilyLevel && indent > familyLevelIndent) {
+          currentFamilyLevel.slots.push(parseSlotLine(trimmed, lineNum, `family "${currentFamily.name}" level ${currentFamilyLevel.name}`));
+          continue;
+        }
+        currentFamilyLevel = null;
+        const familyLevelMatch = trimmed.match(/^level\s+(\S+)$/);
+        if (familyLevelMatch) {
+          if (currentFamily.levels.some(l => l.name === familyLevelMatch[1])) {
+            throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" declares level ${familyLevelMatch[1]} twice`);
+          }
+          currentFamilyLevel = { name: familyLevelMatch[1], line: lineNum, slots: [] };
+          familyLevelIndent = indent;
+          currentFamily.levels.push(currentFamilyLevel);
+          inPairs = false;
           continue;
         }
         if (trimmed === 'pairs') {
@@ -700,8 +799,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
           currentFamily.from = value;
           continue;
         }
+        if (key === 'signal' && colonIdx !== -1) {
+          if (currentFamily.signal) throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" declares signal: twice`);
+          currentFamily.signal = { value: trimmed.slice(colonIdx + 1).trim(), line: lineNum };
+          inPairs = false;
+          continue;
+        }
         if (colonIdx === -1 || !FAMILY_ROLES.has(key as FamilyRole)) {
-          throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}": expected from / core / accent / contrast / pairs, got "${trimmed}"`);
+          throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}": expected from / core / accent / contrast / signal / level / pairs, got "${trimmed}"`);
         }
         inPairs = false;
         currentFamily.colors.push({ role: key, value: trimmed.slice(colonIdx + 1).trim(), line: lineNum });
@@ -912,6 +1017,23 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.trim() === 'color-rules') {
       activeBlock = 'color-rules';
       colorRulesDeclared = true;
+      continue;
+    }
+
+    // tones — declared tone ladders per color (optional trailing comment)
+    if (/^tones(\s+#.*)?$/.test(raw.trim())) {
+      if (tonesDeclared) throw new Error(`${fileName}:${lineNum}: duplicate tones block`);
+      activeBlock = 'tones';
+      tonesDeclared = true;
+      continue;
+    }
+
+    // levels — slot defaults per level (families override)
+    if (raw.trim() === 'levels') {
+      if (levelsDeclared) throw new Error(`${fileName}:${lineNum}: duplicate levels block`);
+      activeBlock = 'levels';
+      levelsDeclared = true;
+      currentLevel = null;
       continue;
     }
 
@@ -1191,6 +1313,30 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     result.colorRules = rules;
   }
 
+  // ── Finalise tones: ladders now, names + anchors after the families joined brandColors ──
+  let tones: Tones | undefined;
+  if (tonesDeclared) {
+    if (!tonesStepsRaw) throw new Error(`${fileName}: tones needs a "steps:" line`);
+    const stepsLine = tonesStepsRaw.line;
+    const steps = tonesStepsRaw.value.split(',').map(s => s.trim()).map(s => /^\d+$/.test(s) ? Number(s) : NaN);
+    if (steps.length === 0 || steps.some(isNaN) || steps.some((s, i) => i > 0 && s <= steps[i - 1])) {
+      throw new Error(`${fileName}:${stepsLine}: tones steps must be ascending whole numbers, e.g. "10, 20, 30", got "${tonesStepsRaw.value}"`);
+    }
+    tones = { steps, colors: {} };
+    for (const t of tonesRaw) {
+      if (t.values.length !== steps.length) {
+        throw new Error(`${fileName}:${t.line}: tones "$${t.name}" has ${t.values.length} values, steps declares ${steps.length}`);
+      }
+      const ladder: Record<number, string> = {};
+      t.values.forEach((v, i) => {
+        const hex = normalizeHex(v);
+        if (!hex || !isHex6(hex)) throw new Error(`${fileName}:${t.line}: tones "$${t.name}" value "${v}" is not a 6-digit hex`);
+        ladder[steps[i]] = hex;
+      });
+      tones.colors[t.name] = ladder;
+    }
+  }
+
   // ── Finalise color-families: colors + flat projection (pairs later, after themes) ──
   let colorFamilies: ColorFamilies | undefined;
   if (familiesDeclared) {
@@ -1206,7 +1352,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     const colorRefs = (key: string): Array<{ name: string; hex: string }> =>
       (familiesProps[key] ?? '').split(',').map(r => r.trim()).filter(Boolean).map(ref => {
         if (!ref.startsWith('$')) throw new Error(`${fileName}: color-families ${key} entries must be $refs to brand-colors, got "${ref}"`);
-        const hex = brandColors[ref.slice(1)] ? normalizeHex(brandColors[ref.slice(1)]) : null;
+        const found = lookupColorRef(ref.slice(1), brandColors, tones?.colors);
+        const hex = found ? normalizeHex(found) : null;
         if (!hex || !isHex6(hex)) throw new Error(`${fileName}: color-families ${key} "${ref}" is not a known 6-digit brand color`);
         return { name: ref.slice(1), hex };
       });
@@ -1218,13 +1365,25 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       const counts: Record<string, number> = {};
       for (const c of raw.colors) counts[c.role] = (counts[c.role] ?? 0) + 1;
       if (counts.core !== 1) throw new Error(`${fileName}:${raw.line}: family "${raw.name}" needs exactly one core color`);
-      if (counts.contrast !== 1) throw new Error(`${fileName}:${raw.line}: family "${raw.name}" needs exactly one contrast color`);
+      if ((counts.contrast ?? 0) > 1) throw new Error(`${fileName}:${raw.line}: family "${raw.name}" declares more than one contrast color`);
       const seen: Record<string, number> = {};
+      const refs = new Set<FamilyColor>();
       const colors: FamilyColor[] = raw.colors.map(c => {
+        if (c.value.startsWith('$')) {
+          // A reference to a color declared once elsewhere (shared between families); it doesn't join brandColors again.
+          const ref = c.value.slice(1);
+          const found = lookupColorRef(ref, brandColors, tones?.colors);
+          const hex = found ? normalizeHex(found) : null;
+          if (!hex || !isHex6(hex)) throw new Error(`${fileName}:${c.line}: family "${raw.name}" ${c.role} "${c.value}" is not a known 6-digit color`);
+          seen[c.role] = (seen[c.role] ?? 0) + 1;
+          const color = { role: c.role as FamilyRole, hex, name: ref, key: ref };
+          refs.add(color);
+          return color;
+        }
         const m = c.value.match(/^(#[0-9a-fA-F]{3,6})(?:\s+(.+))?$/);
         const hex = m ? normalizeHex(m[1]) : null;
         if (!m || !hex || !isHex6(hex)) {
-          throw new Error(`${fileName}:${c.line}: family "${raw.name}" ${c.role} must be "#HEX" or "#HEX  Name", got "${c.value}"`);
+          throw new Error(`${fileName}:${c.line}: family "${raw.name}" ${c.role} must be "#HEX", "#HEX  Name" or "$ref", got "${c.value}"`);
         }
         seen[c.role] = (seen[c.role] ?? 0) + 1;
         const generated = `${raw.name.toLowerCase()}-${c.role}${counts[c.role] > 1 ? `-${seen[c.role]}` : ''}`;
@@ -1232,6 +1391,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         return { role: c.role as FamilyRole, hex, name, key: colorKey(name) };
       });
       for (const c of colors) {
+        if (refs.has(c)) continue;
         if (brandColors[c.key]) {
           throw new Error(`${fileName}: family "${raw.name}" color name "${c.name}" collides with an existing brand color`);
         }
@@ -1239,20 +1399,109 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       }
       families.push({ name: raw.name, ...(raw.from ? { from: raw.from } : {}), colors, pairs: [] });
     }
+    // Undated families next to dated ones are hand-picked contexts: off the cycle, never in season.
     const dated = familiesRaw.filter(f => f.from !== undefined);
-    if (dated.length > 0 && dated.length < familiesRaw.length) {
-      const missing = familiesRaw.filter(f => f.from === undefined).map(f => f.name).join(', ');
-      throw new Error(`${fileName}: color-families: from: must be declared on every family or on none (missing: ${missing})`);
-    }
     for (const f of dated) {
       const twin = dated.find(o => o !== f && o.from === f.from);
       if (twin) throw new Error(`${fileName}:${f.line}: families "${twin.name}" and "${f.name}" share from: ${f.from}`);
     }
     colorFamilies = { order, borrow, distance, shared, ...(photoFallback.length > 0 ? { photoFallback } : {}), families };
-    if (borrow !== 'none' && reachCoversAll(families.length, { order, borrow, distance })) {
+    if (borrow !== 'none' && reachCoversAll(cycleMembers(families).length, { order, borrow, distance })) {
       colorWarnings.push(`color-families: borrow "${borrow}" with distance ${distance} reaches every family — the borrow rule has no effect`);
     }
     result.colorFamilies = colorFamilies;
+  }
+
+  // Tones belong to a declared color, and that color's own hex sits on its ladder (the anchor).
+  if (tones) {
+    for (const t of tonesRaw) {
+      const own = brandColors[t.name] ? normalizeHex(brandColors[t.name]) : null;
+      if (!own) throw new Error(`${fileName}:${t.line}: tones "$${t.name}" is not a brand color or family color`);
+      if (!Object.values(tones.colors[t.name]).includes(own)) {
+        throw new Error(`${fileName}:${t.line}: tones "$${t.name}" must contain its own hex ${own} on one of its steps`);
+      }
+    }
+    result.tones = tones;
+  }
+
+  // ── Finalise levels: every family × level resolves all slots ──────────────
+  if (levelsDeclared) {
+    if (!colorFamilies) throw new Error(`${fileName}: levels needs a color-families block`);
+    if (levelsRaw.length === 0) throw new Error(`${fileName}: levels declares no level`);
+    const names = levelsRaw.map(l => l.name);
+    const levelByKey = new Map(levelsRaw.map(l => [l.name.toLowerCase(), l]));
+    for (const l of levelsRaw) {
+      if (/^(p|a1|a2)$/i.test(l.name)) throw new Error(`${fileName}:${l.line}: level name "${l.name}" is reserved (family shorthand)`);
+    }
+    const cells: Levels['cells'] = {};
+    colorFamilies.families.forEach((family, index) => {
+      const raw = familiesRaw[index];
+      for (const o of raw.levels) {
+        if (!levelByKey.has(o.name.toLowerCase())) throw new Error(`${fileName}:${o.line}: family "${family.name}" overrides unknown level "${o.name}"`);
+      }
+      let signal: Partial<Record<LevelSlot, RawSlot>> = {};
+      if (raw.signal) {
+        const parts = raw.signal.value.split('/').map(p => p.trim());
+        if (parts.length !== 2 || !parts[0] || !parts[1]) throw new Error(`${fileName}:${raw.signal.line}: family "${family.name}" signal must be "signal / on-signal", got "${raw.signal.value}"`);
+        signal = { 'signal': { slot: 'signal', value: parts[0], line: raw.signal.line }, 'on-signal': { slot: 'on-signal', value: parts[1], line: raw.signal.line } };
+      }
+      /** Authored value for a cell: family level override, then family signal, then level default. */
+      const authored = (level: RawLevel, slot: LevelSlot): RawSlot | undefined =>
+        raw.levels.find(o => o.name.toLowerCase() === level.name.toLowerCase())?.slots.find(s => s.slot === slot)
+        ?? signal[slot]
+        ?? level.slots.find(s => s.slot === slot);
+      const role = (shorthand: string): FamilyColor => {
+        const core = family.colors.find(c => c.role === 'core')!;
+        const accents = family.colors.filter(c => c.role === 'accent');
+        return shorthand === 'p' ? core : shorthand === 'a1' ? accents[0] ?? core : accents[1] ?? core;
+      };
+      const memo = new Map<string, string>();
+      const resolve = (level: RawLevel, slot: LevelSlot, stack: string[]): string => {
+        const id = `${level.name.toLowerCase()}.${slot}`;
+        const cached = memo.get(id);
+        if (cached) return cached;
+        if (stack.includes(id)) throw new Error(`${fileName}: family "${family.name}": circular cell reference ${[...stack, id].join(' → ')}`);
+        const a = authored(level, slot);
+        const where = `family "${family.name}" level ${level.name} ${slot}`;
+        if (!a) throw new Error(`${fileName}: ${where} is not set (level default or family override)`);
+        if (a.value === 'required') throw new Error(`${fileName}:${a.line}: ${where} is required: set it in family "${family.name}" (level ${level.name})`);
+        const at = `${fileName}:${a.line}: ${where}`;
+        let hex: string | null = null;
+        const short = a.value.match(/^(p|a1|a2)(?:\.(\d+))?$/);
+        const cellRef = a.value.match(/^([^$#.\s]+)\.(\S+)$/);
+        if (short) {
+          const color = role(short[1]);
+          if (short[2] === undefined) hex = color.hex;
+          else {
+            hex = tones?.colors[color.key]?.[Number(short[2])] ?? null;
+            if (!hex) throw new Error(`${at}: "${a.value}" — ${color.name} has no tone ${short[2]}`);
+          }
+        } else if (a.value.startsWith('$')) {
+          const found = lookupColorRef(a.value.slice(1), brandColors, tones?.colors);
+          hex = found ? normalizeHex(found) : null;
+          if (!hex) throw new Error(`${at}: unknown color "${a.value}"`);
+        } else if (a.value.startsWith('#')) {
+          hex = normalizeHex(a.value);
+        } else if (cellRef) {
+          const target = levelByKey.get(cellRef[1].toLowerCase());
+          if (!target || !(LEVEL_SLOTS as readonly string[]).includes(cellRef[2])) throw new Error(`${at}: "${a.value}" is not a cell (level.slot)`);
+          hex = resolve(target, cellRef[2] as LevelSlot, [...stack, id]);
+        }
+        if (!hex || !isHex6(hex)) throw new Error(`${at}: value "${a.value}" must be p / a1 / a2 [.step], $ref [.step], #HEX or level.slot`);
+        memo.set(id, hex);
+        return hex;
+      };
+      cells[family.name] = {};
+      for (const level of levelsRaw) {
+        const cell = {} as Record<LevelSlot, string>;
+        for (const slot of LEVEL_SLOTS) cell[slot] = resolve(level, slot, []);
+        cells[family.name][level.name] = cell;
+        if (colorRulesDeclared) colorWarnings.push(...levelRuleViolations(family.name, level.name, cell, rules));
+      }
+    });
+    result.levels = { names, cells };
+  } else if (familiesRaw.some(f => f.signal || f.levels.length > 0)) {
+    throw new Error(`${fileName}: family signal: / level overrides need a levels block`);
   }
 
   // Store brand colors (flat projection)
@@ -1347,14 +1596,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (theme[key] !== undefined) { pairRaw[key] = theme[key]; delete theme[key]; }
     }
     for (const [slot, value] of Object.entries(theme)) {
-      theme[slot] = resolveThemeSlotValue(value, brandColors, fileName, slot);
+      theme[slot] = resolveThemeSlotValue(value, brandColors, fileName, slot, tones?.colors);
     }
     if (Object.keys(pairRaw).length === 0) continue;
     if (!pairRaw.ground || !pairRaw.figure) {
       throw new Error(`${fileName}: theme "${name}" needs both "ground:" and "figure:" (pair theme), or neither`);
     }
     const solid = (key: string, value: string) => {
-      const hex = resolveThemeSlotValue(value, brandColors, fileName, key);
+      const hex = resolveThemeSlotValue(value, brandColors, fileName, key, tones?.colors);
       if (!isHex6(hex)) throw new Error(`${fileName}: theme "${name}" ${key} must be a solid 6-digit color, got "${value}"`);
       return hex;
     };
@@ -1381,7 +1630,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       const raw = familiesRaw[index];
       raw.pairs.forEach((p, n) => {
         const resolve = (value: string) => {
-          const hex = value.startsWith('$') ? (brandColors[value.slice(1)] ? normalizeHex(brandColors[value.slice(1)]) : null) : normalizeHex(value);
+          const found = value.startsWith('$') ? lookupColorRef(value.slice(1), brandColors, tones?.colors) : value;
+          const hex = found ? normalizeHex(found) : null;
           if (!hex || !isHex6(hex)) throw new Error(`${fileName}:${p.line}: pair color "${value}" is not a known 6-digit color`);
           return hex;
         };
@@ -1426,7 +1676,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   }
 
   // color-mode: brand starts pages from a declared theme, so it needs at least one.
-  if (result.colorMode === 'brand' && Object.keys(themes).length === 0) {
+  if (result.colorMode === 'brand' && Object.keys(themes).length === 0 && !result.levels) {
     throw new Error(`${fileName}: color-mode: brand requires at least one theme (a theme block or a valid color-families pair)`);
   }
 
@@ -1708,10 +1958,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       const refs = duo.value.split(/\s+/);
       if (refs.length !== 2) throw new Error(`${fileName}:${duo.line}: photo-look duotone must be "SHADOW HIGHLIGHT", got "${duo.value}"`);
       const [shadow, highlight] = refs.map(ref => {
-        if (ref.startsWith('$') && !brandColors[ref.slice(1)]) {
+        const found = ref.startsWith('$') ? lookupColorRef(ref.slice(1), brandColors, tones?.colors) : ref;
+        if (!found) {
           throw new Error(`${fileName}:${duo.line}: photo-look duotone references unknown brand color "${ref}"`);
         }
-        const hex = normalizeHex(ref.startsWith('$') ? brandColors[ref.slice(1)] : ref);
+        const hex = normalizeHex(found);
         if (!hex) throw new Error(`${fileName}:${duo.line}: photo-look duotone colors must be $ref or #HEX, got "${ref}"`);
         return hex;
       });

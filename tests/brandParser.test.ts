@@ -478,6 +478,72 @@ test('rejects invalid windows and references', () => {
   assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01..05-31\n\nlogo main\n  src: logos/main.svg\n  when: raps\n`, 'test.brand'), /photos only/, 'logo when');
 });
 
+// ── tones ────────────────────────────────────────────────────────────────────
+
+console.log('\ntones:');
+
+const TONES = `${HEADER}brand-colors
+  blue:  #2B4C7E
+  white: #FFFFFF
+  green: #40604B
+
+tones   # imported, don't edit
+  steps: 10, 30, 95
+  $blue:  #0B1A30 #2B4C7E #F0F4FA
+  $green: #14231A #40604B #E2F2E8   # anchor on 30
+`;
+
+test('parses ladders and resolves $name.step in themes, shared and families', () => {
+  const src = `${TONES}
+color-families
+  shared: $blue.10, $white
+  family Dusk
+    core:     $green
+    accent:   $blue
+    contrast: $blue.10
+  family Dawn
+    core:     $green.95
+    contrast: $blue.10
+
+theme Light
+  background: $blue.95
+  text-primary: $blue.10 70%
+`;
+  const b = parseBrandFile(src, 'test.brand');
+  assertEq(b.tones?.steps, [10, 30, 95], 'steps');
+  assertEq(b.tones?.colors.blue[95], '#F0F4FA', 'ladder');
+  assertEq(b.themes?.Light.background, '#F0F4FA', 'theme step');
+  assertEq(b.themes?.Light['text-primary'], 'rgba(11, 26, 48, 0.7)', 'step with alpha');
+  assertEq(b.colorFamilies?.shared[0], { name: 'blue.10', hex: '#0B1A30' }, 'shared step');
+  const dusk = b.colorFamilies!.families[0].colors;
+  assertEq(dusk.map(c => [c.role, c.key, c.hex]), [['core', 'green', '#40604B'], ['accent', 'blue', '#2B4C7E'], ['contrast', 'blue.10', '#0B1A30']], 'family refs');
+  assertEq(Object.keys(b.brandColors!), ['blue', 'white', 'green'], 'refs do not join brandColors');
+});
+
+test('two families may reference the same color', () => {
+  const src = `${TONES}
+color-families
+  family A
+    core: $green
+    contrast: $blue.10
+  family B
+    core: $green
+    contrast: $blue.10
+`;
+  assertEq(parseBrandFile(src, 'test.brand').colorFamilies?.families.length, 2, 'families');
+});
+
+test('rejects broken tones', () => {
+  const p = (body: string) => () => parseBrandFile(`${HEADER}brand-colors\n  blue: #2B4C7E\n\n${body}`, 'test.brand');
+  assertThrows(p('tones\n  $blue: #0B1A30 #2B4C7E\n'), /needs a "steps:" line/, 'no steps');
+  assertThrows(p('tones\n  steps: 30, 10\n  $blue: #0B1A30 #2B4C7E\n'), /ascending/, 'order');
+  assertThrows(p('tones\n  steps: 10, 30\n  $blue: #2B4C7E\n'), /has 1 values, steps declares 2/, 'count');
+  assertThrows(p('tones\n  steps: 10, 30\n  $blue: #0B1A30 #1C3558\n'), /must contain its own hex #2B4C7E/, 'anchor');
+  assertThrows(p('tones\n  steps: 10, 30\n  $red: #0B1A30 #2B4C7E\n'), /"\$red" is not a brand color/, 'unknown color');
+  assertThrows(p('tones\n  steps: 10, 30\n  $blue: #0B1A30 #2B4C7E\n  $blue: #0B1A30 #2B4C7E\n'), /twice/, 'duplicate');
+  assertThrows(p('tones\n  steps: 10, 30\n  $blue: #0B1A30 #2B4C7E\n\ntheme T\n  background: $blue.20\n'), /unknown brand color "\$blue\.20"/, 'unknown step');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

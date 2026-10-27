@@ -12,6 +12,13 @@
     { "include": "#color-bounds-header" },
     { "include": "#color-rules-header" },
     { "include": "#color-families-header" },
+    { "include": "#tones-header" },
+    { "include": "#levels-header" },
+    { "include": "#level-header" },
+    { "include": "#level-slot" },
+    { "include": "#family-signal" },
+    { "include": "#tones-steps" },
+    { "include": "#tones-entry" },
     { "include": "#color-rules-entry" },
     { "include": "#color-families-property" },
     { "include": "#family-header" },
@@ -110,6 +117,64 @@
         "1": { "name": "keyword.control.brand-intent-brand" }
       }
     },
+    "levels-header": {
+      "match": "^(levels)\\s*$",
+      "captures": { "1": { "name": "keyword.control.brand-intent-brand" } }
+    },
+    "level-header": {
+      "comment": "level NAME under levels or inside a family",
+      "match": "^(\\s{2,})(level)\\s+(\\S+)\\s*$",
+      "captures": {
+        "2": { "name": "keyword.control.brand-intent-brand" },
+        "3": { "name": "entity.name.type.brand-intent-brand" }
+      }
+    },
+    "level-slot": {
+      "comment": "Level slot: ground / on-ground/text / … → p|a1|a2[.step], $ref[.step], #HEX, level.slot, required",
+      "match": "^(\\s{4,})(ground|on-ground/(?:headline|text|accent|line|divider)|contrast|on-contrast|inset|on-inset/(?:text|accent)|signal|on-signal)(:\\s*)(required|#[0-9A-Fa-f]{6}|\\$[\\w-]+(?:\\.\\d+)?|(?:p|a1|a2)(?:\\.\\d+)?|[A-Za-z][\\w-]*\\.[\\w/-]+)\\s*(#\\s.*)?$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "variable.other.brand-intent-brand" },
+        "5": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
+    "family-signal": {
+      "comment": "Family signal pair: signal: VALUE / VALUE",
+      "match": "^(\\s{4,})(signal)(:\\s*)(\\S+)(\\s*/\\s*)(\\S+)\\s*$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "variable.other.brand-intent-brand" },
+        "6": { "name": "variable.other.brand-intent-brand" }
+      }
+    },
+    "tones-header": {
+      "match": "^(tones)(\\s+#.*)?$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-brand" },
+        "2": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
+    "tones-steps": {
+      "comment": "steps: 10, 20, … under tones",
+      "match": "^( {2})(steps)(:\\s*)([\\d,\\s]+)$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" }
+      }
+    },
+    "tones-entry": {
+      "comment": "Tone ladder: $color: #HEX #HEX … (one hex per step)",
+      "match": "^( {2})(\\$[\\w-]+)(:)((?:\\s+#[0-9A-Fa-f]{6})+)\\s*(#.*)?$",
+      "captures": {
+        "2": { "name": "variable.other.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
+        "5": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
     "color-rules-entry": {
       "comment": "Entries under color-rules: text/figure (contrast), avoid (tone combos), tones (thresholds)",
       "match": "^(\\s{2,})(text|figure|avoid|tones)(:\\s*)(.+)$",
@@ -136,13 +201,14 @@
       }
     },
     "family-role": {
-      "comment": "Family color: core/accent/contrast → #HEX [Name]",
-      "match": "^(\\s{4,})(core|accent|contrast)(:\\s*)(#[0-9A-Fa-f]{3,6})(?:\\s+(.+))?$",
+      "comment": "Family color: core/accent/contrast → #HEX [Name] or $ref[.step]",
+      "match": "^(\\s{4,})(core|accent|contrast)(:\\s*)(?:(#[0-9A-Fa-f]{3,6})(?:\\s+(.+))?|(\\$[\\w-]+(?:\\.\\d+)?))\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
         "4": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
-        "5": { "name": "string.unquoted.brand-intent-brand" }
+        "5": { "name": "string.unquoted.brand-intent-brand" },
+        "6": { "name": "variable.other.brand-intent-brand" }
       }
     },
     "family-from": {
@@ -162,7 +228,7 @@
     },
     "family-pair": {
       "comment": "Pair line: ground / figure (hex or $ref). Listed before #comment so indented hex is not read as a comment.",
-      "match": "^(\\s{4,})(#[0-9A-Fa-f]{3,6}|\\$[\\w-]+)(\\s*/\\s*)(#[0-9A-Fa-f]{3,6}|\\$[\\w-]+)\\s*$",
+      "match": "^(\\s{4,})(#[0-9A-Fa-f]{3,6}|\\$[\\w-]+(?:\\.\\d+)?)(\\s*/\\s*)(#[0-9A-Fa-f]{3,6}|\\$[\\w-]+(?:\\.\\d+)?)\\s*$",
       "captures": {
         "2": { "name": "constant.other.color.rgb-value.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -287,7 +353,7 @@
     },
     "token-slot-ref": {
       "comment": "Indented token slot with $ref value, optional alpha suffix",
-      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(\\$[\\w-]+)(?:\\s+([0-9]+(?:\\.[0-9]+)?%))?",
+      "match": "^(\\s{2,})([-\\w]+)(:\\s*)(\\$[\\w-]+(?:\\.\\d+)?)(?:\\s+([0-9]+(?:\\.[0-9]+)?%))?",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

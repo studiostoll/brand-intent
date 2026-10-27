@@ -15,6 +15,10 @@ export {
   derivePairSlots,
   resolveTextColor,
   reachableFamilies,
+  cycleMembers,
+  LEVEL_SLOTS,
+  LEVEL_PAIRS,
+  levelRuleViolations,
   reachCoversAll,
   colorOrigin,
   familyTextCandidates,
@@ -55,6 +59,9 @@ export type {
   ColorFamily,
   ColorFamilies,
   ThemePair,
+  Tones,
+  Levels,
+  LevelSlot,
 } from './types';
 
 export { parseFormatFile } from './formatParser';

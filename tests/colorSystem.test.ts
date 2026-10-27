@@ -11,6 +11,7 @@ import {
   reachableFamilies,
   enumerateFamilyPairs,
   familyIndexForDate,
+  cycleMembers,
   DEFAULT_COLOR_RULES,
 } from '../parser/colorSystem';
 
@@ -314,7 +315,7 @@ test('family needs exactly one core', () => {
 
 test('unknown family key is rejected', () => {
   const src = `${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    core: #000000\n    highlight: #111111\n`;
-  assertThrows(() => parseBrandFile(src, 't.brand'), /expected from \/ core \/ accent \/ contrast \/ pairs/, 'bad role');
+  assertThrows(() => parseBrandFile(src, 't.brand'), /expected from \/ core \/ accent \/ contrast \/ signal \/ level \/ pairs/, 'bad role');
 });
 
 test('invalid borrow is rejected', () => {
@@ -338,8 +339,13 @@ test('family from: is parsed', () => {
   assertEq(out.colorFamilies!.families.map(f => f.from), ['12-01', '06-01']);
 });
 
-test('from: on some families only is rejected', () => {
-  assertThrows(() => parseBrandFile(dated('12-01', 'accent: #444444'), 't.brand'), /every family or on none \(missing: B\)/, 'partial from');
+test('undated families next to dated ones are off the cycle', () => {
+  const out = parseBrandFile(dated('12-01', 'accent: #444444'), 't.brand');
+  assertEq(out.colorFamilies!.families.map(f => f.from), ['12-01', undefined], 'from');
+  assertEq(familyIndexForDate(out.colorFamilies!.families, new Date(2026, 5, 1)), 0, 'only the dated family is in season');
+  const fam = [{ from: '12-01' }, {}, { from: '03-01' }, { from: '06-01' }];
+  assertEq([...reachableFamilies(4, 0, { order: 'cycle', borrow: 'both', distance: 1 }, cycleMembers(fam)).keys()].sort(), [2, 3], 'Plain is skipped');
+  assertEq(reachableFamilies(4, 1, { order: 'cycle', borrow: 'both', distance: 1 }, cycleMembers(fam)).size, 0, 'Plain borrows nothing');
 });
 
 test('from: must be a real MM-DD', () => {
@@ -361,6 +367,109 @@ test('familyIndexForDate picks the season, wrapping over new year', () => {
   assertEq(at(10, 19), 3, 'October → autumn');
   assertEq(at(12, 1), 0, '1 Dec → winter');
   assertEq(familyIndexForDate([{}, {}], new Date()), -1, 'no dates');
+});
+
+// ── Levels ──────────────────────────────────────────────────────────────────
+
+console.log('\nlevels:');
+
+const LEVELS_BRAND = (rules = '', extra = '') => `${HEADER}brand-colors
+  blue:  #2B4C7E
+  white: #FFFFFF
+  green: #40604B
+  sky:   #C2CCD4
+  sand:  #F4EBC8
+${rules}
+tones
+  steps: 10, 30, 80, 95
+  $blue:  #0B1A30 #2B4C7E #C5D3E8 #F0F4FA
+  $green: #14231A #40604B #B2CEBC #E2F2E8
+  $sky:   #1E2226 #4F5961 #C2CCD4 #E8EDF1
+  $sand:  #2A2410 #6E6236 #D8CB9A #F4EBC8
+
+levels
+  level Light
+    ground:              $white
+    on-ground/headline:  a1.30
+    on-ground/text:      $blue.10
+    on-ground/accent:    a1
+    on-ground/line:      light.on-ground/accent
+    on-ground/divider:   a2.95
+    contrast:            light.on-ground/accent
+    on-contrast:         $white
+    inset:               a2.95
+    on-inset/text:       $blue.10
+    on-inset/accent:     a1
+  level Strong
+    ground:              required
+    on-ground/headline:  a2.95
+    on-ground/text:      $white
+    on-ground/accent:    a1.80
+    on-ground/line:      a1.80
+    on-ground/divider:   p.80
+    contrast:            a2.95
+    on-contrast:         Strong.ground
+    inset:               a2.95
+    on-inset/text:       strong.ground
+    on-inset/accent:     strong.ground
+
+color-families
+  family Plain
+    core: $blue
+    signal: $blue / $white
+    level Strong
+      ground: $blue.10
+  family Dusk
+    from:   12-01
+    core:   $sky
+    accent: $green
+    accent: $sky
+    signal: a1 / $white
+    level Strong
+      ground: a2.10
+${extra}`;
+
+test('every family × level resolves all 13 slots', () => {
+  const out = parseBrandFile(LEVELS_BRAND(), 't.brand');
+  assertEq(out.levels!.names, ['Light', 'Strong'], 'names');
+  const w = out.levels!.cells.Dusk;
+  assertEq(Object.keys(w.Light).length, 13, 'slot count');
+  assertEq(w.Light['on-ground/headline'], '#40604B', 'a1.30');
+  assertEq(w.Light['on-ground/line'], '#40604B', 'cell ref');
+  assertEq(w.Strong.ground, '#1E2226', 'family override');
+  assertEq(w.Strong['on-inset/text'], '#1E2226', 'cell ref to override');
+  assertEq(w.Strong['on-contrast'], '#1E2226', 'cell ref, level name in any case');
+  assertEq([w.Light.signal, w.Strong['on-signal']], ['#40604B', '#FFFFFF'], 'signal in every level');
+  const m = out.levels!.cells.Plain;
+  assertEq(m.Light['on-ground/accent'], '#2B4C7E', 'a1 falls back to core');
+  assertEq(m.Strong['on-ground/accent'], '#C5D3E8', 'a1.80 falls back to core tones');
+  assertEq(out.colorFamilies!.families[0].colors.map(c => c.role), ['core'], 'Plain: core only, no contrast');
+});
+
+test('color-mode: brand is satisfied by levels', () => {
+  const out = parseBrandFile(LEVELS_BRAND('color-mode: brand\n'), 't.brand');
+  assertEq(out.colorMode, 'brand', 'mode');
+});
+
+test('color-rules warn per cell, divider unchecked', () => {
+  const out = parseBrandFile(LEVELS_BRAND('color-rules\n  text: 4.5\n  figure: 3\n', '    level Light\n      on-ground/accent: a2\n'), 't.brand');
+  const w = out.colorWarnings ?? [];
+  if (!w.some(x => x.startsWith('Dusk / Light / on-ground/accent on ground'))) throw new Error(`missing accent warning: ${w.join(' | ')}`);
+  if (w.some(x => x.includes('divider'))) throw new Error('divider must not be checked');
+  assertEq(parseBrandFile(LEVELS_BRAND(), 't.brand').colorWarnings, undefined, 'no rules, no warnings');
+});
+
+test('levels errors', () => {
+  const p = (src: string) => () => parseBrandFile(src, 't.brand');
+  const base = LEVELS_BRAND();
+  assertThrows(p(base.replace('    level Strong\n      ground: a2.10\n', '')), /Dusk" level Strong ground is required/, 'required');
+  assertThrows(p(base.replace('    on-ground/divider:   a2.95', '    on-ground/border:    a2.95')), /unknown slot "on-ground\/border"/, 'unknown slot');
+  assertThrows(p(base.replace('    on-ground/divider:   a2.95\n', '')), /level Light on-ground\/divider is not set/, 'unset');
+  assertThrows(p(base.replace('      ground: a2.10', '      ground: strong.inset\n    level Medium\n      ground: a2')), /overrides unknown level "Medium"/, 'unknown level');
+  assertThrows(p(base.replace('    on-ground/accent:    a1\n', '    on-ground/accent:    light.on-ground/line\n')), /circular cell reference/, 'cycle');
+  assertThrows(p(base.replace('on-ground/headline:  a1.30', 'on-ground/headline:  a1.50')), /has no tone 50/, 'missing tone');
+  assertThrows(p(base.replace('    signal: a1 / $white', '    signal: a1')), /signal must be "signal \/ on-signal"/, 'signal');
+  assertThrows(p(`${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    core: #000000\n    level Strong\n      ground: #000000\n`), /need a levels block/, 'no levels');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -10,6 +10,7 @@ import type {
   ColorRules,
   ColorFamilies,
   ColorFamily,
+  LevelSlot,
   FamilyBorrow,
   FamilyOrder,
   ToneClass,
@@ -145,8 +146,26 @@ export interface ReachConfig {
   distance: number;
 }
 
-/** Families reachable from `index` (excluding itself), labelled by direction. */
-export function reachableFamilies(count: number, index: number, config: ReachConfig): Map<number, 'prev' | 'next'> {
+/**
+ * Indices of the families on the cycle: the dated ones when any family declares `from:`,
+ * else all. Undated families next to dated ones are hand-picked contexts (e.g. a plain context) and never borrow.
+ */
+export function cycleMembers(families: Pick<ColorFamily, 'from'>[]): number[] {
+  const dated = families.flatMap((f, i) => (f.from ? [i] : []));
+  return dated.length > 0 ? dated : families.map((_, i) => i);
+}
+
+/**
+ * Families reachable from `index` (excluding itself), labelled by direction.
+ * `members` limits the cycle to these family indices (see `cycleMembers`); default all `count`.
+ */
+export function reachableFamilies(count: number, index: number, config: ReachConfig, members?: number[]): Map<number, 'prev' | 'next'> {
+  if (members) {
+    const pos = members.indexOf(index);
+    if (pos === -1) return new Map();
+    const inner = reachableFamilies(members.length, pos, config);
+    return new Map([...inner].map(([j, dir]) => [members[j], dir]));
+  }
   const reach = new Map<number, 'prev' | 'next'>();
   if (config.borrow === 'none') return reach;
   const wantPrev = config.borrow === 'previous' || config.borrow === 'both';
@@ -186,7 +205,7 @@ export function colorOrigin(
   const families = system.families;
   if (families[index]?.colors.some(c => c.hex === hex)) return 'own';
   if (system.shared.some(s => s.hex === hex)) return 'shared';
-  const reach = reachableFamilies(families.length, index, config);
+  const reach = reachableFamilies(families.length, index, config, cycleMembers(families));
   for (const [j, dir] of reach) {
     if (families[j].colors.some(c => c.hex === hex)) return dir;
   }
@@ -196,14 +215,14 @@ export function colorOrigin(
 /**
  * Family in season on `date`: the one with the latest `from:` on or before that
  * month/day, wrapping to the year's last start before the first one. Uses the
- * date's local calendar day. -1 when the families declare no dates.
+ * date's local calendar day. Undated families never win. -1 when no family declares a date.
  */
 export function familyIndexForDate(families: Pick<ColorFamily, 'from'>[], date: Date): number {
-  if (families.length === 0 || families.some(f => !f.from)) return -1;
   const today = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   let best = -1;
   let latest = -1;
   families.forEach((f, i) => {
+    if (!f.from) return;
     if (f.from! <= today && (best === -1 || f.from! > families[best].from!)) best = i;
     if (latest === -1 || f.from! > families[latest].from!) latest = i;
   });
@@ -273,7 +292,7 @@ export function enumerateFamilyPairs(
   const pool = new Set<string>();
   for (const c of system.families[index].colors) pool.add(c.hex);
   for (const s of system.shared) pool.add(s.hex);
-  for (const j of reachableFamilies(system.families.length, index, config).keys()) {
+  for (const j of reachableFamilies(system.families.length, index, config, cycleMembers(system.families)).keys()) {
     for (const c of system.families[j].colors) pool.add(c.hex);
   }
   const colors = [...pool];
@@ -283,6 +302,41 @@ export function enumerateFamilyPairs(
       if (g === f) continue;
       out.push(checkFamilyPair(g, f, index, system, config, rules, extraTextCandidates));
     }
+  }
+  return out;
+}
+
+// ── Levels ──────────────────────────────────────────────────────────────────
+
+/** The fixed level slots, in four groups: ground, contrast, inset, signal. */
+export const LEVEL_SLOTS = [
+  'ground', 'on-ground/headline', 'on-ground/text', 'on-ground/accent', 'on-ground/line', 'on-ground/divider',
+  'contrast', 'on-contrast',
+  'inset', 'on-inset/text', 'on-inset/accent',
+  'signal', 'on-signal',
+] as const;
+
+/**
+ * Pairs `color-rules` checks in every level cell: [figure slot, ground slot, rule].
+ * Dividers are decorative and not checked.
+ */
+export const LEVEL_PAIRS: Array<[LevelSlot, LevelSlot, 'text' | 'figure']> = [
+  ['on-ground/headline', 'ground', 'text'],
+  ['on-ground/text', 'ground', 'text'],
+  ['on-ground/accent', 'ground', 'figure'],
+  ['on-ground/line', 'ground', 'figure'],
+  ['on-contrast', 'contrast', 'text'],
+  ['on-inset/text', 'inset', 'text'],
+  ['on-inset/accent', 'inset', 'figure'],
+  ['on-signal', 'signal', 'text'],
+];
+
+/** Rule warnings for one resolved level cell, e.g. `Dusk / Light / on-ground/accent on ground 2.1:1 < 3`. */
+export function levelRuleViolations(family: string, level: string, cell: Record<LevelSlot, string>, rules: ColorRules): string[] {
+  const out: string[] = [];
+  for (const [fig, ground, rule] of LEVEL_PAIRS) {
+    const ratio = contrastRatio(cell[fig], cell[ground]);
+    if (ratio < rules[rule]) out.push(`${family} / ${level} / ${fig} on ${ground} ${ratio.toFixed(1)}:1 < ${rules[rule]}`);
   }
   return out;
 }

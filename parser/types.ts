@@ -174,6 +174,29 @@ export interface ColorFamilies {
   families: ColorFamily[];
 }
 
+/** Declared tone ladders (`tones` block): every listed color on the same steps. */
+export interface Tones {
+  /** Ascending steps, e.g. 10 … 98. */
+  steps: number[];
+  /** Brand color name → step → 6-digit uppercase hex. The color's own hex sits on one of its steps. */
+  colors: Record<string, Record<number, string>>;
+}
+
+/** One of the fixed level slots (`LEVEL_SLOTS` in colorSystem). */
+export type LevelSlot =
+  | 'ground' | 'on-ground/headline' | 'on-ground/text' | 'on-ground/accent' | 'on-ground/line' | 'on-ground/divider'
+  | 'contrast' | 'on-contrast'
+  | 'inset' | 'on-inset/text' | 'on-inset/accent'
+  | 'signal' | 'on-signal';
+
+/** Resolved `levels`: every family × level fills all slots. */
+export interface Levels {
+  /** Level names in declaration order (weakest first, e.g. Neutral, Light, Medium, Strong). */
+  names: string[];
+  /** family name → level name → slot → 6-digit uppercase hex. */
+  cells: Record<string, Record<string, Record<LevelSlot, string>>>;
+}
+
 /** Ground / figure / text of a pair theme (declared or emitted from a family pair). */
 export interface ThemePair {
   ground: string;
