@@ -35,8 +35,6 @@ export interface ParsedFormat {
   gridCrop: ZoneInsets | null;
   comfort: number;      // px (0 if comfortMm is used)
   comfortMm?: number;   // mm (print/signage)
-  /** Capability restrictions from the `no:` field (e.g. ['motion', 'video', 'photo']). */
-  restrictions?: string[];
   /** Allowed purpose IDs from the `purposes:` field. Absent = all purposes allowed. */
   purposes?: string[];
 }
@@ -110,7 +108,6 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
   let gridCrop: ZoneInsets | null = null;
   let comfortRaw: number | undefined;   // px for screen, mm for print/signage
   let comfortIsMm = false;
-  let restrictions: string[] | undefined;
   let purposes: string[] | undefined;
 
   for (let i = 0; i < lines.length; i++) {
@@ -217,11 +214,6 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
         break;
       }
 
-      case 'no': {
-        restrictions = value.split(/\s+/).filter(Boolean);
-        break;
-      }
-
       case 'purposes': {
         purposes = value.split(/[\s,]+/).filter(Boolean);
         break;
@@ -277,7 +269,6 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
     grid,
     danger, gridCrop,
     comfort, comfortMm,
-    restrictions,
     purposes,
   };
 }

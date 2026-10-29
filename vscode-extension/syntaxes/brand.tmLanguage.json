@@ -535,7 +535,7 @@
       }
     },
     "string-field": {
-      "match": "^(language|locale|domain|app-icon|favicon|og-image|figma-file-key|figma-collection|tokens-file|spacing):?\\s*(.+)?",
+      "match": "^(language|locale|app-icon|favicon|og-image|figma-file-key|figma-collection|tokens-file|spacing):?\\s*(.+)?",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-brand" },
         "2": { "name": "string.unquoted.brand-intent-brand" }
@@ -543,7 +543,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|domain:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|windows)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|app-icon:|favicon:|og-image:|tokens:|figma-file-key:|figma-collection:|tokens-file:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|windows)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

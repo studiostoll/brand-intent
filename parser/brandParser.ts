@@ -55,8 +55,6 @@ export interface ParsedBrand {
   name: string;
   language: string;
   locale: string;
-  /** Canonical domain for this brand (used for OG meta, favicon paths, share links). */
-  domain?: string;
   /** Named font primitives: name → font definition. First entry is the brand default. */
   fonts?: Record<string, ParsedFontDef>;
   /** Token source type: 'figma' | 'inline' */
@@ -1166,7 +1164,6 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       case 'name':         result.name = value; break;
       case 'language':     result.language = value; break;
       case 'locale':       result.locale = value; break;
-      case 'domain':       result.domain = value; break;
       case 'tokens':
         if (value === 'figma' || value === 'inline') {
           result.tokensSource = value;

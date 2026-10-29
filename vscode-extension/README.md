@@ -12,7 +12,7 @@ Brand Intent is an open specification for defining brand identity, visual langua
 |---|---|---|
 | Identity | `.identity` | Brand essence, voice, pillars, audience segments |
 | Brand | `.brand` | Token mode, color themes, typography, spacing, fonts |
-| Format | `.format` | Canvas size, grid, safe zones, restrictions |
+| Format | `.format` | Canvas size, grid, safe zones, purposes |
 | Purpose | `.purpose` | Content types, text slots, typography overrides |
 | Composition | `.composition` | How elements are arranged on the canvas |
 
@@ -81,7 +81,6 @@ id: my-brand
 name: My Brand
 language: en
 locale: en-US
-domain: example.com
 
 tokens: inline
 
@@ -128,7 +127,6 @@ grid: 2 6
 danger: 0 135 0 135
 comfort: 40
 
-no: motion video
 purposes: announcement, event, ad
 ```
 

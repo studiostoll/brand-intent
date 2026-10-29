@@ -503,19 +503,6 @@ function activate(context) {
           items.push(item);
         }
 
-        // no: restriction flags
-        if (prefix.match(/^no:\s*/) || prefix.match(/^no:\s+\S.*\s+$/)) {
-          for (const [v, detail] of [
-            ['motion', 'Disallow animated/motion content'],
-            ['video', 'Disallow video backgrounds'],
-            ['photo', 'Disallow photo backgrounds'],
-          ]) {
-            const item = new vscode.CompletionItem(v, vscode.CompletionItemKind.EnumMember);
-            item.detail = detail;
-            items.push(item);
-          }
-        }
-
         // Top-level format keywords at start of line
         if (prefix.match(/^\s*$/) || prefix.match(/^\s*[\w-]*$/)) {
           for (const [kw, detail] of [
@@ -530,7 +517,6 @@ function activate(context) {
             ['danger:', 'Danger zone insets -- 1, 2, or 4 values (T R B L)'],
             ['crop:', 'Crop zone insets -- T R B L, or none'],
             ['comfort:', 'Inner margin -- px or mm (e.g. 10mm)'],
-            ['no:', 'Capability restrictions -- motion video photo'],
             ['purposes:', 'Allowed purpose IDs (comma-separated)'],
           ]) {
             const item = new vscode.CompletionItem(kw, vscode.CompletionItemKind.Keyword);
@@ -646,7 +632,6 @@ function activate(context) {
             ['name:', 'Display name'],
             ['language:', 'Primary language code (e.g. de, en)'],
             ['locale:', 'Locale (e.g. de-DE, en-US)'],
-            ['domain:', 'Deployment domain'],
             ['app-icon:', 'App icon path'],
             ['favicon:', 'Favicon path'],
             ['tokens:', 'Token source -- figma or inline'],
@@ -841,7 +826,6 @@ function activate(context) {
     'name:': '**`name:`** -- Display name for this brand.',
     'language:': '**`language:`** -- Primary language code.\n\nUsed for AI context and text direction hints.\n\nExample: `language: de`',
     'locale:': '**`locale:`** -- Full locale code.\n\nUsed for date/number formatting.\n\nExample: `locale: de-DE`',
-    'domain:': '**`domain:`** -- Deployment domain.',
     'app-icon:': '**`app-icon:`** -- Path to the app icon asset.\n\nUsed for PWA manifest and favicon generation.',
     'tokens:': '**`tokens:`** -- Token source mode.\n\n`figma` -- tokens synced from Figma\n`inline` -- tokens authored directly in this file as `theme` blocks',
     'figma-file-key:': '**`figma-file-key:`** -- Figma file key for token sync.\n\nRequired when `tokens: figma`.\n\nFound in the Figma file URL: `figma.com/design/FILEKEY/...`',
@@ -865,7 +849,6 @@ function activate(context) {
     'danger:': '**`danger:`** -- Danger zone insets.\n\nCSS-style shorthand: 1, 2, or 4 values.\n`danger: 0` -- all sides 0\n`danger: 10 20` -- top/bottom 10, left/right 20\n`danger: 10 20 30 40` -- top right bottom left',
     'crop:': '**`crop:`** -- Crop/trim insets.\n\nSame shorthand as `danger:`. Marks the physical trim line for print.',
     'grid:': '**`grid:`** -- Custom grid for this format.\n\n`grid: rows cols` -- overrides the default portrait/landscape grid.',
-    'no:': '**`no:`** -- Capability restrictions.\n\nSpace-separated flags: `motion`, `video`, `photo`.\n\nExample: `no: motion video` disables animated logos and video backgrounds.',
     'purposes:': '**`purposes:`** -- Allowed purpose IDs.\n\nComma-separated list. When set, only these purposes are available for this format.\n\nAbsent = all purposes allowed.',
   };
 

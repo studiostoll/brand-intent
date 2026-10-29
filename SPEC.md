@@ -332,7 +332,6 @@ The brand file encodes derived expression intent: visual language and operationa
 | `name:` | string | Yes | Display name |
 | `language:` | string | Yes | ISO 639-1 language code (e.g., `de`) |
 | `locale:` | string | Yes | BCP 47 locale (e.g., `de-DE`) |
-| `domain:` | string | No | Canonical domain (used for OG meta, share links) |
 | `app-icon:` | string | No | Path to PWA app icon (relative to /public) |
 | `favicon:` | string | No | Path to favicon (relative to /public) |
 | `og-image:` | string | No | Path to social sharing image (relative to /public) |
@@ -1047,7 +1046,6 @@ The format file describes a canvas: platform, dimensions, safe zones. It knows n
 | `dpi:` | int | No | Print resolution (default: `300` for print/signage) |
 | `bleed:` | float | No | Print bleed margin in mm |
 | `purposes:` | list | No | Valid purpose IDs for this format (default: all) |
-| `no:` | list | No | Capability restrictions (e.g., `motion video`) |
 
 ### Safe Zone Model
 

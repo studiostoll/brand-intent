@@ -6,7 +6,6 @@
     { "include": "#id-field" },
     { "include": "#name-field" },
     { "include": "#category" },
-    { "include": "#no" },
     { "include": "#purposes" },
     { "include": "#size" },
     { "include": "#grid" },
@@ -39,13 +38,6 @@
       "captures": {
         "1": { "name": "keyword.control.brand-intent-format" },
         "2": { "name": "entity.name.tag.brand-intent-format" }
-      }
-    },
-    "no": {
-      "match": "^(no:)\\s+(.*)",
-      "captures": {
-        "1": { "name": "keyword.control.brand-intent-format" },
-        "2": { "name": "string.unquoted.brand-intent-format" }
       }
     },
     "purposes": {
@@ -94,7 +86,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|category:|no:|purposes:|size:|grid:|dpi:|bleed:|comfort:|danger:|crop:|label:|sublabel:)(?=\\s|$)",
+      "match": "^(id:|name:|category:|purposes:|size:|grid:|dpi:|bleed:|comfort:|danger:|crop:|label:|sublabel:)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-format" }
       }
