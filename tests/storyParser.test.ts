@@ -168,5 +168,18 @@ test('example texts are checked too', () => {
   assertEq(checkStory(s, BRAND, 's.story'), ['s.story: example 1, page 2: slot "primary" is 23 characters long, maxLength is 20'], 'problems');
 });
 
+test('illustration takes one id or a list', () => {
+  const s = parse('page\n  purpose: notice\n  illustration: one, two\n\npage\n  purpose: notice\n  illustration: three\n\npage\n  purpose: notice\n');
+  assertEq(s.pages[0].illustrations, ['one', 'two'], 'list');
+  assertEq(s.pages[1].illustrations, ['three'], 'single');
+  assertEq(s.pages[2].illustrations, undefined, 'none');
+});
+
+test('illustrations must exist when the brand lists them', () => {
+  const s = parse('page\n  purpose: notice\n  illustration: one, missing\n');
+  assertEq(checkStory(s, { ...BRAND, illustrations: ['one'] }, 's.story'), ['s.story: page 1: illustration "missing" does not exist'], 'problems');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked without a list');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

@@ -37,6 +37,8 @@ export interface ParsedPurpose {
   defaultPhoto?: string;
   /** Default video asset ID — pre-selects this video on page creation. */
   defaultVideo?: string;
+  /** Illustration ids a new page picks from; a .story page's `illustration:` overrides them. */
+  illustrations?: string[];
   /** When false, hides Take Photo / Upload buttons for this purpose. Default: true. */
   camera?: boolean;
   /** `camera: front | rear` — overrides the brand's camera facing for this purpose. */
@@ -170,6 +172,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let defaultLogo: string | undefined;
   let defaultPhoto: string | undefined;
   let defaultVideo: string | undefined;
+  let illustrations: string[] | undefined;
   let camera: boolean | undefined;
   let cameraFacing: 'front' | 'rear' | undefined;
   let framing: string | undefined;
@@ -419,6 +422,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     // Default video asset ID
     if (line.startsWith('video:')) {
       defaultVideo = line.slice(6).trim();
+      continue;
+    }
+
+    // Illustrations a new page picks from
+    if (line.startsWith('illustration:')) {
+      illustrations = line.slice(13).split(',').map(id => id.trim()).filter(Boolean);
       continue;
     }
 
@@ -788,7 +797,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
   const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, camera, cameraFacing, framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, illustrations, camera, cameraFacing, framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 
 /** Validate `example` blocks against the declared slots, or build examples from deprecated slot

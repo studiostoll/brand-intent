@@ -158,5 +158,12 @@ test('slot without examples, samples or value throws', () => {
   assertThrows(() => parsePurposeFile(`id: p\ncompositions: panel\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n`, 'p.purpose'), /has no text/, 'no text');
 });
 
+test('illustration takes one id or a list', () => {
+  const i = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').illustrations;
+  assertEq(i('illustration: one, two'), ['one', 'two'], 'list');
+  assertEq(i('illustration: one'), ['one'], 'single');
+  assertEq(i(''), undefined, 'none');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

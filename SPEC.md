@@ -1093,6 +1093,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `compositions:` | list | Yes | Valid composition IDs for this purpose |
 | `density:` | enum | No | `light` \| `medium` \| `full` |
 | `palette:` | string | No | Color palette strategy (see below) |
+| `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. A new page shows one of them. A `.story` page's `illustration:` overrides this list |
 | `scope` | block | No | Narrows the composed upstream |
 | `context` | block | No | Adds purpose-specific AI context |
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
@@ -1474,6 +1475,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 |-----|------|----------|-------------|
 | `purpose:` | string | Yes | Purpose id of the page |
 | `composition:` | string | No | Composition id; must be one of the purpose's `compositions:`. When omitted, implementations pick one as for a new page |
+| `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. One id always shows that illustration; with several, implementations pick one per story date, the same one every time for that date, so a preview and the posted page match. When omitted, the purpose's `illustration:` applies |
 | `topic:` | string | No | Page topic: what this page adds to the story |
 | `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
 
