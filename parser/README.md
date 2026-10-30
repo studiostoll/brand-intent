@@ -1,6 +1,6 @@
 # Brand Intent - Reference Parser
 
-TypeScript parsers for all five Brand Intent file types.
+TypeScript parsers for all Brand Intent file types.
 
 ## Parsers
 
@@ -11,6 +11,7 @@ TypeScript parsers for all five Brand Intent file types.
 | `formatParser.ts` | `.format` | `parseFormatFile(content, fileName)` |
 | `purposeParser.ts` | `.purpose` | `parsePurposeFile(content, fileName)` |
 | `compositionParser.ts` | `.composition` | `parseCompositionFile(content, fileName)` |
+| `storyParser.ts` | `.story` | `parseStoryFile(content, fileName)`; `checkStory(story, brand, fileName)` checks it against the brand's purposes, compositions and formats |
 
 All parsers are **pure functions**: they take a string (file content) and a filename (for error messages), and return a parsed object. No I/O, no side effects, no dependencies beyond `types.ts`.
 

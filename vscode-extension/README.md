@@ -1,6 +1,6 @@
 # Brand Intent Language Extension
 
-VS Code extension providing syntax highlighting, autocomplete, and hover documentation for the five file types in the **Brand Intent** specification.
+VS Code extension providing syntax highlighting, autocomplete, and hover documentation for all file types in the **Brand Intent** specification.
 
 ---
 
@@ -15,6 +15,7 @@ Brand Intent is an open specification for defining brand identity, visual langua
 | Format | `.format` | Canvas size, grid, safe zones, purposes |
 | Purpose | `.purpose` | Content types, text slots, typography overrides |
 | Composition | `.composition` | How elements are arranged on the canvas |
+| Story | `.story` | Ordered pages with fixed, variable (`{weekday}`, `{date}`) and open texts |
 
 This extension adds:
 - **Syntax coloring** -- keywords, values, slot names, rows, columns, hex colors

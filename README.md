@@ -22,11 +22,13 @@ Brand Intent is a set of five composable file types that encode brand knowledge 
 | Purpose | `.purpose` | What is this content for? |
 | Composition | `.composition` | How are elements composed? |
 
+Plus `.story`: ordered pages built from purposes and compositions, with fixed, variable and open texts.
+
 ## Get started
 
 ### 1. Install the VS Code extension
 
-Syntax highlighting, autocomplete, and validation for all five file types.
+Syntax highlighting, autocomplete, and validation for all file types.
 
 ```
 ext install studiostoll.brand-intent-lang
@@ -51,7 +53,7 @@ Edit your Brand Intent files whenever strategy or expression evolves. Regenerate
 
 ## Documentation
 
-- [Specification](SPEC.md): formal grammar for all five file types
+- [Specification](SPEC.md): formal grammar for all file types
 - [intent.stoll.studio](https://intent.stoll.studio): project landing page
 
 ## License

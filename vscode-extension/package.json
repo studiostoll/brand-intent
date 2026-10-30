@@ -1,7 +1,7 @@
 {
   "name": "brand-intent-lang",
-  "displayName": "Brand Intent — .identity, .brand, .format, .purpose, .composition",
-  "description": "Syntax highlighting and autocomplete for the Brand Intent specification — .identity, .brand, .format, .purpose, and .composition files that define brand identity, visual language, and content architecture.",
+  "displayName": "Brand Intent — .identity, .brand, .format, .purpose, .composition, .story",
+  "description": "Syntax highlighting and autocomplete for the Brand Intent specification — .identity, .brand, .format, .purpose, .composition and .story files that define brand identity, visual language, and content architecture.",
   "version": "0.24.0",
   "publisher": "studiostoll",
   "author": {
@@ -26,7 +26,8 @@
     "onLanguage:brand-intent-brand",
     "onLanguage:brand-intent-format",
     "onLanguage:brand-intent-purpose",
-    "onLanguage:brand-intent-composition"
+    "onLanguage:brand-intent-composition",
+    "onLanguage:brand-intent-story"
   ],
   "contributes": {
     "languages": [
@@ -79,6 +80,16 @@
           ".composition"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "brand-intent-story",
+        "aliases": [
+          "Brand Intent Story"
+        ],
+        "extensions": [
+          ".story"
+        ],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
@@ -106,6 +117,11 @@
         "language": "brand-intent-composition",
         "scopeName": "source.brand-intent-composition",
         "path": "./syntaxes/composition.tmLanguage.json"
+      },
+      {
+        "language": "brand-intent-story",
+        "scopeName": "source.brand-intent-story",
+        "path": "./syntaxes/story.tmLanguage.json"
       }
     ]
   }

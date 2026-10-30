@@ -1,0 +1,77 @@
+{
+  "scopeName": "source.brand-intent-story",
+  "name": "Brand Intent Story",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#top-field" },
+    { "include": "#block-header" },
+    { "include": "#example-page" },
+    { "include": "#reference" },
+    { "include": "#property" },
+    { "include": "#variable" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.brand-intent-story"
+    },
+    "top-field": {
+      "match": "^(id:|format:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-story" },
+        "2": { "name": "entity.name.type.brand-intent-story" }
+      }
+    },
+    "block-header": {
+      "match": "^(page|example)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-story" }
+      }
+    },
+    "example-page": {
+      "match": "^\\s{2}(page)\\s+(\\d+)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-story" },
+        "2": { "name": "constant.numeric.brand-intent-story" }
+      }
+    },
+    "reference": {
+      "match": "^\\s+(purpose|composition)(:)\\s+([\\w:-]+)",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-story" },
+        "2": { "name": "punctuation.separator.brand-intent-story" },
+        "3": { "name": "entity.name.type.brand-intent-story" }
+      }
+    },
+    "property": {
+      "match": "^\\s*(name|topic|primary|secondary|detail|meta|cta|label)(:)",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-story" },
+        "2": { "name": "punctuation.separator.brand-intent-story" }
+      }
+    },
+    "variable": {
+      "comment": "{weekday}, {date} placeholders in page texts",
+      "match": "\\{[a-z][a-z0-9-]*\\}",
+      "name": "variable.other.brand-intent-story"
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "patterns": [
+        {
+          "match": "^(id:|name:|format:|topic:|page|example)(?=\\s|$)",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-story" }
+          }
+        },
+        {
+          "match": "^\\s+(purpose|composition|topic|primary|secondary|detail|meta|cta|label)(?=:|\\s|$)",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-story" }
+          }
+        }
+      ]
+    }
+  }
+}

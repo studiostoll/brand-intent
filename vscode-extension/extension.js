@@ -882,6 +882,18 @@ function activate(context) {
     'language:': '**`language:`** -- Audience language preferences.\n\nHow this audience prefers to be spoken to.',
   };
 
+  /** @type {Record<string, string>} */
+  const STORY_HOVER_DOCS = {
+    'id:': '**`id:`** -- Story identifier.',
+    'name:': '**`name:`** -- Display name (derived from id if omitted).',
+    'format:': '**`format:`** -- Format id every page renders at.',
+    'topic:': '**`topic:`** -- Topic, one sentence.\n\nAt the top: what the whole story is about. In a page: what this page adds.',
+    'page': '**`page`** -- One page of the story (top level), or `page N` inside an example.\n\n`purpose:` (required), `composition:`, `topic:`, and fixed slot texts. A slot the page does not name is open.',
+    'example': '**`example`** -- Texts for the open slots, about one story topic.\n\n`topic:` and `page N` blocks (2 spaces) with `topic:` and slot texts (4 spaces).',
+    'purpose:': '**`purpose:`** -- Purpose id of this page.',
+    'composition:': '**`composition:`** -- Composition id; one of the purpose\'s `compositions:`.\n\nOmitted = the implementation picks one.',
+  };
+
   /**
    * @param {Record<string, string>} docs
    * @returns {vscode.HoverProvider}
@@ -930,9 +942,41 @@ function activate(context) {
     makeHoverProvider(IDENTITY_HOVER_DOCS)
   );
 
+  const storyHover = vscode.languages.registerHoverProvider(
+    'brand-intent-story',
+    makeHoverProvider(STORY_HOVER_DOCS)
+  );
+
+  const storyProvider = vscode.languages.registerCompletionItemProvider(
+    'brand-intent-story',
+    {
+      provideCompletionItems(document, position) {
+        const prefix = document.lineAt(position).text.substring(0, position.character);
+        const items = [];
+        const add = (/** @type {[string, string][]} */ list, kind) => {
+          for (const [label, detail] of list) {
+            const item = new vscode.CompletionItem(label, kind);
+            item.detail = detail;
+            items.push(item);
+          }
+        };
+        if (/^\w*$/.test(prefix)) {
+          add([['id: ', 'Story identifier'], ['name: ', 'Display name'], ['format: ', 'Format id'], ['topic: ', 'Story topic'], ['page', 'One page'], ['example', 'Texts for the open slots']], vscode.CompletionItemKind.Keyword);
+        } else if (/^ {2}\w*$/.test(prefix)) {
+          add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['topic: ', 'Topic'], ['page ', 'Example page N'],
+            ['primary: ', 'Slot text'], ['secondary: ', 'Slot text'], ['detail: ', 'Slot text'], ['meta: ', 'Slot text'], ['cta: ', 'Slot text'], ['label: ', 'Slot text']], vscode.CompletionItemKind.Property);
+        } else if (/\{\w*$/.test(prefix)) {
+          add([['weekday}', 'Full weekday name'], ['date}', 'Day and month, no year']], vscode.CompletionItemKind.Variable);
+        }
+        return items;
+      }
+    },
+    ' ', '{'
+  );
+
   context.subscriptions.push(
-    compositionProvider, purposeProvider, formatProvider, brandProvider, identityProvider,
-    compositionHover, purposeHover, formatHover, brandHover, identityHover
+    compositionProvider, purposeProvider, formatProvider, brandProvider, identityProvider, storyProvider,
+    compositionHover, purposeHover, formatHover, brandHover, identityHover, storyHover
   );
 }
 

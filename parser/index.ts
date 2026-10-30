@@ -1,5 +1,5 @@
 // Brand Intent — reference parser
-// All five parsers are pure functions:
+// All six parsers are pure functions:
 // they take a string (file content) and filename, return a parsed object.
 
 export { parseIdentityFile } from './identityParser';
@@ -82,5 +82,8 @@ export type {
   IllustrationAnchor,
   GridYKeyword,
 } from './compositionParser';
+
+export { parseStoryFile, checkStory, storyTextVariables, STORY_VARIABLES } from './storyParser';
+export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';

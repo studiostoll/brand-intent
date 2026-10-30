@@ -1,6 +1,6 @@
 # Brand Intent / Specification v0.1
 
-This document defines the formal grammar for all five Brand Intent file types. For the reasoning behind these decisions, see [DESIGN.md](DESIGN.md).
+This document defines the formal grammar for all Brand Intent file types: the five layers and stories. For the reasoning behind these decisions, see [DESIGN.md](DESIGN.md).
 
 ---
 
@@ -1449,6 +1449,98 @@ A `.composition` file must NOT contain: color values, typography values, slot co
 
 ---
 
+## Story (`.story`)
+
+**Cardinality:** Multiple per brand.
+**File extension:** `.story`
+**Filename convention:** descriptive kebab-case (e.g., `breads-of-the-week.story`)
+
+A story is an ordered set of pages, posted or shared together: a carousel, a sequence of 9:16 stories, a short article. It is not a sixth layer of the context stack: each page is still a purpose placed by a composition, and the story only says which pages come in which order, which texts are fixed, and what the whole story is about.
+
+### Top-Level Keys
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `id:` | string | Yes | Unique story identifier |
+| `name:` | string | No | Display name (derived from id if omitted) |
+| `format:` | string | Yes | Format id every page renders at |
+| `topic:` | string | No | Story topic: what the whole story is about, one sentence. People can change it per story; it guides AI writing and review on every page |
+| `page` | block | Yes (1+) | One page (repeatable). Order in the file = order in the story |
+| `example` | block | No | Texts for the open slots of the pages, about one story topic (repeatable) |
+
+### `page` Block
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `purpose:` | string | Yes | Purpose id of the page |
+| `composition:` | string | No | Composition id; must be one of the purpose's `compositions:`. When omitted, implementations pick one as for a new page |
+| `topic:` | string | No | Page topic: what this page adds to the story |
+| `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
+
+Every slot of the purpose is one of three kinds on a page:
+
+| Kind | Written as | Meaning |
+|------|------------|---------|
+| Fixed | `primary: Open today` | Always this text |
+| Variable | `label: From {date}` | Fixed text with placeholders, resolved for the story's date |
+| Open | slot not named | Filled from the story's examples, by the person, or by AI writing |
+
+A slot with `value:` in the purpose is fixed there and is never named on a page.
+
+### Variables
+
+A page text may contain `{name}` placeholders. Implementations resolve them for the story's date (the day it is posted or the day a person picks), in the brand's language:
+
+| Variable | Resolves to | Example |
+|----------|-------------|---------|
+| `{weekday}` | Full weekday name | `Mittwoch`, `Wednesday` |
+| `{date}` | Day and month, no year | `30. Oktober`, `30 October` |
+
+An unknown name is an error. Braces that don't form a lowercase `{name}` stay plain text. Variables appear only in page texts, never in topics or examples. For `maxLength`, a variable counts at its longest form (`{weekday}` 10 characters, `{date}` 13).
+
+### `example` Block
+
+One example fills the open slots of several pages together, about one story topic, so item pages match the story and don't repeat each other. Implementations fill a new story from one example and swap whole examples.
+
+```yaml
+page
+  purpose:     daily-bread
+  composition: editorial
+  label:       Ab {date}
+
+page
+  purpose: daily-bread
+
+example
+  topic: A rye week: three rye breads from mild to dark
+  page 1
+    topic:   Light rye, the mild start
+    primary: Hellroggen
+  page 2
+    topic:   The classic rye loaf
+    label:   Der Klassiker
+    primary: Roggenlaib
+```
+
+| Key | Indent | Description |
+|-----|--------|-------------|
+| `topic:` | 2 | Story topic for this example |
+| `page N` | 2 | Texts for page N (1-based) |
+| `topic:` | 4 | Page topic for page N |
+| `SLOTID:` | 4 | Text for an open slot of page N; a bare `SLOTID:` takes the following 6-space lines |
+
+**Rules:**
+- `page N` must exist in the story; each page appears at most once per example.
+- An example fills only open slots: a slot fixed on the page takes no example text.
+- An example may leave pages or slots out; they stay open.
+- The purpose's slot limits (`maxLength`, list `maxItems`) apply to page and example texts alike; `words:` and `sentences:` are guidance as for any text in the slot.
+
+### Exclusion Rule
+
+A `.story` file must NOT contain: color values, typography values, slot definitions, layout values, schedules or posting times. When a story is posted belongs to the implementation, not to the brand files.
+
+---
+
 ## Context Composition
 
 When an AI agent generates content, the five layers compose into a single context. The composition order is:
@@ -1489,6 +1581,8 @@ A parser should warn when:
 - A `.purpose` still uses deprecated slot `samples:`
 - An `archetypes` entry references a non-existent `.composition` file
 - A `purposes` entry in `.format` references a non-existent `.purpose` file
+- A `.story` references a format, purpose or composition that doesn't exist, a composition its purpose doesn't list, or a slot its purpose doesn't declare or fixes with `value:`
+- A fixed or example text in a `.story` exceeds the slot's limits
 
 ---
 
@@ -1507,11 +1601,13 @@ project/
     │   └── instagram-4-5-feed-portrait.format
     ├── purposes/
     │   └── daily-bread.purpose
-    └── compositions/
-        └── editorial.composition
+    ├── compositions/
+    │   └── editorial.composition
+    └── stories/
+        └── breads-of-the-week.story
 ```
 
-Every brand is fully self-contained. Formats, purposes, and compositions are specific to one brand's identity and voice — there are no shared files between brands.
+Every brand is fully self-contained. Formats, purposes, compositions, and stories are specific to one brand's identity and voice — there are no shared files between brands.
 
 ### Examples
 
@@ -1525,7 +1621,8 @@ project/
         ├── krume.brand
         ├── formats/
         ├── purposes/
-        └── compositions/
+        ├── compositions/
+        └── stories/
 ```
 
 The `brand-intent` npm package ships example brands under `examples/`. Run `brand-intent init` to copy them into your own project.

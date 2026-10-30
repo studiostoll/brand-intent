@@ -36,7 +36,7 @@
   "scripts": {
     "release": "./scripts/release.sh",
     "typecheck": "tsc -p .",
-    "test": "tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/icons.test.ts && tsx tests/purposeParser.test.ts && tsx tests/realBrands.test.ts"
+    "test": "tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/icons.test.ts && tsx tests/purposeParser.test.ts && tsx tests/storyParser.test.ts && tsx tests/realBrands.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
