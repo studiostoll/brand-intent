@@ -2,7 +2,7 @@
   "name": "brand-intent-lang",
   "displayName": "Brand Intent — .identity, .brand, .format, .purpose, .composition, .story",
   "description": "Syntax highlighting and autocomplete for the Brand Intent specification — .identity, .brand, .format, .purpose, .composition and .story files that define brand identity, visual language, and content architecture.",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "publisher": "studiostoll",
   "author": {
     "name": "Studio Stoll",
