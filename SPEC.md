@@ -332,9 +332,6 @@ The brand file encodes derived expression intent: visual language and operationa
 | `name:` | string | Yes | Display name |
 | `language:` | string | Yes | ISO 639-1 language code (e.g., `de`) |
 | `locale:` | string | Yes | BCP 47 locale (e.g., `de-DE`) |
-| `app-icon:` | string | No | Path to PWA app icon (relative to /public) |
-| `favicon:` | string | No | Path to favicon (relative to /public) |
-| `og-image:` | string | No | Path to social sharing image (relative to /public) |
 | `brand-colors` | block | Yes | Color primitive definitions (flat or grouped) |
 | `state-colors` | block | No | Per-brand fixed state colors (problem/warning/success/info/inactive) |
 | `color-bounds` | block | No | Luminance + saturation bounds for guided derivation |

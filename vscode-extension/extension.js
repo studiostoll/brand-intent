@@ -540,18 +540,6 @@ function activate(context) {
         const prefix = line.substring(0, position.character);
         const items = [];
 
-        // tokens: enum values
-        if (prefix.match(/^tokens:\s*/)) {
-          for (const [v, detail] of [
-            ['figma', 'Token source: Figma file sync'],
-            ['inline', 'Token source: inline theme blocks in this file'],
-          ]) {
-            const item = new vscode.CompletionItem(v, vscode.CompletionItemKind.EnumMember);
-            item.detail = detail;
-            items.push(item);
-          }
-        }
-
         // language: values
         if (prefix.match(/^language:\s*/)) {
           for (const [v, detail] of [['de', 'German'], ['en', 'English'], ['fr', 'French'], ['es', 'Spanish']]) {
@@ -632,14 +620,8 @@ function activate(context) {
             ['name:', 'Display name'],
             ['language:', 'Primary language code (e.g. de, en)'],
             ['locale:', 'Locale (e.g. de-DE, en-US)'],
-            ['app-icon:', 'App icon path'],
-            ['favicon:', 'Favicon path'],
-            ['tokens:', 'Token source -- figma or inline'],
-            ['figma-file-key:', 'Figma file key (tokens: figma only)'],
-            ['figma-collection:', 'Figma collection name (tokens: figma only)'],
-            ['tokens-file:', 'Runtime tokens file path (default: tokens.json)'],
-            ['theme ', 'Inline color theme block (tokens: inline only)'],
-            ['spacing:', 'Spacing scale block (tokens: inline only)'],
+            ['theme ', 'Inline color theme block'],
+            ['spacing:', 'Spacing scale block'],
             ['brand-colors', 'Brand color definitions block'],
             ['font ', 'Named font definition block'],
             ['typography ', 'Named typography style block'],
@@ -826,11 +808,6 @@ function activate(context) {
     'name:': '**`name:`** -- Display name for this brand.',
     'language:': '**`language:`** -- Primary language code.\n\nUsed for AI context and text direction hints.\n\nExample: `language: de`',
     'locale:': '**`locale:`** -- Full locale code.\n\nUsed for date/number formatting.\n\nExample: `locale: de-DE`',
-    'app-icon:': '**`app-icon:`** -- Path to the app icon asset.\n\nUsed for PWA manifest and favicon generation.',
-    'tokens:': '**`tokens:`** -- Token source mode.\n\n`figma` -- tokens synced from Figma\n`inline` -- tokens authored directly in this file as `theme` blocks',
-    'figma-file-key:': '**`figma-file-key:`** -- Figma file key for token sync.\n\nRequired when `tokens: figma`.\n\nFound in the Figma file URL: `figma.com/design/FILEKEY/...`',
-    'figma-collection:': '**`figma-collection:`** -- Figma variable collection name.\n\nThe collection to read color variables from.',
-    'tokens-file:': '**`tokens-file:`** -- Runtime tokens file path.\n\nDefaults to `tokens.json`.',
     'theme': '**`theme ThemeName`** -- Inline color theme block.\n\nOnly used when `tokens: inline`. Each theme defines color slots.\nIndented lines: `slot-name: #HEX  # optional annotation`',
     'spacing:': '**`spacing:`** -- Spacing scale block.\n\nOnly used when `tokens: inline`. Indented key-value pairs define the spacing unit and named sizes.\n\n```\nspacing:\n  unit: cqmin\n  xs: 1.5\n  s: 2\n  m: 3\n  l: 5\n  xl: 6.5\n```',
     'brand-colors': '**`brand-colors`** -- Brand color definitions.\n\nDefines named brand colors with optional print specifications (Pantone, HKS, CMYK).',

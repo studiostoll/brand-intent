@@ -57,20 +57,6 @@ export interface ParsedBrand {
   locale: string;
   /** Named font primitives: name → font definition. First entry is the brand default. */
   fonts?: Record<string, ParsedFontDef>;
-  /** Token source type: 'figma' | 'inline' */
-  tokensSource: 'figma' | 'inline';
-  /** Figma file key (only when tokensSource === 'figma') */
-  figmaFileKey?: string;
-  /** Figma collection name (only when tokensSource === 'figma') */
-  figmaCollection?: string;
-  /** Path to the runtime tokens file (relative to /src) */
-  tokensFile: string;
-  /** Path to app icon asset (relative to /public), used for PWA icon */
-  appIcon?: string;
-  /** Path to favicon asset (relative to /public), used for browser tab icon */
-  favicon?: string;
-  /** Path to OG image asset (relative to /public), used for social sharing previews */
-  ogImage?: string;
   /** Core brand color primitives: name → hex (e.g. primary, secondary, accent1, accent2, white).
    *  Always present when any colors are declared — grouped-syntax brands get a flat projection
    *  generated from all entries, so legacy consumers keep working unchanged. */
@@ -103,11 +89,11 @@ export interface ParsedBrand {
   themePairs?: Record<string, ThemePair>;
   /** Non-fatal color findings: rule violations, rejected family pairs, reach config hints. */
   colorWarnings?: string[];
-  /** Inline themes: theme name → slot name → resolved hex color (only when tokensSource === 'inline') */
+  /** Inline themes: theme name → slot name → resolved hex color */
   themes?: Record<string, Record<string, string>>;
   /** Print annotations from inline # comments: slot name → annotation text */
   themeDescriptions?: Record<string, string>;
-  /** Spacing scale (only when tokensSource === 'inline') */
+  /** Spacing scale */
   spacing?: { unit: string; xs: number; s: number; m: number; l: number; xl: number };
   /** Divider style definitions: name → divider config */
   dividers?: Record<string, ParsedDividerDef>;
@@ -450,10 +436,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     return { slot, value, line: lineNum };
   };
 
-  const result: Partial<ParsedBrand> = {
-    tokensFile: 'tokens.json',
-    tokensSource: 'figma',
-  };
+  const result: Partial<ParsedBrand> = {};
 
   type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows';
   let activeBlock: ActiveBlock = 'none';
@@ -1164,19 +1147,6 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       case 'name':         result.name = value; break;
       case 'language':     result.language = value; break;
       case 'locale':       result.locale = value; break;
-      case 'tokens':
-        if (value === 'figma' || value === 'inline') {
-          result.tokensSource = value;
-        } else {
-          console.warn(`${fileName}:${lineNum}: unknown tokens source "${value}", defaulting to "figma"`);
-        }
-        break;
-      case 'figma-file-key':    result.figmaFileKey = value; break;
-      case 'figma-collection':  result.figmaCollection = value; break;
-      case 'tokens-file':       result.tokensFile = value; break;
-      case 'app-icon':          result.appIcon = value; break;
-      case 'favicon':           result.favicon = value; break;
-      case 'og-image':          result.ogImage = value; break;
       case 'spacing':
         activeBlock = 'spacing';
         break;
