@@ -1473,6 +1473,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `purpose:` | string | Yes | Purpose id of the page |
 | `composition:` | string | No | Composition id; must be one of the purpose's `compositions:`. When omitted, implementations pick one as for a new page |
 | `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. One id always shows that illustration; with several, implementations pick one per story date, the same one every time for that date, so a preview and the posted page match. When omitted, the purpose's `illustration:` applies |
+| `photo:` | string | No | Photo id from the `.brand`. This page starts with that photo instead of the purpose's `photo:` default. `checkStory` reports an unknown id. |
 | `topic:` | string | No | Page topic: what this page adds to the story |
 | `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
 

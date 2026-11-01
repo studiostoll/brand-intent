@@ -175,6 +175,18 @@ test('illustration takes one id or a list', () => {
   assertEq(s.pages[2].illustrations, undefined, 'none');
 });
 
+test('photo names one id per page', () => {
+  const s = parse('page\n  purpose: notice\n  photo: one\n\npage\n  purpose: notice\n');
+  assertEq(s.pages[0].photo, 'one', 'set');
+  assertEq(s.pages[1].photo, undefined, 'none');
+});
+
+test('photo must exist when the brand lists them', () => {
+  const s = parse('page\n  purpose: notice\n  photo: missing\n');
+  assertEq(checkStory(s, { ...BRAND, photos: ['one'] }, 's.story'), ['s.story: page 1: photo "missing" does not exist'], 'unknown');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'no list, no check');
+});
+
 test('illustrations must exist when the brand lists them', () => {
   const s = parse('page\n  purpose: notice\n  illustration: one, missing\n');
   assertEq(checkStory(s, { ...BRAND, illustrations: ['one'] }, 's.story'), ['s.story: page 1: illustration "missing" does not exist'], 'problems');

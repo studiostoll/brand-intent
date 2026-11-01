@@ -40,6 +40,8 @@ export interface ParsedStoryPage {
   composition?: string;
   /** Illustration ids; implementations pick one per story date, the same one every time for that date. */
   illustrations?: string[];
+  /** Photo id; overrides the purpose's `photo:` default for this page. */
+  photo?: string;
   /** Page topic: what this page adds to the story. */
   topic?: string;
   /** Fixed slot texts, may contain `{variable}`s. A slot the page doesn't name is open. */
@@ -192,10 +194,11 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     // Page lines (2-space)
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'illustration') currentPage.illustrations = read.value.split(',').map(id => id.trim()).filter(Boolean);
+      else if (read?.key === 'photo') currentPage.photo = read.value;
       else if (read) currentPage.composition = read.value;
       continue;
     }
@@ -281,7 +284,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
  *  empty when the story fits. Variables count at their longest form for `maxLength`. */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[] },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[] },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -314,6 +317,7 @@ export function checkStory(
     for (const id of page.illustrations ?? []) {
       if (brand.illustrations && !brand.illustrations.includes(id)) say(`${where}: illustration "${id}" does not exist`);
     }
+    if (page.photo && brand.photos && !brand.photos.includes(page.photo)) say(`${where}: photo "${page.photo}" does not exist`);
     checkTexts(where, purpose, page.texts);
   });
   story.examples.forEach((ex, i) => {
