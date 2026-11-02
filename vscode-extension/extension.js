@@ -413,6 +413,7 @@ function activate(context) {
         if (prefix.match(/^category:\s*/)) {
           for (const [v, detail] of [
             ['instagram', 'Instagram -- px dimensions'],
+            ['facebook', 'Facebook Page -- px dimensions'],
             ['linkedin', 'LinkedIn -- px dimensions'],
             ['print', 'Print -- mm dimensions, 300 dpi'],
             ['signage', 'Signage/banners -- mm dimensions, 300 dpi'],
@@ -509,7 +510,7 @@ function activate(context) {
             ['id:', 'Format identifier (e.g. sign-6:1)'],
             ['label:', 'Short display label (e.g. 6:1)'],
             ['sublabel:', 'Format type label (e.g. Sign)'],
-            ['category:', 'Format category -- instagram|linkedin|print|signage'],
+            ['category:', 'Format category -- instagram|facebook|linkedin|print|signage'],
             ['size:', 'Canvas dimensions -- px (e.g. 1080 1080) or mm (e.g. 594mm 297mm)'],
             ['dpi:', 'Resolution -- print/signage only (default: 300)'],
             ['bleed:', 'Bleed margin -- mm (e.g. 3mm)'],
@@ -818,7 +819,7 @@ function activate(context) {
 
   /** @type {Record<string, string>} */
   const FORMAT_HOVER_DOCS = {
-    'category:': '**`category:`** -- Output category.\n\n`instagram` -- Square/portrait social\n`linkedin` -- Landscape social\n`print` -- Physical print (uses mm + dpi)\n`signage` -- Large-format display (uses mm + dpi)',
+    'category:': '**`category:`** -- Output category.\n\n`instagram` -- Square/portrait social\n`facebook` -- Facebook Page posts and stories\n`linkedin` -- Landscape social\n`print` -- Physical print (uses mm + dpi)\n`signage` -- Large-format display (uses mm + dpi)',
     'size:': '**`size:`** -- Canvas dimensions.\n\n`size: width height` in px (social) or mm (print/signage).\n\nExample: `size: 1080 1350` or `size: 594mm 841mm`',
     'dpi:': '**`dpi:`** -- Resolution for print/signage formats.\n\nCommon values: `72` (screen), `150` (large-format), `300` (standard print).',
     'bleed:': '**`bleed:`** -- Bleed margin in mm.\n\nExtra area beyond the trim edge for print. Typically `3` or `5` mm.',

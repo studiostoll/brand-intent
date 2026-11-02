@@ -34,7 +34,7 @@
       }
     },
     "category": {
-      "match": "^(category:)\\s+(instagram|linkedin|print|signage)",
+      "match": "^(category:)\\s+(instagram|facebook|linkedin|print|signage)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-format" },
         "2": { "name": "entity.name.tag.brand-intent-format" }

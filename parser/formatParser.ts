@@ -19,7 +19,7 @@ export interface ParsedFormat {
   name?: string;
   label: string;
   sublabel: string;
-  category: 'instagram' | 'linkedin' | 'print' | 'signage';
+  category: 'instagram' | 'facebook' | 'linkedin' | 'print' | 'signage';
   // Pixel dimensions (always present — computed from mm+dpi for print/signage)
   widthPx: number;
   heightPx: number;
@@ -141,8 +141,8 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
         break;
 
       case 'category':
-        if (value !== 'instagram' && value !== 'linkedin' && value !== 'print' && value !== 'signage')
-          throw new Error(`${fileName}:${lineNum}: category must be instagram, linkedin, print, or signage, got "${value}"`);
+        if (value !== 'instagram' && value !== 'facebook' && value !== 'linkedin' && value !== 'print' && value !== 'signage')
+          throw new Error(`${fileName}:${lineNum}: category must be instagram, facebook, linkedin, print, or signage, got "${value}"`);
         category = value;
         break;
 
