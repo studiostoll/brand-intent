@@ -20,6 +20,8 @@ export interface ParsedFormat {
   label: string;
   sublabel: string;
   category: 'instagram' | 'facebook' | 'linkedin' | 'print' | 'signage';
+  /** How the page is posted (from `post:`). Absent = the format is not posted. */
+  post?: 'feed' | 'story';
   // Pixel dimensions (always present — computed from mm+dpi for print/signage)
   widthPx: number;
   heightPx: number;
@@ -97,6 +99,7 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
   let label: string | undefined;
   let sublabel: string | undefined;
   let category: ParsedFormat['category'] | undefined;
+  let post: ParsedFormat['post'];
   let widthPx: number | undefined;
   let heightPx: number | undefined;
   let widthMm: number | undefined;
@@ -144,6 +147,12 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
         if (value !== 'instagram' && value !== 'facebook' && value !== 'linkedin' && value !== 'print' && value !== 'signage')
           throw new Error(`${fileName}:${lineNum}: category must be instagram, facebook, linkedin, print, or signage, got "${value}"`);
         category = value;
+        break;
+
+      case 'post':
+        if (value !== 'feed' && value !== 'story')
+          throw new Error(`${fileName}:${lineNum}: post must be feed or story, got "${value}"`);
+        post = value;
         break;
 
       case 'size': {
@@ -261,7 +270,7 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
   }
 
   return {
-    id, name, label, sublabel, category,
+    id, name, label, sublabel, category, post,
     widthPx, heightPx,
     widthMm, heightMm,
     dpi: dpi ?? (category === 'print' || category === 'signage' ? effectiveDpi : undefined),

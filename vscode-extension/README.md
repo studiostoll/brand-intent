@@ -121,6 +121,7 @@ id: 1:1
 label: 1:1
 sublabel: Feed Square
 category: instagram
+post: feed
 
 size: 1080 1080
 grid: 2 6

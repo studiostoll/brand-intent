@@ -1,5 +1,5 @@
 /**
- * Tests for .format files: categories.
+ * Tests for .format files: categories and post.
  *
  * Run: npm test
  */
@@ -47,6 +47,16 @@ test('facebook is a category with px dimensions', () => {
 
 test('an unknown category is refused', () => {
   assertThrows(() => parseFormatFile(format('tiktok'), 'f.format'), 'category must be');
+});
+
+test('post is feed or story, absent when not set', () => {
+  assertEq(parseFormatFile(format('facebook') + 'post: story\n', 'f.format').post, 'story', 'story');
+  assertEq(parseFormatFile(format('instagram') + 'post: feed\n', 'f.format').post, 'feed', 'feed');
+  assertEq(parseFormatFile(format('facebook'), 'f.format').post, undefined, 'absent');
+});
+
+test('an unknown post value is refused', () => {
+  assertThrows(() => parseFormatFile(format('instagram') + 'post: reel\n', 'f.format'), 'post must be');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

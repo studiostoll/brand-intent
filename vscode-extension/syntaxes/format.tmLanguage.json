@@ -6,6 +6,7 @@
     { "include": "#id-field" },
     { "include": "#name-field" },
     { "include": "#category" },
+    { "include": "#post" },
     { "include": "#purposes" },
     { "include": "#size" },
     { "include": "#grid" },
@@ -35,6 +36,13 @@
     },
     "category": {
       "match": "^(category:)\\s+(instagram|facebook|linkedin|print|signage)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-format" },
+        "2": { "name": "entity.name.tag.brand-intent-format" }
+      }
+    },
+    "post": {
+      "match": "^(post:)\\s+(feed|story)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-format" },
         "2": { "name": "entity.name.tag.brand-intent-format" }
@@ -86,7 +94,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|category:|purposes:|size:|grid:|dpi:|bleed:|comfort:|danger:|crop:|label:|sublabel:)(?=\\s|$)",
+      "match": "^(id:|name:|category:|post:|purposes:|size:|grid:|dpi:|bleed:|comfort:|danger:|crop:|label:|sublabel:)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-format" }
       }
