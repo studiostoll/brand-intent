@@ -175,10 +175,11 @@ test('illustration takes one id or a list', () => {
   assertEq(s.pages[2].illustrations, undefined, 'none');
 });
 
-test('photo names one id per page', () => {
-  const s = parse('page\n  purpose: notice\n  photo: one\n\npage\n  purpose: notice\n');
-  assertEq(s.pages[0].photo, 'one', 'set');
-  assertEq(s.pages[1].photo, undefined, 'none');
+test('photo names one or more ids per page', () => {
+  const s = parse('page\n  purpose: notice\n  photo: one\n\npage\n  purpose: notice\n  photo: one, two,three\n\npage\n  purpose: notice\n');
+  assertEq(s.pages[0].photos, ['one'], 'one');
+  assertEq(s.pages[1].photos, ['one', 'two', 'three'], 'list');
+  assertEq(s.pages[2].photos, undefined, 'none');
 });
 
 test('photo must exist when the brand lists them', () => {
