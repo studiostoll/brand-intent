@@ -957,8 +957,12 @@ function activate(context) {
         } else if (/^ {2}\w*$/.test(prefix)) {
           add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['topic: ', 'Topic'], ['page ', 'Example page N'],
             ['primary: ', 'Slot text'], ['secondary: ', 'Slot text'], ['detail: ', 'Slot text'], ['meta: ', 'Slot text'], ['cta: ', 'Slot text'], ['label: ', 'Slot text']], vscode.CompletionItemKind.Property);
-        } else if (/\{\w*$/.test(prefix)) {
-          add([['weekday}', 'Full weekday name'], ['date}', 'Day and month, no year']], vscode.CompletionItemKind.Variable);
+        } else if (/\{[\w-]*$/.test(prefix)) {
+          add([['weekday}', 'Full weekday name'], ['date}', 'Day and month, no year'],
+            ['sunrise}', 'Sunrise, local time (needs location)'], ['sunset}', 'Sunset, local time (needs location)'],
+            ['day-length}', 'Sunrise to sunset (needs location)'], ['moon}', 'Moon phase (needs location)'],
+            ['temperature}', 'Highest temperature of the day (needs location)'], ['wind}', 'Strongest daytime wind, Beaufort (needs location)'],
+            ['weather}', 'The day\'s condition (needs location)']], vscode.CompletionItemKind.Variable);
         }
         return items;
       }

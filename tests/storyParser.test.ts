@@ -114,6 +114,11 @@ test('unknown variable is an error, plain braces stay text', () => {
   assertEq(parse('page\n  purpose: notice\n  primary: a {B} c\n').pages[0].texts.primary, 'a {B} c', 'not a variable');
 });
 
+test('sky and weather variables', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {sunrise}–{sunset}, {day-length}\n  detail:\n    {moon}\n    {temperature}, {wind}, {weather}\n');
+  assertEq(storyTextVariables(s.pages[0].texts.primary!), ['sunrise', 'sunset', 'day-length'], 'names with a dash');
+});
+
 console.log('\nexamples:');
 
 const TWO_PAGES = 'page\n  purpose: notice\n  primary: Fixed\n\npage\n  purpose: notice\n';
@@ -192,6 +197,13 @@ test('illustrations must exist when the brand lists them', () => {
   const s = parse('page\n  purpose: notice\n  illustration: one, missing\n');
   assertEq(checkStory(s, { ...BRAND, illustrations: ['one'] }, 's.story'), ['s.story: page 1: illustration "missing" does not exist'], 'problems');
   assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked without a list');
+});
+
+test('sky and weather variables need a location', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {wind} {wind}\n');
+  assertEq(checkStory(s, { ...BRAND, location: false }, 's.story'), ['s.story: page 1: variable "{wind}" needs a location block in the .brand'], 'no location');
+  assertEq(checkStory(s, { ...BRAND, location: true }, 's.story'), [], 'location');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked when unknown');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

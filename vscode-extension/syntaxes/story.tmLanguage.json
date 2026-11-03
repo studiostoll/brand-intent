@@ -52,7 +52,7 @@
       }
     },
     "variable": {
-      "comment": "{weekday}, {date} placeholders in page texts",
+      "comment": "{weekday}, {date}, {sunrise} … placeholders in page texts",
       "match": "\\{[a-z][a-z0-9-]*\\}",
       "name": "variable.other.brand-intent-story"
     },

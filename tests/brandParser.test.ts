@@ -463,6 +463,25 @@ test('photo-look rejects bad values and keys', () => {
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: -15\nphoto-look\n  saturation: 0\n`, 'test.brand'), /duplicate photo-look/, 'duplicate');
 });
 
+// ── location ─────────────────────────────────────────────────────────────────
+
+console.log('\nlocation:');
+
+test('parses location block', () => {
+  const b = parseBrandFile(`${HEADER}location\n  name:      Harbour Town   # shown in credits\n  latitude:  54.32\n  longitude: -10.5\n`, 'test.brand');
+  assertEq(b.location, { name: 'Harbour Town', latitude: 54.32, longitude: -10.5 }, 'location');
+  assertEq(b.name, 'Test', 'top-level name untouched');
+  assertEq(parseBrandFile(HEADER, 'test.brand').location, undefined, 'absent');
+});
+
+test('location rejects missing, bad and unknown keys', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}location\n  name: X\n  latitude: 54\n`, 'test.brand'), /location needs longitude/, 'missing');
+  assertThrows(() => parseBrandFile(`${HEADER}location\n  name: X\n  latitude: 91\n  longitude: 10\n`, 'test.brand'), /location latitude/, 'out of range');
+  assertThrows(() => parseBrandFile(`${HEADER}location\n  name: X\n  latitude: 54°N\n  longitude: 10\n`, 'test.brand'), /decimal degrees/, 'not decimal');
+  assertThrows(() => parseBrandFile(`${HEADER}location\n  name: X\n  latitude: 54\n  longitude: 10\n  zip: 1\n`, 'test.brand'), /unknown location property/, 'unknown key');
+  assertThrows(() => parseBrandFile(`${HEADER}location\n  name: X\n  latitude: 54\n  longitude: 10\nlocation\n`, 'test.brand'), /duplicate location/, 'duplicate');
+});
+
 // ── windows ──────────────────────────────────────────────────────────────────
 
 console.log('\nwindows:');

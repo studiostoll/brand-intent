@@ -352,6 +352,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `camera` | block | No | Camera defaults: facing and viewfinder grid |
 | `photo-look` | block | No | Photo treatment for user photos: saturation, contrast, warmth, fade, mono, duotone |
 | `windows` | block | No | Named yearly date windows for season-bound examples and photos |
+| `location` | block | No | Where the brand is: place name and coordinates, for sky and weather story variables |
 | `framing NAME` | block | No | Photo framing module: horizon position for camera guides (repeatable) |
 | `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
 | `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
@@ -942,6 +943,25 @@ Each entry is `name: MM-DD..MM-DD`, with further ranges separated by commas. End
 
 **In season.** Content is in season when today's date falls in one of its window's ranges. Implementations pick and suggest only in-season content, but never remove what a person has already placed.
 
+### `location` Block
+
+Where the brand is. Optional; the sky and weather [story variables](#variables) need it.
+
+```yaml
+location
+  name:      Harbour Town
+  latitude:  54.32       # decimal degrees, north positive
+  longitude: 10.14       # decimal degrees, east positive
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `name:` | string | Yes | Place name, as people say it. Implementations may show it, e.g. next to a weather credit |
+| `latitude:` | number | Yes | Decimal degrees, `-90` to `90` |
+| `longitude:` | number | Yes | Decimal degrees, `-180` to `180` |
+
+One location per brand. A brand with several places picks the one its posts speak for.
+
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
 Brand-declared assets — curated logos, photos, and videos that ship with the brand. Each asset has an id (block header), a display label, and a source file path.
@@ -1492,12 +1512,25 @@ A slot with `value:` in the purpose is fixed there and is never named on a page.
 
 A page text may contain `{name}` placeholders. Implementations resolve them for the story's date (the day it is posted or the day a person picks), in the brand's language:
 
-| Variable | Resolves to | Example |
-|----------|-------------|---------|
-| `{weekday}` | Full weekday name | `Mittwoch`, `Wednesday` |
-| `{date}` | Day and month, no year | `30. Oktober`, `30 October` |
+| Variable | Resolves to | Example | Longest |
+|----------|-------------|---------|---------|
+| `{weekday}` | Full weekday name | `Mittwoch`, `Wednesday` | 10 |
+| `{date}` | Day and month, no year | `30. Oktober`, `30 October` | 13 |
+| `{sunrise}` | Sunrise, local time | `07:21`, `7:21 AM` | 8 |
+| `{sunset}` | Sunset, local time | `16:48`, `4:48 PM` | 8 |
+| `{day-length}` | Time from sunrise to sunset | `9 Std. 27 Min.`, `9 h 27 min` | 15 |
+| `{moon}` | Moon phase, one of eight (below) | `Vollmond`, `full moon` | 20 |
+| `{temperature}` | Highest air temperature of the day | `14 °C` | 6 |
+| `{wind}` | Strongest hourly mean wind between sunrise and sunset, Beaufort | `4 Bft` | 6 |
+| `{weather}` | The day's condition, one of nine (below) | `teils bewölkt`, `partly cloudy` | 13 |
 
-An unknown name is an error. Braces that don't form a lowercase `{name}` stay plain text. Variables appear only in page texts, never in topics or examples. For `maxLength`, a variable counts at its longest form (`{weekday}` 10 characters, `{date}` 13).
+**Calendar** variables (`{weekday}`, `{date}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for that location. A story that uses a sky or weather variable needs a `location` block in the `.brand`; `checkStory` reports it otherwise.
+
+Times are local time in the time zone the story is posted in. Moon phases: new moon, waxing crescent, first quarter, waxing gibbous, full moon, waning gibbous, last quarter, waning crescent. Conditions: clear, partly cloudy, cloudy, fog, rain, sleet, snow, hail, thunderstorm. Implementations translate both into the brand's language.
+
+**Weather is not guessed.** When no forecast exists for the date (too far ahead, or the service doesn't answer), implementations don't fill in a value: a preview shows a placeholder, a scheduled post doesn't go out. A page that shows a weather value credits its source; implementations add the credit themselves, as the source's terms require it.
+
+An unknown name is an error. Braces that don't form a lowercase `{name}` stay plain text. Variables appear only in page texts, never in topics or examples. For `maxLength`, a variable counts at its longest form (column "Longest").
 
 ### `example` Block
 

@@ -13,12 +13,23 @@ import type { ParsedPurpose } from './purposeParser';
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
 /** Placeholders a page text may contain. Implementations resolve them for the story's date. */
-export type StoryVariable = 'weekday' | 'date';
+export type StoryVariable =
+  | 'weekday' | 'date'
+  | 'sunrise' | 'sunset' | 'day-length' | 'moon'
+  | 'temperature' | 'wind' | 'weather';
 
-/** Longest resolved form per variable (German and English), used for the `maxLength` check. */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number }> = {
-  weekday: { maxLength: 10 }, // "Donnerstag"
-  date: { maxLength: 13 },    // "30. September"
+/** Longest resolved form per variable (German and English), used for the `maxLength` check.
+ *  `location`: the variable needs the brand's `location` block. */
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true }> = {
+  weekday: { maxLength: 10 },                       // "Donnerstag"
+  date: { maxLength: 13 },                          // "30. September"
+  sunrise: { maxLength: 8, location: true },        // "12:59 PM"
+  sunset: { maxLength: 8, location: true },
+  'day-length': { maxLength: 15, location: true },  // "16 Std. 59 Min."
+  moon: { maxLength: 20, location: true },          // "abnehmender Halbmond"
+  temperature: { maxLength: 6, location: true },    // "-12 °C"
+  wind: { maxLength: 6, location: true },           // "12 Bft"
+  weather: { maxLength: 13, location: true },       // "teils bewölkt"
 };
 
 export interface ParsedStory {
@@ -282,10 +293,11 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
 // ── Cross-file checks ─────────────────────────────────────────────────────────
 
 /** Checks a story against the brand's other files. Returns problems as "file: message";
- *  empty when the story fits. Variables count at their longest form for `maxLength`. */
+ *  empty when the story fits. Variables count at their longest form for `maxLength`.
+ *  `location: false` reports sky and weather variables (the brand has no `location` block). */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[] },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; location?: boolean },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -298,6 +310,11 @@ export function checkStory(
       const slot = purpose.slots.find(s => s.id === slotId);
       if (!slot) { say(`${where}: slot "${slotId}" is not declared by purpose "${purpose.id}"`); continue; }
       if (slot.value) { say(`${where}: slot "${slotId}" has a fixed value in purpose "${purpose.id}"`); continue; }
+      if (brand.location === false) {
+        for (const v of new Set(storyTextVariables(text))) {
+          if (STORY_VARIABLES[v as StoryVariable]?.location) say(`${where}: variable "{${v}}" needs a location block in the .brand`);
+        }
+      }
       const longest = text.replace(VARIABLE, (_, v: string) => 'x'.repeat(STORY_VARIABLES[v as StoryVariable]?.maxLength ?? 0));
       const parts = slot.slotType === 'list' ? longest.split('\n') : [longest];
       if (slot.slotType === 'list' && slot.maxItems && parts.length > slot.maxItems) say(`${where}: slot "${slotId}" has ${parts.length} items, maxItems is ${slot.maxItems}`);

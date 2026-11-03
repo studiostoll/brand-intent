@@ -117,6 +117,8 @@ export interface ParsedBrand {
   photoLook?: ParsedPhotoLookDef;
   /** Named yearly date windows (`windows` block): name → ranges. Referenced by sample `@name` markers and photo `when:`. */
   windows?: Record<string, DateWindowRange[]>;
+  /** Where the brand is (`location` block). Sky and weather story variables need it. */
+  location?: ParsedLocationDef;
 }
 
 export type PhotoLookKey = 'saturation' | 'contrast' | 'warmth' | 'fade' | 'mono' | 'duotone';
@@ -143,6 +145,15 @@ export interface ParsedCameraDef {
   facing: 'front' | 'rear';
   /** Viewfinder grid as rows × columns of cells. Absent → no grid. */
   grid?: { rows: number; cols: number };
+}
+
+export interface ParsedLocationDef {
+  /** Place name, as people say it. */
+  name: string;
+  /** Decimal degrees, north positive. */
+  latitude: number;
+  /** Decimal degrees, east positive. */
+  longitude: number;
 }
 
 export interface ParsedFramingDef {
@@ -438,7 +449,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   const result: Partial<ParsedBrand> = {};
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -498,6 +509,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let counterDeclared = false;
   const cameraRaw: Record<string, { value: string; line: number }> = {};
   let cameraDeclared = false;
+  const locationRaw: Record<string, { value: string; line: number }> = {};
+  let locationDeclared = false;
   const photoLookRaw: Record<string, { value: string; line: number }> = {};
   let photoLookDeclared = false;
   const windowsRaw: Array<{ name: string; value: string; line: number }> = [];
@@ -947,6 +960,15 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         cameraRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === 'location') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('#')) continue;
+        const entry = trimmed.replace(/\s+#.*$/, '');
+        const colonIdx = entry.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: location property must be "KEY: VALUE", got "${trimmed}"`);
+        locationRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
+        continue;
+      }
       if (activeBlock === 'photo-look') {
         const trimmed = raw.trim();
         if (trimmed.startsWith('#')) continue;
@@ -1062,6 +1084,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (cameraDeclared) throw new Error(`${fileName}:${lineNum}: duplicate camera block`);
       cameraDeclared = true;
       activeBlock = 'camera';
+      continue;
+    }
+
+    // location — where the brand is (sky and weather variables)
+    if (raw.trim() === 'location') {
+      if (locationDeclared) throw new Error(`${fileName}:${lineNum}: duplicate location block`);
+      locationDeclared = true;
+      activeBlock = 'location';
       continue;
     }
 
@@ -1917,6 +1947,26 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       camera.grid = { rows, cols };
     }
     result.camera = camera;
+  }
+
+  // Finalise location
+  if (locationDeclared) {
+    const known = new Set(['name', 'latitude', 'longitude']);
+    for (const [key, { line }] of Object.entries(locationRaw)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${line}: unknown location property "${key}"`);
+    }
+    for (const key of known) {
+      if (!locationRaw[key]?.value) throw new Error(`${fileName}: location needs ${key}:`);
+    }
+    const degrees = (key: 'latitude' | 'longitude', limit: number) => {
+      const { value, line } = locationRaw[key];
+      const n = Number(value);
+      if (!/^-?\d+(\.\d+)?$/.test(value) || Math.abs(n) > limit) {
+        throw new Error(`${fileName}:${line}: location ${key} must be decimal degrees (−${limit} to ${limit}), got "${value}"`);
+      }
+      return n;
+    };
+    result.location = { name: locationRaw['name'].value, latitude: degrees('latitude', 90), longitude: degrees('longitude', 180) };
   }
 
   // Finalise photo treatment

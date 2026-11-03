@@ -458,8 +458,8 @@
       }
     },
     "icons-counter-header": {
-      "comment": "Bare `icons` / `counter` / `camera` / `photo-look` / `windows` block headers.",
-      "match": "^(icons|counter|camera|photo-look|windows)\\s*$",
+      "comment": "Bare `icons` / `counter` / `camera` / `photo-look` / `windows` / `location` block headers.",
+      "match": "^(icons|counter|camera|photo-look|windows|location)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }
@@ -535,7 +535,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|windows)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|windows|location)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }
