@@ -50,6 +50,13 @@ test('camera: false hides, front | rear override facing', () => {
   assertEq(c('camera: rear'), [true, 'rear'], 'rear');
 });
 
+test('scrim: none takes the brand scrim off the purpose', () => {
+  const s = (line: string) => () => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').scrim;
+  assertEq(s('scrim: none')(), 'none', 'none');
+  assertEq(s('')(), undefined, 'absent');
+  assertThrows(s('scrim: 30%'), /invalid scrim "30%"/, 'a strength');
+});
+
 test('framing: names a brand framing module', () => {
   const f = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').framing;
   assertEq(f('framing: close'), 'close', 'id');

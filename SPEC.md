@@ -928,7 +928,7 @@ photo-look
 
 **Scope.** Applies to photos people add (camera or library). Brand-declared `photo` assets are not affected.
 
-**Scrim.** Not an adjustment of the photo but a layer between photo and text: transparent where the photo shows freely, darkening towards the edge behind the text. The brand declares only whether and how dark; where the gradient lies is the implementation's job, derived from where the text sits. Implementations draw it only when the text on the photo is light (under dark text it would work against it), and count it when they check whether the text reads. Unlike the other keys it covers every photo under light text, brand-declared `photo` assets included, and it is not a starting value the person adjusts, so it cannot be listed in `fixed:`.
+**Scrim.** Not an adjustment of the photo but a layer between photo and text: transparent where the photo shows freely, darkening towards the edge behind the text. The brand declares only whether and how dark; where the gradient lies is the implementation's job, derived from where the text sits. Implementations draw it only when the text on the photo is light (under dark text it would work against it), and count it when they check whether the text reads. Unlike the other keys it covers every photo under light text, brand-declared `photo` assets included, and it is not a starting value the person adjusts, so it cannot be listed in `fixed:`. A `.purpose` or a `.story` can take it off with `scrim: none`; whether a gradient helps depends on the photo and the context, how dark it gets stays the brand's.
 
 **Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
 
@@ -1120,6 +1120,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `context` | block | No | Adds purpose-specific AI context |
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
 | `camera:` | bool \| enum | No | `false` hides Take Photo / Upload. `front` \| `rear` overrides the brand's camera `facing:` for this purpose. Default: `true` |
+| `scrim:` | `none` | No | No [scrim](#photo-look-block) under this purpose's text, even when the brand declares one. How dark it gets stays the brand's |
 | `framing:` | string | No | Id of a brand `framing` block. Photos for this purpose are shot in that module: implementations open the camera on it and may hide the others. Unknown ids are ignored |
 | `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block this purpose serves by default |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
@@ -1512,6 +1513,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `name:` | string | No | Display name (derived from id if omitted) |
 | `format:` | string | Yes | Format id every page renders at |
 | `topic:` | string | No | Story topic: what the whole story is about, one sentence. People can change it per story; it guides AI writing and review on every page |
+| `scrim:` | `none` | No | No [scrim](#photo-look-block) on any page of the story, whatever the brand and the pages' purposes declare |
 | `page` | block | Yes (1+) | One page (repeatable). Order in the file = order in the story |
 | `example` | block | No | Texts for the open slots of the pages, about one story topic (repeatable) |
 

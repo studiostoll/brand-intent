@@ -40,6 +40,8 @@ export interface ParsedStory {
   format: string;
   /** Story topic: what the whole story is about, one sentence. */
   topic?: string;
+  /** `scrim: none`: no scrim under the story's text, whatever the brand and purposes declare. */
+  scrim?: 'none';
   pages: ParsedStoryPage[];
   /** Example fills for the open slots, one story topic each. */
   examples: ParsedStoryExample[];
@@ -93,6 +95,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   let description = '';
   let format = '';
   let topic: string | undefined;
+  let scrim: 'none' | undefined;
   const pages: (ParsedStoryPage & { line: number; keys: Set<string> })[] = [];
   const examples: (ParsedStoryExample & { line: number })[] = [];
 
@@ -200,6 +203,11 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         else topic = value;
         continue;
       }
+      if (key === 'scrim') {
+        if (value !== 'none') throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none; how dark is the brand's photo-look scrim)`);
+        scrim = 'none';
+        continue;
+      }
       throw new Error(`${fileName}:${lineNum}: unexpected "${line}"`);
     }
 
@@ -279,6 +287,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     description,
     format,
     topic,
+    ...(scrim ? { scrim } : {}),
     pages: pages.map(({ line: _line, keys: _keys, ...p }) => p),
     examples: examples.map(({ line: _line, ...ex }) => ({
       ...ex,

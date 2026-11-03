@@ -43,6 +43,8 @@ export interface ParsedPurpose {
   camera?: boolean;
   /** `camera: front | rear` — overrides the brand's camera facing for this purpose. */
   cameraFacing?: 'front' | 'rear';
+  /** `scrim: none`: no scrim under this purpose's text, whatever the brand declares. */
+  scrim?: 'none';
   /** `framing: <id>` — the brand framing module photos for this purpose are shot in. */
   framing?: string;
   /** `goal: <id>` — the identity goal this purpose serves by default. */
@@ -183,6 +185,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let illustrations: string[] | undefined;
   let camera: boolean | undefined;
   let cameraFacing: 'front' | 'rear' | undefined;
+  let scrim: 'none' | undefined;
   let framing: string | undefined;
   let goal: string | undefined;
   let analyze: boolean | undefined;
@@ -439,6 +442,14 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     // Illustrations a new page picks from
     if (line.startsWith('illustration:')) {
       illustrations = line.slice(13).split(',').map(id => id.trim()).filter(Boolean);
+      continue;
+    }
+
+    // No scrim for this purpose
+    if (line.startsWith('scrim:')) {
+      const value = line.slice(6).trim();
+      if (value !== 'none') throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none; how dark is the brand's photo-look scrim)`);
+      scrim = 'none';
       continue;
     }
 
@@ -832,7 +843,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
   const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, illustrations, camera, cameraFacing, framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 
 /** Validate `example` blocks against the declared slots, or build examples from deprecated slot

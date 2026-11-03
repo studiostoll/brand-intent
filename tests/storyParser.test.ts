@@ -119,6 +119,12 @@ test('sky and weather variables', () => {
   assertEq(storyTextVariables(s.pages[0].texts.primary!), ['sunrise', 'sunset', 'day-length'], 'names with a dash');
 });
 
+test('scrim: none takes the brand scrim off the story', () => {
+  assertEq(parse('scrim: none\npage\n  purpose: notice\n').scrim, 'none', 'none');
+  assertEq('scrim' in parse('page\n  purpose: notice\n'), false, 'absent');
+  assertThrows(() => parse('scrim: 30%\npage\n  purpose: notice\n'), 'invalid scrim "30%"');
+});
+
 console.log('\nexamples:');
 
 const TWO_PAGES = 'page\n  purpose: notice\n  primary: Fixed\n\npage\n  purpose: notice\n';
