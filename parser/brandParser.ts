@@ -138,6 +138,8 @@ export interface ParsedPhotoLookDef {
   duotone?: { shadow: string; highlight: string };
   /** Keys the person cannot change. All others are starting values. */
   fixed: PhotoLookKey[];
+  /** Darkest a gradient under light text on a photo may get, 0..100 (%). Absent → no scrim. */
+  scrim?: number;
 }
 
 export interface ParsedCameraDef {
@@ -1973,7 +1975,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   if (photoLookDeclared) {
     const keys: PhotoLookKey[] = ['saturation', 'contrast', 'warmth', 'fade', 'mono', 'duotone'];
     for (const [key, { line }] of Object.entries(photoLookRaw)) {
-      if (key !== 'fixed' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+      if (key !== 'fixed' && key !== 'scrim' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
     }
     const int = (key: string, min: number, max: number): number => {
       const p = photoLookRaw[key];
@@ -2020,6 +2022,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         if (!photoLookRaw[key]) throw new Error(`${fileName}:${fixed.line}: photo-look fixed lists "${key}", which is not set`);
         look.fixed.push(key as PhotoLookKey);
       }
+    }
+    const scrim = photoLookRaw['scrim'];
+    if (scrim) {
+      const m = /^(\d+)%$/.exec(scrim.value);
+      if (!m || Number(m[1]) < 1 || Number(m[1]) > 100) {
+        throw new Error(`${fileName}:${scrim.line}: photo-look scrim must be a percentage from 1% to 100%, got "${scrim.value}"`);
+      }
+      look.scrim = Number(m[1]);
     }
     result.photoLook = look;
   }

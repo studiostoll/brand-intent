@@ -449,6 +449,14 @@ test('photo-look duotone resolves brand colors', () => {
   assertEq(parseBrandFile(src, 'test.brand').photoLook, { ...LOOK_ZERO, duotone: { shadow: '#112233', highlight: '#FFCC00' }, fixed: ['duotone'] }, 'ref + hex');
 });
 
+test('photo-look scrim', () => {
+  assertEq(parseBrandFile(`${HEADER}photo-look\n  saturation: -15\n  scrim: 45%\n`, 'test.brand').photoLook, { ...LOOK_ZERO, saturation: -15, scrim: 45 }, 'scrim percent');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  scrim: 45\n`, 'test.brand'), /photo-look scrim/, 'no percent sign');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  scrim: 0%\n`, 'test.brand'), /photo-look scrim/, 'zero');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  scrim: 120%\n`, 'test.brand'), /photo-look scrim/, 'over 100');
+  assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  scrim: 45%\n  fixed: scrim\n`, 'test.brand'), /fixed lists unknown/, 'not a fixed key');
+});
+
 test('photo-look rejects bad values and keys', () => {
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: -150\n`, 'test.brand'), /photo-look saturation/, 'out of range');
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: 15%\n`, 'test.brand'), /photo-look saturation/, 'percent');

@@ -350,7 +350,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `icons` | block | No | Brand icon set (font glyphs, SVGs, adopted Phosphor icons) |
 | `counter` | block | No | List counter component |
 | `camera` | block | No | Camera defaults: facing and viewfinder grid |
-| `photo-look` | block | No | Photo treatment for user photos: saturation, contrast, warmth, fade, mono, duotone |
+| `photo-look` | block | No | Photo treatment for user photos: saturation, contrast, warmth, fade, mono, duotone; scrim under light text |
 | `windows` | block | No | Named yearly date windows for season-bound examples and photos |
 | `location` | block | No | Where the brand is: place name and coordinates, for sky and weather story variables |
 | `framing NAME` | block | No | Photo framing module: horizon position for camera guides (repeatable) |
@@ -910,6 +910,7 @@ photo-look
   # mono                   # grayscale
   # duotone:  $ink $sand   # shadows → highlights
   # fixed:    mono         # keys the person cannot change
+  # scrim:    45%          # dark gradient under light text, at most this dark
 ```
 
 | Key | Type | Default | Description |
@@ -921,10 +922,13 @@ photo-look
 | `mono` | flag | — | Grayscale (monochrome) |
 | `duotone:` | color pair | — | Maps luminance onto two colors, shadow first. Each is a `$ref` to `brand-colors` or `#HEX`. Excludes `mono` |
 | `fixed:` | key list | — | Keys the person cannot change. Each must be set in the block |
+| `scrim:` | percent | — | Under light text on a photo a dark gradient may lie, at most this dark (`1%`–`100%` black). Absent → no scrim |
 
 **Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a grayscale-only or duotone brand).
 
 **Scope.** Applies to photos people add (camera or library). Brand-declared `photo` assets are not affected.
+
+**Scrim.** Not an adjustment of the photo but a layer between photo and text: transparent where the photo shows freely, darkening towards the edge behind the text. The brand declares only whether and how dark; where the gradient lies is the implementation's job, derived from where the text sits. Implementations draw it only when the text on the photo is light (under dark text it would work against it), and count it when they check whether the text reads. Unlike the other keys it covers every photo under light text, brand-declared `photo` assets included, and it is not a starting value the person adjusts, so it cannot be listed in `fixed:`.
 
 **Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
 
