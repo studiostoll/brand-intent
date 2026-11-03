@@ -6,7 +6,7 @@
  */
 
 import type { SlotId } from './types';
-import { parseIconRef, parseListItem } from './icons';
+import { parseIconRef, parseListItem, splitLabelledItem } from './icons';
 import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
 
@@ -105,6 +105,14 @@ export interface ParsedPurposeSlot {
   itemGap?: number;
   /** List layout direction: 'vertical' (default) or 'horizontal'. */
   listDirection?: 'vertical' | 'horizontal';
+  /** Grid columns for a vertical list, filled row by row (list slots only). Default: 1 */
+  listColumns?: number;
+  /** 'above': each item is `Label: value`, the label set small above the value (list slots only). */
+  listLabels?: 'none' | 'above';
+  /** Label size relative to the item text, with `labels: above`. Default: 0.7 */
+  labelSize?: number;
+  /** Line between grid columns (list slots with `columns:` 2 or more). */
+  listDivider?: 'none' | 'hairline';
   /** When false, this slot is locked — users cannot edit it in any mode. Default: true (editable). */
   editable?: boolean;
   typography: {
@@ -210,6 +218,9 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       if (s.marker && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": iconOnly needs "marker: icon", got "${s.marker}"`);
       s.marker = 'icon';
     }
+    if (s.listColumns && s.listColumns > 1 && s.listDirection === 'horizontal') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": columns needs a vertical list`);
+    if (s.labelSize !== undefined && s.listLabels !== 'above') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": labelSize needs "labels: above"`);
+    if (s.listDivider === 'hairline' && !(s.listColumns && s.listColumns > 1)) throw new Error(`${fileName}:${lineNum}: slot "${s.id}": divider needs "columns:" 2 or more`);
     if (s.defaultIcon && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": defaultIcon needs "marker: icon"`);
     if (!s.value && s.samples) {
       // Trailing `@name` window marker, on the sample's first line only
@@ -644,6 +655,30 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
           currentSlot.listDirection = d;
           continue;
         }
+        if (prop.startsWith('columns:')) {
+          const n = Number(prop.slice(8).trim());
+          if (!Number.isInteger(n) || n < 1 || n > 6) throw new Error(`${fileName}:${lineNum}: invalid columns "${prop.slice(8).trim()}" — must be 1 to 6`);
+          currentSlot.listColumns = n;
+          continue;
+        }
+        if (prop.startsWith('labels:')) {
+          const l = prop.slice(7).trim();
+          if (l !== 'none' && l !== 'above') throw new Error(`${fileName}:${lineNum}: invalid labels "${l}" — must be "none" or "above"`);
+          currentSlot.listLabels = l;
+          continue;
+        }
+        if (prop.startsWith('labelSize:')) {
+          const n = parseFloat(prop.slice(10).trim());
+          if (isNaN(n) || n <= 0 || n > 1) throw new Error(`${fileName}:${lineNum}: invalid labelSize "${prop.slice(10).trim()}" — must be above 0 and at most 1`);
+          currentSlot.labelSize = n;
+          continue;
+        }
+        if (prop.startsWith('divider:')) {
+          const d = prop.slice(8).trim();
+          if (d !== 'none' && d !== 'hairline') throw new Error(`${fileName}:${lineNum}: invalid list divider "${d}" — must be "none" or "hairline"`);
+          currentSlot.listDivider = d;
+          continue;
+        }
         throw new Error(`${fileName}:${lineNum}: unknown list property "${prop}"`);
       }
     }
@@ -828,6 +863,7 @@ function resolveExamples(
           for (const item of text.split('\n')) {
             const { icon } = parseListItem(item);
             if (icon && slot.marker !== 'icon') throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" names an icon, but the list has no "marker: icon"`);
+            if (slot.listLabels === 'above' && !splitLabelledItem(item).label) throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" needs a label ("Label: value") for "labels: above"`);
           }
         }
       }

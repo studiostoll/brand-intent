@@ -34,7 +34,7 @@ export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef,
 export { parseDateWindowRanges, isInDateWindow, SAMPLE_WINDOW_MARKER } from './dateWindows';
 export type { DateWindowRange } from './dateWindows';
 
-export { parseIconRef, parseIconSource, resolveIconRef, parseListItem, phosphorName, PHOSPHOR_WEIGHTS } from './icons';
+export { parseIconRef, parseIconSource, resolveIconRef, parseListItem, splitLabelledItem, phosphorName, PHOSPHOR_WEIGHTS } from './icons';
 export type { IconRef, IconSource, ParsedIconDef, ResolvedIcon, PhosphorWeight } from './icons';
 export type {
   ColorMode,

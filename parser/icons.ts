@@ -138,3 +138,10 @@ export function parseListItem(item: string): { icon?: IconRef; text: string } {
   if (!m) return { text: item };
   return { icon: parseIconRef(m[1], `list item "${item}"`), text: m[2] };
 }
+
+/** A `labels: above` list item: `Label: value`, split at the first colon followed by a space. */
+export function splitLabelledItem(text: string): { label?: string; value: string } {
+  const at = text.indexOf(': ');
+  if (at <= 0) return { value: text };
+  return { label: text.slice(0, at).trim(), value: text.slice(at + 2).trim() };
+}

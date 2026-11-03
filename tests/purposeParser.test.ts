@@ -126,6 +126,20 @@ test('example may leave a slot out; a slot no example fills throws', () => {
   assertThrows(() => withExamples(`example\n  label: A\n  primary: B\n`), /slot "detail" is filled by no example/, 'unfilled slot');
 });
 
+test('list grid: columns, labels above, labelSize, divider', () => {
+  const facts = (props: string, item = 'Wind: 4 Bft') => withExamples(`example\n  primary: B\n  detail:\n    ${item}\n`,
+    `slot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n\nslot detail\n  label: Facts\n  typography: body\n  type: list\n    maxItems: 6\n    maxLength: 40\n${props}`).slots[1];
+  const s = facts('    columns: 2\n    labels: above\n    labelSize: 0.6\n    divider: hairline\n');
+  assertEq([s.listColumns, s.listLabels, s.labelSize, s.listDivider], [2, 'above', 0.6, 'hairline'], 'parsed');
+  assertEq(facts('').listColumns, undefined, 'absent');
+  assertThrows(() => facts('    columns: 7\n'), /must be 1 to 6/, 'columns range');
+  assertThrows(() => facts('    columns: 2\n    direction: horizontal\n'), /columns needs a vertical list/, 'horizontal');
+  assertThrows(() => facts('    labelSize: 0.6\n'), /labelSize needs "labels: above"/, 'labelSize alone');
+  assertThrows(() => facts('    divider: hairline\n'), /divider needs "columns:"/, 'divider without columns');
+  assertThrows(() => facts('    labels: above\n', 'just a value'), /needs a label/, 'item without label');
+  assertEq(facts('    labels: above\n', 'Sonne: 07:21').listLabels, 'above', 'time after the label');
+});
+
 test('example validation errors', () => {
   const full = '  label: A\n  primary: B\n  detail:\n    C\n';
   assertThrows(() => withExamples(`example\n${full}  secondary: X\n`), /does not declare/, 'undeclared slot');

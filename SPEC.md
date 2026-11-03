@@ -1169,6 +1169,10 @@ A slot block describes form only: limits, typography, colour. Its content comes 
 | `iconGap:` | float | `0.4` | Gap between marker and text (em) |
 | `direction:` | enum | `vertical` | `vertical` \| `horizontal` |
 | `itemGap:` | float | `0.5` | Gap between items (em) |
+| `columns:` | int | `1` | Grid columns (1–6) for a vertical list, filled row by row; `itemGap` is the gap between rows and columns |
+| `labels:` | enum | `none` | `none` \| `above`: each item is `Label: value`, the label set small above the value |
+| `labelSize:` | float | `0.7` | Label size relative to the item text (`labels: above` only) |
+| `divider:` | enum | `none` | `none` \| `hairline`: a line between grid columns (`columns:` 2 or more) |
 
 **Markers:** `counter` numbers the items with the brand's [`counter`](#counter-block) component. `icon` puts an icon from the brand set before each item; an item in an example can name its icon with an `[ID]` prefix, otherwise `defaultIcon:` applies.
 
@@ -1188,7 +1192,27 @@ example
     Wochenmarkt Samstag
 ```
 
-`[ID]` prefixes and `defaultIcon:` require `marker: icon`. Implementations warn when an `iconOnly` list has fewer brand icons than `maxItems`. `icons: true` is deprecated and reads as `marker: counter`.
+**Fact grids:** `columns:` and `labels: above` together set short facts as a grid, e.g. the facts of the day along the bottom of a photo. With `labels: above` an item splits at its first colon followed by a space: `Wind: 4 Bft` shows "Wind" small above "4 Bft". Every item must have a label; a time like `07:21` has no space after its colon, so it stays in the value. Inline markup works in both parts (`Wind: **4 Bft**`).
+
+```yaml
+slot detail
+  label: Facts
+  typography: body
+  type: list
+    maxItems: 4
+    columns: 2
+    labels: above
+    divider: hairline
+
+example
+  detail:
+    Today: **Saturday**
+    Open: **8 to 14**
+    Fresh: **Rye loaf**
+    Sunset: **16:54**
+```
+
+`[ID]` prefixes and `defaultIcon:` require `marker: icon`. `columns:` needs a vertical list. Implementations warn when an `iconOnly` list has fewer brand icons than `maxItems`. `icons: true` is deprecated and reads as `marker: counter`.
 
 #### `override:` Sub-Block (4-space indent)
 
