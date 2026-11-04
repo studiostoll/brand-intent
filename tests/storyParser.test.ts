@@ -4,7 +4,8 @@
  * Run: npm test
  */
 
-import { parseStoryFile, checkStory, storyTextVariables } from '../parser/storyParser';
+import { parseStoryFile, checkStory, storyPlace, storyTextVariables } from '../parser/storyParser';
+import type { ParsedPlace } from '../parser/placeParser';
 import { parsePurposeFile } from '../parser/purposeParser';
 
 let pass = 0;
@@ -205,11 +206,47 @@ test('illustrations must exist when the brand lists them', () => {
   assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked without a list');
 });
 
+const HARBOUR: ParsedPlace = { id: 'harbour', name: 'Harbour', description: '' };
+const QUAY: ParsedPlace = { id: 'quay', name: 'Quay', description: '', hours: { thu: [{ label: 'Lunch', from: '12:00', to: '14:00' }, { from: '17:00', to: '22:00' }] } };
+
 test('sky and weather variables need a location', () => {
   const s = parse('page\n  purpose: notice\n  primary: {wind} {wind}\n');
   assertEq(checkStory(s, { ...BRAND, location: false }, 's.story'), ['s.story: page 1: variable "{wind}" needs a location block in the .brand'], 'no location');
-  assertEq(checkStory(s, { ...BRAND, location: true }, 's.story'), [], 'location');
+  assertEq(checkStory(s, { ...BRAND, location: true, places: [] }, 's.story'), [], 'location, no place needed');
   assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked when unknown');
+  assertEq(checkStory(s, { ...BRAND, location: false, places: [{ ...HARBOUR, latitude: 54, longitude: 10 }] }, 's.story'), [], 'the place\'s coordinates');
+});
+
+test('place variables need a place', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {place}\n');
+  assertEq(checkStory(s, { ...BRAND, places: [] }, 's.story'), ['s.story: page 1: variable "{place}" needs a place: add a .place file'], 'no place');
+  assertEq(checkStory(s, { ...BRAND, places: [HARBOUR] }, 's.story'), [], 'the only place');
+  assertEq(checkStory(s, { ...BRAND, places: [HARBOUR, QUAY] }, 's.story'), ['s.story: page 1: variable "{place}" needs a place: name it with "place:"'], 'several places');
+});
+
+test('place: names the story\'s place', () => {
+  const s = parse('place: quay\n\npage\n  purpose: notice\n  primary: {opens}\n');
+  assertEq(s.place, 'quay', 'parsed');
+  assertEq(checkStory(s, { ...BRAND, places: [HARBOUR, QUAY] }, 's.story'), [], 'found');
+  assertEq(checkStory(s, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: place "quay" does not exist'], 'unknown, reported once');
+  assertEq(storyPlace(s, [HARBOUR, QUAY])?.id, 'quay', 'storyPlace');
+  assertEq(storyPlace(parse('page\n  purpose: notice\n'), [HARBOUR])?.id, 'harbour', 'only place');
+});
+
+test('place variables need what they show', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {address}\n');
+  assertEq(checkStory(s, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{address}" needs an address: in place "harbour"'], 'address');
+  const h = parse('page\n  purpose: notice\n  primary: {closes}\n');
+  assertEq(checkStory(h, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{closes}" needs an hours block in place "harbour"'], 'hours');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {opening}\n'), 'unknown variable "{opening}"');
+});
+
+test('{hours} counts as its lines for the place', () => {
+  // Quay: up to two ranges a day, the longest "Lunch, " + 17
+  const s = parse('page\n  purpose: notice\n  detail: {hours}\n');
+  assertEq(checkStory(s, { ...BRAND, places: [QUAY] }, 's.story'), ['s.story: page 1: slot "detail" is 24 characters long, maxLength is 12', 's.story: page 1: slot "detail" is 24 characters long, maxLength is 12'], 'two lines, each too long');
+  const p = parse('page\n  purpose: notice\n  primary: {place}\n');
+  assertEq(checkStory(p, { ...BRAND, places: [{ ...HARBOUR, name: 'The Harbour Café on the Quay' }] }, 's.story'), ['s.story: page 1: slot "primary" is 28 characters long, maxLength is 20'], 'name length');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

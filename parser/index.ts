@@ -83,7 +83,9 @@ export type {
   GridYKeyword,
 } from './compositionParser';
 
-export { parseStoryFile, checkStory, storyTextVariables, STORY_VARIABLES } from './storyParser';
+export { parseStoryFile, checkStory, storyPlace, storyTextVariables, STORY_VARIABLES } from './storyParser';
+export { parsePlaceFile, weekdayOf, WEEKDAYS } from './placeParser';
+export type { ParsedPlace, OpeningRange, Weekday } from './placeParser';
 export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';

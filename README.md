@@ -22,7 +22,7 @@ Brand Intent is a set of five composable file types that encode brand knowledge 
 | Purpose | `.purpose` | What is this content for? |
 | Composition | `.composition` | How are elements composed? |
 
-Plus `.story`: ordered pages built from purposes and compositions, with fixed, variable and open texts.
+Plus `.story`: ordered pages built from purposes and compositions, with fixed, variable and open texts. And `.place`: a site the posts speak about, with address and opening hours.
 
 ## Get started
 

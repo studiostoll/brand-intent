@@ -953,7 +953,7 @@ function activate(context) {
           }
         };
         if (/^\w*$/.test(prefix)) {
-          add([['id: ', 'Story identifier'], ['name: ', 'Display name'], ['format: ', 'Format id'], ['topic: ', 'Story topic'], ['page', 'One page'], ['example', 'Texts for the open slots']], vscode.CompletionItemKind.Keyword);
+          add([['id: ', 'Story identifier'], ['name: ', 'Display name'], ['format: ', 'Format id'], ['topic: ', 'Story topic'], ['place: ', 'Place id the story speaks for'], ['page', 'One page'], ['example', 'Texts for the open slots']], vscode.CompletionItemKind.Keyword);
         } else if (/^ {2}\w*$/.test(prefix)) {
           add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['topic: ', 'Topic'], ['page ', 'Example page N'],
             ['primary: ', 'Slot text'], ['secondary: ', 'Slot text'], ['detail: ', 'Slot text'], ['meta: ', 'Slot text'], ['cta: ', 'Slot text'], ['label: ', 'Slot text']], vscode.CompletionItemKind.Property);
@@ -962,7 +962,9 @@ function activate(context) {
             ['sunrise}', 'Sunrise, local time (needs location)'], ['sunset}', 'Sunset, local time (needs location)'],
             ['day-length}', 'Sunrise to sunset (needs location)'], ['moon}', 'Moon phase (needs location)'],
             ['temperature}', 'Highest temperature of the day (needs location)'], ['wind}', 'Strongest daytime wind, Beaufort (needs location)'],
-            ['weather}', 'The day\'s condition (needs location)']], vscode.CompletionItemKind.Variable);
+            ['weather}', 'The day\'s condition (needs location)'],
+            ['place}', 'The place\'s name'], ['address}', 'The place\'s address'], ['hours}', 'The day\'s opening hours, one range per line'],
+            ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day']], vscode.CompletionItemKind.Variable);
         }
         return items;
       }
@@ -970,8 +972,35 @@ function activate(context) {
     ' ', '{'
   );
 
+  const placeProvider = vscode.languages.registerCompletionItemProvider(
+    'brand-intent-place',
+    {
+      provideCompletionItems(document, position) {
+        const prefix = document.lineAt(position).text.substring(0, position.character);
+        const items = [];
+        const add = (/** @type {[string, string][]} */ list, kind) => {
+          for (const [label, detail] of list) {
+            const item = new vscode.CompletionItem(label, kind);
+            item.detail = detail;
+            items.push(item);
+          }
+        };
+        if (/^\w*$/.test(prefix)) {
+          add([['id: ', 'Place identifier'], ['name: ', 'Name, as people say it'], ['address: ', 'Postal address'],
+            ['latitude: ', 'Decimal degrees, north positive'], ['longitude: ', 'Decimal degrees, east positive'],
+            ['maps: ', 'Link to the place on a map'], ['context: ', 'Facts for AI writing'], ['hours', 'Regular opening hours']], vscode.CompletionItemKind.Keyword);
+        } else if (/^ {2}\w*$/.test(prefix)) {
+          add([['mon-fri: ', 'Days: HH:MM-HH:MM, Label HH:MM-HH:MM'], ['mon: ', 'Monday'], ['tue: ', 'Tuesday'], ['wed: ', 'Wednesday'],
+            ['thu: ', 'Thursday'], ['fri: ', 'Friday'], ['sat: ', 'Saturday'], ['sun: ', 'Sunday']], vscode.CompletionItemKind.Property);
+        }
+        return items;
+      }
+    },
+    ' '
+  );
+
   context.subscriptions.push(
-    compositionProvider, purposeProvider, formatProvider, brandProvider, identityProvider, storyProvider,
+    compositionProvider, purposeProvider, formatProvider, brandProvider, identityProvider, storyProvider, placeProvider,
     compositionHover, purposeHover, formatHover, brandHover, identityHover, storyHover
   );
 }

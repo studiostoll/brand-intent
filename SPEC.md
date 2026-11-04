@@ -352,7 +352,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `camera` | block | No | Camera defaults: facing and viewfinder grid |
 | `photo-look` | block | No | Photo treatment for user photos: saturation, contrast, warmth, fade, mono, duotone; scrim under light text |
 | `windows` | block | No | Named yearly date windows for season-bound examples and photos |
-| `location` | block | No | Where the brand is: place name and coordinates, for sky and weather story variables |
+| `location` | block | No | The area the brand is in: name and coordinates, for sky and weather story variables. Sites such as shops are [`.place`](#place-place) files |
 | `framing NAME` | block | No | Photo framing module: horizon position for camera guides (repeatable) |
 | `logo NAME` | block | No | Brand-declared logo asset (repeatable) |
 | `photo NAME` | block | No | Brand-declared photo asset (repeatable) |
@@ -949,7 +949,7 @@ Each entry is `name: MM-DD..MM-DD`, with further ranges separated by commas. End
 
 ### `location` Block
 
-Where the brand is. Optional; the sky and weather [story variables](#variables) need it.
+The area the brand is in, as a whole: an island, a town, a city. Optional; the sky and weather [story variables](#variables) need it unless the story's [place](#place-place) has coordinates. Single sites with an address or opening hours (a shop, an office) are `.place` files, not this block.
 
 ```yaml
 location
@@ -964,7 +964,7 @@ location
 | `latitude:` | number | Yes | Decimal degrees, `-90` to `90` |
 | `longitude:` | number | Yes | Decimal degrees, `-180` to `180` |
 
-One location per brand. A brand with several places picks the one its posts speak for.
+One location per brand. A brand whose sites lie in one area keeps that area here and gives each site a `.place` file.
 
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
@@ -1515,6 +1515,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `format:` | string | Yes | Format id every page renders at |
 | `topic:` | string | No | Story topic: what the whole story is about, one sentence. People can change it per story; it guides AI writing and review on every page |
 | `scrim:` | `none` | No | No [scrim](#photo-look-block) on any page of the story, whatever the brand and the pages' purposes declare |
+| `place:` | string | No | [Place](#place-place) id the story speaks for. When omitted and the brand has exactly one place, the story speaks for that one; with several places, it speaks for the brand in general (sky and weather use the `.brand` `location`, place variables are not available) |
 | `page` | block | Yes (1+) | One page (repeatable). Order in the file = order in the story |
 | `example` | block | No | Texts for the open slots of the pages, about one story topic (repeatable) |
 
@@ -1554,8 +1555,19 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{temperature}` | Highest air temperature of the day | `14 °C` | 6 |
 | `{wind}` | Strongest hourly mean wind between sunrise and sunset, Beaufort | `4 Bft` | 6 |
 | `{weather}` | The day's condition, one of nine (below) | `teils bewölkt`, `partly cloudy` | 13 |
+| `{place}` | The place's `name:` | `Harbour Café` | its length |
+| `{address}` | The place's `address:` | `Quay 3, Harbour Town` | its length |
+| `{hours}` | The day's opening hours, one range per line (below) | `Lunch, 12–2 PM` | per line, below |
+| `{opens}` | When the place opens that day | `08:00`, `8:00 AM` | 8 |
+| `{closes}` | When it closes that day | `18:00`, `6:00 PM` | 8 |
 
-**Calendar** variables (`{weekday}`, `{date}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for that location. A story that uses a sky or weather variable needs a `location` block in the `.brand`; `checkStory` reports it otherwise.
+**Calendar** variables (`{weekday}`, `{date}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from coordinates: the story's [place](#place-place)'s when it has them, else the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for the same coordinates. `checkStory` reports a sky or weather variable without either.
+
+**Place** variables (`{place}`, `{address}`, `{hours}`, `{opens}`, `{closes}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` needs the place's `address:`, the hours variables its `hours` block.
+
+**`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
+
+**Closed is not guessed either.** On a day the place is closed, `{opens}` and `{closes}` have no value: a preview shows the placeholder, a scheduled post doesn't go out.
 
 Times are local time in the time zone the story is posted in. Moon phases: new moon, waxing crescent, first quarter, waxing gibbous, full moon, waning gibbous, last quarter, waning crescent. Conditions: clear, partly cloudy, cloudy, fog, rain, sleet, snow, hail, thunderstorm. Implementations translate both into the brand's language.
 
@@ -1606,6 +1618,59 @@ A `.story` file must NOT contain: color values, typography values, slot definiti
 
 ---
 
+## Place (`.place`)
+
+**Cardinality:** Zero or more per brand.
+**File extension:** `.place`
+**Filename convention:** the place id (e.g., `harbour.place`), in `places/`
+
+A place is a site the brand's posts speak about: a café, a shop, a bar, an information office. It holds facts, not voice or design: where it is and when it's open. The area the brand is in as a whole stays the `.brand`'s [`location`](#location-block).
+
+A site matters only if posts speak about it. A place without `hours` is one people don't walk in at set times: an office, a storage whose occasional events give their date and time on the event page.
+
+```yaml
+# The café on the quay
+id:        harbour
+name:      Harbour Café
+address:   Quay 3, Harbour Town
+latitude:  54.32
+longitude: 10.14
+maps:      https://maps.example.com/harbour
+context:   On the quay. Ferry crowd in the morning, locals in the afternoon.
+
+hours
+  mon-wed: 08:00-18:00
+  thu-fri: Lunch 12:00-14:00, Evening 17:00-22:00
+  sat:     09:00-14:00
+  sun:     closed
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `id:` | string | Yes | Place identifier; stories name it with `place:` |
+| `name:` | string | Yes | Name, as people say it. `{place}` shows it |
+| `address:` | string | No | Postal address, as on the sign. `{address}` shows it |
+| `latitude:` / `longitude:` | number | No | Decimal degrees, both or neither. Sky and weather of the place's stories use them instead of the brand's `location` |
+| `maps:` | URL | No | Link to the place on a map (`https://`) |
+| `context:` | string | No | Facts for AI writing: what the place is like, who comes, what it offers. Not voice, which belongs to `.identity` |
+| `hours` | block | No | Regular opening hours (below) |
+
+### `hours` Block
+
+One line per day or range of days: `DAYS: RANGES`.
+
+- **Days:** `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`, or a range such as `mon-fri`. A range may wrap over the week end (`fri-mon`). A day appears at most once.
+- **Ranges:** `HH:MM-HH:MM`, 24-hour, comma-separated, optionally after a label (`Lunch 12:00-14:00`). An end before the start runs past midnight and belongs to the day it starts; `24:00` is midnight.
+- **`closed`**, or a day not named: the place is closed that day.
+
+Only regular weekly hours. Holidays and one-off closures are not part of the file.
+
+### Exclusion Rule
+
+A `.place` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts (→ `.purpose`, `.story`).
+
+---
+
 ## Context Composition
 
 When an AI agent generates content, the five layers compose into a single context. The composition order is:
@@ -1648,6 +1713,7 @@ A parser should warn when:
 - A `purposes` entry in `.format` references a non-existent `.purpose` file
 - A `.story` references a format, purpose or composition that doesn't exist, a composition its purpose doesn't list, or a slot its purpose doesn't declare or fixes with `value:`
 - A fixed or example text in a `.story` exceeds the slot's limits
+- A `.story` names a place that doesn't exist, or uses a place variable without a place (several places and no `place:`), `{address}` without `address:` or an hours variable without `hours`
 
 ---
 
@@ -1668,8 +1734,10 @@ project/
     │   └── daily-bread.purpose
     ├── compositions/
     │   └── editorial.composition
-    └── stories/
-        └── breads-of-the-week.story
+    ├── stories/
+    │   └── breads-of-the-week.story
+    └── places/
+        └── harbour.place
 ```
 
 Every brand is fully self-contained. Formats, purposes, compositions, and stories are specific to one brand's identity and voice — there are no shared files between brands.

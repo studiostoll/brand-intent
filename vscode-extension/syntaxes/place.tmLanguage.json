@@ -1,0 +1,51 @@
+{
+  "scopeName": "source.brand-intent-place",
+  "name": "Brand Intent Place",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#top-field" },
+    { "include": "#block-header" },
+    { "include": "#hours-entry" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.brand-intent-place"
+    },
+    "top-field": {
+      "match": "^(id|name|address|latitude|longitude|maps|context)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-place" },
+        "2": { "name": "punctuation.separator.brand-intent-place" },
+        "3": { "name": "string.unquoted.brand-intent-place" }
+      }
+    },
+    "block-header": {
+      "match": "^(hours)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-place" }
+      }
+    },
+    "hours-entry": {
+      "match": "^\\s{2}((?:mon|tue|wed|thu|fri|sat|sun)(?:-(?:mon|tue|wed|thu|fri|sat|sun))?)(:)\\s*(.*)$",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-place" },
+        "2": { "name": "punctuation.separator.brand-intent-place" },
+        "3": {
+          "patterns": [
+            { "match": "\\bclosed\\b", "name": "constant.language.brand-intent-place" },
+            { "match": "\\d{2}:\\d{2}-\\d{2}:\\d{2}", "name": "constant.numeric.brand-intent-place" }
+          ]
+        }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "match": "^(id|name|address|latitude|longitude|maps|context|hours)(?=:|\\s|$)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-place" }
+      }
+    }
+  }
+}

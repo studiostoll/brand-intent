@@ -9,6 +9,7 @@
 
 import type { SlotId } from './types';
 import type { ParsedPurpose } from './purposeParser';
+import type { ParsedPlace } from './placeParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -16,11 +17,15 @@ import type { ParsedPurpose } from './purposeParser';
 export type StoryVariable =
   | 'weekday' | 'date'
   | 'sunrise' | 'sunset' | 'day-length' | 'moon'
-  | 'temperature' | 'wind' | 'weather';
+  | 'temperature' | 'wind' | 'weather'
+  | 'place' | 'address' | 'hours' | 'opens' | 'closes';
 
 /** Longest resolved form per variable (German and English), used for the `maxLength` check.
- *  `location`: the variable needs the brand's `location` block. */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true }> = {
+ *  `location`: the variable needs coordinates: the story's place's, else the brand's `location`
+ *  block. `place`: it needs the story's
+ *  place; `needs`: and that place's `address:` or `hours`. `{place}`, `{address}` and `{hours}`
+ *  count at their length for that place (see `checkStory`). */
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' }> = {
   weekday: { maxLength: 10 },                       // "Donnerstag"
   date: { maxLength: 13 },                          // "30. September"
   sunrise: { maxLength: 8, location: true },        // "12:59 PM"
@@ -30,7 +35,17 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   temperature: { maxLength: 6, location: true },    // "-12 °C"
   wind: { maxLength: 6, location: true },           // "12 Bft"
   weather: { maxLength: 13, location: true },       // "teils bewölkt"
+  place: { maxLength: 0, place: true },
+  address: { maxLength: 0, place: true, needs: 'address' },
+  hours: { maxLength: 0, place: true, needs: 'hours' },
+  opens: { maxLength: 8, place: true, needs: 'hours' },   // "10:30 AM"
+  closes: { maxLength: 8, place: true, needs: 'hours' },
 };
+
+/** Longest form of one `{hours}` line without its label: "10:30 AM–10:30 PM". */
+const HOURS_RANGE_LENGTH = 17;
+/** `{hours}` on a closed day: "geschlossen". */
+const HOURS_CLOSED_LENGTH = 11;
 
 export interface ParsedStory {
   id: string;
@@ -42,6 +57,8 @@ export interface ParsedStory {
   topic?: string;
   /** `scrim: none`: no scrim under the story's text, whatever the brand and purposes declare. */
   scrim?: 'none';
+  /** Place id the story speaks for. Undefined = the brand's only place, if it has exactly one. */
+  place?: string;
   pages: ParsedStoryPage[];
   /** Example fills for the open slots, one story topic each. */
   examples: ParsedStoryExample[];
@@ -96,6 +113,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   let format = '';
   let topic: string | undefined;
   let scrim: 'none' | undefined;
+  let place: string | undefined;
   const pages: (ParsedStoryPage & { line: number; keys: Set<string> })[] = [];
   const examples: (ParsedStoryExample & { line: number })[] = [];
 
@@ -195,11 +213,12 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       const colonIdx = line.indexOf(':');
       const key = colonIdx === -1 ? line : line.slice(0, colonIdx).trim();
       const value = colonIdx === -1 ? '' : line.slice(colonIdx + 1).trim();
-      if (key === 'id' || key === 'name' || key === 'format' || key === 'topic') {
+      if (key === 'id' || key === 'name' || key === 'format' || key === 'topic' || key === 'place') {
         if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
         if (key === 'id') id = value;
         else if (key === 'name') name = value;
         else if (key === 'format') format = value;
+        else if (key === 'place') place = value;
         else topic = value;
         continue;
       }
@@ -288,6 +307,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     format,
     topic,
     ...(scrim ? { scrim } : {}),
+    ...(place ? { place } : {}),
     pages: pages.map(({ line: _line, keys: _keys, ...p }) => p),
     examples: examples.map(({ line: _line, ...ex }) => ({
       ...ex,
@@ -301,17 +321,43 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
 
 // ── Cross-file checks ─────────────────────────────────────────────────────────
 
+/** The place a story speaks for: the one its `place:` names, else the brand's only place. */
+export function storyPlace(story: Pick<ParsedStory, 'place'>, places: ParsedPlace[]): ParsedPlace | undefined {
+  if (story.place) return places.find(p => p.id === story.place);
+  return places.length === 1 ? places[0] : undefined;
+}
+
+/** A text with each variable at its longest form, `{hours}` as its longest lines for the place. */
+function longestText(text: string, place: ParsedPlace | undefined): string {
+  return text.replace(VARIABLE, (_, v: string) => {
+    if (v === 'place') return 'x'.repeat(place?.name.length ?? 0);
+    if (v === 'address') return 'x'.repeat(place?.address?.length ?? 0);
+    if (v === 'hours') {
+      const days = Object.values(place?.hours ?? {});
+      const lines = Math.max(1, ...days.map(r => r.length));
+      const line = Math.max(HOURS_CLOSED_LENGTH, ...days.flat().map(r => (r.label ? r.label.length + 2 : 0) + HOURS_RANGE_LENGTH));
+      return Array.from({ length: lines }, () => 'x'.repeat(line)).join('\n');
+    }
+    return 'x'.repeat(STORY_VARIABLES[v as StoryVariable]?.maxLength ?? 0);
+  });
+}
+
 /** Checks a story against the brand's other files. Returns problems as "file: message";
  *  empty when the story fits. Variables count at their longest form for `maxLength`.
- *  `location: false` reports sky and weather variables (the brand has no `location` block). */
+ *  `location: false` reports sky and weather variables (the brand has no `location` block) unless
+ *  the story's place has coordinates.
+ *  `places` (the brand's .place files) is checked when given: the story's `place:`, and the
+ *  place that place variables need. */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; location?: boolean },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; location?: boolean; places?: ParsedPlace[] },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
   const say = (msg: string) => problems.push(`${fileName}: ${msg}`);
   if (!brand.formats.includes(story.format)) say(`format "${story.format}" does not exist`);
+  const place = brand.places ? storyPlace(story, brand.places) : undefined;
+  if (brand.places && story.place && !place) say(`place "${story.place}" does not exist`);
 
   const purposes = new Map(brand.purposes.map(p => [p.id, p]));
   const checkTexts = (where: string, purpose: ParsedPurpose, texts: Partial<Record<SlotId, string>>) => {
@@ -319,12 +365,15 @@ export function checkStory(
       const slot = purpose.slots.find(s => s.id === slotId);
       if (!slot) { say(`${where}: slot "${slotId}" is not declared by purpose "${purpose.id}"`); continue; }
       if (slot.value) { say(`${where}: slot "${slotId}" has a fixed value in purpose "${purpose.id}"`); continue; }
-      if (brand.location === false) {
-        for (const v of new Set(storyTextVariables(text))) {
-          if (STORY_VARIABLES[v as StoryVariable]?.location) say(`${where}: variable "{${v}}" needs a location block in the .brand`);
+      for (const v of new Set(storyTextVariables(text))) {
+        const variable = STORY_VARIABLES[v as StoryVariable];
+        if (variable?.location && brand.location === false && place?.latitude === undefined) say(`${where}: variable "{${v}}" needs a location block in the .brand`);
+        if (variable?.place && brand.places && !(story.place && !place)) {
+          if (!place) say(`${where}: variable "{${v}}" needs a place: ${brand.places.length > 1 ? 'name it with "place:"' : 'add a .place file'}`);
+          else if (variable.needs && !place[variable.needs]) say(`${where}: variable "{${v}}" needs ${variable.needs === 'hours' ? 'an hours block' : 'an address:'} in place "${place.id}"`);
         }
       }
-      const longest = text.replace(VARIABLE, (_, v: string) => 'x'.repeat(STORY_VARIABLES[v as StoryVariable]?.maxLength ?? 0));
+      const longest = longestText(text, place);
       const parts = slot.slotType === 'list' ? longest.split('\n') : [longest];
       if (slot.slotType === 'list' && slot.maxItems && parts.length > slot.maxItems) say(`${where}: slot "${slotId}" has ${parts.length} items, maxItems is ${slot.maxItems}`);
       for (const part of parts) {
