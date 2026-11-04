@@ -33,8 +33,8 @@ export interface ParsedPurpose {
   palette?: string;
   /** Default logo asset ID — pre-selects this logo on page creation. */
   defaultLogo?: string;
-  /** Default photo asset ID — pre-selects this photo on page creation. */
-  defaultPhoto?: string;
+  /** Photo ids a new page picks from (the first in season); a .story page's `photo:` overrides them. */
+  photos?: string[];
   /** Default video asset ID — pre-selects this video on page creation. */
   defaultVideo?: string;
   /** Illustration ids a new page picks from; a .story page's `illustration:` overrides them. */
@@ -180,7 +180,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let palette: string | undefined;
   let density: Density | undefined;
   let defaultLogo: string | undefined;
-  let defaultPhoto: string | undefined;
+  let photos: string[] | undefined;
   let defaultVideo: string | undefined;
   let illustrations: string[] | undefined;
   let camera: boolean | undefined;
@@ -427,9 +427,9 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // Default photo asset ID
+    // Photos a new page picks from
     if (line.startsWith('photo:')) {
-      defaultPhoto = line.slice(6).trim();
+      photos = line.slice(6).split(',').map(id => id.trim()).filter(Boolean);
       continue;
     }
 
@@ -843,7 +843,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
   const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, defaultPhoto, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 
 /** Validate `example` blocks against the declared slots, or build examples from deprecated slot

@@ -186,5 +186,12 @@ test('illustration takes one id or a list', () => {
   assertEq(i(''), undefined, 'none');
 });
 
+test('photo takes one id or a list', () => {
+  const ph = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').photos;
+  assertEq(ph('photo: bar, glas'), ['bar', 'glas'], 'list');
+  assertEq(ph('photo: bar'), ['bar'], 'single');
+  assertEq(ph(''), undefined, 'none');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

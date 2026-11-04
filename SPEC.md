@@ -1116,6 +1116,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `density:` | enum | No | `light` \| `medium` \| `full` |
 | `palette:` | string | No | Color palette strategy (see below) |
 | `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. A new page shows one of them. A `.story` page's `illustration:` overrides this list |
+| `photo:` | string list | No | Photo ids from the `.brand`, comma-separated. A new page starts with the first one that is in season (see [`windows`](#windows-block)); none in season → no photo. A `.story` page's `photo:` overrides this list |
 | `scope` | block | No | Narrows the composed upstream |
 | `context` | block | No | Adds purpose-specific AI context |
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
@@ -1524,7 +1525,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `purpose:` | string | Yes | Purpose id of the page |
 | `composition:` | string | No | Composition id; must be one of the purpose's `compositions:`. When omitted, implementations pick one as for a new page |
 | `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. One id always shows that illustration; with several, implementations pick one per story date, the same one every time for that date, so a preview and the posted page match. When omitted, the purpose's `illustration:` applies |
-| `photo:` | comma list | No | Photo ids from the `.brand`. This page starts with one of them instead of the purpose's `photo:` default; with several, implementations pick one per story date, the same one every time for that date (like `illustration:`). `checkStory` reports an unknown id. |
+| `photo:` | comma list | No | Photo ids from the `.brand`. This page starts with one of them instead of the purpose's `photo:` list; with several, implementations pick one per story date, the same one every time for that date (like `illustration:`). `checkStory` reports an unknown id. |
 | `topic:` | string | No | Page topic: what this page adds to the story |
 | `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
 
