@@ -4,7 +4,7 @@
  * Run: npm test
  */
 
-import { parsePlaceFile, weekdayOf } from '../parser/placeParser';
+import { parsePlaceFile, weekdayOf, weekOpeningDays } from '../parser/placeParser';
 
 let pass = 0;
 let fail = 0;
@@ -90,6 +90,21 @@ test('bad values', () => {
   assertThrows(() => parse('maps: maps.example.com\n'), 'maps must be an https link');
   assertThrows(() => parse('hours\n  mon: 10:00-12:00\nhours\n'), 'duplicate hours block');
   assertThrows(() => parse('  mon: 10:00-12:00\n'), 'unexpected indent');
+});
+
+test('capacity', () => {
+  assertEq(parse('capacity\n  indoor:  25\n  outdoor: 8\n').capacity, { indoor: 25, outdoor: 8 }, 'both sides');
+  assertEq(parse('capacity\n  indoor: 60\n').capacity, { indoor: 60 }, 'one side');
+  assertThrows(() => parse('capacity\n'), 'empty capacity block');
+  assertThrows(() => parse('capacity\n  inside: 25\n'), 'capacity entry must be');
+  assertThrows(() => parse('capacity\n  indoor: about 25\n'), 'whole number of people');
+  assertThrows(() => parse('capacity\n  indoor: 25\n  indoor: 30\n'), 'duplicate capacity "indoor"');
+});
+
+test('weekOpeningDays: consecutive days with the same times share a line', () => {
+  const p = parse('hours\n  wed: Evening 17:00-22:00\n  thu-fri: Lunch 12:00-14:00, Evening 17:00-22:00\n  sat: 17:00-22:00\n  mon: 17:00-22:00\n');
+  assertEq(weekOpeningDays(p.hours!).map(l => [l.days, l.ranges.length]), [[['mon'], 1], [['wed'], 1], [['thu', 'fri'], 2], [['sat'], 1]], 'closed tue splits, labels don\'t count');
+  assertEq(weekOpeningDays(parse('hours\n  wed-fri: 14:00-22:00\n  sat: 14:00-22:00\n').hours!).map(l => l.days), [['wed', 'thu', 'fri', 'sat']], 'same times merge');
 });
 
 test('weekdayOf', () => {

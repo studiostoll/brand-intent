@@ -9,7 +9,7 @@
 
 import type { SlotId } from './types';
 import type { ParsedPurpose } from './purposeParser';
-import type { ParsedPlace } from './placeParser';
+import { weekOpeningDays, type ParsedPlace } from './placeParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -18,13 +18,13 @@ export type StoryVariable =
   | 'weekday' | 'date'
   | 'sunrise' | 'sunset' | 'day-length' | 'moon'
   | 'temperature' | 'wind' | 'weather'
-  | 'place' | 'address' | 'hours' | 'opens' | 'closes';
+  | 'place' | 'address' | 'hours' | 'week-hours' | 'opens' | 'closes';
 
 /** Longest resolved form per variable (German and English), used for the `maxLength` check.
  *  `location`: the variable needs coordinates: the story's place's, else the brand's `location`
  *  block. `place`: it needs the story's
- *  place; `needs`: and that place's `address:` or `hours`. `{place}`, `{address}` and `{hours}`
- *  count at their length for that place (see `checkStory`). */
+ *  place; `needs`: and that place's `address:` or `hours`. `{place}`, `{address}`, `{hours}` and
+ *  `{week-hours}` count at their length for that place (see `checkStory`). */
 export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' }> = {
   weekday: { maxLength: 10 },                       // "Donnerstag"
   date: { maxLength: 13 },                          // "30. September"
@@ -38,12 +38,15 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   place: { maxLength: 0, place: true },
   address: { maxLength: 0, place: true, needs: 'address' },
   hours: { maxLength: 0, place: true, needs: 'hours' },
+  'week-hours': { maxLength: 0, place: true, needs: 'hours' },
   opens: { maxLength: 8, place: true, needs: 'hours' },   // "10:30 AM"
   closes: { maxLength: 8, place: true, needs: 'hours' },
 };
 
 /** Longest form of one `{hours}` line without its label: "10:30 AM–10:30 PM". */
 const HOURS_RANGE_LENGTH = 17;
+/** Longest days part of a `{week-hours}` line, with its space: "Mon–Fri ". */
+const WEEK_DAYS_LENGTH = 8;
 /** `{hours}` on a closed day: "geschlossen". */
 const HOURS_CLOSED_LENGTH = 11;
 
@@ -337,6 +340,11 @@ function longestText(text: string, place: ParsedPlace | undefined): string {
       const lines = Math.max(1, ...days.map(r => r.length));
       const line = Math.max(HOURS_CLOSED_LENGTH, ...days.flat().map(r => (r.label ? r.label.length + 2 : 0) + HOURS_RANGE_LENGTH));
       return Array.from({ length: lines }, () => 'x'.repeat(line)).join('\n');
+    }
+    if (v === 'week-hours') {
+      const lines = weekOpeningDays(place?.hours ?? {});
+      if (!lines.length) return 'x'.repeat(HOURS_CLOSED_LENGTH);
+      return lines.map(l => 'x'.repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join('\n');
     }
     return 'x'.repeat(STORY_VARIABLES[v as StoryVariable]?.maxLength ?? 0);
   });

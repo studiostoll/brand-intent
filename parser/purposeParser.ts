@@ -871,11 +871,13 @@ function resolveExamples(
         const text = ex.texts[slotId]!;
         if (text.split('\n').some(l => SAMPLE_WINDOW_MARKER.test(l))) throw new Error(`${at(slotId)}: window marker in example text — use "when:" on the example`);
         if (slot.slotType === 'list') {
-          for (const item of text.split('\n')) {
+          text.split('\n').forEach((item, i) => {
             const { icon } = parseListItem(item);
             if (icon && slot.marker !== 'icon') throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" names an icon, but the list has no "marker: icon"`);
-            if (slot.listLabels === 'above' && !splitLabelledItem(item).label) throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" needs a label ("Label: value") for "labels: above"`);
-          }
+            // In one column, a line without a label continues the item above; the first needs one
+            const continues = i > 0 && !(slot.listColumns && slot.listColumns > 1);
+            if (slot.listLabels === 'above' && !continues && !splitLabelledItem(item).label) throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" needs a label ("Label: value") for "labels: above"`);
+          });
         }
       }
     }

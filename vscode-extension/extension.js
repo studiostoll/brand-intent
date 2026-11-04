@@ -964,6 +964,7 @@ function activate(context) {
             ['temperature}', 'Highest temperature of the day (needs location)'], ['wind}', 'Strongest daytime wind, Beaufort (needs location)'],
             ['weather}', 'The day\'s condition (needs location)'],
             ['place}', 'The place\'s name'], ['address}', 'The place\'s address'], ['hours}', 'The day\'s opening hours, one range per line'],
+            ['week-hours}', 'The week\'s opening hours, one line per group of days'],
             ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day']], vscode.CompletionItemKind.Variable);
         }
         return items;
@@ -988,8 +989,13 @@ function activate(context) {
         if (/^\w*$/.test(prefix)) {
           add([['id: ', 'Place identifier'], ['name: ', 'Name, as people say it'], ['address: ', 'Postal address'],
             ['latitude: ', 'Decimal degrees, north positive'], ['longitude: ', 'Decimal degrees, east positive'],
-            ['maps: ', 'Link to the place on a map'], ['context: ', 'Facts for AI writing'], ['hours', 'Regular opening hours']], vscode.CompletionItemKind.Keyword);
+            ['maps: ', 'Link to the place on a map'], ['context: ', 'Facts for AI writing'], ['hours', 'Regular opening hours'], ['capacity', 'People the place holds']], vscode.CompletionItemKind.Keyword);
         } else if (/^ {2}\w*$/.test(prefix)) {
+          const block = [...Array(position.line).keys()].reverse().map(i => document.lineAt(i).text).find(l => /^\S/.test(l));
+          if (block?.trim() === 'capacity') {
+            add([['indoor: ', 'People inside'], ['outdoor: ', 'People outside']], vscode.CompletionItemKind.Property);
+            return items;
+          }
           add([['mon-fri: ', 'Days: HH:MM-HH:MM, Label HH:MM-HH:MM'], ['mon: ', 'Monday'], ['tue: ', 'Tuesday'], ['wed: ', 'Wednesday'],
             ['thu: ', 'Thursday'], ['fri: ', 'Friday'], ['sat: ', 'Saturday'], ['sun: ', 'Sunday']], vscode.CompletionItemKind.Property);
         }

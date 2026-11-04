@@ -249,5 +249,12 @@ test('{hours} counts as its lines for the place', () => {
   assertEq(checkStory(p, { ...BRAND, places: [{ ...HARBOUR, name: 'The Harbour Café on the Quay' }] }, 's.story'), ['s.story: page 1: slot "primary" is 28 characters long, maxLength is 20'], 'name length');
 });
 
+test('{week-hours} counts as one line per group of days', () => {
+  // Quay: Thursday only, two ranges: "Mon–Fri " + 2 × 17 + ", "
+  const s = parse('page\n  purpose: notice\n  detail: {week-hours}\n');
+  assertEq(checkStory(s, { ...BRAND, places: [QUAY] }, 's.story'), ['s.story: page 1: slot "detail" is 44 characters long, maxLength is 12'], 'one line');
+  assertEq(checkStory(s, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{week-hours}" needs an hours block in place "harbour"'], 'needs hours');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

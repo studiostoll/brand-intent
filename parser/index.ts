@@ -84,8 +84,8 @@ export type {
 } from './compositionParser';
 
 export { parseStoryFile, checkStory, storyPlace, storyTextVariables, STORY_VARIABLES } from './storyParser';
-export { parsePlaceFile, weekdayOf, WEEKDAYS } from './placeParser';
-export type { ParsedPlace, OpeningRange, Weekday } from './placeParser';
+export { parsePlaceFile, weekdayOf, weekOpeningDays, WEEKDAYS } from './placeParser';
+export type { ParsedPlace, OpeningRange, OpeningDays, PlaceCapacity, Weekday } from './placeParser';
 export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';

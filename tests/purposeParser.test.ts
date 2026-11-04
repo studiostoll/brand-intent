@@ -145,6 +145,8 @@ test('list grid: columns, labels above, labelSize, divider', () => {
   assertThrows(() => facts('    divider: hairline\n'), /divider needs "columns:"/, 'divider without columns');
   assertThrows(() => facts('    labels: above\n', 'just a value'), /needs a label/, 'item without label');
   assertEq(facts('    labels: above\n', 'Sonne: 07:21').listLabels, 'above', 'time after the label');
+  assertEq(facts('    labels: above\n', 'Hours: Mon–Fri 8–18\n    Sat 9–14').listLabels, 'above', 'a line without a label continues the item above');
+  assertThrows(() => facts('    columns: 2\n    labels: above\n', 'Hours: Mon–Fri 8–18\n    Sat 9–14'), /needs a label/, 'not in a grid');
 });
 
 test('example validation errors', () => {

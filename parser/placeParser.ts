@@ -1,6 +1,6 @@
 /**
  * Parser for .place files: a site the brand's posts speak about (a shop, a bar, an office),
- * with its address, coordinates and regular opening hours. The area the brand is in is the
+ * with its address, coordinates, capacity and regular opening hours. The area the brand is in is the
  * `.brand`'s `location` block; sky and weather use a place's coordinates when it has them.
  *
  * Strict, line-based format. Every line must match a known pattern or be blank.
@@ -43,11 +43,26 @@ export interface ParsedPlace {
   /** Regular opening hours per weekday, ranges in order. Undefined = the place has no opening hours.
    *  A weekday the block doesn't name is closed. */
   hours?: Partial<Record<Weekday, OpeningRange[]>>;
+  /** How many people the place holds, inside and outside. Undefined = not stated. */
+  capacity?: PlaceCapacity;
+}
+
+/** People a place holds: seats, or standing room where people stand. At least one side is set. */
+export interface PlaceCapacity {
+  indoor?: number;
+  outdoor?: number;
+}
+
+/** Days that share the same opening times, Monday first: one line of the week's hours. */
+export interface OpeningDays {
+  days: Weekday[];
+  ranges: OpeningRange[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const KEYS = new Set(['id', 'name', 'address', 'latitude', 'longitude', 'maps', 'context']);
+const CAPACITY_KEYS = new Set(['indoor', 'outdoor']);
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
 const RANGE = /^(?:(.+?)\s+)?(\d{2}:\d{2})-(\d{2}:\d{2})$/;
 
@@ -72,7 +87,8 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
   const raw: Record<string, { value: string; line: number }> = {};
   let description = '';
   let hours: Partial<Record<Weekday, OpeningRange[]>> | undefined;
-  let inHours = false;
+  let capacity: PlaceCapacity | undefined;
+  let block: 'hours' | 'capacity' | null = null;
 
   content.split('\n').forEach((rawLine, i) => {
     const lineNum = i + 1;
@@ -85,11 +101,17 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
     }
 
     if (indent === 0) {
-      inHours = false;
+      block = null;
       if (line === 'hours') {
         if (hours) throw new Error(`${fileName}:${lineNum}: duplicate hours block`);
         hours = {};
-        inHours = true;
+        block = 'hours';
+        return;
+      }
+      if (line === 'capacity') {
+        if (capacity) throw new Error(`${fileName}:${lineNum}: duplicate capacity block`);
+        capacity = {};
+        block = 'capacity';
         return;
       }
       const colonIdx = line.indexOf(':');
@@ -98,15 +120,24 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
       // A URL keeps its `#`; elsewhere a trailing ` # …` is a comment
       const rest = line.slice(colonIdx + 1).trim();
       const value = key === 'maps' ? rest : rest.replace(/\s+#.*$/, '');
-      if (!KEYS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS].join(', ')} or an hours block)`);
+      if (!KEYS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS].join(', ')}, an hours or a capacity block)`);
       if (raw[key]) throw new Error(`${fileName}:${lineNum}: duplicate "${key}"`);
       if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
       raw[key] = { value, line: lineNum };
       return;
     }
 
-    if (!inHours || indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent (hours entries use 2 spaces under "hours")`);
+    if (!block || indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent (entries use 2 spaces under "hours" or "capacity")`);
     const entry = line.replace(/\s+#.*$/, '');
+    if (block === 'capacity') {
+      const m = /^([a-z]+):\s*(.*)$/.exec(entry);
+      if (!m || !CAPACITY_KEYS.has(m[1])) throw new Error(`${fileName}:${lineNum}: capacity entry must be "indoor: N" or "outdoor: N", got "${line}"`);
+      const side = m[1] as keyof PlaceCapacity;
+      if (capacity![side] !== undefined) throw new Error(`${fileName}:${lineNum}: duplicate capacity "${side}"`);
+      if (!/^[1-9]\d*$/.test(m[2])) throw new Error(`${fileName}:${lineNum}: capacity ${side} must be a whole number of people, got "${m[2]}"`);
+      capacity![side] = Number(m[2]);
+      return;
+    }
     const colonIdx = entry.indexOf(':');
     if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: hours entry must be "DAYS: RANGES", got "${line}"`);
     const daySpec = entry.slice(0, colonIdx).trim();
@@ -130,6 +161,7 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
     }
   });
 
+  if (capacity && capacity.indoor === undefined && capacity.outdoor === undefined) throw new Error(`${fileName}: empty capacity block (add "indoor:" or "outdoor:")`);
   if (!raw['id']) throw new Error(`${fileName}: missing place id (add "id:" line)`);
   if (!raw['name']) throw new Error(`${fileName}: place needs name:`);
   if (!raw['latitude'] !== !raw['longitude']) throw new Error(`${fileName}: place needs both latitude: and longitude:, or neither`);
@@ -154,7 +186,25 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
     ...(raw['maps'] ? { maps: raw['maps'].value } : {}),
     ...(raw['context'] ? { context: raw['context'].value } : {}),
     ...(days ? { hours: days } : {}),
+    ...(capacity ? { capacity } : {}),
   };
+}
+
+/** The week's opening hours as lines: consecutive days (Monday first) with the same times share
+ *  a line, closed days are left out. Labels don't count: `Lunch 12:00-14:00` and `12:00-14:00` match. */
+export function weekOpeningDays(hours: Partial<Record<Weekday, OpeningRange[]>>): OpeningDays[] {
+  const times = (ranges: OpeningRange[]) => ranges.map(r => `${r.from}-${r.to}`).join(',');
+  const lines: OpeningDays[] = [];
+  let prev: Weekday | undefined;
+  for (const day of WEEKDAYS) {
+    const ranges = hours[day];
+    if (!ranges?.length) { prev = undefined; continue; }
+    const last = lines[lines.length - 1];
+    if (last && prev && times(last.ranges) === times(ranges)) last.days.push(day);
+    else lines.push({ days: [day], ranges });
+    prev = day;
+  }
+  return lines;
 }
 
 /** The weekday of a YYYY-MM-DD date. */

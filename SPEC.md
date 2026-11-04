@@ -1198,7 +1198,7 @@ example
     Wochenmarkt Samstag
 ```
 
-**Fact grids:** `columns:` and `labels: above` together set short facts as a grid, e.g. the facts of the day along the bottom of a photo. With `labels: above` an item splits at its first colon followed by a space: `Wind: 4 Bft` shows "Wind" small above "4 Bft". Every item must have a label; a time like `07:21` has no space after its colon, so it stays in the value. Inline markup works in both parts (`Wind: **4 Bft**`).
+**Fact grids:** `columns:` and `labels: above` together set short facts as a grid, e.g. the facts of the day along the bottom of a photo. With `labels: above` an item splits at its first colon followed by a space: `Wind: 4 Bft` shows "Wind" small above "4 Bft". A time like `07:21` has no space after its colon, so it stays in the value. In a grid every item must have a label. In one column only the first one must: an item without a label continues the item above it, as a further line of its value with no item gap between, so a value can run over several lines (an address and the week's opening hours, below). Inline markup works in both parts (`Wind: **4 Bft**`).
 
 ```yaml
 slot detail
@@ -1217,6 +1217,23 @@ example
     Fresh: **Rye loaf**
     Sunset: **16:54**
 ```
+
+```yaml
+slot detail
+  label: Visit
+  typography: body
+  type: list
+    maxItems: 6
+    labels: above
+
+example
+  detail:
+    Address: Quay 3, Harbour Town
+    Hours: Mon–Fri 8 AM–6 PM
+    Sat 9 AM–2 PM
+```
+
+On a `.story` page the same slot can take the place's facts: `Hours: {week-hours}` gives one item per line of the week, and the lines after the first continue the `Hours` item.
 
 `[ID]` prefixes and `defaultIcon:` require `marker: icon`. `columns:` needs a vertical list. Implementations warn when an `iconOnly` list has fewer brand icons than `maxItems`. `icons: true` is deprecated and reads as `marker: counter`.
 
@@ -1558,14 +1575,17 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{place}` | The place's `name:` | `Harbour Café` | its length |
 | `{address}` | The place's `address:` | `Quay 3, Harbour Town` | its length |
 | `{hours}` | The day's opening hours, one range per line (below) | `Lunch, 12–2 PM` | per line, below |
+| `{week-hours}` | The week's opening hours, one line per group of days (below) | `Mon–Fri 8 AM–6 PM` | per line, below |
 | `{opens}` | When the place opens that day | `08:00`, `8:00 AM` | 8 |
 | `{closes}` | When it closes that day | `18:00`, `6:00 PM` | 8 |
 
 **Calendar** variables (`{weekday}`, `{date}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from coordinates: the story's [place](#place-place)'s when it has them, else the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for the same coordinates. `checkStory` reports a sky or weather variable without either.
 
-**Place** variables (`{place}`, `{address}`, `{hours}`, `{opens}`, `{closes}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` needs the place's `address:`, the hours variables its `hours` block.
+**Place** variables (`{place}`, `{address}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` needs the place's `address:`, the hours variables its `hours` block.
 
 **`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
+
+**`{week-hours}`** writes the place's whole week, Monday first, one line per run of consecutive days with the same times: `Mo–Fr 8–18 Uhr`, `Sa 9–14 Uhr` / `Mon–Fri 8 AM–6 PM`, `Sat 9 AM–2 PM`. A run of one day names that day; several ranges on a line are comma-separated (`Do–Fr 12–14 Uhr, 17–22 Uhr`). Range labels are left out. Closed days are left out, so a page doesn't state them by hand and can't contradict the `hours` block. For `maxLength`, every line counts as 8 characters for its days plus 17 per range and 2 per comma.
 
 **Closed is not guessed either.** On a day the place is closed, `{opens}` and `{closes}` have no value: a preview shows the placeholder, a scheduled post doesn't go out.
 
@@ -1624,7 +1644,7 @@ A `.story` file must NOT contain: color values, typography values, slot definiti
 **File extension:** `.place`
 **Filename convention:** the place id (e.g., `harbour.place`), in `places/`
 
-A place is a site the brand's posts speak about: a café, a shop, a bar, an information office. It holds facts, not voice or design: where it is and when it's open. The area the brand is in as a whole stays the `.brand`'s [`location`](#location-block).
+A place is a site the brand's posts speak about: a café, a shop, a bar, an information office. It holds facts, not voice or design: where it is, how many people it holds and when it's open. The area the brand is in as a whole stays the `.brand`'s [`location`](#location-block).
 
 A site matters only if posts speak about it. A place without `hours` is one people don't walk in at set times: an office, a storage whose occasional events give their date and time on the event page.
 
@@ -1643,6 +1663,10 @@ hours
   thu-fri: Lunch 12:00-14:00, Evening 17:00-22:00
   sat:     09:00-14:00
   sun:     closed
+
+capacity
+  indoor:  40
+  outdoor: 16
 ```
 
 | Key | Type | Required | Description |
@@ -1654,6 +1678,7 @@ hours
 | `maps:` | URL | No | Link to the place on a map (`https://`) |
 | `context:` | string | No | Facts for AI writing: what the place is like, who comes, what it offers. Not voice, which belongs to `.identity` |
 | `hours` | block | No | Regular opening hours (below) |
+| `capacity` | block | No | How many people the place holds (below) |
 
 ### `hours` Block
 
@@ -1664,6 +1689,17 @@ One line per day or range of days: `DAYS: RANGES`.
 - **`closed`**, or a day not named: the place is closed that day.
 
 Only regular weekly hours. Holidays and one-off closures are not part of the file.
+
+### `capacity` Block
+
+How many people the place holds: seats, or standing room where people stand. One line per side, a whole number; at least one.
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `indoor:` | int | People inside |
+| `outdoor:` | int | People outside: a terrace, tables on the street |
+
+A side that isn't named is not stated, not zero. AI writing gets the capacity as a fact and never states a number the block doesn't give.
 
 ### Exclusion Rule
 
