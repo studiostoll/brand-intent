@@ -127,6 +127,12 @@ test('example blocks: topic, goal, when, single- and multi-line slot texts', () 
   assertEq(p.slots.map(s => s.samples), [[], [], [], ['Order now']], 'slot samples empty, value kept');
 });
 
+test('a credit slot needs no example: the implementation fills it', () => {
+  const p = withExamples(`example\n  label: A\n  primary: B\n  detail:\n    C\n`, `${SLOTS}\nslot credit\n  label: Credit\n  typography: caption\n  maxLength: 60\n`);
+  assertEq(p.slots.map(s => s.id), ['label', 'primary', 'detail', 'cta', 'credit'], 'credit slot parsed');
+  assertEq(p.examples[0].texts, { label: 'A', primary: 'B', detail: 'C' }, 'example without credit');
+});
+
 test('example may leave a slot out; a slot no example fills throws', () => {
   const p = withExamples(`example\n  label: A\n  primary: B\n  detail:\n    C\nexample\n  primary: D\n`);
   assertEq(p.examples[1].texts, { primary: 'D' }, 'partial example');

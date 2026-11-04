@@ -78,7 +78,7 @@ Contains: platform, dimensions, safe zones (danger/crop/comfort), grid, allowed 
 
 ### `.purpose`: Content Type Definition
 
-Contains: semantic slot definitions (primary, secondary, detail, meta, cta, label), typography and color per slot, sample content, length constraints, `scope`, `context`.
+Contains: semantic slot definitions (primary, secondary, detail, meta, cta, label, credit: attribution, never written by AI), typography and color per slot, sample content, length constraints, `scope`, `context`.
 
 **Semantic slots are roles, not positions:**
 - `primary` = main communicative act (headline, key message)

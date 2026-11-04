@@ -5,7 +5,7 @@
  * Throws on parse errors with file name and line number.
  */
 
-import type { SlotId } from './types';
+import { SLOT_IDS, type SlotId } from './types';
 import { parseIconRef, parseListItem, splitLabelledItem } from './icons';
 import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
@@ -154,7 +154,7 @@ export interface CountRange {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VALID_SLOTS = new Set<string>(['primary', 'secondary', 'detail', 'meta', 'cta', 'label']);
+const VALID_SLOTS = new Set<string>(SLOT_IDS);
 
 /** Map short font family names to CSS font-family strings. */
 function resolveFontFamily(name: string): string {
@@ -856,7 +856,8 @@ function resolveExamples(
   warnings: string[],
 ): ParsedExample[] {
   const byId = new Map(slots.map(s => [s.id, s]));
-  const contentSlots = slots.filter(s => !s.value && !s.iconOnly);
+  // A credit is filled by the implementation (a data source, a photo credit), so no example has to.
+  const contentSlots = slots.filter(s => !s.value && !s.iconOnly && s.id !== 'credit');
 
   if (examples.length > 0) {
     if (legacySamplesLine) throw new Error(`${fileName}:${legacySamplesLine}: slot "samples:" next to "example" blocks — move the texts into the examples`);

@@ -1140,11 +1140,14 @@ The following slot IDs are valid:
 | `primary` | Main communicative act (headline, key message) |
 | `secondary` | Supporting signal (subline, number, kicker) |
 | `detail` | Extended content (body text, list items) |
-| `meta` | Contextual information (date, attribution, caption) |
+| `meta` | Contextual information (date, place, caption) |
 | `cta` | Call to action |
 | `label` | Orientation marker (category badge, tag) |
+| `credit` | Attribution the content requires (data source, photo credit) |
 
 These names are fixed. They travel through the entire stack: a composition places `primary` without knowing what it contains; a purpose defines what `primary` means without knowing where it sits.
+
+`credit` is not editorial. It carries what a licence or a source asks to be named: a fixed `value:` (a photographer), or a text the implementation fills (the data source of a value on the page). No example has to fill it, and AI never writes it. It usually gets the brand's smallest style and its own place, apart from `meta`.
 
 ### `slot SLOTID` Block
 
@@ -1400,7 +1403,7 @@ Explicit row/column placement. Each slot is a single line:
 SLOTID  row N  cols N--M  ALIGN [VALIGN]
 ```
 
-- **SLOTID:** `primary`, `secondary`, `detail`, `meta`, `cta`, `label`
+- **SLOTID:** `primary`, `secondary`, `detail`, `meta`, `cta`, `label`, `credit`
 - **Row:** numeric (1-based) or keyword (`top`, `center`, `bottom`)
 - **Cols:** range `N--M` (1-based)
 - **Align:** `left` \| `center` \| `right`

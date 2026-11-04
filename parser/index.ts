@@ -89,3 +89,4 @@ export type { ParsedPlace, OpeningRange, OpeningDays, PlaceCapacity, Weekday } f
 export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';
+export { SLOT_IDS } from './types';

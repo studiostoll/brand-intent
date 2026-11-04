@@ -39,6 +39,14 @@ function assertThrows(fn: () => unknown, matcher: RegExp, label: string) {
 
 const comp = (body: string) => parseCompositionFile(`id: c\nmode: flow\nlogo: top left\n${body}`, 'c.composition');
 
+// ── credit slot ──────────────────────────────────────────────────────────────
+
+test('credit is a slot in a sticky bar and in the flow', () => {
+  const c = comp(`image: full\n\nsticky: bottom s\n  | credit left bottom\n\nflow:\n  | primary left\n  | credit left\n`);
+  assertEq(c.sticky[0].items.map(i => i.type === 'slot' ? i.id : i.type), ['credit'], 'sticky credit');
+  assertEq(c.flow?.items.filter(i => i.type === 'slot').map(i => i.type === 'slot' && i.id), ['primary', 'credit'], 'flow credit');
+});
+
 // ── panel inset ──────────────────────────────────────────────────────────────
 
 test('panel without inset has no inset flag', () => {

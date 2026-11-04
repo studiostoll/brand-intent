@@ -7,7 +7,7 @@
  * (purposes, compositions, formats, maxLength) live in `checkStory`.
  */
 
-import type { SlotId } from './types';
+import { SLOT_IDS, type SlotId } from './types';
 import type { ParsedPurpose } from './purposeParser';
 import { addressStreet, weekOpeningDays, type ParsedPlace } from './placeParser';
 
@@ -103,7 +103,7 @@ export interface ParsedStoryExamplePage {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VALID_SLOTS = new Set<string>(['primary', 'secondary', 'detail', 'meta', 'cta', 'label']);
+const VALID_SLOTS = new Set<string>(SLOT_IDS);
 const VARIABLE = /\{([a-z][a-z0-9-]*)\}/g;
 
 /** Variable names in a text, in order of appearance. */

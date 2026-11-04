@@ -3,7 +3,10 @@
 // needed by the four parsers.
 
 /** Semantic slot identifiers — fixed vocabulary. */
-export type SlotId = 'primary' | 'secondary' | 'detail' | 'meta' | 'cta' | 'label';
+export type SlotId = 'primary' | 'secondary' | 'detail' | 'meta' | 'cta' | 'label' | 'credit';
+
+/** Every valid slot id, in the order of the spec's table. */
+export const SLOT_IDS: readonly SlotId[] = ['primary', 'secondary', 'detail', 'meta', 'cta', 'label', 'credit'];
 
 /** Inset distances in px (screen) or mm (print). */
 export interface ZoneInsets {

@@ -8,7 +8,7 @@
  * Column names: 1=0, 2=1, 3=2, 4=3, 5=4, 6=5 (1-based in files, 0-based in output)
  */
 
-import type { SlotId } from './types';
+import { SLOT_IDS, type SlotId } from './types';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -164,7 +164,7 @@ export interface ParsedDivider {
 
 const GRID_Y_KEYWORDS = new Set<string>(['top', 'center', 'bottom']);
 
-const VALID_SLOTS = new Set<string>(['primary', 'secondary', 'detail', 'meta', 'cta', 'label']);
+const VALID_SLOTS = new Set<string>(SLOT_IDS);
 // Spacer names: 'auto' + any key from figma-tokens.json spacing (s, m, l, xl, etc.)
 // Parser accepts any alphanumeric name — validation against actual tokens happens at render time.
 
