@@ -94,6 +94,8 @@ export interface ParsedFlowRegion {
     position: string;  // e.g. 'bottom-left', 'top-right'
     widthFraction: number;
     heightFraction: number;
+    /** `inset`: the box keeps its size, its outer edges sit on the safe-area lines, equal padding inside. */
+    inset?: boolean;
   };
   /** Split: text occupies a fraction from one edge, image fills the rest. */
   split?: {
@@ -125,7 +127,15 @@ export interface ParsedFlowIcon {
   size: 's' | 'm' | 'l';
 }
 
-export type ParsedFlowItem = ParsedFlowSlot | ParsedSpacer | ParsedDivider | ParsedFlowIcon;
+/** The page photo as a flow item: its width is a share of the flow's width, its height follows the photo. */
+export interface ParsedFlowPhoto {
+  type: 'photo';
+  align: 'left' | 'center' | 'right';
+  /** Size token (s/m/l = 1/3, 1/2, 2/3 of the flow width). Default: 'm'. */
+  size: 's' | 'm' | 'l';
+}
+
+export type ParsedFlowItem = ParsedFlowSlot | ParsedSpacer | ParsedDivider | ParsedFlowIcon | ParsedFlowPhoto;
 
 export interface ParsedFlowSlot {
   type: 'slot';
@@ -427,12 +437,15 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       let split: ParsedFlowRegion['split'] = undefined;
 
       if (value.startsWith('panel')) {
-        // Parse: "panel <position> [<width>] [<height>]"
-        const parts = value.split(/\s+/);
+        // Parse: "panel <position> [<width>] [<height>] [inset]"
+        const all = value.split(/\s+/);
+        const inset = all.includes('inset');
+        const parts = all.filter(p => p !== 'inset');
         const pos = parts[1] ?? 'bottom-left';
         const wFrac = parts[2] ? parseFraction(parts[2], `${fileName}:${lineNum}`) : 2 / 3;
         const hFrac = parts[3] ? parseFraction(parts[3], `${fileName}:${lineNum}`) : wFrac;
-        panel = { position: pos, widthFraction: wFrac, heightFraction: hFrac };
+        if (parts.length > 4) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(4).join(' ')}" in panel (expected: panel <position> [<width>] [<height>] [inset])`);
+        panel = { position: pos, widthFraction: wFrac, heightFraction: hFrac, ...(inset ? { inset: true } : {}) };
       } else if (value.startsWith('split')) {
         // Parse: "split <edge> [<fraction>]"  — e.g. "split bottom 1/2"
         const parts = value.split(/\s+/);
@@ -473,7 +486,16 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         i++;
         const itemStr = nextLine.slice(1).trim();
         // Parse flow item syntax
-        if (itemStr.startsWith('icon')) {
+        if (itemStr === 'photo' || itemStr.startsWith('photo ')) {
+          const photoParts = itemStr.split(/\s+/);
+          const align = photoParts[1] ?? 'center';
+          const size = photoParts[2] ?? 'm';
+          if (!['left', 'center', 'right'].includes(align)) throw new Error(`${fileName}:${i + 1}: invalid photo align "${align}" (expected left, center, right)`);
+          if (!['s', 'm', 'l'].includes(size)) throw new Error(`${fileName}:${i + 1}: invalid photo size "${size}" (expected s, m, l)`);
+          if (photoParts.length > 3) throw new Error(`${fileName}:${i + 1}: unexpected "${photoParts.slice(3).join(' ')}" after photo (expected: photo ALIGN [SIZE])`);
+          if (flowItems.some(it => it.type === 'photo')) throw new Error(`${fileName}:${i + 1}: a flow has one photo at most`);
+          flowItems.push({ type: 'photo', align: align as ParsedFlowPhoto['align'], size: size as ParsedFlowPhoto['size'] });
+        } else if (itemStr.startsWith('icon')) {
           const iconParts = itemStr.split(/\s+/);
           const align = (iconParts[1] as 'left' | 'center' | 'right') ?? 'center';
           const size = (iconParts[2] as 's' | 'm' | 'l') ?? 'm';
@@ -559,6 +581,11 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   }
 
   // Validate required fields
+  if (flow?.items.some(it => it.type === 'photo')) {
+    // The flow photo is the page's image: there is no background photo
+    if (imageExplicit) throw new Error(`${fileName}: "image:" and a "| photo" flow item can't be combined (the flow photo is the page's image)`);
+    if (flow.panel || flow.split) throw new Error(`${fileName}: "| photo" is only allowed in a plain "flow:" (not in a panel or split)`);
+  }
   if (!image) image = 'full'; // default to full-bleed image
   if (!logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
   return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || undefined, icon, slots, sticky, flow, illustration };

@@ -5,7 +5,7 @@
  */
 
 import { parseStoryFile, checkStory, storyPlace, storyTextVariables } from '../parser/storyParser';
-import type { ParsedPlace } from '../parser/placeParser';
+import { addressStreet, type ParsedPlace } from '../parser/placeParser';
 import { parsePurposeFile } from '../parser/purposeParser';
 
 let pass = 0;
@@ -200,6 +200,21 @@ test('photo must exist when the brand lists them', () => {
   assertEq(checkStory(s, BRAND, 's.story'), [], 'no list, no check');
 });
 
+test('theme sets one page\'s colours and must exist when the brand lists them', () => {
+  const s = parse('page\n  purpose: notice\n\npage\n  purpose: notice\n  theme: Night\n');
+  assertEq(s.pages[0].theme, undefined, 'none');
+  assertEq(s.pages[1].theme, 'Night', 'named');
+  assertEq(checkStory(s, { ...BRAND, themes: ['Day'] }, 's.story'), ['s.story: page 2: theme "Night" does not exist'], 'unknown');
+  assertEq(checkStory(s, { ...BRAND, themes: ['Day', 'Night'] }, 's.story'), [], 'known');
+});
+
+test('an example page names the one photo its texts belong to', () => {
+  const s = parse('page\n  purpose: notice\n  photo: one, two\n\nexample\n  page 1\n    photo: two\n    primary: Two\n');
+  assertEq(s.examples[0].pages[0].photo, 'two', 'photo');
+  assertEq(checkStory(s, { ...BRAND, photos: ['one', 'three'] }, 's.story').slice(1), ['s.story: example 1, page 1: photo "two" does not exist'], 'unknown');
+  assertThrows(() => parse('page\n  purpose: notice\n\nexample\n  page 1\n    photo: one, two\n'), 'names one photo');
+});
+
 test('illustrations must exist when the brand lists them', () => {
   const s = parse('page\n  purpose: notice\n  illustration: one, missing\n');
   assertEq(checkStory(s, { ...BRAND, illustrations: ['one'] }, 's.story'), ['s.story: page 1: illustration "missing" does not exist'], 'problems');
@@ -238,7 +253,13 @@ test('place variables need what they show', () => {
   assertEq(checkStory(s, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{address}" needs an address: in place "harbour"'], 'address');
   const h = parse('page\n  purpose: notice\n  primary: {closes}\n');
   assertEq(checkStory(h, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{closes}" needs an hours block in place "harbour"'], 'hours');
-  assertThrows(() => parse('page\n  purpose: notice\n  primary: {opening}\n'), 'unknown variable "{opening}"');
+  const st = parse('page\n  purpose: notice\n  primary: {street}\n');
+  assertEq(checkStory(st, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{street}" needs an address: in place "harbour"'], 'street');
+  assertEq(addressStreet('Quay 3, Harbour Town'), 'Quay 3', 'street part');
+  const op = parse('page\n  purpose: notice\n  primary: {opening}\n');
+  assertEq(checkStory(op, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{opening}" needs an opening: in place "harbour"'], 'opening');
+  assertEq(checkStory(op, { ...BRAND, places: [{ ...HARBOUR, opening: '2026-11-28' }] }, 's.story'), [], 'opening given');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {opening-day}\n'), 'unknown variable "{opening-day}"');
 });
 
 test('{hours} counts as its lines for the place', () => {

@@ -168,6 +168,7 @@ function activate(context) {
             ['meta left', 'Meta text slot, left-aligned'],
             ['cta left', 'Call-to-action slot, left-aligned'],
             ['label left', 'Label badge slot, left-aligned'],
+            ['photo center m', 'Page photo in the flow, uncropped (no image: line)'],
           ]) {
             const item = new vscode.CompletionItem(s, vscode.CompletionItemKind.Field);
             item.detail = detail;
@@ -782,7 +783,7 @@ function activate(context) {
     'icon:': '**`icon:`** -- Icon slot position.\n\nSame syntax as `logo:` but for a decorative icon.\n\nIcons are always decorative -- set the icon in the `.purpose` file with `defaultIcon:`.',
     'grid:': '**`grid:`** -- Native grid declaration.\n\n`grid: rows cols` declares that this composition was designed for a specific grid.\nWhen the format\'s grid matches, column indices are used directly (no proportional mapping).',
     'mode:': '**`mode:`** -- Layout mode.\n\n`grid` = grid-based positioning. `flow` = content-driven reflow.',
-    'flow:': '**`flow:`** -- Flow region.\n\nBare `flow:` fills remaining space.\n`flow: panel bottom-left 2/3 1/1` creates a floating panel.\n`flow: split bottom 1/2` splits canvas -- text in specified fraction, image fills the rest.\n\nWith `image: full` + `split`, photo covers entire canvas and text overlays the split region.',
+    'flow:': '**`flow:`** -- Flow region.\n\nBare `flow:` fills remaining space.\n`flow: panel bottom-left 2/3 1/1` creates a floating panel; add `inset` to set it on the safe-area lines with equal padding.\n`flow: split bottom 1/2` splits canvas -- text in specified fraction, image fills the rest.\n\nWith `image: full` + `split`, photo covers entire canvas and text overlays the split region.',
     'sticky:': '**`sticky:`** -- Sticky bar.\n\n`sticky: top s` creates a small bar at the top.\nContains `| logo` and `| label` items.\n\nPositions: `top`, `bottom`, `left`, `right`. Sizes: `s`, `m`, `l`.',
     'primary': '**`primary`** -- Primary text slot.\n\nThe headline or main message. Usually largest and most prominent.',
     'secondary': '**`secondary`** -- Secondary text slot.\n\nSupporting text. Smaller than primary.',
@@ -963,9 +964,9 @@ function activate(context) {
             ['day-length}', 'Sunrise to sunset (needs location)'], ['moon}', 'Moon phase (needs location)'],
             ['temperature}', 'Highest temperature of the day (needs location)'], ['wind}', 'Strongest daytime wind, Beaufort (needs location)'],
             ['weather}', 'The day\'s condition (needs location)'],
-            ['place}', 'The place\'s name'], ['address}', 'The place\'s address'], ['hours}', 'The day\'s opening hours, one range per line'],
+            ['place}', 'The place\'s name'], ['address}', 'The place\'s address'], ['street}', 'Street and number: the address up to its first comma'], ['hours}', 'The day\'s opening hours, one range per line'],
             ['week-hours}', 'The week\'s opening hours, one line per group of days'],
-            ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day']], vscode.CompletionItemKind.Variable);
+            ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day'], ['opening}', 'The day the place opens (needs opening:)']], vscode.CompletionItemKind.Variable);
         }
         return items;
       }
@@ -989,7 +990,7 @@ function activate(context) {
         if (/^\w*$/.test(prefix)) {
           add([['id: ', 'Place identifier'], ['name: ', 'Name, as people say it'], ['address: ', 'Postal address'],
             ['latitude: ', 'Decimal degrees, north positive'], ['longitude: ', 'Decimal degrees, east positive'],
-            ['maps: ', 'Link to the place on a map'], ['context: ', 'Facts for AI writing'], ['hours', 'Regular opening hours'], ['capacity', 'People the place holds']], vscode.CompletionItemKind.Keyword);
+            ['maps: ', 'Link to the place on a map'], ['context: ', 'Facts for AI writing'], ['opening: ', 'YYYY-MM-DD: the day the place opens'], ['hours', 'Regular opening hours'], ['capacity', 'People the place holds']], vscode.CompletionItemKind.Keyword);
         } else if (/^ {2}\w*$/.test(prefix)) {
           const block = [...Array(position.line).keys()].reverse().map(i => document.lineAt(i).text).find(l => /^\S/.test(l));
           if (block?.trim() === 'capacity') {

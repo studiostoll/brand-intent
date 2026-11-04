@@ -9,7 +9,7 @@
 
 import type { SlotId } from './types';
 import type { ParsedPurpose } from './purposeParser';
-import { weekOpeningDays, type ParsedPlace } from './placeParser';
+import { addressStreet, weekOpeningDays, type ParsedPlace } from './placeParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -18,14 +18,14 @@ export type StoryVariable =
   | 'weekday' | 'date'
   | 'sunrise' | 'sunset' | 'day-length' | 'moon'
   | 'temperature' | 'wind' | 'weather'
-  | 'place' | 'address' | 'hours' | 'week-hours' | 'opens' | 'closes';
+  | 'place' | 'address' | 'street' | 'hours' | 'week-hours' | 'opens' | 'closes' | 'opening';
 
 /** Longest resolved form per variable (German and English), used for the `maxLength` check.
  *  `location`: the variable needs coordinates: the story's place's, else the brand's `location`
  *  block. `place`: it needs the story's
- *  place; `needs`: and that place's `address:` or `hours`. `{place}`, `{address}`, `{hours}` and
+ *  place; `needs`: and that place's `address:` or `hours`. `{place}`, `{address}`, `{street}`, `{hours}` and
  *  `{week-hours}` count at their length for that place (see `checkStory`). */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' }> = {
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening' }> = {
   weekday: { maxLength: 10 },                       // "Donnerstag"
   date: { maxLength: 13 },                          // "30. September"
   sunrise: { maxLength: 8, location: true },        // "12:59 PM"
@@ -37,10 +37,12 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   weather: { maxLength: 13, location: true },       // "teils bewölkt"
   place: { maxLength: 0, place: true },
   address: { maxLength: 0, place: true, needs: 'address' },
+  street: { maxLength: 0, place: true, needs: 'address' },
   hours: { maxLength: 0, place: true, needs: 'hours' },
   'week-hours': { maxLength: 0, place: true, needs: 'hours' },
   opens: { maxLength: 8, place: true, needs: 'hours' },   // "10:30 AM"
   closes: { maxLength: 8, place: true, needs: 'hours' },
+  opening: { maxLength: 13, place: true, needs: 'opening' }, // "30. September"
 };
 
 /** Longest form of one `{hours}` line without its label: "10:30 AM–10:30 PM". */
@@ -76,6 +78,8 @@ export interface ParsedStoryPage {
   /** Photo ids; override the purpose's `photo:` default for this page. Implementations pick one per
    *  story date, the same one every time for that date. */
   photos?: string[];
+  /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
+  theme?: string;
   /** Page topic: what this page adds to the story. */
   topic?: string;
   /** Fixed slot texts, may contain `{variable}`s. A slot the page doesn't name is open. */
@@ -92,6 +96,8 @@ export interface ParsedStoryExamplePage {
   /** 1-based page number. */
   page: number;
   topic?: string;
+  /** Photo id from the `.brand` that goes with this example's texts; overrides the page's photos. */
+  photo?: string;
   texts: Partial<Record<SlotId, string>>;
 }
 
@@ -236,11 +242,12 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     // Page lines (2-space)
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'illustration') currentPage.illustrations = read.value.split(',').map(id => id.trim()).filter(Boolean);
       else if (read?.key === 'photo') currentPage.photos = read.value.split(',').map(id => id.trim()).filter(Boolean);
+      else if (read?.key === 'theme') currentPage.theme = read.value;
       else if (read) currentPage.composition = read.value;
       continue;
     }
@@ -268,8 +275,12 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         throw new Error(`${fileName}:${lineNum}: expected "topic:" or "page N" in example, got "${line}"`);
       }
       if (indent === 4 && currentExamplePage) {
-        const read = readKey(line, lineNum, currentExamplePage, [], false);
+        const read = readKey(line, lineNum, currentExamplePage, ['photo'], false);
         if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 6; }
+        else if (read?.key === 'photo') {
+          if (read.value.includes(',')) throw new Error(`${fileName}:${lineNum}: an example page names one photo, the one its texts belong to`);
+          currentExamplePage.photo = read.value;
+        }
         continue;
       }
       throw new Error(`${fileName}:${lineNum}: unexpected indent in example (page N at 2 spaces, its keys at 4)`);
@@ -294,7 +305,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       const at = `${fileName}:${examplePageLines.get(ep)}`;
       const page = pages[ep.page - 1];
       if (!page) throw new Error(`${at}: example fills page ${ep.page}, the story has ${pages.length}`);
-      if (Object.keys(ep.texts).length === 0 && !ep.topic) throw new Error(`${at}: example page ${ep.page} is empty`);
+      if (Object.keys(ep.texts).length === 0 && !ep.topic && !ep.photo) throw new Error(`${at}: example page ${ep.page} is empty`);
       for (const slot of Object.keys(ep.texts)) {
         if (page.texts[slot as SlotId] !== undefined) throw new Error(`${at}: slot "${slot}" is fixed on page ${ep.page} and takes no example text`);
       }
@@ -335,6 +346,7 @@ function longestText(text: string, place: ParsedPlace | undefined): string {
   return text.replace(VARIABLE, (_, v: string) => {
     if (v === 'place') return 'x'.repeat(place?.name.length ?? 0);
     if (v === 'address') return 'x'.repeat(place?.address?.length ?? 0);
+    if (v === 'street') return 'x'.repeat(place?.address ? addressStreet(place.address).length : 0);
     if (v === 'hours') {
       const days = Object.values(place?.hours ?? {});
       const lines = Math.max(1, ...days.map(r => r.length));
@@ -358,7 +370,7 @@ function longestText(text: string, place: ParsedPlace | undefined): string {
  *  place that place variables need. */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; location?: boolean; places?: ParsedPlace[] },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[] },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -378,7 +390,7 @@ export function checkStory(
         if (variable?.location && brand.location === false && place?.latitude === undefined) say(`${where}: variable "{${v}}" needs a location block in the .brand`);
         if (variable?.place && brand.places && !(story.place && !place)) {
           if (!place) say(`${where}: variable "{${v}}" needs a place: ${brand.places.length > 1 ? 'name it with "place:"' : 'add a .place file'}`);
-          else if (variable.needs && !place[variable.needs]) say(`${where}: variable "{${v}}" needs ${variable.needs === 'hours' ? 'an hours block' : 'an address:'} in place "${place.id}"`);
+          else if (variable.needs && !place[variable.needs]) say(`${where}: variable "{${v}}" needs ${{ hours: 'an hours block', address: 'an address:', opening: 'an opening:' }[variable.needs]} in place "${place.id}"`);
         }
       }
       const longest = longestText(text, place);
@@ -404,12 +416,14 @@ export function checkStory(
     for (const id of page.photos ?? []) {
       if (brand.photos && !brand.photos.includes(id)) say(`${where}: photo "${id}" does not exist`);
     }
+    if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     checkTexts(where, purpose, page.texts);
   });
   story.examples.forEach((ex, i) => {
     for (const ep of ex.pages) {
       const purpose = purposes.get(story.pages[ep.page - 1].purpose);
       if (purpose) checkTexts(`example ${i + 1}, page ${ep.page}`, purpose, ep.texts);
+      if (ep.photo && brand.photos && !brand.photos.includes(ep.photo)) say(`example ${i + 1}, page ${ep.page}: photo "${ep.photo}" does not exist`);
     }
   });
   return problems;

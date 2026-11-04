@@ -15,7 +15,7 @@
       "name": "comment.line.number-sign.brand-intent-place"
     },
     "top-field": {
-      "match": "^(id|name|address|latitude|longitude|maps|context)(:)\\s+(.*)",
+      "match": "^(id|name|address|latitude|longitude|maps|context|opening)(:)\\s+(.*)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-place" },
         "2": { "name": "punctuation.separator.brand-intent-place" },
@@ -51,7 +51,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id|name|address|latitude|longitude|maps|context|hours|capacity)(?=:|\\s|$)",
+      "match": "^(id|name|address|latitude|longitude|maps|context|opening|hours|capacity)(?=:|\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-place" }
       }

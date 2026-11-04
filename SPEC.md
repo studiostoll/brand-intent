@@ -1441,7 +1441,7 @@ sticky: bottom s
 
 **Types:**
 - `flow:` default fill
-- `flow: panel POSITION WIDTH HEIGHT` floating panel (e.g., `panel bottom-left 2/3 1/1`)
+- `flow: panel POSITION WIDTH HEIGHT [inset]` floating panel (e.g., `panel bottom-left 2/3 1/1`). Without `inset` the panel sits on the canvas edges. With `inset` the box keeps its size, its outer edges sit on the safe-area lines (aligned with a logo in the same corner), and the padding inside is equal on all sides.
 - `flow: split EDGE FRACTION` split layout (e.g., `split bottom 1/2`)
 
 **Properties** (indented, no pipe):
@@ -1455,6 +1455,7 @@ sticky: bottom s
 - `| SLOTID ALIGN [VALIGN]` text slot with alignment
 - `| logo ALIGN [SIZE]` logo
 - `| icon ALIGN [SIZE]` icon
+- `| photo ALIGN [SIZE]` the page photo inside the flow, uncropped (ALIGN default `center`, SIZE default `m`). Its width is a share of the flow width (`s` 1/3, `m` 1/2, `l` 2/3), its height follows the photo's aspect; an app may shrink it when the flow runs out of room. The flow photo is the page's image: there is no background photo, so `image:` must not be written, and only a plain `flow:` (no panel or split) takes one. One per flow. Suits cut-outs (packshots) on the ground colour.
 
 ```yaml
 # panel.composition - flow mode
@@ -1544,6 +1545,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `composition:` | string | No | Composition id; must be one of the purpose's `compositions:`. When omitted, implementations pick one as for a new page |
 | `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. One id always shows that illustration; with several, implementations pick one per story date, the same one every time for that date, so a preview and the posted page match. When omitted, the purpose's `illustration:` applies |
 | `photo:` | comma list | No | Photo ids from the `.brand`. This page starts with one of them instead of the purpose's `photo:` list; with several, implementations pick one per story date, the same one every time for that date (like `illustration:`). `checkStory` reports an unknown id. |
+| `theme:` | string | No | Theme name from the `.brand`. This page uses that theme instead of the colours the story starts with (the first page's purpose `palette:`). `checkStory` reports an unknown theme |
 | `topic:` | string | No | Page topic: what this page adds to the story |
 | `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
 
@@ -1574,20 +1576,22 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{weather}` | The day's condition, one of nine (below) | `teils bewölkt`, `partly cloudy` | 13 |
 | `{place}` | The place's `name:` | `Harbour Café` | its length |
 | `{address}` | The place's `address:` | `Quay 3, Harbour Town` | its length |
+| `{street}` | The address up to its first comma: street and number | `Quay 3` | its length |
 | `{hours}` | The day's opening hours, one range per line (below) | `Lunch, 12–2 PM` | per line, below |
 | `{week-hours}` | The week's opening hours, one line per group of days (below) | `Mon–Fri 8 AM–6 PM` | per line, below |
 | `{opens}` | When the place opens that day | `08:00`, `8:00 AM` | 8 |
 | `{closes}` | When it closes that day | `18:00`, `6:00 PM` | 8 |
+| `{opening}` | The day the place opens: its `opening:`, day and month | `28. November`, `28 November` | 13 |
 
 **Calendar** variables (`{weekday}`, `{date}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from coordinates: the story's [place](#place-place)'s when it has them, else the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for the same coordinates. `checkStory` reports a sky or weather variable without either.
 
-**Place** variables (`{place}`, `{address}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` needs the place's `address:`, the hours variables its `hours` block.
+**Place** variables (`{place}`, `{address}`, `{street}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`, `{opening}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` and `{street}` need the place's `address:`, the hours variables its `hours` block, `{opening}` its `opening:`.
 
 **`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
 
 **`{week-hours}`** writes the place's whole week, Monday first, one line per run of consecutive days with the same times: `Mo–Fr 8–18 Uhr`, `Sa 9–14 Uhr` / `Mon–Fri 8 AM–6 PM`, `Sat 9 AM–2 PM`. A run of one day names that day; several ranges on a line are comma-separated (`Do–Fr 12–14 Uhr, 17–22 Uhr`). Range labels are left out. Closed days are left out, so a page doesn't state them by hand and can't contradict the `hours` block. For `maxLength`, every line counts as 8 characters for its days plus 17 per range and 2 per comma.
 
-**Closed is not guessed either.** On a day the place is closed, `{opens}` and `{closes}` have no value: a preview shows the placeholder, a scheduled post doesn't go out.
+**Closed is not guessed either.** On a day the place is closed, `{opens}` and `{closes}` have no value: a preview shows the placeholder, a scheduled post doesn't go out. Before a place's `opening:` it is closed every day: `{hours}` gives `geschlossen` / `closed`, `{opens}` and `{closes}` have no value. `{week-hours}` still shows the regular week, so a page can announce the hours it will have.
 
 Times are local time in the time zone the story is posted in. Moon phases: new moon, waxing crescent, first quarter, waxing gibbous, full moon, waning gibbous, last quarter, waning crescent. Conditions: clear, partly cloudy, cloudy, fog, rain, sleet, snow, hail, thunderstorm. Implementations translate both into the brand's language.
 
@@ -1624,6 +1628,7 @@ example
 | `topic:` | 2 | Story topic for this example |
 | `page N` | 2 | Texts for page N (1-based) |
 | `topic:` | 4 | Page topic for page N |
+| `photo:` | 4 | One photo id from the `.brand` that belongs to this example's texts (the coffee bag its name is about). It overrides the page's `photo:` while the story is filled from this example |
 | `SLOTID:` | 4 | Text for an open slot of page N; a bare `SLOTID:` takes the following 6-space lines |
 
 **Rules:**
@@ -1677,6 +1682,7 @@ capacity
 | `latitude:` / `longitude:` | number | No | Decimal degrees, both or neither. Sky and weather of the place's stories use them instead of the brand's `location` |
 | `maps:` | URL | No | Link to the place on a map (`https://`) |
 | `context:` | string | No | Facts for AI writing: what the place is like, who comes, what it offers. Not voice, which belongs to `.identity` |
+| `opening:` | date | No | `YYYY-MM-DD`: the day a new place opens. Before it the place is closed every day (see [Variables](#variables)), and AI writing treats it as not open yet. `{opening}` shows it |
 | `hours` | block | No | Regular opening hours (below) |
 | `capacity` | block | No | How many people the place holds (below) |
 

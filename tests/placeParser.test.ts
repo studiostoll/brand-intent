@@ -4,7 +4,7 @@
  * Run: npm test
  */
 
-import { parsePlaceFile, weekdayOf, weekOpeningDays } from '../parser/placeParser';
+import { parsePlaceFile, isOpenYet, weekdayOf, weekOpeningDays } from '../parser/placeParser';
 
 let pass = 0;
 let fail = 0;
@@ -90,6 +90,16 @@ test('bad values', () => {
   assertThrows(() => parse('maps: maps.example.com\n'), 'maps must be an https link');
   assertThrows(() => parse('hours\n  mon: 10:00-12:00\nhours\n'), 'duplicate hours block');
   assertThrows(() => parse('  mon: 10:00-12:00\n'), 'unexpected indent');
+});
+
+test('opening', () => {
+  const p = parse('opening: 2026-11-28\n');
+  assertEq(p.opening, '2026-11-28', 'parsed');
+  assertEq(isOpenYet(p, '2026-11-27'), false, 'day before');
+  assertEq(isOpenYet(p, '2026-11-28'), true, 'the day');
+  assertEq(isOpenYet(parse(''), '2020-01-01'), true, 'no opening: always');
+  assertThrows(() => parse('opening: 28.11.2026\n'), 'opening must be a date YYYY-MM-DD');
+  assertThrows(() => parse('opening: 2026-02-30\n'), 'opening must be a date');
 });
 
 test('capacity', () => {

@@ -40,6 +40,8 @@ export interface ParsedPlace {
   maps?: string;
   /** Facts about the place for AI writing: what it is like, who comes, what it offers. */
   context?: string;
+  /** `YYYY-MM-DD`: the day the place opens. Before it the place is closed every day, whatever `hours` says. */
+  opening?: string;
   /** Regular opening hours per weekday, ranges in order. Undefined = the place has no opening hours.
    *  A weekday the block doesn't name is closed. */
   hours?: Partial<Record<Weekday, OpeningRange[]>>;
@@ -61,7 +63,7 @@ export interface OpeningDays {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const KEYS = new Set(['id', 'name', 'address', 'latitude', 'longitude', 'maps', 'context']);
+const KEYS = new Set(['id', 'name', 'address', 'latitude', 'longitude', 'maps', 'context', 'opening']);
 const CAPACITY_KEYS = new Set(['indoor', 'outdoor']);
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
 const RANGE = /^(?:(.+?)\s+)?(\d{2}:\d{2})-(\d{2}:\d{2})$/;
@@ -79,6 +81,12 @@ function parseDays(spec: string): Weekday[] | null {
     if (i === to) break;
   }
   return days;
+}
+
+/** A real calendar date written YYYY-MM-DD. */
+function isDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  return new Date(`${value}T12:00:00Z`).toISOString().slice(0, 10) === value;
 }
 
 // ── Main parser ───────────────────────────────────────────────────────────────
@@ -174,6 +182,7 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
     return n;
   };
   if (raw['maps'] && !/^https:\/\/\S+$/.test(raw['maps'].value)) throw new Error(`${fileName}:${raw['maps'].line}: maps must be an https link`);
+  if (raw['opening'] && !isDate(raw['opening'].value)) throw new Error(`${fileName}:${raw['opening'].line}: opening must be a date YYYY-MM-DD, got "${raw['opening'].value}"`);
   // Monday first; closed days stay out: a day that isn't named is closed
   const days = hours && Object.fromEntries(WEEKDAYS.filter(d => hours![d]?.length).map(d => [d, hours![d]!])) as Partial<Record<Weekday, OpeningRange[]>>;
 
@@ -185,6 +194,7 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
     ...(raw['latitude'] ? { latitude: degrees('latitude', 90), longitude: degrees('longitude', 180) } : {}),
     ...(raw['maps'] ? { maps: raw['maps'].value } : {}),
     ...(raw['context'] ? { context: raw['context'].value } : {}),
+    ...(raw['opening'] ? { opening: raw['opening'].value } : {}),
     ...(days ? { hours: days } : {}),
     ...(capacity ? { capacity } : {}),
   };
@@ -205,6 +215,16 @@ export function weekOpeningDays(hours: Partial<Record<Weekday, OpeningRange[]>>)
     prev = day;
   }
   return lines;
+}
+
+/** Whether the place is open on a YYYY-MM-DD date by its `opening:`: false before the day it opens. */
+export function isOpenYet(place: Pick<ParsedPlace, 'opening'>, date: string): boolean {
+  return !place.opening || date >= place.opening;
+}
+
+/** The street part of an address, up to its first comma: "Quay 3" of "Quay 3, Harbour Town". */
+export function addressStreet(address: string): string {
+  return address.split(',')[0].trim();
 }
 
 /** The weekday of a YYYY-MM-DD date. */

@@ -21,6 +21,7 @@
     { "include": "#flow-property" },
     { "include": "#spacer" },
     { "include": "#divider" },
+    { "include": "#flow-photo" },
     { "include": "#flow-icon" },
     { "include": "#sticky-logo" },
     { "include": "#grouped-slot" },
@@ -133,13 +134,14 @@
       }
     },
     "flow-panel": {
-      "match": "^(flow:)\\s+(panel)\\s+(\\S+)(?:\\s+(\\d+/\\d+))?(?:\\s+(\\d+/\\d+))?",
+      "match": "^(flow:)\\s+(panel)\\s+(\\S+)(?:\\s+(\\d+/\\d+))?(?:\\s+(\\d+/\\d+))?(?:\\s+(inset))?",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-composition" },
         "2": { "name": "entity.name.tag.brand-intent-composition" },
         "3": { "name": "variable.parameter.brand-intent-composition" },
         "4": { "name": "constant.numeric.brand-intent-composition" },
-        "5": { "name": "constant.numeric.brand-intent-composition" }
+        "5": { "name": "constant.numeric.brand-intent-composition" },
+        "6": { "name": "keyword.other.brand-intent-composition" }
       }
     },
     "flow-split": {
@@ -179,6 +181,14 @@
       "captures": {
         "1": { "name": "support.type.brand-intent-composition" },
         "2": { "name": "entity.name.tag.brand-intent-composition" }
+      }
+    },
+    "flow-photo": {
+      "match": "^\\s+\\|\\s+(photo)(?:\\s+(left|center|right))?(?:\\s+(s|m|l))?",
+      "captures": {
+        "1": { "name": "keyword.other.brand-intent-composition" },
+        "2": { "name": "variable.parameter.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
       }
     },
     "flow-icon": {
