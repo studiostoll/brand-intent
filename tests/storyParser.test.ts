@@ -194,6 +194,15 @@ test('photo names one or more ids per page', () => {
   assertEq(s.pages[2].photos, undefined, 'none');
 });
 
+test('photo: camera asks for a photo taken now', () => {
+  const s = parse('page\n  purpose: notice\n  photo: camera\n');
+  assertEq([s.pages[0].camera, s.pages[0].photos], [true, undefined], 'camera');
+  assertThrows(() => parse('page\n  purpose: notice\n  photo: camera, one\n'), 'stands alone');
+  const noCamera = { ...BRAND, purposes: BRAND.purposes.map(p => ({ ...p, camera: false })) };
+  assertEq(checkStory(s, noCamera, 's.story'), ['s.story: page 1: photo: camera, but purpose "notice" has camera: false'], 'purpose without camera');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'ok');
+});
+
 test('photo must exist when the brand lists them', () => {
   const s = parse('page\n  purpose: notice\n  photo: missing\n');
   assertEq(checkStory(s, { ...BRAND, photos: ['one'] }, 's.story'), ['s.story: page 1: photo "missing" does not exist'], 'unknown');

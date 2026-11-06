@@ -83,6 +83,9 @@ export interface ParsedStoryPage {
   /** Photo ids; override the purpose's `photo:` default for this page. Implementations pick one per
    *  story date, the same one every time for that date. */
   photos?: string[];
+  /** `photo: camera`: the page starts without a photo and asks for one taken now. Implementations offer the
+   *  camera in its photo region. Neither the page's nor the purpose's photo list applies. */
+  camera?: true;
   /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
   theme?: string;
   /** Page topic: what this page adds to the story. */
@@ -259,7 +262,13 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'illustration') currentPage.illustrations = read.value.split(',').map(id => id.trim()).filter(Boolean);
-      else if (read?.key === 'photo') currentPage.photos = read.value.split(',').map(id => id.trim()).filter(Boolean);
+      else if (read?.key === 'photo') {
+        const ids = read.value.split(',').map(id => id.trim()).filter(Boolean);
+        if (ids.includes('camera')) {
+          if (ids.length > 1) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without photo ids`);
+          currentPage.camera = true;
+        } else currentPage.photos = ids;
+      }
       else if (read?.key === 'theme') currentPage.theme = read.value;
       else if (read?.key === 'repeat') {
         const m = /^(\d+)\s*-\s*(\d+)$/.exec(read.value);
@@ -454,6 +463,7 @@ export function checkStory(
     for (const id of page.photos ?? []) {
       if (brand.photos && !brand.photos.includes(id)) say(`${where}: photo "${id}" does not exist`);
     }
+    if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     checkTexts(where, purpose, page.texts);
   });
