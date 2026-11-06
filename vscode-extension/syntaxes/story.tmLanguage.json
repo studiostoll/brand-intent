@@ -17,7 +17,7 @@
       "name": "comment.line.number-sign.brand-intent-story"
     },
     "top-field": {
-      "match": "^(id:|format:|scrim:|place:)\\s+(.*)",
+      "match": "^(id:|format:|scrim:|place:|when:)\\s+(.*)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-story" },
         "2": { "name": "entity.name.type.brand-intent-story" }
@@ -60,7 +60,7 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|format:|topic:|scrim:|place:|page|example)(?=\\s|$)",
+          "match": "^(id:|name:|format:|topic:|scrim:|place:|when:|page|example)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-story" }
           }

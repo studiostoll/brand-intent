@@ -934,7 +934,7 @@ photo-look
 
 ### `windows` Block
 
-Named yearly date windows. Optional. Content that only fits part of the year references a window by name with `when:`: purpose [`example`](#example-block) blocks and brand photos. Content without a window fits all year.
+Named yearly date windows. Optional. Content that only fits part of the year references a window by name with `when:`: purpose [`example`](#example-block) blocks, brand photos and [stories](#story-story). Content without a window fits all year.
 
 ```yaml
 windows
@@ -1537,6 +1537,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `topic:` | string | No | Story topic: what the whole story is about, one sentence. People can change it per story; it guides AI writing and review on every page |
 | `scrim:` | `none` | No | No [scrim](#photo-look-block) on any page of the story, whatever the brand and the pages' purposes declare |
 | `place:` | string | No | [Place](#place-place) id the story speaks for. When omitted and the brand has exactly one place, the story speaks for that one; with several places, it speaks for the brand in general (sky and weather use the `.brand` `location`, place variables are not available) |
+| `when:` | string | No | Name of a `.brand` [`windows`](#windows-block) entry the story fits. Implementations offer it as a template only in season. Absent: all year |
 | `page` | block | Yes (1+) | One page (repeatable). Order in the file = order in the story |
 | `example` | block | No | Texts for the open slots of the pages, about one story topic (repeatable) |
 
@@ -1751,7 +1752,7 @@ A parser should warn when:
 - The same context text appears in 3+ purpose files (belongs upstream)
 - A `slot` references a `typography` style not defined in `.brand`
 - A `slot` references a `color` not defined as a theme slot
-- An example `when:` references a window not defined in `.brand`
+- An example or story `when:` references a window not defined in `.brand`
 - An example `goal:` references a goal not defined in `.identity`
 - A `.purpose` still uses deprecated slot `samples:`
 - An `archetypes` entry references a non-existent `.composition` file

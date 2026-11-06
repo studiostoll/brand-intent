@@ -64,6 +64,8 @@ export interface ParsedStory {
   scrim?: 'none';
   /** Place id the story speaks for. Undefined = the brand's only place, if it has exactly one. */
   place?: string;
+  /** Name of a `.brand` date window the story fits. Undefined = all year. */
+  when?: string;
   pages: ParsedStoryPage[];
   /** Example fills for the open slots, one story topic each. */
   examples: ParsedStoryExample[];
@@ -123,6 +125,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   let topic: string | undefined;
   let scrim: 'none' | undefined;
   let place: string | undefined;
+  let when: string | undefined;
   const pages: (ParsedStoryPage & { line: number; keys: Set<string> })[] = [];
   const examples: (ParsedStoryExample & { line: number })[] = [];
 
@@ -222,6 +225,11 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       const colonIdx = line.indexOf(':');
       const key = colonIdx === -1 ? line : line.slice(0, colonIdx).trim();
       const value = colonIdx === -1 ? '' : line.slice(colonIdx + 1).trim();
+      if (key === 'when') {
+        if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid when "${value}" (expected the name of one .brand window)`);
+        when = value;
+        continue;
+      }
       if (key === 'id' || key === 'name' || key === 'format' || key === 'topic' || key === 'place') {
         if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
         if (key === 'id') id = value;
@@ -322,6 +330,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     topic,
     ...(scrim ? { scrim } : {}),
     ...(place ? { place } : {}),
+    ...(when ? { when } : {}),
     pages: pages.map(({ line: _line, keys: _keys, ...p }) => p),
     examples: examples.map(({ line: _line, ...ex }) => ({
       ...ex,
@@ -370,7 +379,7 @@ function longestText(text: string, place: ParsedPlace | undefined): string {
  *  place that place variables need. */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[] },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[]; windows?: string[] },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -378,6 +387,7 @@ export function checkStory(
   if (!brand.formats.includes(story.format)) say(`format "${story.format}" does not exist`);
   const place = brand.places ? storyPlace(story, brand.places) : undefined;
   if (brand.places && story.place && !place) say(`place "${story.place}" does not exist`);
+  if (brand.windows && story.when && !brand.windows.includes(story.when)) say(`when "${story.when}" is not a window in the .brand`);
 
   const purposes = new Map(brand.purposes.map(p => [p.id, p]));
   const checkTexts = (where: string, purpose: ParsedPurpose, texts: Partial<Record<SlotId, string>>) => {

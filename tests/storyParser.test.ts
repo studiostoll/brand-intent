@@ -239,6 +239,16 @@ test('place variables need a place', () => {
   assertEq(checkStory(s, { ...BRAND, places: [HARBOUR, QUAY] }, 's.story'), ['s.story: page 1: variable "{place}" needs a place: name it with "place:"'], 'several places');
 });
 
+test('when: names the window the story fits', () => {
+  const s = parse('when: christmas\npage\n  purpose: notice\n');
+  assertEq(s.when, 'christmas', 'parsed');
+  assertEq('when' in parse('page\n  purpose: notice\n'), false, 'absent');
+  assertThrows(() => parse('when: Christmas Time\npage\n  purpose: notice\n'), 'invalid when');
+  assertEq(checkStory(s, { ...BRAND, windows: ['christmas'] }, 's.story'), [], 'known window');
+  assertEq(checkStory(s, { ...BRAND, windows: [] }, 's.story'), ['s.story: when "christmas" is not a window in the .brand'], 'unknown window');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked when unknown');
+});
+
 test('place: names the story\'s place', () => {
   const s = parse('place: quay\n\npage\n  purpose: notice\n  primary: {opens}\n');
   assertEq(s.place, 'quay', 'parsed');
