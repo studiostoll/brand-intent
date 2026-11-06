@@ -1551,6 +1551,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `photo:` | comma list | No | Photo ids from the `.brand`. This page starts with one of them instead of the purpose's `photo:` list; with several, implementations pick one per story date, the same one every time for that date (like `illustration:`). `checkStory` reports an unknown id. |
 | `theme:` | string | No | Theme name from the `.brand`. This page uses that theme instead of the colours the story starts with (the first page's purpose `palette:`). `checkStory` reports an unknown theme |
 | `topic:` | string | No | Page topic: what this page adds to the story |
+| `repeat:` | `MIN-MAX` | No | The page is a [page list](#page-lists): between MIN and MAX copies of it in a row, e.g. `2-6`. 1 ≤ MIN ≤ MAX. At most one page per story |
 | `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
 
 Every slot of the purpose is one of three kinds on a page:
@@ -1562,6 +1563,23 @@ Every slot of the purpose is one of three kinds on a page:
 | Open | slot not named | Filled from the story's examples, by the person, or by AI writing |
 
 A slot with `value:` in the purpose is fixed there and is never named on a page.
+
+### Page lists
+
+A page with `repeat: MIN-MAX` stands for a run of item pages: the spots of a listicle, the breads of the week. A story starts with MIN copies of it, or with as many as its example fills. People can add copies up to MAX, remove them down to MIN and reorder them within the list; every other page of the story stays where the file puts it.
+
+```yaml
+page
+  purpose: listicle-cover
+  primary: {count} spots for a rainy day
+
+page
+  purpose: listicle-item
+  repeat:  3-8
+  label:   {n}
+```
+
+`{n}` is a copy's position in the list, `{count}` the number of copies; implementations update both as copies are added, removed or moved. A slot that holds `{n}` or `{count}` is fixed like any page text, so the number can't be typed over.
 
 ### Variables
 
@@ -1586,8 +1604,10 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{opens}` | When the place opens that day | `08:00`, `8:00 AM` | 8 |
 | `{closes}` | When it closes that day | `18:00`, `6:00 PM` | 8 |
 | `{opening}` | The day the place opens: its `opening:`, day and month | `28. November`, `28 November` | 13 |
+| `{n}` | The page's position in its [page list](#page-lists); only on the page with `repeat:` | `3` | 2 |
+| `{count}` | How many pages the page list has; on any page of a story with a page list | `5` | 2 |
 
-**Calendar** variables (`{weekday}`, `{date}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from coordinates: the story's [place](#place-place)'s when it has them, else the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for the same coordinates. `checkStory` reports a sky or weather variable without either.
+**Calendar** variables (`{weekday}`, `{date}`) and **list** variables (`{n}`, `{count}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from coordinates: the story's [place](#place-place)'s when it has them, else the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for the same coordinates. `checkStory` reports a sky or weather variable without either.
 
 **Place** variables (`{place}`, `{address}`, `{street}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`, `{opening}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` and `{street}` need the place's `address:`, the hours variables its `hours` block, `{opening}` its `opening:`.
 
@@ -1636,7 +1656,7 @@ example
 | `SLOTID:` | 4 | Text for an open slot of page N; a bare `SLOTID:` takes the following 6-space lines |
 
 **Rules:**
-- `page N` must exist in the story; each page appears at most once per example.
+- `page N` must exist in the story; each page appears at most once per example. A [page list](#page-lists)'s page may appear several times, once per copy in order, up to its MAX; the example then starts the story with that many copies.
 - An example fills only open slots: a slot fixed on the page takes no example text.
 - An example may leave pages or slots out; they stay open.
 - The purpose's slot limits (`maxLength`, list `maxItems`) apply to page and example texts alike; `words:` and `sentences:` are guidance as for any text in the slot.

@@ -18,14 +18,15 @@ export type StoryVariable =
   | 'weekday' | 'date'
   | 'sunrise' | 'sunset' | 'day-length' | 'moon'
   | 'temperature' | 'wind' | 'weather'
-  | 'place' | 'address' | 'street' | 'hours' | 'week-hours' | 'opens' | 'closes' | 'opening';
+  | 'place' | 'address' | 'street' | 'hours' | 'week-hours' | 'opens' | 'closes' | 'opening'
+  | 'n' | 'count';
 
 /** Longest resolved form per variable (German and English), used for the `maxLength` check.
  *  `location`: the variable needs coordinates: the story's place's, else the brand's `location`
  *  block. `place`: it needs the story's
  *  place; `needs`: and that place's `address:` or `hours`. `{place}`, `{address}`, `{street}`, `{hours}` and
  *  `{week-hours}` count at their length for that place (see `checkStory`). */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening' }> = {
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; list?: true }> = {
   weekday: { maxLength: 10 },                       // "Donnerstag"
   date: { maxLength: 13 },                          // "30. September"
   sunrise: { maxLength: 8, location: true },        // "12:59 PM"
@@ -43,6 +44,8 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   opens: { maxLength: 8, place: true, needs: 'hours' },   // "10:30 AM"
   closes: { maxLength: 8, place: true, needs: 'hours' },
   opening: { maxLength: 13, place: true, needs: 'opening' }, // "30. September"
+  n: { maxLength: 2, list: true },                  // "10": the page's position in its page list
+  count: { maxLength: 2, list: true },              // "10": how many pages the page list has
 };
 
 /** Longest form of one `{hours}` line without its label: "10:30 AM–10:30 PM". */
@@ -84,6 +87,8 @@ export interface ParsedStoryPage {
   theme?: string;
   /** Page topic: what this page adds to the story. */
   topic?: string;
+  /** `repeat: MIN-MAX`: the page is a page list, between `min` and `max` copies of it in a row. At most one per story. */
+  repeat?: { min: number; max: number };
   /** Fixed slot texts, may contain `{variable}`s. A slot the page doesn't name is open. */
   texts: Partial<Record<SlotId, string>>;
 }
@@ -95,7 +100,7 @@ export interface ParsedStoryExample {
 }
 
 export interface ParsedStoryExamplePage {
-  /** 1-based page number. */
+  /** 1-based page number in the file. A page list's page may appear several times: one entry per copy, in order. */
   page: number;
   topic?: string;
   /** Photo id from the `.brand` that goes with this example's texts; overrides the page's photos. */
@@ -250,12 +255,19 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     // Page lines (2-space)
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme', 'repeat'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'illustration') currentPage.illustrations = read.value.split(',').map(id => id.trim()).filter(Boolean);
       else if (read?.key === 'photo') currentPage.photos = read.value.split(',').map(id => id.trim()).filter(Boolean);
       else if (read?.key === 'theme') currentPage.theme = read.value;
+      else if (read?.key === 'repeat') {
+        const m = /^(\d+)\s*-\s*(\d+)$/.exec(read.value);
+        const min = m ? parseInt(m[1], 10) : 0;
+        const max = m ? parseInt(m[2], 10) : 0;
+        if (!m || min < 1 || max < min) throw new Error(`${fileName}:${lineNum}: invalid repeat "${read.value}" (expected MIN-MAX, e.g. 2-6, with 1 <= MIN <= MAX)`);
+        currentPage.repeat = { min, max };
+      }
       else if (read) currentPage.composition = read.value;
       continue;
     }
@@ -267,7 +279,6 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         const pageHead = /^page\s+(\d+)$/.exec(line);
         if (pageHead) {
           const n = parseInt(pageHead[1], 10);
-          if (currentExample.pages.some(p => p.page === n)) throw new Error(`${fileName}:${lineNum}: duplicate "page ${n}" in example`);
           currentExamplePage = { page: n, texts: {}, line: lineNum, keys: new Set() };
           currentExample.pages.push(currentExamplePage);
           examplePageLines.set(currentExamplePage, lineNum);
@@ -307,8 +318,25 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   for (const p of pages) {
     if (!p.purpose) throw new Error(`${fileName}:${p.line}: page without "purpose:"`);
   }
+  const lists = pages.filter(p => p.repeat);
+  if (lists.length > 1) throw new Error(`${fileName}:${lists[1].line}: a story has at most one page with "repeat:"`);
+  for (const p of pages) {
+    for (const text of Object.values(p.texts)) {
+      const vars = storyTextVariables(text!);
+      if (vars.includes('n') && !p.repeat) throw new Error(`${fileName}:${p.line}: "{n}" only on the page with "repeat:", where it counts the copies`);
+      if (vars.includes('count') && lists.length === 0) throw new Error(`${fileName}:${p.line}: "{count}" needs a page with "repeat:"`);
+    }
+  }
   for (const ex of examples) {
     if (ex.pages.length === 0) throw new Error(`${fileName}:${ex.line}: example without pages`);
+    // A page list's page may appear once per copy, any other page once
+    for (const ep of ex.pages) {
+      const page = pages[ep.page - 1];
+      const copy = ex.pages.filter(o => o.page === ep.page).indexOf(ep) + 1;
+      const at = `${fileName}:${examplePageLines.get(ep)}`;
+      if (page && copy > 1 && !page.repeat) throw new Error(`${at}: duplicate "page ${ep.page}" in example`);
+      if (page?.repeat && copy > page.repeat.max) throw new Error(`${at}: example has more than ${page.repeat.max} copies of page ${ep.page} (repeat: ${page.repeat.min}-${page.repeat.max})`);
+    }
     for (const ep of ex.pages) {
       const at = `${fileName}:${examplePageLines.get(ep)}`;
       const page = pages[ep.page - 1];

@@ -239,6 +239,26 @@ test('place variables need a place', () => {
   assertEq(checkStory(s, { ...BRAND, places: [HARBOUR, QUAY] }, 's.story'), ['s.story: page 1: variable "{place}" needs a place: name it with "place:"'], 'several places');
 });
 
+test('repeat: makes a page list, {n} and {count} count it', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {count} spots\n\npage\n  purpose: notice\n  repeat: 2-6\n  primary: {n}\n');
+  assertEq(s.pages[1].repeat, { min: 2, max: 6 }, 'parsed');
+  assertEq('repeat' in s.pages[0], false, 'absent');
+  assertThrows(() => parse('page\n  purpose: notice\n  repeat: 3\n'), 'invalid repeat "3"');
+  assertThrows(() => parse('page\n  purpose: notice\n  repeat: 4-2\n'), 'invalid repeat "4-2"');
+  assertThrows(() => parse('page\n  purpose: notice\n  repeat: 0-2\n'), 'invalid repeat "0-2"');
+  assertThrows(() => parse('page\n  purpose: notice\n  repeat: 1-3\npage\n  purpose: notice\n  repeat: 1-3\n'), 'at most one page with "repeat:"');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {n}\n'), '"{n}" only on the page with "repeat:"');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {count}\n'), '"{count}" needs a page with "repeat:"');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'counts at 2 characters');
+});
+
+test('an example fills a page list copy by copy, up to its max', () => {
+  const list = 'page\n  purpose: notice\n  repeat: 1-2\n';
+  const s = parse(`${list}\nexample\n  page 1\n    secondary: One\n  page 1\n    secondary: Two\n`);
+  assertEq(s.examples[0].pages.map(p => [p.page, p.texts.secondary]), [[1, 'One'], [1, 'Two']], 'two copies');
+  assertThrows(() => parse(`${list}\nexample\n  page 1\n    secondary: A\n  page 1\n    secondary: B\n  page 1\n    secondary: C\n`), 'more than 2 copies of page 1');
+});
+
 test('when: names the window the story fits', () => {
   const s = parse('when: christmas\npage\n  purpose: notice\n');
   assertEq(s.when, 'christmas', 'parsed');
