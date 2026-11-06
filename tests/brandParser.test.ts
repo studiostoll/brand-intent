@@ -410,6 +410,18 @@ test('photo metadata rejects unknown framing, bad date, non-photo use', () => {
   assertThrows(() => parseBrandFile(`${HEADER}logo a\n  src: a.svg\n  place: Burg\n`, 'test.brand'), /for photos only/, 'logo');
 });
 
+test('photo focus and horizon', () => {
+  const src = `${HEADER}photo a\n  src: a.jpg\n  focus: 45% 30.5%\n  horizon: 58%\n\nphoto b\n  src: b.jpg\n  focus: none\n  horizon: none\n\nphoto c\n  src: c.jpg\n`;
+  const [a, b, c] = parseBrandFile(src, 'test.brand').assets?.photos ?? [];
+  assertEq([a?.focus, a?.horizon], [{ x: 45, y: 30.5 }, 58], 'declared');
+  assertEq([b?.focus, b?.horizon], [null, null], 'none');
+  assertEq(['focus' in (c ?? {}), 'horizon' in (c ?? {})], [false, false], 'absent');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  focus: 45%\n`, 'test.brand'), /focus: must be/, 'one value');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  horizon: 0.6\n`, 'test.brand'), /horizon: must be/, 'no percent');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  horizon: 120%\n`, 'test.brand'), /above 100%/, 'range');
+  assertThrows(() => parseBrandFile(`${HEADER}logo a\n  src: a.svg\n  focus: 50% 50%\n`, 'test.brand'), /for photos only/, 'logo');
+});
+
 test('framing rejects bad horizon, missing horizon, unknown keys, duplicates', () => {
   assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 120%\n`, 'test.brand'), /framing horizon/, 'out of range');
   assertThrows(() => parseBrandFile(`${HEADER}framing a\n  horizon: 0.5\n`, 'test.brand'), /framing horizon/, 'no percent');

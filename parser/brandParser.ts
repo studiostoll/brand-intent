@@ -218,6 +218,12 @@ export interface ParsedAssetDef {
   person?: string;
   /** Photos only: date taken, YYYY-MM-DD. */
   taken?: string;
+  /** Photos only: the main subject (`focus: X% Y%`, 0–100 from top left). `null` = `focus: none`
+   *  (no subject). Absent → not declared. */
+  focus?: { x: number; y: number } | null;
+  /** Photos only: height of the horizon line (`horizon: N%`, 0–100 from top; the mean height when tilted).
+   *  `null` = `horizon: none` (no horizon visible). Absent → not declared. */
+  horizon?: number | null;
 }
 
 export type LogoAlign = 'left' | 'center' | 'right';
@@ -1784,6 +1790,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   }
 
   // Finalise brand-declared assets
+  const parsePercent = (v: string): number => parseFloat(v);
   const toAssetDef = (raw: { id: string; props: Record<string, string> }): ParsedAssetDef => {
     const def: ParsedAssetDef = { id: raw.id, label: raw.props['label'] ?? raw.id, src: raw.props['src'] ?? '' };
     if (raw.props['aspect']) def.aspectRatio = parseFloat(raw.props['aspect']);
@@ -1798,6 +1805,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     for (const key of ['framing', 'place', 'person', 'taken'] as const) {
       if (raw.props[key]) def[key] = raw.props[key];
     }
+    const focus = raw.props['focus'];
+    if (focus) def.focus = focus === 'none' ? null : (() => { const [x, y] = focus.split(/\s+/).map(parsePercent); return { x, y }; })();
+    const horizon = raw.props['horizon'];
+    if (horizon) def.horizon = horizon === 'none' ? null : parsePercent(horizon);
     // generator-params are stored as "generator-params.KEY" by the sub-block parser.
     const paramEntries: [string, number][] = [];
     for (const [k, v] of Object.entries(raw.props)) {
@@ -1828,7 +1839,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
     result.windows = windows;
   }
-  const photoOnly = ['when', 'framing', 'place', 'person', 'taken'];
+  const photoOnly = ['when', 'framing', 'place', 'person', 'taken', 'focus', 'horizon'];
   for (const [kind, arr] of [['logo', logosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
     for (const key of photoOnly) {
       const a = arr.find(r => r.props[key]);
@@ -1842,6 +1853,13 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (taken && !/^\d{4}-\d{2}-\d{2}$/.test(taken)) throw new Error(`${fileName}: photo "${p.id}": taken: must be YYYY-MM-DD, got "${taken}"`);
     const framing = p.props['framing'];
     if (framing && !framingsRaw.some(f => f.id === framing)) throw new Error(`${fileName}: photo "${p.id}" references unknown framing "${framing}"`);
+    const focus = p.props['focus'];
+    if (focus && focus !== 'none' && !/^\d+(\.\d+)?%\s+\d+(\.\d+)?%$/.test(focus)) throw new Error(`${fileName}: photo "${p.id}": focus: must be "X% Y%" or "none", got "${focus}"`);
+    const horizon = p.props['horizon'];
+    if (horizon && horizon !== 'none' && !/^\d+(\.\d+)?%$/.test(horizon)) throw new Error(`${fileName}: photo "${p.id}": horizon: must be "N%" or "none", got "${horizon}"`);
+    for (const v of [...(focus && focus !== 'none' ? focus.split(/\s+/) : []), ...(horizon && horizon !== 'none' ? [horizon] : [])]) {
+      if (parsePercent(v) > 100) throw new Error(`${fileName}: photo "${p.id}": ${v} is above 100%`);
+    }
   }
 
   if (logosRaw.length > 0 || photosRaw.length > 0 || videosRaw.length > 0 || illustrationsRaw.length > 0) {
