@@ -27,7 +27,6 @@
 .hero-lead {
   font-size: 1.05rem;
   color: var(--color-secondary);
-  max-width: 58ch;
   margin-bottom: var(--space-lg);
 }
 .hero-cta {
@@ -135,7 +134,6 @@
   color: var(--color-tertiary);
   margin-left: 0.6rem;
 }
-.layer-body p { max-width: 68ch; }
 .layer-body pre { margin-top: var(--space-md); }
 .layer-detail + .layer-detail { border-top: 1px solid var(--color-divider); padding-top: var(--space-xl); }
 .layer-rule {
@@ -479,7 +477,6 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   grid-template-columns: 96px 1fr;
   gap: var(--space-lg);
   align-items: start;
-  max-width: 72ch;
 }
 .author-portrait {
   width: 96px; height: 96px;
