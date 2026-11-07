@@ -14,7 +14,7 @@ All Brand Intent files share these rules:
 - **No quotes required** for simple string values. Quotes are only needed when a value contains `#` (which would otherwise start a comment).
 - **`$reference` syntax** for cross-referencing named values within the same file (e.g., `$primary` referencing a color named `primary` in `brand-colors`).
 - **Presence as boolean.** Some flags (e.g., `italic`, `uppercase`) are set by presence alone (no `: true` needed).
-- **Named blocks** use the form `keyword NAME` (e.g., `theme Laden`, `audience regulars`), not `keyword: { NAME: { ... } }`.
+- **Named blocks** use the form `keyword NAME` (e.g., `theme Shop`, `audience regulars`), not `keyword: { NAME: { ... } }`.
 
 ### Value Types
 
@@ -87,15 +87,15 @@ always:
 
 ```
 instead:
-  - "beste Zutaten" -> Tipo 1 aus der Mühle in Dachau
-  - "mit Liebe gebacken" -> achtzehn Stunden Teigruhe
+  - "the finest ingredients" -> Tipo 1 from the mill in Dachau
+  - "baked with love" -> eighteen hours of fermentation
 ```
 
 ### `narrative NAME` Block
 
 Named brand narratives. Each narrative has a lowercase identifier, an optional `primary` flag (exactly one narrative should be marked primary), and free-form multi-line text.
 
-`NAME` is a free-form title — natural language is encouraged (e.g., `Im besonderen Licht`, `Origin Story`, `Mehl Wasser Zeit`).
+`NAME` is a free-form title — natural language is encouraged (e.g., `In a Special Light`, `Origin Story`, `Flour Water Time`).
 
 | Element | Type | Required | Description |
 |---------|------|----------|-------------|
@@ -106,15 +106,15 @@ Named brand narratives. Each narrative has a lowercase identifier, an optional `
 The `primary` narrative is the brand's default story — the one AI agents use when no specific narrative is requested. Supporting narratives serve specific contexts (editorial, campaigns, internal culture).
 
 ```yaml
-narrative Mehl Wasser Zeit
+narrative Flour Water Time
   primary
-  Gegründet 2019, als die Bäckerin ihren Agenturjob
-  kündigte, um das zu tun, was sie jeden Morgen seit
-  ihrem sechzehnten Lebensjahr getan hat: Brot backen.
+  Founded in 2019, when the baker quit her agency job
+  to do what she had done every morning since she was
+  sixteen: bake bread.
 
-narrative Achtzehn Stunden
-  Das Brot entsteht in achtzehn Stunden. Kein Schritt
-  wird abgekürzt, kein Mehl wird ersetzt.
+narrative Eighteen Hours
+  The bread takes eighteen hours. No step is cut short,
+  no flour is swapped.
 ```
 
 ### `values` Block
@@ -123,13 +123,13 @@ Repeatable named entries. Each value has a name and a behavior statement that ma
 
 ```yaml
 values
-  Handwerk
-    Wir benennen den Prozess, nicht das Ergebnis.
-    Backzeit in Stunden, Mehlsorte beim Namen.
+  Craft
+    We name the process, not the result.
+    Fermentation in hours, the flour by name.
 
-  Ehrlichkeit
-    Kein Brot ohne Zutatenliste. Keine Versprechen
-    die der Teig nicht halten kann.
+  Honesty
+    No bread without an ingredient list. No promises
+    the dough can't keep.
 ```
 
 Each value is a named block (the value name on its own line, unindented within `values`), followed by 2-space indented behavior description lines.
@@ -138,10 +138,10 @@ A value can carry examples: `say:` for a line that carries the value, `not:` for
 
 ```yaml
 values
-  Handwerk
-    Wir benennen den Prozess, nicht das Ergebnis.
-    say: Der Roggen steht seit gestern Abend.
-    not: Mit Liebe handgemacht.
+  Craft
+    We name the process, not the result.
+    say: The rye has been proofing since last night.
+    not: Handmade with love.
 ```
 
 ### `pillars` Block
@@ -181,11 +181,11 @@ What photos and film always show and never show. The image counterpart of `voice
 ```yaml
 imagery
   always:
-    - echte Arbeitsschritte in der Backstube, keine nachgestellten Handgriffe
-    - Mehl, Teig und Werkzeug mit Gebrauchsspuren
+    - real steps of the work in the bakehouse, nothing staged
+    - flour, dough and tools with signs of use
   never:
-    - gestellte Lächeln in die Kamera
-    - KI-generierte oder KI-veränderte Bildinhalte
+    - posed smiles into the camera
+    - AI-generated or AI-altered images
 ```
 
 | Key | Type | Required | Description |
@@ -200,10 +200,10 @@ How photos are framed and treated belongs to the `.brand` file ([`framing`](#fra
 A named subject for photos and film. `NAME` is free-form. An optional `narrative:` line ties the theme to a narrative by its exact name; the rest is free-form text. Image themes do not have to cover every narrative, and a theme can stand without one.
 
 ```yaml
-image-theme Teig am Morgen
-  narrative: Achtzehn Stunden
-  Hände im Teig, Mehl auf der Arbeitsfläche,
-  das erste Licht durch das Backstubenfenster.
+image-theme Dough in the Morning
+  narrative: Eighteen Hours
+  Hands in dough, flour on the bench,
+  the first light through the bakehouse window.
 ```
 
 ### `goal NAME` Block
@@ -212,20 +212,20 @@ What a piece of content is for, as opposed to what it is (its [purpose](#layer-4
 
 ```yaml
 goal craft
-  label:      Handwerk zeigen
+  label:      Show the craft
   share:      60%
-  question:   Wie entsteht das Brot?
-  narratives: Achtzehn Stunden
+  question:   How is the bread made?
+  narratives: Eighteen Hours
   always:
-    - einen konkreten Arbeitsschritt zeigen
+    - show one concrete step of the work
 
 goal neighbours
-  label:      Nachbarschaft
+  label:      Neighbourhood
   share:      40%
-  question:   Wer kommt hierher und warum?
-  narratives: Mehl Wasser Zeit
+  question:   Who comes here, and why?
+  narratives: Flour Water Time
   always:
-    - eine Person mit Namen und ihrem Grund zu kommen
+    - a person with their name and their reason to come
 ```
 
 | Key | Type | Required | Description |
@@ -246,10 +246,10 @@ Questions to check before publishing, as a short editorial check. Each one shoul
 ```yaml
 review
   copy:
-    - Ist der Anlass für Kundschaft schnell verständlich?
-    - Nennt der Text Sorte, Mehl oder Backzeit?
+    - Is the occasion clear to a customer at a glance?
+    - Does the text name the bread, the flour or the fermentation time?
   image:
-    - Zeigt das Bild einen echten Arbeitsschritt?
+    - Does the picture show a real step of the work?
 ```
 
 | Key | Type | Required | Description |
@@ -266,52 +266,52 @@ An `.identity` file must NOT contain: hex values, font names, type sizes, spacin
 ```yaml
 # krume.identity
 
-essence:  Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.
-promise:  Wer reinkommt, riecht sofort, dass hier seit vier Uhr
-          morgens jemand steht.
+essence:  Bread is craft, not lifestyle. Flour, water, time.
+promise:  Walk in and you smell at once that someone has been
+          standing here since four in the morning.
 
 voice
-  register:  informal, Du
-  persona:   Bäckerin hinterm Tresen - direkt, trocken, stolz auf das Handwerk
-  rhythm:    kurze Sätze, konkrete Angaben, kein Erklären
+  register:  informal, first names
+  persona:   The baker behind the counter: direct, dry, proud of the craft
+  rhythm:    short sentences, concrete facts, no explaining
 
   always:
-    - Sauerteig, not "artisan bread"
-    - konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"
-    - Backzeit in Stunden, nicht "lange Teigführung"
-    - Kiez-Bezug (Neukölln, Weserstraße) over "unser Standort"
+    - sourdough, not "artisan bread"
+    - named flours (Tipo 1, rye 1150) over "the finest ingredients"
+    - fermentation in hours, not "slow-fermented"
+    - the Kiez by name (Neukölln, Weserstraße) over "our location"
 
   never:
-    - Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)
-    - "Artisan" oder "Craft" - wir sagen Handwerk
-    - Englische Begriffe wenn ein deutsches Wort existiert
+    - lifestyle language (curated, hand-picked, moment of indulgence)
+    - "artisan" or "artisanal": we say craft
+    - food-blog words where a baker's word exists (crumb structure, flavour profile)
 
-narrative Mehl Wasser Zeit
+narrative Flour Water Time
   primary
-  Gegründet 2019, als die Bäckerin ihren Agenturjob
-  kündigte, um das zu tun, was sie jeden Morgen seit
-  ihrem sechzehnten Lebensjahr getan hat: Brot backen.
+  Founded in 2019, when the baker quit her agency job
+  to do what she had done every morning since she was
+  sixteen: bake bread.
 
-narrative Achtzehn Stunden
-  Das Brot entsteht in achtzehn Stunden. Kein Schritt
-  wird abgekürzt, kein Mehl wird ersetzt.
+narrative Eighteen Hours
+  The bread takes eighteen hours. No step is cut short,
+  no flour is swapped.
 
 pillars
-  primary:   Sauerteig, Handwerk, Zutaten, Kiez
-  secondary: Saisonales, Nachhaltigkeit, Backwissen
-  avoid:     Lifestyle-Gastronomie, Wellness-Ernährung, Influencer-Kultur
+  primary:   sourdough, craft, ingredients, Kiez
+  secondary: seasonal, sustainability, baking know-how
+  avoid:     lifestyle gastronomy, wellness eating, influencer culture
 
 audience regulars
-  label:       Stammkunden aus dem Kiez
-  profile:     25-65, täglich oder wöchentlich, kennen die Sorten
-  motivation:  ihr Brot, ihr Laden, verlässlicher Rhythmus
-  language:    knapp, direkt, kein Erklären - die wissen Bescheid
+  label:       Regulars from the Kiez
+  profile:     25-65, daily or weekly, know the breads
+  motivation:  their bread, their shop, a reliable rhythm
+  language:    brief, direct, no explaining: they know
 
 audience newcomers
-  label:       Neugierige und Laufkundschaft
-  profile:     Touristen, neue Nachbarn, Marktbesucher
-  motivation:  gutes Brot finden, verstehen was anders ist
-  language:    einladend, konkret, erklärt ohne belehrend zu sein
+  label:       The curious and passers-by
+  profile:     tourists, new neighbours, market visitors
+  motivation:  find good bread, understand what is different
+  language:    inviting, concrete, explains without lecturing
 ```
 
 ---
@@ -698,7 +698,7 @@ theme Green
 | `illustration` | Illustration line color (optional, only for brands with illustrations) |
 
 ```yaml
-theme Laden
+theme Shop
   background:     $white
   text-primary:   $primary
   text-secondary: $secondary
@@ -1187,9 +1187,9 @@ slot detail
 
 example
   detail:
-    [shop] Laden am Markt
-    Bäckerei im Bahnhof
-    Wochenmarkt Samstag
+    [shop] Shop at the market
+    Bakery at the station
+    Weekly market, Saturday
 ```
 
 **Fact grids:** `columns:` and `labels: above` together set short facts as a grid, e.g. the facts of the day along the bottom of a photo. With `labels: above` an item splits at its first colon followed by a space: `Wind: 4 Bft` shows "Wind" small above "4 Bft". A time like `07:21` has no space after its colon, so it stays in the value. In a grid every item must have a label. In one column only the first one must: an item without a label continues the item above it, as a further line of its value with no item gap between, so a value can run over several lines (an address and the week's opening hours, below). Inline markup works in both parts (`Wind: **4 Bft**`).
@@ -1251,22 +1251,22 @@ One example page: the texts of all slots, written together about one topic. A pa
 example
   topic: The rye loaf that is back on Saturdays
   goal: regulars
-  label: Heute frisch
-  primary: Roggenlaib
-  secondary: 750 g · 5,80 €
+  label: Fresh today
+  primary: Rye loaf
+  secondary: 750 g · €5.80
   detail:
-    Roggen 1150
-    18 Stunden Teigführung
+    Rye 1150
+    18 hours of fermentation
 
 example
   topic: Christmas stollen, baked from late November
   when: christmas
-  label: Nur im Advent
-  primary: Butterstollen
-  secondary: 1 kg · 24 €
+  label: Advent only
+  primary: Butter stollen
+  secondary: 1 kg · €24
   detail:
-    Butter aus der Region
-    Drei Wochen gereift
+    Butter from the region
+    Matured for three weeks
 ```
 
 | Key | Type | Required | Description |
@@ -1601,16 +1601,16 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{season}` | The current season's `label:` | `Frühling`, `Spring` | its length |
 | `{founded}` | The year the brand started | `2019` | 4 |
 | `{years}` | Whole years since the brand started | `7` | 3 |
-| `{occasion}` | The `label:` of the weekly or date the page is about | `Tasting am Tresen` | its length |
+| `{occasion}` | The `label:` of the weekly or date the page is about | `Tasting at the counter` | its length |
 | `{occasion-date}` | Its next day, day and month | `2. Mai`, `2 May` | 13 |
 | `{occasion-time}` | Its `time:`, formatted like hours | `19–21 Uhr`, `7–9 PM` | 17 |
 | `{days-until}` | Days from the story's date to the occasion; `0` on the day | `12` | 3 |
 | `{daily NAME}` | The time of that moment of the brand's day | `04:00`, `4:00 AM` | 8 |
-| `{person}` | The person's `name:`, or their `role:` without a name | `Thomas`, `die Bäckerin` | its length |
-| `{role}` | The person's `role:` | `Gast in Lemkenhafen` | its length |
+| `{person}` | The person's `name:`, or their `role:` without a name | `Thomas`, `the baker` | its length |
+| `{role}` | The person's `role:` | `Regular in Lemkenhafen` | its length |
 | `{since}` | The year the person has been with the brand | `2006` | 4 |
 | `{since-years}` | Whole years since then | `20` | 3 |
-| `{reason}` | The person's `reason:` | `Urlaub ohne Programm` | its length |
+| `{reason}` | The person's `reason:` | `Holiday without a programme` | its length |
 | `{n}` | The page's position in its [page list](#page-lists); only on the page with `repeat:` | `3` | 2 |
 | `{count}` | How many pages the page list has; on any page of a story with a page list | `5` | 2 |
 
@@ -1768,16 +1768,16 @@ The brand's time: when it started, its seasons and windows, its week and its day
 
 founded: 2019-05-04
 
-season fruehling
-  label: Frühling
+season spring
+  label: Spring
   from:  03-01
 
-season sommer
-  label: Sommer
+season summer
+  label: Summer
   from:  06-01
 
-season herbst
-  label: Herbst
+season autumn
+  label: Autumn
   from:  09-01
 
 season winter
@@ -1785,36 +1785,36 @@ season winter
   from:  12-01
 
 windows
-  rhabarber: 04-15..06-24
-  advent:    11-27..12-24
+  rhubarb: 04-15..06-24
+  advent:  11-27..12-24
 
-weekly weizenmisch
-  label:   Weizenmisch
+weekly wheat-blend
+  label:   Wheat blend
   days:    sat
   context: 500 g, only on Saturdays, sold out by ten.
 
-weekly backkurs
-  label:   Backkurs
+weekly baking-class
+  label:   Baking class
   days:    sat
   time:    14:00-18:00
   place:   weserstrasse
 
-date jubilaeum
-  label:   Fünf Jahre Krume
+date anniversary
+  label:   Five years of Krume
   on:      2024-05-04
 
-date hofsamstag
-  label:   Offener Hofsamstag
+date mill-day
+  label:   Mill day
   on:      05-02
   time:    10:00-16:00
   lead:    21
-  context: The yard is open, cake at the long table, the mill shows the stones.
+  context: The mill from Dachau sets up its stones in the yard, bread and cake at the long table.
 
 daily
-  ofen:  04:00  Ofen an
-  regal: 06:00  Alles im Regal
-  stamm: 07:00  Die Stammkunden vor der Tür
-  leer:  12:00  Meist ausverkauft
+  oven:     04:00  Oven on
+  shelf:    06:00  Everything on the shelf
+  regulars: 07:00  The regulars at the door
+  gone:     12:00  Mostly sold out
 ```
 
 | Key | Type | Required | Description |
@@ -1879,11 +1879,11 @@ The brand's own clock: named moments of the day, in order.
 
 ```yaml
 daily
-  ofen:  04:00  Ofen an
-  regal: 06:00  Alles im Regal
+  oven:  04:00  Oven on
+  shelf: 06:00  Everything on the shelf
 ```
 
-Each line is `name: HH:MM` followed by an optional label. `{daily NAME}` shows the time; AI writing gets the label as a fact, so "seit sechs im Regal" comes from the file and the identity keeps the sentence as voice.
+Each line is `name: HH:MM` followed by an optional label. `{daily NAME}` shows the time; AI writing gets the label as a fact, so "on the shelf since six" comes from the file and the identity keeps the sentence as voice.
 
 ### `when:` and in season
 
@@ -1920,41 +1920,41 @@ The file is the consent. A person who agreed to nothing has no file, and the fil
 
 id:      thomas
 name:    Thomas
-role:    Gast in Lemkenhafen
+role:    Regular in Lemkenhafen
 since:   2006
 place:   lemkenhafen
-reason:  Urlaub ohne Programm
-context: Comes every May for two weeks, cycles to the dyke every morning. Recommends the Steg at seven.
-photos:  thomas-steg, thomas-rad
+reason:  Holiday without a programme
+context: Comes every May for two weeks, cycles to the dyke every morning. Recommends the jetty at seven.
+photos:  thomas-jetty, thomas-bike
 consent: 2026-05-02
 until:   2028-05-02
 
 quote
-  Ich brauche hier kein Programm. Der Deich reicht.
+  I don't need a programme here. The dyke is enough.
 
 quote
-  Morgens um sieben am Steg, da ist noch keiner.
+  Seven in the morning at the jetty, nobody there yet.
 ```
 
 A person without a name:
 
 ```yaml
-# people/baeckerin.person
-id:      baeckerin
-role:    Bäckerin
+# people/baker.person
+id:      baker
+role:    Baker
 since:   2019
-reason:  Hat den Agenturjob gekündigt und den Copyshop zur Bäckerei gemacht.
+reason:  Quit her agency job and turned the copy shop into a bakery.
 consent: 2019-05-04
 
 quote
-  Was weg ist, ist weg. Morgen gibt es neues.
+  What's gone is gone. Tomorrow there's more.
 ```
 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `id:` | string | Yes | Person identifier; stories, pages and photos name it with `person:` |
 | `name:` | string | No | The name as a post may write it, usually a first name. Omitted: the person is their role, in every post |
-| `role:` | string | Yes | Who they are to the brand, in the brand's language, as a post would say it: `Bäckerin`, `Gast in Lemkenhafen`, `Winzer des Hausweins` |
+| `role:` | string | Yes | Who they are to the brand, in the brand's language, as a post would say it: `Baker`, `Regular in Lemkenhafen`, `Winemaker of the house wine` |
 | `since:` | date or year | No | `YYYY-MM-DD` or `YYYY`: since when. `{since}` and `{since-years}` show it; a bare year counts from January 1 |
 | `place:` | string | No | The [place](#place-place) they belong to |
 | `reason:` | string | No | Why they come, what they do: the fact a goal like "a person with their reason to come" asks for. `{reason}` shows it |

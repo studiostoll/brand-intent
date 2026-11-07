@@ -4,8 +4,8 @@
 
 id:       krume
 name:     Krume
-language: de
-locale:   de-DE
+language: en
+locale:   en-DE
 
 # ── Color Primitives ──
 # Derived from the bakery's material world: dark roasted crust,
@@ -19,10 +19,10 @@ brand-colors
   white:     #FAF6F0   # flour - not pure white, slightly warm
 
 # ── Themes ──
-# Laden (shop): light background, dark text. The everyday.
-# Tafel (chalkboard): dark background, light text. Announcements, specials.
+# Shop: light background, dark text. The everyday.
+# Chalkboard: dark background, light text. Announcements, specials.
 
-theme Laden
+theme Shop
   background:     $white
   text-primary:   $primary
   text-secondary: $secondary
@@ -38,7 +38,7 @@ theme Laden
   icon:           $secondary
   divider:        $accent1
 
-theme Tafel
+theme Chalkboard
   background:     $primary
   text-primary:   $white
   text-secondary: #D4C4B0
@@ -165,7 +165,7 @@ location
 # reference them with `when:`; implementations only suggest them in season.
 
 windows
-  rhabarber: 04-15..06-24
+  rhubarb: 04-15..06-24
   advent:    11-27..12-24
 
 # ── Photos ──
@@ -176,14 +176,14 @@ camera
   facing: rear
   grid:   3
 
-framing backstube
-  label:       Backstube
+framing bakehouse
+  label:       Bakehouse
   horizon:     none
   description: Hands, dough and tools lead. No far line in the frame.
   goals:       craft
 
-framing tresen
-  label:       Tresen
+framing counter
+  label:       Counter
   horizon:     45%
   description: The counter at eye level, the street through the shop window behind it.
   caption:     Who is buying what, and why they came.

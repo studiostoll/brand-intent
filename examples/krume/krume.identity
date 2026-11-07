@@ -8,21 +8,21 @@
 # not lifestyle. The bakery is small, the hours are early,
 # the sourdough is slow. Nothing about this is "curated."
 
-essence:  Brot ist Handwerk, nicht Lifestyle. Mehl, Wasser, Zeit.
+essence:  Bread is craft, not lifestyle. Flour, water, time.
 
-promise:  Wer reinkommt, riecht sofort, dass hier seit vier Uhr
-          morgens jemand steht.
+promise:  Walk in and you smell at once that someone has been
+          standing here since four in the morning.
 
-tagline:  Mehl, Wasser, Zeit.  # also known as "Claim" (DACH)
+tagline:  Flour, water, time.  # also known as "claim" (DACH)
 
-positioning:  Krume ist die einzige Bäckerei im Kiez, die jedes
-              Brot beim Mehl nennt, nicht beim Marketing.
+positioning:  Krume is the only bakery in the Kiez that names every
+              bread by its flour, not by its marketing.
 
-mission:  Ehrliches Brot für den Kiez - jeden Tag, aus dem
-          gleichen Ofen, mit den gleichen Händen.
+mission:  Honest bread for the Kiez: every day, from the same oven,
+          with the same hands.
 
-vision:  Eine Nachbarschaft, in der niemand mehr erklären muss,
-         warum gutes Brot sechs Euro kostet.
+vision:  A neighbourhood where nobody has to explain any more
+         why good bread costs six euros.
 
 archetype: craftsman
 
@@ -30,28 +30,26 @@ archetype: craftsman
 # Named stories. Exactly one carries `primary`: the default story
 # for about pages, editorial, press. The others serve specific goals.
 
-narrative Mehl Wasser Zeit
+narrative Flour Water Time
   primary
-  Gegründet 2019, als die Bäckerin ihren Agenturjob
-  kündigte, um das zu tun, was sie jeden Morgen seit
-  ihrem sechzehnten Lebensjahr getan hat: Brot backen.
-  Der Laden in der Weserstraße war vorher ein Copyshop.
-  Die erste Woche war der Ofen zu klein. Die zweite
-  Woche war das Brot zu schnell ausverkauft.
-  Beides hat sich nicht geändert.
+  Founded in 2019, when the baker quit her agency job
+  to do what she had done every morning since she was
+  sixteen: bake bread. The shop on Weserstraße used to
+  be a copy shop. The first week, the oven was too small.
+  The second week, the bread sold out too fast.
+  Neither has changed.
 
-narrative Achtzehn Stunden
-  Das Brot entsteht in achtzehn Stunden. Kein Schritt
-  wird abgekürzt, kein Mehl wird ersetzt. Drei Sorten
-  am Tag, nicht dreißig. Was weg ist, ist weg - morgen
-  gibt es neues.
+narrative Eighteen Hours
+  The bread takes eighteen hours. No step is cut short,
+  no flour is swapped. Three kinds a day, not thirty.
+  What's gone is gone; tomorrow there's more.
 
 narrative Weserstraße
-  Die Weserstraße hat sich verändert. Die Mieten steigen,
-  die Spätis verschwinden. Krume bleibt. Nicht weil wir
-  uns gegen irgendwas stemmen, sondern weil der Ofen
-  morgens um vier an ist und die Stammkunden um sieben
-  vor der Tür stehen. Das ist der ganze Widerstand.
+  Weserstraße has changed. Rents go up, the Spätis
+  disappear. Krume stays. Not because we are pushing
+  against anything, but because the oven is on at four
+  and the regulars are at the door at seven.
+  That is the whole resistance.
 
 # ── Voice ──
 # The voice is the baker herself: direct, dry, proud of the work.
@@ -59,66 +57,66 @@ narrative Weserstraße
 # She talks the way she'd talk to someone across the counter.
 
 voice
-  register:  informal, Du
-  persona:   Bäckerin hinterm Tresen - direkt, trocken, stolz auf das Handwerk
-  rhythm:    kurze Sätze, konkrete Angaben, kein Erklären
+  register:  informal, first names
+  persona:   The baker behind the counter: direct, dry, proud of the craft
+  rhythm:    short sentences, concrete facts, no explaining
 
   # always/never: concrete, testable rules.
   # An AI agent can evaluate any text against these with a yes/no answer.
 
   always:
-    - Sauerteig, not "artisan bread"
-    - konkrete Mehlsorten (Tipo 1, Roggen 1150) over "beste Zutaten"
-    - Backzeit in Stunden, nicht "lange Teigführung"
-    - Kiez-Bezug (Neukölln, Weserstraße) over "unser Standort"
-    - Gewicht in Gramm bei jedem Brot
+    - sourdough, not "artisan bread"
+    - named flours (Tipo 1, rye 1150) over "the finest ingredients"
+    - fermentation in hours, not "slow-fermented"
+    - the Kiez by name (Neukölln, Weserstraße) over "our location"
+    - the weight in grams on every bread
 
   never:
-    - Lifestyle-Sprache (kuratiert, handverlesen, Genussmoment)
-    - "Artisan" oder "Craft" - wir sagen Handwerk
-    - Englische Begriffe wenn ein deutsches Wort existiert
-    - Superlative ohne Substanz (bestes Brot, einzigartiger Geschmack)
-    - Wellness- oder Gesundheitsversprechen (gut für dich, clean eating)
+    - lifestyle language (curated, hand-picked, moment of indulgence)
+    - "artisan" or "artisanal": we say craft
+    - food-blog words where a baker's word exists (crumb structure, flavour profile)
+    - superlatives without substance (best bread, unique taste)
+    - wellness or health claims (good for you, clean eating)
 
   # instead: the phrase to avoid and what Krume writes instead.
   # A pair teaches the rewrite, not just the ban.
 
   instead:
-    - "beste Zutaten" -> Tipo 1 und Roggen 1150 aus der Mühle in Dachau
-    - "mit Liebe gebacken" -> achtzehn Stunden Teigruhe
-    - "frisch aus dem Ofen" -> seit 6 Uhr im Regal
+    - "the finest ingredients" -> Tipo 1 and rye 1150 from the mill in Dachau
+    - "baked with love" -> eighteen hours of fermentation
+    - "fresh from the oven" -> on the shelf since six
 
 # ── Values ──
 # Not keywords - behavior statements. Each value describes
 # how it manifests in what we say and do.
 
 values
-  Handwerk
-    Wir benennen den Prozess, nicht das Ergebnis.
-    Backzeit in Stunden, Mehlsorte beim Namen.
-    Kein Brot ohne nachvollziehbaren Weg vom Korn zum Laib.
-    say: Der Roggen steht seit gestern Abend.
-    not: Mit Liebe handgemacht.
+  Craft
+    We name the process, not the result.
+    Fermentation in hours, the flour by name.
+    No bread without a traceable way from grain to loaf.
+    say: The rye has been proofing since last night.
+    not: Handmade with love.
 
-  Ehrlichkeit
-    Kein Brot ohne Zutatenliste. Keine Versprechen
-    die der Teig nicht halten kann. Wenn etwas
-    nicht gelungen ist, sagen wir das.
-    say: Heute kein Dinkel. Der Teig wollte nicht.
-    not: Leider ausverkauft, schau morgen wieder vorbei!
+  Honesty
+    No bread without an ingredient list. No promises
+    the dough can't keep. When something didn't work,
+    we say so.
+    say: No spelt today. The dough wouldn't.
+    not: Sold out, sorry! Come back tomorrow!
 
   Kiez
-    Der Laden gehört zur Weserstraße wie der Späti
-    nebenan. Wir kennen die Stammkunden beim Namen
-    und die Nachbarn beim Brot.
+    The shop belongs to Weserstraße like the Späti
+    next door. We know the regulars by name and
+    the neighbours by their bread.
 
 # ── Content Pillars ──
 # What Krume talks about, and what it explicitly avoids.
 
 pillars
-  primary:   Sauerteig, Handwerk, Zutaten, Kiez
-  secondary: Saisonales, Nachhaltigkeit, Backwissen
-  avoid:     Lifestyle-Gastronomie, Wellness-Ernährung, Influencer-Kultur
+  primary:   sourdough, craft, ingredients, Kiez
+  secondary: seasonal, sustainability, baking know-how
+  avoid:     lifestyle gastronomy, wellness eating, influencer culture
 
 # ── Audiences ──
 # Two audiences with genuinely different language needs.
@@ -126,32 +124,32 @@ pillars
 # but never in a condescending way.
 
 audience regulars
-  label:       Stammkunden aus dem Kiez
-  profile:     25-65, täglich oder wöchentlich, kennen die Sorten
-  motivation:  ihr Brot, ihr Laden, verlässlicher Rhythmus
-  language:    knapp, direkt, kein Erklären - die wissen Bescheid
+  label:       Regulars from the Kiez
+  profile:     25-65, daily or weekly, know the breads
+  motivation:  their bread, their shop, a reliable rhythm
+  language:    brief, direct, no explaining: they know
 
 audience newcomers
-  label:       Neugierige und Laufkundschaft
-  profile:     Touristen, neue Nachbarn, Marktbesucher
-  motivation:  gutes Brot finden, verstehen was anders ist
-  language:    einladend, konkret, erklärt ohne belehrend zu sein
+  label:       The curious and passers-by
+  profile:     tourists, new neighbours, market visitors
+  motivation:  find good bread, understand what is different
+  language:    inviting, concrete, explains without lecturing
 
 # ── Anti-Audiences ──
 # Explicitly not-our-people. Gives the AI a concrete
 # "never sound like you're talking to this person" signal.
 
 anti-audience influencers
-  label:       Lifestyle-Influencer
-  description: Menschen die Brot als Aesthetic posten, nicht
-               als Lebensmittel essen. Wir sind nicht ihr Content.
+  label:       Lifestyle influencers
+  description: People who post bread as an aesthetic instead of
+               eating it as food. We are not their content.
 
 anti-audience discount-hunters
-  label:       Schnäppchenjäger
-  description: Wer den Preis eines Sauerteigbrots mit dem
-               Supermarkt-Toastbrot vergleicht, ist hier falsch.
-               Wir erklären gerne warum es kostet was es kostet -
-               aber wir rechtfertigen uns nicht.
+  label:       Bargain hunters
+  description: Anyone comparing the price of a sourdough loaf with
+               supermarket toast is in the wrong place. We are happy
+               to explain why it costs what it costs,
+               but we don't justify it.
 
 # ── Imagery ──
 # The image counterpart of voice: yes/no rules for photos and film.
@@ -159,56 +157,56 @@ anti-audience discount-hunters
 
 imagery
   always:
-    - echte Arbeitsschritte in der Backstube, nichts nachgestellt
-    - Mehl, Teig und Werkzeug mit Gebrauchsspuren
-    - Tageslicht oder das Licht der Backstube
+    - real steps of the work in the bakehouse, nothing staged
+    - flour, dough and tools with signs of use
+    - daylight or the light of the bakehouse
   never:
-    - gestellte Lächeln in die Kamera
-    - Brot als Deko auf Leinen und Holzbrett
-    - KI-generierte oder KI-veränderte Bildinhalte
+    - posed smiles into the camera
+    - bread as decoration on linen and wooden boards
+    - AI-generated or AI-altered images
 
-image-theme Vier Uhr morgens
-  Die Backstube vor Ladenöffnung: Hände im Teig,
-  Mehl auf der Arbeitsfläche, der Ofen offen.
+image-theme Four in the Morning
+  The bakehouse before the shop opens: hands in dough,
+  flour on the bench, the oven open.
 
-image-theme Über den Tresen
-  Stammkunden und Laufkundschaft am Tresen,
-  Brot wechselt die Hand, die Weserstraße im Hintergrund.
+image-theme Across the Counter
+  Regulars and passers-by at the counter,
+  bread changing hands, Weserstraße in the background.
 
 # ── Goals ──
 # What a post is for, independent of its format.
 # Shares: monthly target for Instagram.
 
 goal craft
-  label:    Handwerk zeigen
+  label:    Show the craft
   share:    60%
-  question: Wie entsteht das Brot?
-  narratives: Achtzehn Stunden
+  question: How is the bread made?
+  narratives: Eighteen Hours
   always:
-    - einen konkreten Arbeitsschritt, eine Mehlsorte oder eine Zeit nennen
+    - name one concrete step, one flour or one time
 
 goal kiez
   label:    Kiez
   share:    30%
-  question: Wer kommt hierher und warum?
+  question: Who comes here, and why?
   narratives: Weserstraße
   always:
-    - eine Person mit Vornamen und ihrem Grund zu kommen
+    - a person with their first name and their reason to come
 
 goal service
   label:    Service
   share:    10%
-  question: Was gibt es heute, wann ist offen?
+  question: What is there today, when is it open?
   always:
-    - Tag, Uhrzeit und Sorte konkret nennen
+    - name the day, the time and the bread
 
 # ── Review ──
 # Asked before anything goes out. Each one is a yes/no question.
 
 review
   copy:
-    - Nennt der Text Sorte, Mehl, Gewicht oder Backzeit?
-    - Klingt er wie die Bäckerin hinterm Tresen?
+    - Does the text name the bread, the flour, the weight or the fermentation time?
+    - Does it sound like the baker behind the counter?
   image:
-    - Zeigt das Bild einen echten Arbeitsschritt oder echte Kundschaft?
-    - Ist das Brot Lebensmittel, nicht Dekoration?
+    - Does the picture show a real step of the work or real customers?
+    - Is the bread food, not decoration?

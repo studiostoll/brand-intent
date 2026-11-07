@@ -3,14 +3,14 @@
 # The label on the first page is fixed and carries the date; everything else is open.
 
 id:     breads-of-the-week
-name:   Brote der Woche
+name:   Breads of the Week
 format: 4:5
 topic:  The three breads baked every day this week
 
 page
   purpose:     daily-bread
   composition: editorial
-  label:       Ab {date}
+  label:       From {date}
 
 page
   purpose: daily-bread
@@ -25,18 +25,18 @@ example
   topic: A rye week: three rye breads from mild to dark
   page 1
     topic:     Light rye, the mild start
-    primary:   Hellroggen
-    secondary: 750 g · 5,40 €
-    meta:      Roggen 997 mit etwas Weizen, 14 Stunden Teigführung.
+    primary:   Light rye
+    secondary: 750 g · €5.40
+    meta:      Rye 997 with a little wheat, 14 hours of fermentation.
   page 2
     topic:     The classic rye loaf
-    label:     Der Klassiker
-    primary:   Roggenlaib
-    secondary: 750 g · 5,80 €
-    meta:      Roggen 1150, 18 Stunden Teigführung, Kümmel aus dem Wendland.
+    label:     The classic
+    primary:   Rye loaf
+    secondary: 750 g · €5.80
+    meta:      Rye 1150, 18 hours of fermentation, caraway from the Wendland.
   page 3
     topic:     Dark whole-grain rye, the strongest
-    label:     Kräftig
-    primary:   Vollkornroggen
-    secondary: 1 kg · 7,20 €
-    meta:      Ganzes Korn, zwei Tage Sauerteig, hält eine Woche.
+    label:     Hearty
+    primary:   Whole-grain rye
+    secondary: 1 kg · €7.20
+    meta:      Whole grain, two days of sourdough, keeps a week.

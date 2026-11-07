@@ -5,7 +5,7 @@
 # What is not known is not guessed: on a closed day {closes} has no value and the post doesn't go out.
 
 id:     today
-name:   Heute
+name:   Today
 format: 4:5
 place:  weserstrasse
 topic:  Today's bread, with today's light and today's hours
@@ -14,7 +14,7 @@ page
   purpose:     daily-bread
   composition: editorial
   label:       {weekday}
-  meta:        Hell seit {sunrise}, Ofen an seit vier. Offen bis {closes}, was weg ist, ist weg.
+  meta:        Light since {sunrise}, oven on since four. Open until {closes}, what's gone is gone.
 
 # ── Examples ──
 # The open slots of the page: the bread of the day.
@@ -22,11 +22,11 @@ page
 example
   topic: The classic rye loaf on an ordinary weekday
   page 1
-    primary:   Roggenlaib
-    secondary: 750 g · 5,80 €
+    primary:   Rye loaf
+    secondary: 750 g · €5.80
 
 example
   topic: The Saturday wheat blend
   page 1
-    primary:   Weizenmisch
-    secondary: 500 g · 4,20 €
+    primary:   Wheat blend
+    secondary: 500 g · €4.20

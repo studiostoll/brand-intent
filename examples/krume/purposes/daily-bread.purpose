@@ -3,7 +3,7 @@
 # Used for daily Instagram posts: what's fresh, what's available.
 
 id:   daily-bread
-name: Tagesbrot
+name: Daily bread
 
 # Which compositions can render this purpose.
 compositions: editorial, simple-stack
@@ -13,7 +13,7 @@ palette: dynamic
 
 # Default goal (krume.identity) and camera framing (krume.brand) for this purpose.
 goal:    craft
-framing: tresen
+framing: counter
 
 # ── Voice ──
 # Purpose-specific writing rules for AI text generation.
@@ -33,8 +33,8 @@ scope
 # Context: only what is genuinely specific to this content type.
 # These are slot-level instructions - not voice, not production params.
 context
-  primary is the bread name, 1-3 words (e.g. "Roggenlaib").
-  secondary is the weight and price ("750 g · 5,80 €").
+  primary is the bread name, 1-3 words (e.g. "Rye loaf").
+  secondary is the weight and price ("750 g · €5.80").
   meta is one sentence: what makes this bread specific today.
   Never describe the bread as "delicious" or "special" -
   state a fact (flour type, fermentation time, seasonal ingredient).
@@ -42,19 +42,19 @@ context
 # ── Slots ──
 
 slot primary
-  label:      Brotname
+  label:      Bread name
   typography: headline
   color:      text-primary
   maxLength:  30
 
 slot secondary
-  label:      Gewicht & Preis
+  label:      Weight & price
   typography: kicker
   color:      text-secondary
   maxLength:  25
 
 slot meta
-  label:      Beschreibung
+  label:      Description
   typography: caption
   color:      text-secondary
   maxLength:  100
@@ -70,31 +70,31 @@ slot label
 
 example
   topic: The classic rye loaf, today's bread
-  label:     Heute frisch
-  primary:   Roggenlaib
-  secondary: 750 g · 5,80 €
-  meta:      Roggen 1150, 18 Stunden Teigführung, Kümmel aus dem Wendland.
+  label:     Fresh today
+  primary:   Rye loaf
+  secondary: 750 g · €5.80
+  meta:      Rye 1150, 18 hours of fermentation, caraway from the Wendland.
 
 example
   topic: The wheat blend, only on Saturdays
-  label:     Nur samstags
-  primary:   Weizenmisch
-  secondary: 500 g · 4,20 €
-  meta:      Tipo 1 aus der Drax-Mühle, 72 % Hydration.
+  label:     Saturdays only
+  primary:   Wheat blend
+  secondary: 500 g · €4.20
+  meta:      Tipo 1 from the Drax mill, 72 % hydration.
 
 example
   topic: New in the shop: emmer bread with walnuts
-  label:     Neu im Laden
-  primary:   Emmer-Walnuss
-  secondary: 1 kg · 7,50 €
-  meta:      Saisonale Walnüsse vom Wochenmarkt, Emmer-Vollkorn.
+  label:     New in the shop
+  primary:   Emmer walnut
+  secondary: 1 kg · €7.50
+  meta:      Seasonal walnuts from the weekly market, whole-grain emmer.
 
-# A seasonal example: only picked while the `advent` window in krume.brand is open.
+# A seasonal example: only picked while the `advent` window in krume.time is open.
 
 example
   topic: Butter stollen, baked from the first Sunday of Advent
   when:  advent
-  label:     Nur im Advent
-  primary:   Butterstollen
-  secondary: 1 kg · 24 €
-  meta:      Butter aus Brandenburg, drei Wochen gereift. Ab dem 27. November im Regal.
+  label:     Advent only
+  primary:   Butter stollen
+  secondary: 1 kg · €24
+  meta:      Butter from Brandenburg, matured for three weeks. On the shelf from 27 November.
