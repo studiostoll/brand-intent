@@ -256,6 +256,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 }
 
 /* A phone, with the post in a feed. Fixed colours: it is a device, not the page. */
+.post-caption { grid-column: 1 / -1; }
 .phone {
   width: 100%;
   max-width: 380px;
@@ -435,24 +436,6 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 .post-trace span { color: var(--color-secondary); }
 
 /* ── Learned in practice ── */
-.rules-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-lg) var(--space-xl);
-  margin-top: var(--space-lg);
-}
-.rule h3 {
-  font-size: var(--font-size-h3);
-  margin: 0 0 var(--space-xs);
-  line-height: var(--line-height-tight);
-}
-.rule p {
-  font-size: var(--font-size-small);
-  color: var(--color-secondary);
-  line-height: 1.6;
-  margin: 0;
-}
-
 /* ── Changelog ── */
 .changelog { margin: var(--space-lg) 0 0; }
 .changelog > div {
@@ -499,7 +482,6 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .questions-row-2 { grid-template-columns: 1fr; }
   .post-demo { grid-template-columns: 1fr; }
   .phone { max-width: 340px; }
-  .rules-grid { grid-template-columns: 1fr; }
   .changelog > div { grid-template-columns: 1fr; gap: 0.25rem; }
   .changelog dt span { display: inline; margin-left: 0.5rem; }
   .author { grid-template-columns: 1fr; }

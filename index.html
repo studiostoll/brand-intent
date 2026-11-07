@@ -1,7 +1,7 @@
 ---
 layout: default
 title: What a brand means. Authored, structured, shared.
-description: An open file format for the reasoning behind a brand, written in a working studio and published to be read, adopted and argued with. Seven plain-text file types for people and AI agents.
+description: An open file format for the reasoning behind a brand, written in a design studio while running brands with clients. Seven plain-text file types, readable by people and by AI agents.
 ---
 
 <!-- ═══ HERO ═══ -->
@@ -74,11 +74,6 @@ description: An open file format for the reasoning behind a brand, written in a 
           <p class="feed-time">Vor 12 Minuten</p>
         </div>
       </div>
-      <p class="post-caption">
-        Rendered in CSS from the Krume files on the <code>Tafel</code> theme. The photo passes the imagery rules in the identity file; the wordmark is set in Mansalva, an open face close to the brand&rsquo;s display face. Each part is traced to its file beside the post.
-        Brand Atelier renders the same files with the day&rsquo;s photo and the brand&rsquo;s display face.
-        Photo: <a href="https://unsplash.com/photos/2uiZDQYTHBM">Skyler Ewing, Unsplash</a>.
-      </p>
     </div>
 
     <ol class="post-trace">
@@ -111,6 +106,10 @@ description: An open file format for the reasoning behind a brand, written in a 
         <span><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/stories/today.story">today.story</a> posts the same purpose with <code>{weekday}</code> as the badge and <code>{sunrise}</code> and <code>{closes}</code> in the caption, from the calendar, the sky and <a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/places/weserstrasse.place">weserstrasse.place</a>.</span>
       </li>
     </ol>
+    <p class="post-caption">
+      Rendered in CSS from the Krume files, <code>Tafel</code> theme. Wordmark set in Mansalva, an open face standing in for the brand&rsquo;s display face.
+      Photo: <a href="https://unsplash.com/photos/2uiZDQYTHBM">Skyler Ewing, Unsplash</a>.
+    </p>
   </div>
 </section>
 
@@ -118,7 +117,7 @@ description: An open file format for the reasoning behind a brand, written in a 
 <!-- ═══ THE PROBLEM ═══ -->
 <section id="why" class="landing-section">
   <span class="section-label">02 / The problem</span>
-  <h2>The reasoning disappears. The brand drifts.</h2>
+  <h2>The reasoning behind a brand is rarely written down.</h2>
 
   <div class="columns columns-2" style="margin-top:1.5rem;">
     <div>
@@ -132,9 +131,9 @@ description: An open file format for the reasoning behind a brand, written in a 
     </div>
     <div>
       <p>
-        AI didn&rsquo;t create this problem. It accelerated it.
+        The problem is older than AI. AI made it fast.
         A designer working from fuzzy guidelines compensates with taste and context.
-        An AI reaches for the generic, faster than anyone can course-correct.
+        An agent reaches for the generic, and it does so faster than anyone can catch it.
         Brand Intent gives the reasoning a structure that is concrete enough to test against,
         and plain enough that a person, a parser and a language model read the same file.
       </p>
@@ -149,8 +148,8 @@ description: An open file format for the reasoning behind a brand, written in a 
   <h2>Five questions a brand answers once, and two files for what it posts.</h2>
   <p>
     Each question has its own file type, and each file type has one job.
-    Downstream files never repeat what upstream files establish: a purpose narrows the identity, it doesn&rsquo;t restate it.
-    That separation is what keeps the reasoning intact while the expression evolves.
+    A downstream file never repeats what an upstream file has settled: a purpose narrows the identity and does not restate it.
+    The separation keeps the reasoning intact while the expression changes.
   </p>
 
   <div class="questions-row">
@@ -356,7 +355,8 @@ description: An open file format for the reasoning behind a brand, written in a 
       <p>
         What the brand posts, page by page. Each page names a purpose and a composition. A slot can be fixed, open, or hold a variable:
         the date, the weekday, <code>{sunrise}</code> and <code>{sunset}</code> from the brand&rsquo;s coordinates, <code>{weather}</code> from a forecast,
-        <code>{opens}</code> and <code>{closes}</code> from a place. Page lists repeat a page as often as the week needs.
+        <code>{opens}</code> and <code>{closes}</code> from a place. What is not known is not guessed: without a forecast, or on a day the place is closed,
+        the variable has no value and the post doesn&rsquo;t go out. Page lists repeat a page as often as the week needs.
         A story can ask for a photo taken now, with the brand&rsquo;s camera settings.
       </p>
 <pre><span class="kw">id:</span>     <span class="val">today</span>
@@ -404,43 +404,9 @@ description: An open file format for the reasoning behind a brand, written in a 
 </section>
 
 
-<!-- ═══ LEARNED IN PRACTICE ═══ -->
-<section id="learned" class="landing-section">
-  <span class="section-label">05 / Learned in practice</span>
-  <h2>Rules the spec didn&rsquo;t start with. Each one came from a post that went wrong.</h2>
-
-  <div class="rules-grid">
-    <div class="rule">
-      <h3>Weather is not guessed.</h3>
-      <p>A morning post that quotes the forecast is only a post when a forecast exists. Too far ahead, or the service doesn&rsquo;t answer: the preview shows a placeholder and the scheduled post doesn&rsquo;t go out. A made-up number is worse than no post.</p>
-    </div>
-    <div class="rule">
-      <h3>Closed is not guessed either.</h3>
-      <p>On a day the place is closed, <code>{opens}</code> and <code>{closes}</code> have no value. Before a new place&rsquo;s opening date it is closed every day, and AI writing treats it as not open yet. The regular week still shows, so a page can announce the hours it will have.</p>
-    </div>
-    <div class="rule">
-      <h3>A pair teaches the rewrite, not just the ban.</h3>
-      <p>A <code>never</code> list tells an agent what to avoid. It avoided it, and reached for the next clich&eacute;. <code>instead</code> pairs give the phrase to avoid and the brand&rsquo;s own wording, and the rewrite follows the model.</p>
-    </div>
-    <div class="rule">
-      <h3>Examples are whole pages, never slot variants.</h3>
-      <p>Sample texts per slot produced posts whose headline and caption were about two different breads. An example is now a whole page with one topic, and AI writing produces pages in that shape.</p>
-    </div>
-    <div class="rule">
-      <h3>Starting values, not rules.</h3>
-      <p>A photo look is a default the person adjusts, including back to neutral. Only a treatment that defines the brand, grayscale-only or duotone, is marked <code>fixed</code>. Everything else is a starting point.</p>
-    </div>
-    <div class="rule">
-      <h3>What belongs where.</h3>
-      <p>Before a line goes into a purpose: sounds like voice guidance, it belongs in the identity. Sounds like a production parameter, it belongs in the brand. Appears in three purposes, it belongs upstream. Only what is genuinely slot-level stays.</p>
-    </div>
-  </div>
-</section>
-
-
 <!-- ═══ HOW IT IS USED ═══ -->
 <section id="use" class="landing-section">
-  <span class="section-label">06 / How it is used</span>
+  <span class="section-label">05 / How it is used</span>
   <h2>With me, or without me.</h2>
 
   <div class="columns columns-2" style="margin-top:1.5rem;">
@@ -452,9 +418,9 @@ description: An open file format for the reasoning behind a brand, written in a 
         follow the brand&rsquo;s own process. It has just started live testing with a few brands.
       </p>
       <p>
-        It is not self-service, by design. The files are the easy part. Keeping them true to a brand over time,
-        extending the format when a brand needs something it can&rsquo;t say yet, and fitting the governance to how a team actually works
-        is the work I do as designer and consultant. Invite only, for now.
+        The files are the easy part. The work is keeping them true to a brand over the years,
+        extending the format when a brand needs something it cannot say yet, and fitting all of this into how a team decides and approves.
+        That is what I do as designer and consultant, so Brand Atelier is invite only for now.
       </p>
       <p><a href="mailto:christophe@stoll.studio?subject=Brand%20Atelier" class="btn-primary">Write to me</a></p>
     </div>
@@ -480,7 +446,7 @@ description: An open file format for the reasoning behind a brand, written in a 
 
 <!-- ═══ TRY IT ═══ -->
 <section id="start" class="landing-section">
-  <span class="section-label">07 / Try it</span>
+  <span class="section-label">06 / Try it</span>
   <h2>Ten minutes with the example brand.</h2>
 
   <div class="columns columns-2" style="margin-top:1.5rem;">
@@ -524,7 +490,7 @@ description: An open file format for the reasoning behind a brand, written in a 
       </p>
       <p>
         <strong>Onboard</strong> (<code>/brand-intent onboard</code>). A guided interview that drafts your own identity, brand and a first purpose.
-        Treat the result as a first draft to argue with, not a finished brand.
+        The result is a first draft to argue with.
       </p>
       <p>
         <strong>Parse</strong>. The package exports the TypeScript parser for all seven types, so your own tooling can read the files.
@@ -536,9 +502,9 @@ description: An open file format for the reasoning behind a brand, written in a 
 
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
-  <span class="section-label">08 / Recent changes</span>
-  <h2>The spec moves with the brands that use it.</h2>
-  <p>Version 0.42 as of November 2026. The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
+  <span class="section-label">07 / Recent changes</span>
+  <h2>Version 0.42, November 2026.</h2>
+  <p>The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
 
   <dl class="changelog">
     <div><dt>v0.42 <span>6 Nov 2026</span></dt><dd>A story page can ask for a photo taken now, with the brand&rsquo;s camera. Brand photos get a <code>focus</code> point and a <code>horizon</code> line.</dd></div>
@@ -553,7 +519,7 @@ description: An open file format for the reasoning behind a brand, written in a 
 
 <!-- ═══ AUTHOR ═══ -->
 <section id="author" class="landing-section author-section">
-  <span class="section-label">09 / Who writes this</span>
+  <span class="section-label">08 / Who writes this</span>
   <div class="author">
     <img src="{{ '/assets/ch.webp' | relative_url }}" alt="Christophe Stoll" width="96" height="96" class="author-portrait">
     <div>
@@ -561,7 +527,7 @@ description: An open file format for the reasoning behind a brand, written in a 
         I&rsquo;m <a href="https://www.stoll.studio">Christophe Stoll</a>, an interaction designer in Hamburg. I have designed digital products and the
         design systems behind them for more than twenty-five years, co-founded precious design studio, and teach interaction design at HAWK Hildesheim.
         Brand Intent is what that practice looks like once AI agents are part of the team.
-        The spec, the parser, the extension and Brand Atelier are mine, and the rules in them came out of work with real brands.
+        The spec, the parser, the extension and Brand Atelier are mine, and the rules in them came out of client work.
       </p>
       <p class="author-links">
         <a href="mailto:christophe@stoll.studio">christophe@stoll.studio</a>
