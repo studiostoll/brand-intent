@@ -1528,7 +1528,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `topic:` | string | No | Story topic: what the whole story is about, one sentence. People can change it per story; it guides AI writing and review on every page |
 | `scrim:` | `none` | No | No [scrim](#photo-look-block) on any page of the story, whatever the brand and the pages' purposes declare |
 | `place:` | string | No | [Place](#place-place) id the story speaks for. When omitted and the brand has exactly one place, the story speaks for that one; with several places, it speaks for the brand in general (sky and weather use the `.brand` `location`, place variables are not available) |
-| `when:` | string | No | Name of a [`.time`](#time-time) entry the story fits: a window, a season, a weekly or a date. Implementations offer the story as a template only [in season](#when-in-season), and its occasion variables resolve from the entry. Absent: all year |
+| `when:` | string | No | Name of a [`.time`](#time-time) entry the story fits: a window, a season, a weekly or a date. Implementations offer the story as a template only [in season](#when-in-season); a weekly or date also gives the occasion variables. Absent: all year |
 | `person:` | string | No | [Person](#person-person) id the story speaks about. Person variables resolve from it on every page that doesn't name its own |
 | `page` | block | Yes (1+) | One page (repeatable). Order in the file = order in the story |
 | `example` | block | No | Texts for the open slots of the pages, about one story topic (repeatable) |
@@ -1622,7 +1622,7 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 
 **Person** variables (`{person}`, `{role}`, `{since}`, `{since-years}`, `{reason}`) come from the page's person: the one its `person:` names, else the story's. `{since}` and `{since-years}` need the person's `since:`, `{reason}` its `reason:`. `{person}` gives the name only with `name:` and `consent name: yes`; otherwise the role, so a page never names someone who didn't agree.
 
-**Consent is not guessed.** A page with a photo whose `person:` has no `consent photo: yes`, or a page of a purpose with `person: required` whose person has no `consent quote: yes`, is not posted: the preview says why. A person without a `consent` block has given none.
+**Consent is not guessed.** A page with a photo whose `person:` has no `consent photo: yes`, or a page of a purpose with `person: required` whose person has no `consent quote: yes`, is not posted: the preview says why.
 
 **`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
 
@@ -1819,14 +1819,14 @@ daily
 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
-| `founded:` | date or year | No | `YYYY-MM-DD` or `YYYY`: when the brand started. `{founded}` and `{years}` show it |
+| `founded:` | date or year | No | `YYYY-MM-DD` or `YYYY`: when the brand started. `{founded}` and `{years}` show it; a bare year counts from January 1 |
 | `season NAME` | block | No | A season of the brand's year (repeatable, below). At least two when any |
 | `windows` | block | No | Named yearly date windows (below) |
 | `weekly NAME` | block | No | Something that happens on fixed weekdays (repeatable, below) |
 | `date NAME` | block | No | A yearly or one-off date (repeatable, below) |
 | `daily` | block | No | Named moments of the brand's day (below) |
 
-Names (`NAME`, window names, daily names) are lowercase kebab-case and unique across the file: `when:` names any of them.
+Names (`NAME`, window names, daily names) are lowercase kebab-case and unique across the file. `when:` names a window, a season, a weekly or a date; a daily moment is a time of day, not a season, and is reached with `{daily NAME}`.
 
 ### `season NAME` Block
 
@@ -1910,7 +1910,7 @@ A `.time` never contains: voice or tone (→ `.identity`), visual parameters (�
 **File extension:** `.person`
 **Filename convention:** the person id (e.g., `thomas.person`), in `people/`
 
-Someone the brand's posts name, quote or show: the founder, the baker, a regular, a guest, a winemaker, a speaker. Facts and consent, not voice: what the person said is theirs and stays verbatim. One file per person, so that withdrawing a person is deleting one file.
+Someone the brand's posts name, quote or show: the founder, the baker, a regular, a guest, a winemaker, a speaker. Facts and consent, not voice: what the person said is theirs and stays verbatim. One file per person, so that withdrawing a person is deleting one file. A person who agreed to nothing has no file.
 
 ```yaml
 # people/thomas.person
@@ -1957,12 +1957,12 @@ consent
 | `id:` | string | Yes | Person identifier; stories, pages and photos name it with `person:` |
 | `name:` | string | No | The name as a post may write it, usually a first name. Omitted: the person is their role |
 | `role:` | string | Yes | Who they are to the brand, in the brand's language, as a post would say it: `Bäckerin`, `Gast in Lemkenhafen`, `Winzer des Hausweins` |
-| `since:` | date or year | No | `YYYY-MM-DD` or `YYYY`: since when. `{since}` and `{since-years}` show it |
+| `since:` | date or year | No | `YYYY-MM-DD` or `YYYY`: since when. `{since}` and `{since-years}` show it; a bare year counts from January 1 |
 | `place:` | string | No | The [place](#place-place) they belong to |
 | `reason:` | string | No | Why they come, what they do: the fact a goal like "a person with their reason to come" asks for. `{reason}` shows it |
 | `context:` | string | No | Facts for AI writing. Not voice |
 | `photos:` | string list | No | Photo ids from the `.brand` that show them. Each of those photos names this person with `person:` |
-| `consent` | block | No | What the person agreed to (below). Absent: nothing |
+| `consent` | block | Yes | What the person agreed to (below); at least one `yes` |
 | `quote` | block | No | Their words, verbatim, one quote per block on the following 2-space lines (repeatable) |
 
 ### `consent` Block
@@ -1975,7 +1975,7 @@ consent
 | `given:` | date | — | When the consent was given |
 | `until:` | date | — | When it ends. After it, every answer is `no` |
 
-The people equivalent of opening hours: what the file doesn't allow, no post does.
+The people equivalent of opening hours: what the file doesn't allow, no post does. A block with no `yes` is an error: a person who agreed to nothing has no file.
 
 ### Quotes
 
@@ -2026,7 +2026,7 @@ A parser should warn when:
 - A `slot` references a `color` not defined as a theme slot
 - An example, photo, story or page `when:` names an entry the `.time` doesn't declare; a `.brand` still has a `windows` block or a colour family `from:` date
 - A colour family names a season the `.time` doesn't declare, or two families name the same season
-- A story, page or photo names a person that doesn't exist; a page of a purpose with `person: required` has no person; a person's `photos:` lists a photo whose `person:` is someone else
+- A story, page or photo names a person that doesn't exist; a page of a purpose with `person: required` has no person; a person's `photos:` lists a photo whose `person:` is someone else; a `.person` has no `consent` block or one without a `yes`
 - An example `goal:` references a goal not defined in `.identity`
 - A `.purpose` still uses deprecated slot `samples:`
 - An `archetypes` entry references a non-existent `.composition` file
