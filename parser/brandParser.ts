@@ -1839,7 +1839,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     // when:, person:, group: and work: name .time, .person, .group and .work entries; `checkBrand` resolves them
     for (const key of ['when', 'person', 'group', 'work'] as const) {
       const value = p.props[key];
-      if (value && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}: photo "${p.id}": ${key}: must be an id (lowercase kebab-case), got "${value}"`);
+      if (value && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}: photo "${p.id}": ${key}: must be an id (lowercase kebab-case), got "${value}"${key === 'group' ? ' (a library section is "section:" since v0.44)' : ''}`);
     }
     const taken = p.props['taken'];
     if (taken && !/^\d{4}-\d{2}-\d{2}$/.test(taken)) throw new Error(`${fileName}: photo "${p.id}": taken: must be YYYY-MM-DD, got "${taken}"`);

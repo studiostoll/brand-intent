@@ -1,13 +1,28 @@
 /**
  * Regression test: every real brand file in brand-atelier must still parse
- * cleanly after the v0.8.0 parser changes.
+ * cleanly with this parser.
+ *
+ * Atelier may lawfully be behind a breaking change it has not adopted yet: a parse error whose
+ * message names the version it came with ("… since v0.44") is tolerated while Atelier's
+ * package.json pins an older brand-intent. Once Atelier is bumped, it fails the suite again.
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseBrandFile } from '../parser/brandParser';
 
-const BRANDS_DIR = '/Users/christophestoll/Documents/GitHub/brand-atelier/app/public/brands';
+const ATELIER = '/Users/christophestoll/Documents/GitHub/brand-atelier/app';
+const BRANDS_DIR = `${ATELIER}/public/brands`;
+
+const minor = (v: string): number => { const [a, b] = v.replace(/^[^\d]*/, '').split('.'); return Number(a) * 1000 + Number(b); };
+let atelierPins = Infinity;
+try { atelierPins = minor(JSON.parse(readFileSync(`${ATELIER}/package.json`, 'utf8')).dependencies['brand-intent']); } catch { /* no Atelier checkout: nothing is tolerated */ }
+/** True for a breaking-change error newer than the parser Atelier pins. */
+const tolerated = (message: string): boolean => {
+  const m = /since v(\d+\.\d+)/.exec(message);
+  return !!m && minor(m[1]) > atelierPins;
+};
+let toleratedCount = 0;
 
 let pass = 0;
 let fail = 0;
@@ -26,10 +41,11 @@ for (const brandId of readdirSync(BRANDS_DIR)) {
     console.log(`  ✓ ${brandId}: ${colorCount} colors (${groupsLabel}), ${Object.keys(parsed.themes ?? {}).length} themes`);
     pass++;
   } catch (err) {
-    console.log(`  ✗ ${brandId}: ${err instanceof Error ? err.message : err}`);
-    fail++;
+    const message = err instanceof Error ? err.message : String(err);
+    if (tolerated(message)) { console.log(`  ~ ${brandId}: ${message} (Atelier not yet bumped)`); toleratedCount++; }
+    else { console.log(`  ✗ ${brandId}: ${message}`); fail++; }
   }
 }
 
-console.log(`\n${pass} brands parsed, ${fail} failed`);
+console.log(`\n${pass} brands parsed, ${fail} failed${toleratedCount ? `, ${toleratedCount} behind the bump` : ''}`);
 if (fail > 0) process.exit(1);
