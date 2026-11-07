@@ -267,7 +267,6 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   margin: 0.25rem 0 var(--space-sm);
   font-size: var(--font-size-small);
   color: var(--color-tertiary);
-  max-width: 60ch;
 }
 .q-group + .q-group-note + .questions-row { margin-top: 0; }
 
