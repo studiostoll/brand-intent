@@ -13,11 +13,11 @@ description: Generate and validate on-brand content using Brand Intent files
 > If `$ARGUMENTS` is "validate": read the most recent generated or provided content and run the validation checklist against the brand files.
 > If `$ARGUMENTS` is empty: find the active brand (see File Discovery below), summarize the brand voice and list available purposes.
 
-You are working in a project that uses **Brand Intent**, an open file format for encoding brand identity, expression intent, and content composition rules across seven composable file types. This skill teaches you how to read, compose, and validate Brand Intent files.
+You are working in a project that uses **Brand Intent**, an open file format for encoding brand identity, expression intent, and content composition rules across nine composable file types. This skill teaches you how to read, compose, and validate Brand Intent files.
 
 ## The File Types
 
-Brand Intent distributes brand knowledge across five layers plus two files for what the brand posts. Each answers one question:
+Brand Intent distributes brand knowledge across nine file types in three groups: five layers that describe the brand, a story file for what it posts, and three fact files for what is true about it. Each answers one question:
 
 | Layer | File | Question | Changes |
 |-------|------|----------|---------|
@@ -28,11 +28,13 @@ Brand Intent distributes brand knowledge across five layers plus two files for w
 | **Composition** | `.composition` | How are elements composed? | Reusable across brands |
 | **Story** | `.story` | What does the brand post, page by page? | Per post series |
 | **Place** | `.place` | Which site do the posts speak about? | When hours or address change |
+| **Time** | `.time` | When does the brand live: its seasons, windows, week and day? | When the year or the week changes |
+| **Person** | `.person` | Who do the posts name, quote or show, and what did they agree to? | When a person joins, or withdraws consent |
 
 The arrow between layers is a **derivation arrow**: Identity contains reasoning. Brand derives expression intent from that reasoning. Format, Purpose, and Composition condition specific acts of expression without repeating what upstream layers establish.
 
 ```
-Identity → Brand → Format → Purpose → Composition   + Story · Place
+Identity → Brand → Format → Purpose → Composition   + Story   + Place · Time · Person
 ```
 
 ## How to Read Each Layer
@@ -63,9 +65,9 @@ Identity → Brand → Format → Purpose → Composition   + Story · Place
 
 ### `.brand`: Derived Expression Intent
 
-Contains: color primitives (`brand-colors`), semantic themes, color families, fonts, named typography styles, spacing, dividers, badge styles, icons, declared assets (logos, photos, illustrations). Also the brand's place and year: `location` (coordinates for sunrise, sunset and weather variables), `windows` (named yearly date ranges such as `advent: 11-27..12-24`), `camera`, `framing NAME` modules (horizon position, goals) and `photo-look` (saturation, warmth, contrast, scrim).
+Contains: color primitives (`brand-colors`), semantic themes, color families, fonts, named typography styles, spacing, dividers, badge styles, icons, declared assets (logos, photos, illustrations). Also `location` (the area the brand is in, coordinates for sunrise, sunset and weather variables), `camera`, `framing NAME` modules (horizon position, goals) and `photo-look` (saturation, warmth, contrast, scrim). Seasons and windows are not here: they are the brand's `.time`.
 
-**For writing you need:** `windows` (an example or story marked `when: NAME` only fits inside that window; outside it, don't pick it), and `framing` when briefing a photo. Writing rules such as `sentence-max` live in the purpose's `voice` block, not here.
+**For writing you need:** `framing` when briefing a photo. Writing rules such as `sentence-max` live in the purpose's `voice` block, not here.
 
 **Does NOT contain:** identity reasoning, audience definitions, strategic prose, composition rules, writing rules.
 
@@ -84,7 +86,7 @@ Contains: semantic slot definitions (primary, secondary, detail, meta, cta, labe
 - `headline-pattern:` structural pattern for headlines (e.g., `noun-first`, `verb-first`).
 - `number-format:` `cardinal` means write "drei" not "3"; `digit` the opposite.
 
-**`example`** blocks are whole pages, one topic each, every slot written together. AI writing produces whole pages in this shape, never independent variants per slot. An example with `when: NAME` only fits inside that window of the `.brand`.
+**`example`** blocks are whole pages, one topic each, every slot written together. AI writing produces whole pages in this shape, never independent variants per slot. An example with `when: NAME` only fits while that `.time` entry is in season: inside the window or season, on the weekly's days, in the days before a date.
 
 **Semantic slots are roles, not positions:**
 - `primary` = main communicative act (headline, key message)
@@ -102,13 +104,21 @@ Contains: slot-to-position mappings in grid or flow mode.
 
 ### `.story`: What the Brand Posts
 
-Ordered `page` blocks, each naming a purpose (and optionally a composition, theme, photo). A slot on a page is **fixed** (text written in the story), **variable** (`{date}`, `{weekday}`, `{sunrise}`, `{sunset}`, `{weather}`, `{place}`, `{address}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`, `{n}`, `{count}`), or **open** (left to an example, a person, or AI). `repeat: MIN-MAX` makes a page list. `place:` names a `.place`; `when:` a window.
+Ordered `page` blocks, each naming a purpose (and optionally a composition, theme, photo). A slot on a page is **fixed** (text written in the story), **variable** (calendar and sky: `{date}`, `{weekday}`, `{sunrise}`, `{sunset}`, `{weather}`; place: `{place}`, `{address}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`; time: `{season}`, `{founded}`, `{years}`, `{occasion}`, `{occasion-date}`, `{occasion-time}`, `{days-until}`, `{daily NAME}`; person: `{person}`, `{role}`, `{since}`, `{since-years}`, `{reason}`; list: `{n}`, `{count}`), or **open** (left to an example, a person, or AI). `repeat: MIN-MAX` makes a page list. `place:` names a `.place`, `when:` a `.time` entry, `person:` a `.person`; a page may name its own `when:` and `person:`.
 
-When writing for a story: fill only open slots, keep one topic across all pages, leave variables exactly as written. Variables are filled by the implementation from the calendar, the sky, a forecast or the place. **Weather and opening times are not guessed:** never replace a variable with a value you made up.
+When writing for a story: fill only open slots, keep one topic across all pages, leave variables exactly as written. Variables are filled by the implementation from the calendar, the sky, a forecast, the place, the time file or the person. **Weather, opening times, dates and names are not guessed:** never replace a variable with a value you made up, and never name a person the files don't name.
 
 ### `.place`: A Site the Posts Speak About
 
 Facts only: `name`, `address`, `latitude`/`longitude`, `context` (what the place is like, for AI writing), `opening` (date a new place opens), `hours` (regular weekly hours; a day not named is closed), `capacity` (`indoor`, `outdoor`). Use `context` and `hours` as facts when writing about the place. Never state a capacity, hour or address the file doesn't give. Before `opening:` the place is not open yet.
+
+### `.time`: When the Brand Lives
+
+One per brand, facts only: `founded` (date or year), `season NAME` blocks (`label`, `from`), `windows` (named yearly date ranges such as `advent: 11-27..12-24`), `weekly NAME` blocks (`label`, `days`, `time`, `place`, `context`: the Thursday tasting, the Saturday bread), `date NAME` blocks (`label`, `on` as a yearly `MM-DD` or a one-off `YYYY-MM-DD`, `time`, `lead`, `context`), and `daily` (named moments of the brand's day: `ofen: 04:00 Ofen an`). A `when:` on an example, a story or a page names any of these; use the entry's `label` and `context` as facts. Only pick content that is in season today. Never state a season, a date, an age or a time of day the file doesn't give.
+
+### `.person`: Who the Posts Speak About
+
+One file per person, facts and consent only: `name` (optional), `role` (how a post calls them: `Bäckerin`, `Gast in Lemkenhafen`), `since`, `place`, `reason` (why they come, what they do), `context`, `photos`, a `consent` block (`name`, `photo`, `quote`, each yes or no, `until`), and `quote` blocks with the person's own words. A story or page names a person with `person:`. Write their name only when `name:` is set and `consent name: yes`; otherwise call them by their role. Quote only what a `quote` block holds, verbatim, and only with `consent quote: yes`; never write, extend or rewrite a quote. A purpose with `person: required` needs a person on every page, and without one the page is not posted. Never invent a person, a first name or a reason: a goal that asks for "a person with their reason to come" is answered from a `.person` file or not at all.
 
 ## Composing Context for Content Generation
 
@@ -117,9 +127,9 @@ When generating content for a specific purpose, read all layers silently (do not
 ### Reading layers (internal, not shown to user):
 
 1. **Read `.identity`** — voice.always/never/instead (hard constraints), persona, register, pillars.avoid, anti-audience, values and their examples, positioning; the goal named by the purpose
-2. **Read `.brand`** — `windows` (is a `when:` example in season?), `framing` (for photo briefs)
+2. **Read `.brand`** — `framing` (for photo briefs)
 2b. **Read the `.purpose` `voice` block** — sentence-max, headline-pattern, number-format
-2c. **Read the story's `.place`** when writing for a `.story` — context, hours, capacity as facts
+2c. **Read the fact files** when writing for a `.story` — the story's `.place` (context, hours, capacity), the `.time` (is the `when:` entry in season; its label and context; the daily moments), the `.person` (role, since, reason, quotes, consent) as facts
 3. **Apply `scope` from `.purpose`** — audience and pillar filters narrow the upstream context
 4. **Apply `context` from `.purpose`** — slot-specific instructions, follow literally
 5. **Generate per-slot content** — respect maxLength and any `words:`/`sentences:` range, use the purpose's `example` pages as structural reference (match pattern, not words; all slots of one output share one topic), follow context instructions
@@ -148,8 +158,9 @@ After generating or reviewing content, validate against these rules in order:
 11. **`voice.instead`:** Does the text contain a phrase from the instead list? If yes, rewrite along the replacement.
 12. **`goal`:** Where a goal applies, does the text follow its rules and answer its question?
 13. **`review.copy`:** Answer each question with yes or no. Any no is a failure.
-14. **`when:`:** Is a seasonal example or story used outside its window? If yes, pick another.
-15. **Variables:** Does a story text still contain its `{variables}` unchanged, with no guessed weather, hours or dates? If not, restore them.
+14. **`when:`:** Is an example, story or page used while its `.time` entry is not in season? If yes, pick another.
+15. **Variables:** Does a story text still contain its `{variables}` unchanged, with no guessed weather, hours, dates, ages or names? If not, restore them.
+16. **Consent:** Is a person named without `consent name: yes`, quoted without `consent quote: yes`, or shown without `consent photo: yes`? Is a quote not verbatim from their file? If yes, the page does not go out.
 
 When reviewing a photo, check `imagery.always`/`never`, the brand's framing (horizon position) and each `review.image` question.
 

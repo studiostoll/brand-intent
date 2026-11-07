@@ -1,7 +1,7 @@
 ---
 layout: default
 title: What a brand means. Authored, structured, shared.
-description: An open file format for the reasoning behind a brand, written in a design studio while running brands with clients. Seven plain-text file types, readable by people and by AI agents.
+description: An open file format for the reasoning behind a brand, written in a design studio while running brands with clients. Nine plain-text file types, readable by people and by AI agents.
 ---
 
 <!-- ═══ HERO ═══ -->
@@ -12,7 +12,7 @@ description: An open file format for the reasoning behind a brand, written in a 
     its voice, its rules, what it never says, where it is and when it is open.
     I wrote it in my studio while running brands with clients,
     and I publish it to be read, adopted and argued with.
-    Seven plain-text file types, readable by designers and by the AI agents they now work with.
+    Nine plain-text file types, readable by designers and by the AI agents they now work with.
   </p>
   <div class="hero-cta">
     <a href="#post" class="btn-primary">See a post and its files</a>
@@ -30,8 +30,12 @@ description: An open file format for the reasoning behind a brand, written in a 
     <span>composition</span>
     <span class="chain-plus">+</span>
     <span>story</span>
-    <span class="chain-dot">&middot;</span>
+    <span class="chain-plus">+</span>
     <span>place</span>
+    <span class="chain-dot">&middot;</span>
+    <span>time</span>
+    <span class="chain-dot">&middot;</span>
+    <span>person</span>
   </div>
 </section>
 
@@ -145,13 +149,15 @@ description: An open file format for the reasoning behind a brand, written in a 
 <!-- ═══ FRAMEWORK ═══ -->
 <section id="framework" class="landing-section">
   <span class="section-label">03 / The framework</span>
-  <h2>Five questions a brand answers once, and two files for what it posts.</h2>
+  <h2>Nine file types in three groups: what a brand says once, what it posts, and what is true about it.</h2>
   <p>
-    Each question has its own file type, and each file type has one job.
+    Each file type has one job and answers one question.
     A downstream file never repeats what an upstream file has settled: a purpose narrows the identity and does not restate it.
     The separation keeps the reasoning intact while the expression changes.
   </p>
 
+  <h3 class="q-group">The five layers describe the brand</h3>
+  <p class="q-group-note">Written once, changed rarely. Each derives from the one before it.</p>
   <div class="questions-row">
     <div class="question-card">
       <div class="q-question">Who is this brand?</div>
@@ -180,18 +186,33 @@ description: An open file format for the reasoning behind a brand, written in a 
     </div>
   </div>
 
-  <div class="questions-row questions-row-2">
+  <h3 class="q-group">A story runs</h3>
+  <p class="q-group-note">The one file that does something: pages in order, each a purpose placed by a composition, with fixed, variable and open texts. A carousel, a daily post, a series.</p>
+  <div class="questions-row questions-row-1">
     <div class="question-card">
       <div class="q-question">What does the brand post, page by page?</div>
       <div class="q-answer">Story</div>
       <div class="q-file">.story</div>
-      <p class="q-note">Ordered pages built from purposes and compositions, with fixed, variable and open texts. A carousel, a daily post, a series.</p>
     </div>
+  </div>
+
+  <h3 class="q-group">Three fact files say what is true</h3>
+  <p class="q-group-note">Where, when, who. Facts only, no voice and no colour. A story pulls them in and what they don&rsquo;t say is not guessed: a closed day has no closing time, a person without consent has no name.</p>
+  <div class="questions-row questions-row-3">
     <div class="question-card">
       <div class="q-question">Which site do the posts speak about?</div>
       <div class="q-answer">Place</div>
       <div class="q-file">.place</div>
-      <p class="q-note">Address, coordinates, capacity, weekly hours. Facts only: voice stays in the identity, colours in the brand.</p>
+    </div>
+    <div class="question-card">
+      <div class="q-question">When does the brand live: seasons, week, day?</div>
+      <div class="q-answer">Time</div>
+      <div class="q-file">.time</div>
+    </div>
+    <div class="question-card">
+      <div class="q-question">Who do the posts name, quote or show?</div>
+      <div class="q-answer">Person</div>
+      <div class="q-file">.person</div>
     </div>
   </div>
 </section>
@@ -200,7 +221,7 @@ description: An open file format for the reasoning behind a brand, written in a 
 <!-- ═══ LAYERS ═══ -->
 <section id="layers" class="landing-section">
   <span class="section-label">04 / The files</span>
-  <h2>Seven file types, in plain text. Here is a line or two from each.</h2>
+  <h2>Nine file types, in plain text. Here is a line or two from each.</h2>
   <p>
     All excerpts are from the Krume bakery, the fully commented reference that ships with the package.
     Each heading links to the whole file.
@@ -250,15 +271,11 @@ description: An open file format for the reasoning behind a brand, written in a 
     <div class="layer-body">
       <p>
         The derived expression: colours and the themes that pair them, fonts and named typography styles, spacing, dividers, badges, icons.
-        Since this autumn also the brand&rsquo;s place in the world and its year: a <code>location</code> for sunrise and weather,
-        <code>windows</code> for the weeks a seasonal post fits, a <code>camera</code>, named <code>framing</code> modules for photos, and a <code>photo-look</code>.
+        Since this autumn also the brand&rsquo;s place in the world: a <code>location</code> for sunrise and weather,
+        a <code>camera</code>, named <code>framing</code> modules for photos, and a <code>photo-look</code>.
         Every value traces back to a sentence in the identity.
       </p>
-<pre><span class="kw">windows</span>
-  <span class="meta">rhabarber:</span> <span class="val">04-15..06-24</span>
-  <span class="meta">advent:</span>    <span class="val">11-27..12-24</span>
-
-<span class="kw">framing</span> <span class="sl">tresen</span>
+<pre><span class="kw">framing</span> <span class="sl">tresen</span>
   <span class="meta">horizon:</span>     <span class="num">45%</span>
   <span class="meta">description:</span> <span class="val">The counter at eye level, the street through the shop window behind it.</span>
   <span class="meta">goals:</span>       <span class="val">kiez, service</span>
@@ -355,7 +372,8 @@ description: An open file format for the reasoning behind a brand, written in a 
       <p>
         What the brand posts, page by page. Each page names a purpose and a composition. A slot can be fixed, open, or hold a variable:
         the date, the weekday, <code>{sunrise}</code> and <code>{sunset}</code> from the brand&rsquo;s coordinates, <code>{weather}</code> from a forecast,
-        <code>{opens}</code> and <code>{closes}</code> from a place. What is not known is not guessed: without a forecast, or on a day the place is closed,
+        <code>{opens}</code> and <code>{closes}</code> from a place, <code>{occasion}</code> and <code>{days-until}</code> from the brand&rsquo;s time,
+        <code>{person}</code> and <code>{since}</code> from a person. What is not known is not guessed: without a forecast, on a day the place is closed, or for a person who gave no consent,
         the variable has no value and the post doesn&rsquo;t go out. Page lists repeat a page as often as the week needs.
         A story can ask for a photo taken now, with the brand&rsquo;s camera settings.
       </p>
@@ -394,6 +412,57 @@ description: An open file format for the reasoning behind a brand, written in a 
 <span class="kw">capacity</span>
   <span class="meta">indoor:</span>  <span class="num">6</span>
   <span class="meta">outdoor:</span> <span class="num">8</span></pre>
+    </div>
+  </div>
+
+  <!-- TIME -->
+  <div class="layer-detail">
+    <div class="layer-header">
+      <span class="layer-index">08</span>
+      <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/krume.time">Time</a> <small>krume.time</small></h3>
+    </div>
+    <div class="layer-body">
+      <p>
+        When the brand lives. Its founding, its seasons and the windows a seasonal post fits, its week (the Saturday bread, the Thursday tasting),
+        its dates (the open yard on 2 May, the anniversary) and its day: the oven on at four, everything on the shelf at six.
+        A story or an example names one of these with <code>when:</code> and is only offered in season.
+      </p>
+<pre><span class="kw">founded:</span> <span class="num">2019-05-04</span>
+
+<span class="kw">weekly</span> <span class="sl">weizenmisch</span>
+  <span class="meta">label:</span>   <span class="val">Weizenmisch</span>
+  <span class="meta">days:</span>    <span class="val">sat</span>
+  <span class="meta">context:</span> <span class="val">500 g, only on Saturdays, sold out by ten.</span>
+
+<span class="kw">daily</span>
+  <span class="meta">ofen:</span>  <span class="num">04:00</span>  <span class="val">Ofen an</span>
+  <span class="meta">regal:</span> <span class="num">06:00</span>  <span class="val">Alles im Regal</span></pre>
+    </div>
+  </div>
+
+  <!-- PERSON -->
+  <div class="layer-detail">
+    <div class="layer-header">
+      <span class="layer-index">09</span>
+      <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/people/baeckerin.person">Person</a> <small>baeckerin.person</small></h3>
+    </div>
+    <div class="layer-body">
+      <p>
+        Someone the posts name, quote or show: the baker, a regular, a winemaker, a speaker. A name or an anonymous role, since when, their reason,
+        the photos that show them, their own words verbatim, and what they agreed to. A page names a person with <code>person:</code>;
+        without consent it shows the role instead of the name, and a quote or a photo without consent does not go out. Withdrawing a person is deleting one file.
+      </p>
+<pre><span class="kw">id:</span>     <span class="val">baeckerin</span>
+<span class="kw">role:</span>   <span class="val">B&auml;ckerin</span>
+<span class="kw">since:</span>  <span class="num">2019</span>
+<span class="kw">reason:</span> <span class="val">Hat den Agenturjob gek&uuml;ndigt und den Copyshop zur B&auml;ckerei gemacht.</span>
+
+<span class="kw">consent</span>
+  <span class="meta">name:</span>  <span class="val">no</span>       <span class="cm"># she is "die B&auml;ckerin" in every post</span>
+  <span class="meta">quote:</span> <span class="val">yes</span>
+
+<span class="kw">quote</span>
+  <span class="val">Was weg ist, ist weg. Morgen gibt es neues.</span></pre>
     </div>
   </div>
 
@@ -452,7 +521,7 @@ description: An open file format for the reasoning behind a brand, written in a 
   <div class="columns columns-2" style="margin-top:1.5rem;">
     <div>
       <h3 style="margin-top:0;">1. Install the VS Code extension</h3>
-      <p>Syntax highlighting, completion, hover docs and validation for all seven file types.</p>
+      <p>Syntax highlighting, completion, hover docs and validation for all nine file types.</p>
       <div class="install-block">
         <div class="install-cmd" data-copy="ext install studiostoll.brand-intent-lang">
           <span class="prompt">ext</span>install studiostoll.brand-intent-lang
@@ -493,7 +562,7 @@ description: An open file format for the reasoning behind a brand, written in a 
         The result is a first draft to argue with.
       </p>
       <p>
-        <strong>Parse</strong>. The package exports the TypeScript parser for all seven types, so your own tooling can read the files.
+        <strong>Parse</strong>. The package exports the TypeScript parser for all nine types, so your own tooling can read the files.
       </p>
     </div>
   </div>

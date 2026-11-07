@@ -91,6 +91,8 @@
   color: var(--color-link);
 }
 .questions-row-2 { grid-template-columns: repeat(2, 1fr); margin-top: 0; }
+.questions-row-1 { grid-template-columns: repeat(2, 1fr); margin-top: 0; }
+.questions-row-3 { grid-template-columns: repeat(3, 1fr); margin-top: 0; }
 .q-note {
   font-size: var(--font-size-small);
   color: var(--color-secondary);
@@ -254,6 +256,20 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   align-items: start;
   margin-top: var(--space-lg);
 }
+
+/* Framework: group headlines over the question cards */
+.q-group {
+  margin: var(--space-lg) 0 0;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+}
+.q-group-note {
+  margin: 0.25rem 0 var(--space-sm);
+  font-size: var(--font-size-small);
+  color: var(--color-tertiary);
+  max-width: 60ch;
+}
+.q-group + .q-group-note + .questions-row { margin-top: 0; }
 
 /* A phone, with the post in a feed. Fixed colours: it is a device, not the page. */
 .post-caption { grid-column: 1 / -1; }
@@ -479,7 +495,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .questions-row { grid-template-columns: 1fr; }
   .question-card { border-right: none; border-bottom: 1px solid var(--color-border); }
   .question-card:last-child { border-bottom: none; }
-  .questions-row-2 { grid-template-columns: 1fr; }
+  .questions-row-2, .questions-row-1, .questions-row-3 { grid-template-columns: 1fr; }
   .post-demo { grid-template-columns: 1fr; }
   .phone { max-width: 340px; }
   .changelog > div { grid-template-columns: 1fr; gap: 0.25rem; }
