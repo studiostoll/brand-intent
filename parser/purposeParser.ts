@@ -10,6 +10,7 @@ import { parseIconRef, parseListItem, splitLabelledItem } from './icons';
 import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
 import { timeEntryNames, type ParsedTime } from './timeParser';
+import type { ParsedWork } from './workParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -54,6 +55,12 @@ export interface ParsedPurpose {
    *  regular's recommendation. A page without one, or with a person who has neither a quote nor a photo,
    *  is not posted; `checkStory` reports it. */
   person?: 'required';
+  /** `group: required` — every page of this purpose speaks about a `.group`: the band, the estate. A page
+   *  without one, or with a group that has neither a quote nor a photo, is not posted; `checkStory` reports it. */
+  group?: 'required';
+  /** `work: required` — every page of this purpose speaks about a `.work`: the bread of the day, the release.
+   *  A page without one is not posted; `checkStory` reports it. */
+  work?: 'required';
   /** When false, photo/video analysis skips this purpose (no AI text generation). Default: true. */
   analyze?: boolean;
   /** Default icon for the icon slot. Resolves in the brand set first, then Phosphor (see resolveIconRef). */
@@ -73,9 +80,12 @@ export interface ParsedExample {
   topic?: string;
   /** Identity goal id; overrides the purpose `goal:` for this page. */
   goal?: string;
-  /** Name of a `.time` entry (a window, a season, a weekly or a date) the example fits; undefined = all year.
+  /** Name of a `.time` entry (a window or a season) the example fits; undefined = all year.
    *  `checkPurpose` checks it against the `.time`. */
   when?: string;
+  /** Id of a `.work` the example is about; the example is only picked while the work is in season.
+   *  `checkPurpose` checks it against the works. */
+  work?: string;
   /** Text per slot. List items are newline-separated. Slots with `value:` never appear. */
   texts: Partial<Record<SlotId, string>>;
   /** True when built from deprecated slot `samples:`. */
@@ -195,6 +205,8 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let framing: string | undefined;
   let goal: string | undefined;
   let person: 'required' | undefined;
+  let group: 'required' | undefined;
+  let work: 'required' | undefined;
   let analyze: boolean | undefined;
   let defaultIcon: IconRef | undefined;
   let bgPrompt: string | undefined;
@@ -358,16 +370,17 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       const colonIdx = text.indexOf(':');
       if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" in example, got "${text}"`);
       const key = text.slice(0, colonIdx).trim();
-      const value = (key === 'topic' || key === 'goal' || key === 'when' ? line : text).slice(colonIdx + 1).trim();
+      const value = (key === 'topic' || key === 'goal' || key === 'when' || key === 'work' ? line : text).slice(colonIdx + 1).trim();
       if (key in currentExample.keyLines) throw new Error(`${fileName}:${lineNum}: duplicate "${key}" in example`);
       currentExample.keyLines[key] = lineNum;
-      if (key === 'topic' || key === 'goal' || key === 'when') {
+      if (key === 'topic' || key === 'goal' || key === 'when' || key === 'work') {
         if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
-        if (key === 'when' && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid when "${value}" (the name of one .time entry, lowercase kebab-case)`);
+        if (key === 'when' && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid when "${value}" (the name of one .time window or season, lowercase kebab-case)`);
+        if (key === 'work' && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid work "${value}" (the id of one .work, lowercase kebab-case)`);
         currentExample[key] = value;
         continue;
       }
-      if (!VALID_SLOTS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when or a slot id)`);
+      if (!VALID_SLOTS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work or a slot id)`);
       if (value) currentExample.texts[key as SlotId] = value;
       else exampleMultiKey = key as SlotId;
       continue;
@@ -483,11 +496,14 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // Every page of this purpose speaks about a person
-    if (line.startsWith('person:') && !raw.startsWith(' ')) {
-      const value = line.slice(7).trim();
-      if (value !== 'required') throw new Error(`${fileName}:${lineNum}: invalid person "${value}" (expected required: every page names a .person)`);
-      person = 'required';
+    // Every page of this purpose speaks about a person, a group or a work
+    const subject = /^(person|group|work):\s*(.*)$/.exec(line);
+    if (subject && !raw.startsWith(' ')) {
+      const [, key, value] = subject;
+      if (value.trim() !== 'required') throw new Error(`${fileName}:${lineNum}: invalid ${key} "${value.trim()}" (expected required: every page names a .${key})`);
+      if (key === 'person') person = 'required';
+      else if (key === 'group') group = 'required';
+      else work = 'required';
       continue;
     }
 
@@ -861,7 +877,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
   const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, ...(person ? { person } : {}), analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, ...(person ? { person } : {}), ...(group ? { group } : {}), ...(work ? { work } : {}), analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 
 /** Validate `example` blocks against the declared slots, or build examples from deprecated slot
@@ -927,15 +943,15 @@ function resolveExamples(
 
 // ── Cross-file checks ─────────────────────────────────────────────────────────
 
-/** Checks a purpose against the brand's `.time`. Returns problems as "file: message"; empty when it fits.
+/** Checks a purpose against the brand's fact files. Returns problems as "file: message"; empty when it fits.
  *  `time`: the brand's `.time`, or `null` when it has none (then every example `when:` is unknown);
- *  undefined = not checked. */
-export function checkPurpose(purpose: Pick<ParsedPurpose, 'examples'>, facts: { time?: ParsedTime | null }, fileName: string): string[] {
+ *  undefined = not checked. `works`: the brand's `.work` files (empty = none); undefined = not checked. */
+export function checkPurpose(purpose: Pick<ParsedPurpose, 'examples'>, facts: { time?: ParsedTime | null; works?: Pick<ParsedWork, 'id'>[] }, fileName: string): string[] {
   const problems: string[] = [];
-  if (facts.time === undefined) return problems;
   const names = facts.time ? timeEntryNames(facts.time) : [];
   purpose.examples.forEach((ex, i) => {
-    if (ex.when && !names.includes(ex.when)) problems.push(`${fileName}: example ${i + 1}: when "${ex.when}" is not in the .time${facts.time ? '' : ' (the brand has no .time)'}`);
+    if (facts.time !== undefined && ex.when && !names.includes(ex.when)) problems.push(`${fileName}: example ${i + 1}: when "${ex.when}" is not in the .time${facts.time ? '' : ' (the brand has no .time)'}`);
+    if (facts.works && ex.work && !facts.works.some(w => w.id === ex.work)) problems.push(`${fileName}: example ${i + 1}: work "${ex.work}" does not exist`);
   });
   return problems;
 }

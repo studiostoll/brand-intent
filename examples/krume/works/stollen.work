@@ -1,0 +1,13 @@
+# works/stollen.work
+# On the shelf from the first Sunday of Advent to Christmas Eve. `on:` is the shelf run
+# and gives {days-until} before it; `when: advent` names the window in krume.time it fits.
+# Both have to agree for the stollen to be in season.
+
+id:    stollen
+title: Butter stollen
+kind:  stollen
+when:  advent
+on:    11-27..12-24
+price: 1 kg · €24
+facts:
+  Butter from Brandenburg, matured for three weeks.

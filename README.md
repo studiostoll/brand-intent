@@ -22,7 +22,7 @@ Brand Intent is a set of five composable file types that encode brand knowledge 
 | Purpose | `.purpose` | What is this content for? |
 | Composition | `.composition` | How are elements composed? |
 
-Plus `.story`: ordered pages built from purposes and compositions, with fixed, variable and open texts. A story needs a place, a time and people, and each is a fact file: `.place` says where (address, capacity, opening hours), `.time` says when (founding, seasons, windows, the week, the day), `.person` says who (name, role, quotes, and what the person agreed to).
+Plus `.story`: ordered pages built from purposes and compositions, with fixed, variable and open texts. A story needs to know when, where, who and what, and each answer is a fact file: `.time` says when (founding, seasons, windows, the day), `.place` says where (address, capacity, opening hours), `.person` says who (name, role, quotes, and what the person agreed to), `.group` says who when it is more than one (a band, an estate, a mill), `.work` says what the brand puts out or puts on (a bread, a record, a class, an event, with its own date).
 
 ## Get started
 

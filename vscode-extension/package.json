@@ -1,7 +1,7 @@
 {
   "name": "brand-intent-lang",
-  "displayName": "Brand Intent — .identity, .brand, .format, .purpose, .composition, .story, .place, .time, .person",
-  "description": "Syntax highlighting and autocomplete for the Brand Intent specification — .identity, .brand, .format, .purpose, .composition, .story, .place, .time and .person files that define brand identity, visual language, content architecture and the facts a story needs.",
+  "displayName": "Brand Intent — .identity, .brand, .format, .purpose, .composition, .story, .place, .time, .person, .group, .work",
+  "description": "Syntax highlighting and autocomplete for the Brand Intent specification — .identity, .brand, .format, .purpose, .composition, .story, .time, .place, .person, .group and .work files that define brand identity, visual language, content architecture and the facts a story needs.",
   "version": "0.40.0",
   "publisher": "studiostoll",
   "author": {
@@ -30,7 +30,9 @@
     "onLanguage:brand-intent-story",
     "onLanguage:brand-intent-place",
     "onLanguage:brand-intent-time",
-    "onLanguage:brand-intent-person"
+    "onLanguage:brand-intent-person",
+    "onLanguage:brand-intent-group",
+    "onLanguage:brand-intent-work"
   ],
   "contributes": {
     "languages": [
@@ -123,6 +125,26 @@
           ".person"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "brand-intent-group",
+        "aliases": [
+          "Brand Intent Group"
+        ],
+        "extensions": [
+          ".group"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "brand-intent-work",
+        "aliases": [
+          "Brand Intent Work"
+        ],
+        "extensions": [
+          ".work"
+        ],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
@@ -170,6 +192,16 @@
         "language": "brand-intent-person",
         "scopeName": "source.brand-intent-person",
         "path": "./syntaxes/person.tmLanguage.json"
+      },
+      {
+        "language": "brand-intent-group",
+        "scopeName": "source.brand-intent-group",
+        "path": "./syntaxes/group.tmLanguage.json"
+      },
+      {
+        "language": "brand-intent-work",
+        "scopeName": "source.brand-intent-work",
+        "path": "./syntaxes/work.tmLanguage.json"
       }
     ]
   }

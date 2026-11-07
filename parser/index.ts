@@ -86,10 +86,14 @@ export type {
 export { parseStoryFile, checkStory, storyPlace, storyTextVariables, STORY_VARIABLES } from './storyParser';
 export { parsePlaceFile, addressStreet, isOpenYet, weekdayOf, weekOpeningDays, parseDays, WEEKDAYS } from './placeParser';
 export type { ParsedPlace, OpeningRange, OpeningDays, PlaceCapacity, Weekday } from './placeParser';
-export { parseTimeFile, timeEntry, timeEntryNames, seasonForDate, isInSeason, yearsSince, isMonthDay, isDate, isDateOrYear } from './timeParser';
-export type { ParsedTime, ParsedSeason, ParsedWeekly, ParsedDate, ParsedDailyMoment, TimeSpan, TimeEntry } from './timeParser';
-export { parsePersonFile, personLabel, isWithdrawn, hasSomethingToShow } from './personParser';
+export { parseTimeFile, timeEntry, timeEntryNames, seasonForDate, isInSeason, yearsSince, isMonthDay, isDate, isDateOrYear, parseTimeSpan, parseDayList, daysBetween, localDate } from './timeParser';
+export type { ParsedTime, ParsedSeason, ParsedDailyMoment, TimeSpan, TimeEntry } from './timeParser';
+export { parsePersonFile, checkPerson, personLabel, isWithdrawn, hasSomethingToShow } from './personParser';
 export type { ParsedPerson } from './personParser';
+export { parseGroupFile, checkGroup, groupHasSomethingToShow } from './groupParser';
+export type { ParsedGroup } from './groupParser';
+export { parseWorkFile, checkWork, isWorkInSeason, daysUntil, isWorkWithdrawn } from './workParser';
+export type { ParsedWork, WorkDate } from './workParser';
 export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';

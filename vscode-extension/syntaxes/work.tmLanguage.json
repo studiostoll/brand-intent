@@ -1,0 +1,71 @@
+{
+  "scopeName": "source.brand-intent-work",
+  "name": "Brand Intent Work",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#date-field" },
+    { "include": "#days-field" },
+    { "include": "#top-field" },
+    { "include": "#facts-header" },
+    { "include": "#facts-line" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^#.*$",
+      "name": "comment.line.number-sign.brand-intent-work"
+    },
+    "date-field": {
+      "comment": "on: MM-DD, MM-DD..MM-DD, YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD; until: YYYY-MM-DD; time: HH:MM-HH:MM; lead: N",
+      "match": "^(on|until|time|lead)(:)\\s+(\\d{4}-\\d{2}-\\d{2}(?:\\.\\.\\d{4}-\\d{2}-\\d{2})?|\\d{2}-\\d{2}(?:\\.\\.\\d{2}-\\d{2})?|\\d{2}:\\d{2}(?:-\\d{2}:\\d{2})?|\\d+)\\s*(#.*)?$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-work" },
+        "2": { "name": "punctuation.separator.brand-intent-work" },
+        "3": { "name": "constant.numeric.brand-intent-work" },
+        "4": { "name": "comment.line.number-sign.brand-intent-work" }
+      }
+    },
+    "days-field": {
+      "match": "^(days)(:)\\s+(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-work" },
+        "2": { "name": "punctuation.separator.brand-intent-work" },
+        "3": {
+          "patterns": [
+            { "match": "\\b(?:mon|tue|wed|thu|fri|sat|sun)\\b", "name": "constant.language.brand-intent-work" },
+            { "match": "\\s+#.*$", "name": "comment.line.number-sign.brand-intent-work" }
+          ]
+        }
+      }
+    },
+    "top-field": {
+      "match": "^(id|title|kind|by|when|place|price|links|photos)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-work" },
+        "2": { "name": "punctuation.separator.brand-intent-work" },
+        "3": { "name": "string.unquoted.brand-intent-work" }
+      }
+    },
+    "facts-header": {
+      "match": "^(facts)(:)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-work" },
+        "2": { "name": "punctuation.separator.brand-intent-work" }
+      }
+    },
+    "facts-line": {
+      "comment": "Facts for AI writing, as written",
+      "match": "^\\s{2}(\\S.*)$",
+      "captures": {
+        "1": { "name": "string.unquoted.brand-intent-work" }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "match": "^(id|title|kind|by|on|days|time|lead|until|when|place|price|links|photos|facts)(?=:|\\s|$)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-work" }
+      }
+    }
+  }
+}

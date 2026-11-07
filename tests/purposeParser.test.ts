@@ -176,6 +176,12 @@ test('person: required, and checkPurpose on example when:', () => {
   assertEq(checkPurpose(p, { time: parseTimeFile('windows\n  advent: 11-27..12-24\n', 'p.time') }, 'p.purpose'), [], 'known');
   assertEq(checkPurpose(p, { time: parseTimeFile('', 'p.time') }, 'p.purpose'), ['p.purpose: example 1: when "advent" is not in the .time'], 'unknown');
   assertEq(checkPurpose(p, { time: null }, 'p.purpose'), ['p.purpose: example 1: when "advent" is not in the .time (the brand has no .time)'], 'no .time');
+  const g = parsePurposeFile(`id: p\ncompositions: panel\ngroup: required\nwork: required\n\n${SLOTS}\nexample\n  work: rye-loaf\n  label: A\n  primary: B\n  detail:\n    C\n`, 'p.purpose');
+  assertEq([g.group, g.work, g.examples[0].work], ['required', 'required', 'rye-loaf'], 'group and work required, example work');
+  assertThrows(() => parsePurposeFile(`id: p\ncompositions: panel\nwork: rye-loaf\n\n${SLOTS}`, 'p.purpose'), /invalid work "rye-loaf" \(expected required/, 'only required');
+  assertThrows(() => withExamples(`example\n  work: Rye Loaf\n  label: A\n  primary: B\n  detail:\n    C\n`), /invalid work/, 'example work id');
+  assertEq(checkPurpose(g, { works: [] }, 'p.purpose'), ['p.purpose: example 1: work "rye-loaf" does not exist'], 'unknown work');
+  assertEq(checkPurpose(g, { works: [{ id: 'rye-loaf' }] }, 'p.purpose'), [], 'known work');
   assertEq(checkPurpose(p, {}, 'p.purpose'), [], 'not checked');
 });
 

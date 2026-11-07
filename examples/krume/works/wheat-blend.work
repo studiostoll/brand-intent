@@ -1,0 +1,11 @@
+# works/wheat-blend.work
+# Saturdays only. The day is the work's own: nothing in krume.time knows about it.
+# Content that names this work is in season on Saturdays.
+
+id:    wheat-blend
+title: Wheat blend
+kind:  bread
+days:  sat
+price: 500 g · €4.20
+facts:
+  Tipo 1 from the Drax mill, 72 % hydration. Sold out by ten.

@@ -10,6 +10,8 @@ import { isInDateWindow } from '../parser/dateWindows';
 import { parseBrandFile, checkBrand } from '../parser/brandParser';
 import { parseTimeFile } from '../parser/timeParser';
 import { parsePersonFile } from '../parser/personParser';
+import { parseGroupFile } from '../parser/groupParser';
+import { parseWorkFile } from '../parser/workParser';
 
 // ── Tiny test harness (no dep) ────────────────────────────────────────────────
 
@@ -370,12 +372,15 @@ test('align sub-blocks only apply to logos', () => {
   assertEq(out.assets?.photos?.[0]?.alignVariants, undefined, 'no variants on photos');
 });
 
-test('assets take an optional group', () => {
-  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n\nphoto old\n  src: photos/old.jpg\n  group: experimental\n\nvideo clip\n  src: videos/clip.mp4\n  group: experimental\n`;
+test('assets take an optional section; group: on a photo names a .group', () => {
+  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n\nphoto old\n  src: photos/old.jpg\n  section: experimental\n  group: drax-mill\n  work: rye-loaf\n\nvideo clip\n  src: videos/clip.mp4\n  section: experimental\n`;
   const out = parseBrandFile(src, 'test.brand');
-  assertEq(out.assets?.photos?.[0]?.group, undefined, 'ungrouped photo');
-  assertEq(out.assets?.photos?.[1]?.group, 'experimental', 'grouped photo');
-  assertEq(out.assets?.videos?.[0]?.group, 'experimental', 'grouped video');
+  assertEq(out.assets?.photos?.[0]?.section, undefined, 'photo without a section');
+  assertEq(out.assets?.photos?.[1]?.section, 'experimental', 'photo in a section');
+  assertEq([out.assets?.photos?.[1]?.group, out.assets?.photos?.[1]?.work], ['drax-mill', 'rye-loaf'], 'photo group and work');
+  assertEq(out.assets?.videos?.[0]?.section, 'experimental', 'video in a section');
+  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/clip.mp4\n  group: experimental\n`, 'test.brand'), /a library section is "section:" since v0.44/, 'group on a video');
+  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/p.jpg\n  group: Drax Mill\n`, 'test.brand'), /group: must be an id/, 'group id');
 });
 
 // ── framing ──────────────────────────────────────────────────────────────────
@@ -542,6 +547,23 @@ test('checkBrand: photo when: against the .time, photo person: against the peopl
     'test.brand: person "thomas": photo "gone" does not exist',
   ], 'mismatches');
   assertEq(checkBrand(b, {}, 'test.brand'), [], 'not checked');
+});
+
+test('checkBrand: photo group: and work: mirror the group\'s and work\'s photos:', () => {
+  const b = parseBrandFile(`${HEADER}photo van\n  src: photos/van.jpg\n  group: fenster\nphoto sleeve\n  src: photos/sleeve.jpg\n  work: nachtfahrt\nphoto stage\n  src: photos/stage.jpg\n`, 'test.brand');
+  const fenster = parseGroupFile('id: fenster\nname: Fenster\nrole: Band\nphotos: van\n', 'fenster.group');
+  const album = parseWorkFile('id: nachtfahrt\ntitle: Nachtfahrt\nkind: album\nphotos: sleeve\n', 'nachtfahrt.work');
+  assertEq(checkBrand(b, { groups: [fenster], works: [album] }, 'test.brand'), [], 'fits');
+  assertEq(checkBrand(b, { groups: [], works: [] }, 'test.brand'), [
+    'test.brand: photo "van": group "fenster" does not exist (a library section is "section:" since v0.44)',
+    'test.brand: photo "sleeve": work "nachtfahrt" does not exist',
+  ], 'unknown');
+  const partial = parseGroupFile('id: fenster\nname: Fenster\nrole: Band\nphotos: stage, gone\n', 'fenster.group');
+  assertEq(checkBrand(b, { groups: [partial] }, 'test.brand'), [
+    'test.brand: photo "van" names group "fenster", but its photos: doesn\'t list it',
+    'test.brand: group "fenster": photo "stage" names no group (add "group: fenster" to the photo)',
+    'test.brand: group "fenster": photo "gone" does not exist',
+  ], 'mismatches');
 });
 
 // ── tones ────────────────────────────────────────────────────────────────────

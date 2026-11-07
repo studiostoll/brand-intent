@@ -46,6 +46,8 @@ import {
 import { parseIconSource, isIconId } from './icons';
 import { timeEntryNames, type ParsedTime } from './timeParser';
 import type { ParsedPerson } from './personParser';
+import type { ParsedGroup } from './groupParser';
+import type { ParsedWork } from './workParser';
 import type { ParsedIconDef } from './icons';
 
 // ── Parsed type ────────────────────────────────────────────────────────────────
@@ -206,9 +208,10 @@ export interface ParsedAssetDef {
   /** Logos only: artwork per horizontal placement, declared via `align-left` / `align-center` / `align-right`
    *  sub-blocks. Consumers render the variant matching where the logo sits, else the base `src`. */
   alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
-  /** Library group (e.g. "experimental"). Consumers list each group as its own section after the ungrouped assets. */
-  group?: string;
-  /** Photos only: name of the `.time` entry the photo fits (`when:`): a window, a season, a weekly or a date.
+  /** Library section (e.g. "experimental"). Consumers list each section after the assets without one.
+   *  Was `group:` before v0.44. */
+  section?: string;
+  /** Photos only: name of the `.time` entry the photo fits (`when:`): a window or a season.
    *  Absent → all year. `checkBrand` checks it against the `.time`. */
   when?: string;
   /** Photos only: the framing module the photo was taken in. */
@@ -217,6 +220,10 @@ export interface ParsedAssetDef {
   place?: string;
   /** Photos only: id of the `.person` shown. `checkBrand` checks it against the people. */
   person?: string;
+  /** Photos only: id of the `.group` shown. `checkBrand` checks it against the groups. */
+  group?: string;
+  /** Photos only: id of the `.work` shown. `checkBrand` checks it against the works. */
+  work?: string;
   /** Photos only: date taken, YYYY-MM-DD. */
   taken?: string;
   /** Photos only: the main subject (`focus: X% Y%`, 0–100 from top left). `null` = `focus: none`
@@ -1792,9 +1799,9 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['loop'] === 'true') def.loop = true;
     if (raw.props['gltf']) def.gltfSrc = raw.props['gltf'];
     if (raw.props['generator']) def.generator = raw.props['generator'];
-    if (raw.props['group']) def.group = raw.props['group'];
+    if (raw.props['section']) def.section = raw.props['section'];
     if (raw.props['when']) def.when = raw.props['when'];
-    for (const key of ['framing', 'place', 'person', 'taken'] as const) {
+    for (const key of ['framing', 'place', 'person', 'group', 'work', 'taken'] as const) {
       if (raw.props[key]) def[key] = raw.props[key];
     }
     const focus = raw.props['focus'];
@@ -1820,16 +1827,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
     return def;
   };
-  const photoOnly = ['when', 'framing', 'place', 'person', 'taken', 'focus', 'horizon'];
+  const photoOnly = ['when', 'framing', 'place', 'person', 'group', 'work', 'taken', 'focus', 'horizon'];
   for (const [kind, arr] of [['logo', logosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
     for (const key of photoOnly) {
       const a = arr.find(r => r.props[key]);
+      if (a && key === 'group') throw new Error(`${fileName}: ${kind} "${a.id}": group: names a .group and is for photos only; a library section is "section:" since v0.44`);
       if (a) throw new Error(`${fileName}: ${kind} "${a.id}": ${key}: is for photos only`);
     }
   }
   for (const p of photosRaw) {
-    // when: and person: name .time and .person entries; `checkBrand` resolves them
-    for (const key of ['when', 'person'] as const) {
+    // when:, person:, group: and work: name .time, .person, .group and .work entries; `checkBrand` resolves them
+    for (const key of ['when', 'person', 'group', 'work'] as const) {
       const value = p.props[key];
       if (value && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}: photo "${p.id}": ${key}: must be an id (lowercase kebab-case), got "${value}"`);
     }
@@ -2076,10 +2084,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
 /** Checks a brand against its fact files. Returns problems as "file: message"; empty when it fits.
  *  `time`: the brand's `.time`, or `null` when it has none (then every `when:` and `season:` is unknown);
- *  undefined = not checked. `people`: the brand's `.person` files (empty = none); undefined = not checked. */
+ *  undefined = not checked. `people`, `groups`, `works`: the brand's `.person`, `.group` and `.work` files
+ *  (empty = none); undefined = not checked. */
 export function checkBrand(
   brand: Pick<ParsedBrand, 'colorFamilies' | 'assets'>,
-  facts: { time?: ParsedTime | null; people?: ParsedPerson[] },
+  facts: { time?: ParsedTime | null; people?: ParsedPerson[]; groups?: ParsedGroup[]; works?: ParsedWork[] },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -2113,5 +2122,27 @@ export function checkBrand(
       }
     }
   }
+
+  // A photo's group: and work: and the group's or work's photos: mirror each other
+  const mirror = (kind: 'group' | 'work', files: Array<Pick<ParsedGroup, 'id' | 'photos'>> | undefined, hint: string) => {
+    if (!files) return;
+    const byId = new Map(files.map(f => [f.id, f]));
+    for (const p of photos) {
+      const id = p[kind];
+      if (!id) continue;
+      const file = byId.get(id);
+      if (!file) { say(`photo "${p.id}": ${kind} "${id}" does not exist${hint}`); continue; }
+      if (!file.photos?.includes(p.id)) say(`photo "${p.id}" names ${kind} "${id}", but its photos: doesn't list it`);
+    }
+    for (const file of files) {
+      for (const id of file.photos ?? []) {
+        const photo = photos.find(p => p.id === id);
+        if (!photo) say(`${kind} "${file.id}": photo "${id}" does not exist`);
+        else if (photo[kind] !== file.id) say(`${kind} "${file.id}": photo "${id}" ${photo[kind] ? `shows "${photo[kind]}"` : `names no ${kind}`} (add "${kind}: ${file.id}" to the photo)`);
+      }
+    }
+  };
+  mirror('group', facts.groups, ' (a library section is "section:" since v0.44)');
+  mirror('work', facts.works, '');
   return problems;
 }

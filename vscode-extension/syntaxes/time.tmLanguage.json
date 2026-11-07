@@ -25,8 +25,8 @@
       }
     },
     "named-block": {
-      "comment": "season NAME, weekly NAME, date NAME",
-      "match": "^(season|weekly|date)\\s+([a-z][a-z0-9-]*)\\s*$",
+      "comment": "season NAME",
+      "match": "^(season)\\s+([a-z][a-z0-9-]*)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-time" },
         "2": { "name": "entity.name.type.brand-intent-time" }
@@ -59,7 +59,7 @@
       }
     },
     "property": {
-      "match": "^\\s{2}(label|from|days|time|place|context|on|lead)(:)\\s*(.*)$",
+      "match": "^\\s{2}(label|from)(:)\\s*(.*)$",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-time" },
         "2": { "name": "punctuation.separator.brand-intent-time" },
@@ -76,13 +76,13 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(founded|season|weekly|date|windows|daily)(?=:|\\s|$)",
+          "match": "^(founded|season|windows|daily)(?=:|\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-time" }
           }
         },
         {
-          "match": "^\\s{2}(label|from|days|time|place|context|on|lead)(?=:|\\s|$)",
+          "match": "^\\s{2}(label|from)(?=:|\\s|$)",
           "captures": {
             "1": { "name": "support.type.property-name.brand-intent-time" }
           }

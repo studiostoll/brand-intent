@@ -124,7 +124,7 @@
       }
     },
     "framing-field": {
-      "match": "^(framing:|goal:|person:)\\s+([\\w-]+)",
+      "match": "^(framing:|goal:|person:|group:|work:)\\s+([\\w-]+)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-purpose" },
         "2": { "name": "entity.name.type.brand-intent-purpose" }
@@ -223,7 +223,7 @@
       ]
     },
     "property": {
-      "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|editable|topic|goal|when|primary|secondary|detail|meta|cta|credit)(:)\\s+(.*)",
+      "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|editable|topic|goal|when|work|primary|secondary|detail|meta|cta|credit)(:)\\s+(.*)",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-purpose" },
         "2": { "name": "punctuation.separator.brand-intent-purpose" },
@@ -265,13 +265,13 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|illustration:|camera:|scrim:|framing:|goal:|person:|analyze:|bg-prompt:|context|slot|example)(?=\\s|$)",
+          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|illustration:|camera:|scrim:|framing:|goal:|person:|group:|work:|analyze:|bg-prompt:|context|slot|example)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-purpose" }
           }
         },
         {
-          "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|override|audience|pillars|editable|topic|goal|when|primary|secondary|detail|meta|cta)(?=:|\\s|$)",
+          "match": "^\\s+(label|samples|value|maxLength|words|sentences|font|size|opsz|lineHeight|letterSpacing|align|typography|color|type|override|audience|pillars|editable|topic|goal|when|work|primary|secondary|detail|meta|cta)(?=:|\\s|$)",
           "captures": {
             "1": { "name": "support.type.property-name.brand-intent-purpose" }
           }

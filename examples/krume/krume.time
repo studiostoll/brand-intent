@@ -1,7 +1,8 @@
 # krume.time
-# When the brand lives: its founding, its seasons and windows, its week, its day.
+# The brand's rhythm: when it started, its seasons and windows, its day.
 # Facts only. What the early morning means to Krume is in krume.identity;
-# that the oven is on at four is here.
+# that the oven is on at four is here. Nothing in the file is an occasion:
+# the Saturday wheat blend, the baking class and the mill day are works (works/).
 
 founded: 2019-05-04
 
@@ -31,24 +32,6 @@ season winter
 windows
   rhubarb: 04-15..06-24
   advent:  11-27..12-24
-
-# ── The week ──
-
-weekly wheat-blend
-  label:   Wheat blend
-  days:    sat
-  context: 500 g, Tipo 1 from the Drax mill, only on Saturdays, sold out by ten.
-
-# ── Dates ──
-# A yearly date is in season from `lead` days before it.
-
-date mill-day
-  label:   Mill day
-  on:      05-02
-  time:    10:00-16:00
-  lead:    21
-  place:   weserstrasse
-  context: The mill from Dachau sets up its stones in the yard, bread and cake at the long table.
 
 # ── The day ──
 # {daily NAME} shows the time; the label is a fact for AI writing.

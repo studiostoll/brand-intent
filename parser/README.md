@@ -15,8 +15,10 @@ TypeScript parsers for all Brand Intent file types.
 | `placeParser.ts` | `.place` | `parsePlaceFile(content, fileName)` |
 | `timeParser.ts` | `.time` | `parseTimeFile(content, fileName)`; `isInSeason(time, name, date)` answers a `when:` for a day |
 | `personParser.ts` | `.person` | `parsePersonFile(content, fileName)` |
+| `groupParser.ts` | `.group` | `parseGroupFile(content, fileName)` |
+| `workParser.ts` | `.work` | `parseWorkFile(content, fileName)`; `isWorkInSeason(work, time, date)` says whether content about the work fits a day, `daysUntil(work, date)` counts to its next `on:` day |
 
-Cross-file checks: `checkBrand(brand, { time, people }, fileName)` (photo `when:` and `person:`, family `season:`), `checkPurpose(purpose, { time }, fileName)` (example `when:`), `checkStory` (above). Each returns problems as `file: message`.
+Cross-file checks: `checkBrand(brand, { time, people, groups, works }, fileName)` (photo `when:`, `person:`, `group:` and `work:`, family `season:`), `checkPurpose(purpose, { time, works }, fileName)` (example `when:` and `work:`), `checkPerson(person, { groups, places })`, `checkGroup(group, { people })` (membership on both sides), `checkWork(work, { people, groups, time, places })` (`by:`, `when:`, `place:`), `checkStory` (above). Each returns problems as `file: message`.
 
 All parsers are **pure functions**: they take a string (file content) and a filename (for error messages), and return a parsed object. No I/O, no side effects, no dependencies beyond `types.ts`.
 

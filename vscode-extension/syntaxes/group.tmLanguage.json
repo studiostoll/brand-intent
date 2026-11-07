@@ -1,0 +1,54 @@
+{
+  "scopeName": "source.brand-intent-group",
+  "name": "Brand Intent Group",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#date-field" },
+    { "include": "#top-field" },
+    { "include": "#quote-header" },
+    { "include": "#quote-line" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^#.*$",
+      "name": "comment.line.number-sign.brand-intent-group"
+    },
+    "date-field": {
+      "match": "^(since)(:)\\s+(\\d{4}(?:-\\d{2}-\\d{2})?)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-group" },
+        "2": { "name": "punctuation.separator.brand-intent-group" },
+        "3": { "name": "constant.numeric.brand-intent-group" }
+      }
+    },
+    "top-field": {
+      "match": "^(id|name|role|where|members|links|photos|context)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-group" },
+        "2": { "name": "punctuation.separator.brand-intent-group" },
+        "3": { "name": "string.unquoted.brand-intent-group" }
+      }
+    },
+    "quote-header": {
+      "match": "^(quote)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-group" }
+      }
+    },
+    "quote-line": {
+      "comment": "The group's published words, verbatim",
+      "match": "^\\s{2}(\\S.*)$",
+      "captures": {
+        "1": { "name": "string.quoted.brand-intent-group" }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "match": "^(id|name|role|since|where|members|links|photos|context|quote)(?=:|\\s|$)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-group" }
+      }
+    }
+  }
+}

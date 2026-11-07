@@ -9,6 +9,8 @@ import { addressStreet, type ParsedPlace } from '../parser/placeParser';
 import { parsePurposeFile } from '../parser/purposeParser';
 import { parseTimeFile } from '../parser/timeParser';
 import { parsePersonFile } from '../parser/personParser';
+import { parseGroupFile } from '../parser/groupParser';
+import { parseWorkFile } from '../parser/workParser';
 
 let pass = 0;
 let fail = 0;
@@ -113,7 +115,7 @@ test('{weekday} and {date} in page texts', () => {
 });
 
 test('unknown variable is an error, plain braces stay text', () => {
-  assertThrows(() => parse('page\n  purpose: notice\n  primary: Open {time}\n'), 'unknown variable "{time}"');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: Open {clock}\n'), 'unknown variable "{clock}"');
   assertEq(parse('page\n  purpose: notice\n  primary: a {B} c\n').pages[0].texts.primary, 'a {B} c', 'not a variable');
 });
 
@@ -279,13 +281,6 @@ season summer
   from: 06-01
 windows
   christmas: 11-27..12-24
-weekly tasting
-  label: Tasting at the counter
-  days: thu
-  time: 19:00-21:00
-date mill-day
-  label: Mill day
-  on: 05-02
 daily
   oven: 04:00 Oven on
 `, 't.time');
@@ -302,13 +297,8 @@ test('when: names the .time entry the story fits', () => {
   assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked when unknown');
 });
 
-test('a page\'s when: names a weekly or a date', () => {
-  const s = parse('page\n  purpose: notice\n  when: tasting\n  primary: {occasion}\n');
-  assertEq(s.pages[0].when, 'tasting', 'parsed');
-  assertEq(checkStory(s, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: slot "primary" is 22 characters long, maxLength is 20'], 'the label\'s length');
-  const w = parse('page\n  purpose: notice\n  when: christmas\n');
-  assertEq(checkStory(w, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: when "christmas" is a window; a page\'s when: names a weekly or a date, for its occasion variables'], 'window on a page');
-  assertEq(checkStory(parse('page\n  purpose: notice\n  when: nothing\n'), { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: when "nothing" is not in the .time'], 'unknown');
+test('a page has no when: since v0.44; an occasion is a work', () => {
+  assertThrows(() => parse('page\n  purpose: notice\n  when: tasting\n'), 'when: is not a page key');
 });
 
 test('time variables need their part of the .time', () => {
@@ -326,21 +316,6 @@ test('time variables need their part of the .time', () => {
   assertThrows(() => parse('page\n  purpose: notice\n  primary: {daily}\n'), '"{daily}" needs the moment\'s name');
   assertThrows(() => parse('page\n  purpose: notice\n  primary: {daily-oven}\n'), 'unknown variable "{daily-oven}"');
   assertEq(parse('page\n  purpose: notice\n  primary: {daily Oven}\n').pages[0].texts.primary, '{daily Oven}', 'not lowercase: plain text');
-});
-
-test('occasion variables need a weekly or date when:', () => {
-  const s = parse('page\n  purpose: notice\n  primary: {days-until} {occasion-time}\n');
-  assertEq(checkStory(s, { ...BRAND, time: TIME }, 's.story'), [
-    's.story: page 1: variable "{days-until}" needs a weekly or date when: on the page or the story',
-    's.story: page 1: variable "{occasion-time}" needs a weekly or date when: on the page or the story',
-    's.story: page 1: slot "primary" is 21 characters long, maxLength is 20',
-  ], 'no when');
-  const w = parse('when: christmas\npage\n  purpose: notice\n  primary: {days-until}\n');
-  assertEq(checkStory(w, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: variable "{days-until}" needs a weekly or date when: on the page or the story'], 'a window is no occasion');
-  const t = parse('when: tasting\npage\n  purpose: notice\n  primary: {occasion-time}\n');
-  assertEq(checkStory(t, { ...BRAND, time: TIME }, 's.story'), [], 'the story\'s weekly');
-  const m = parse('when: mill-day\npage\n  purpose: notice\n  primary: {occasion-time}\n');
-  assertEq(checkStory(m, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: variable "{occasion-time}" needs time: on date "mill-day"'], 'date without time');
 });
 
 const THOMAS = parsePersonFile('id: thomas\nname: Thomas\nrole: Regular in Lemkenhafen\nsince: 2006\nreason: Holiday without a programme\n\nquote\n  The dyke is enough.\n', 'thomas.person');
@@ -414,6 +389,70 @@ test('{week-hours} counts as one line per group of days', () => {
   const s = parse('page\n  purpose: notice\n  detail: {week-hours}\n');
   assertEq(checkStory(s, { ...BRAND, places: [QUAY] }, 's.story'), ['s.story: page 1: slot "detail" is 44 characters long, maxLength is 12'], 'one line');
   assertEq(checkStory(s, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{week-hours}" needs an hours block in place "harbour"'], 'needs hours');
+});
+
+const FENSTER = parseGroupFile('id: fenster\nname: Fenster\nrole: Band on the label\nsince: 2021\nwhere: Leipzig\nmembers: lena\n\nquote\n  No festivals that don\'t pay the opening act.\n', 'fenster.group');
+const DRAX = parseGroupFile('id: drax-mill\nname: Drax mill\nrole: The mill\n', 'drax-mill.group');
+const LENA = parsePersonFile('id: lena\nname: Lena\nrole: Singer\ngroup: fenster\n', 'lena.person');
+const ALBUM = parseWorkFile('id: nachtfahrt\ntitle: Nachtfahrt\nkind: album\nby: fenster, lena\non: 2026-11-20\nprice: from €15\n', 'nachtfahrt.work');
+const LOAF = parseWorkFile('id: rye-loaf\ntitle: Rye loaf\nkind: bread\n', 'rye-loaf.work');
+const GROUP_REQUIRED = parsePurposeFile('id: band\ncompositions: stack\ngroup: required\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 20\n\nexample\n  primary: Fenster\n', 'band.purpose');
+const WORK_REQUIRED = parsePurposeFile('id: release\ncompositions: stack\nwork: required\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 20\n\nexample\n  primary: Out now\n', 'release.purpose');
+
+console.log('\nstory groups and works:');
+
+test('group: and work: name the story\'s or the page\'s group and work', () => {
+  const s = parse('group: fenster\nwork: nachtfahrt\npage\n  purpose: notice\n\npage\n  purpose: notice\n  group: drax-mill\n  work: rye-loaf\n');
+  assertEq([s.group, s.work], ['fenster', 'nachtfahrt'], 'story');
+  assertEq(s.pages.map(p => [p.group, p.work]), [[undefined, undefined], ['drax-mill', 'rye-loaf']], 'pages');
+  assertThrows(() => parse('group: Fenster\npage\n  purpose: notice\n'), 'invalid group');
+  assertThrows(() => parse('page\n  purpose: notice\n  work: Rye Loaf\n'), 'invalid work');
+  assertEq(checkStory(s, { ...BRAND, groups: [FENSTER, DRAX], works: [ALBUM, LOAF] }, 's.story'), [], 'all exist');
+  assertEq(checkStory(s, { ...BRAND, groups: [FENSTER], works: [LOAF] }, 's.story'), ['s.story: work "nachtfahrt" does not exist', 's.story: page 2: group "drax-mill" does not exist'], 'unknown');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked');
+});
+
+test('group variables need a group, or a person with one', () => {
+  const s = parse('group: fenster\npage\n  purpose: notice\n  primary: {group} {where} {group-since} {group-years}\n');
+  assertEq(checkStory(s, { ...BRAND, groups: [FENSTER] }, 's.story'), ['s.story: page 1: slot "primary" is 24 characters long, maxLength is 20'], 'Fenster + Leipzig + 2021 + 25');
+  const d = parse('group: drax-mill\npage\n  purpose: notice\n  primary: {where} {group-since}\n');
+  assertEq(checkStory(d, { ...BRAND, groups: [DRAX] }, 's.story'), [
+    's.story: page 1: variable "{where}" needs where: in group "drax-mill"',
+    's.story: page 1: variable "{group-since}" needs since: in group "drax-mill"',
+  ], 'where and since missing');
+  const p = parse('person: lena\npage\n  purpose: notice\n  primary: {group}\n');
+  assertEq(checkStory(p, { ...BRAND, people: [LENA], groups: [FENSTER] }, 's.story'), [], 'the person\'s group');
+  assertEq(checkStory(p, { ...BRAND, people: [LENA], groups: [] }, 's.story'), ['s.story: page 1: person "lena": group "fenster" does not exist'], 'the person\'s group is unknown');
+  const n = parse('page\n  purpose: notice\n  primary: {group}\n');
+  assertEq(checkStory(n, { ...BRAND, groups: [FENSTER] }, 's.story'), ['s.story: page 1: variable "{group}" needs a group: on the page or the story, or a person with a group'], 'no group');
+});
+
+test('work variables need a work and what it has', () => {
+  const s = parse('work: nachtfahrt\npage\n  purpose: notice\n  primary: {work} {kind} {by} {price}\n  detail:\n    {on} {days-until}\n');
+  assertEq(checkStory(s, { ...BRAND, works: [ALBUM], groups: [FENSTER], people: [LENA] }, 's.story'), [
+    's.story: page 1: slot "primary" is 42 characters long, maxLength is 20',
+    's.story: page 1: slot "detail" is 17 characters long, maxLength is 12',
+  ], 'Nachtfahrt + album + Fenster and Lena + from €15; 13 + 3');
+  const l = parse('work: rye-loaf\npage\n  purpose: notice\n  primary: {by}\n  detail:\n    {price}\n    {time}\n');
+  assertEq(checkStory(l, { ...BRAND, works: [LOAF], name: 'Krume' }, 's.story'), [
+    's.story: page 1: variable "{price}" needs price: in work "rye-loaf"',
+    's.story: page 1: variable "{time}" needs time: in work "rye-loaf"',
+    's.story: page 1: slot "detail" is 17 characters long, maxLength is 12',
+  ], 'without by: the brand\'s name (Krume fits); price and time missing, {time} at 17');
+  const n = parse('page\n  purpose: notice\n  primary: {days-until}\n');
+  assertEq(checkStory(n, { ...BRAND, works: [LOAF] }, 's.story'), ['s.story: page 1: variable "{days-until}" needs a work: on the page or the story'], 'no work');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {occasion}\n'), 'unknown variable "{occasion}"');
+});
+
+test('group: required and work: required', () => {
+  const brand = { ...BRAND, purposes: [PURPOSE, GROUP_REQUIRED, WORK_REQUIRED], groups: [FENSTER, DRAX], works: [LOAF], people: [LENA] };
+  assertEq(checkStory(parse('group: fenster\npage\n  purpose: band\n'), brand, 's.story'), [], 'a quote');
+  assertEq(checkStory(parse('person: lena\npage\n  purpose: band\n'), brand, 's.story'), [], 'the person\'s group');
+  assertEq(checkStory(parse('page\n  purpose: band\n'), brand, 's.story'), ['s.story: page 1: purpose "band" has group: required, but neither the page nor the story names a group'], 'no group');
+  assertEq(checkStory(parse('page\n  purpose: band\n  group: drax-mill\n'), brand, 's.story'), ['s.story: page 1: group "drax-mill" has neither a quote nor a photo, and purpose "band" has group: required'], 'nothing to show');
+  assertEq(checkStory(parse('work: rye-loaf\npage\n  purpose: release\n'), brand, 's.story'), [], 'a work');
+  assertEq(checkStory(parse('page\n  purpose: release\n'), brand, 's.story'), ['s.story: page 1: purpose "release" has work: required, but neither the page nor the story names a work'], 'no work');
+  assertEq(checkStory(parse('page\n  purpose: release\n'), { ...brand, works: undefined }, 's.story'), [], 'not checked');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

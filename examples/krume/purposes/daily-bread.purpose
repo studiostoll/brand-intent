@@ -66,20 +66,23 @@ slot label
   maxLength:  20
 
 # ── Examples ──
-# Whole pages: all slots written together about one bread.
+# Whole pages: all slots written together about one bread. Each names its work (works/):
+# the example is only picked while the work is in season, and the page gets the work's
+# variables ({work}, {price}). The texts here are examples of writing; the facts are the work's.
 
 example
   topic: The classic rye loaf, today's bread
+  work:  rye-loaf
   label:     Fresh today
   primary:   Rye loaf
   secondary: 750 g · €5.80
   meta:      Rye 1150, 18 hours of fermentation, caraway from the Wendland.
 
-# A weekly example: only picked on the days of the `wheat-blend` weekly in krume.time.
+# Only picked on Saturdays: the days of works/wheat-blend.work.
 
 example
   topic: The wheat blend, only on Saturdays
-  when:  wheat-blend
+  work:  wheat-blend
   label:     Saturdays only
   primary:   Wheat blend
   secondary: 500 g · €4.20
@@ -87,16 +90,17 @@ example
 
 example
   topic: New in the shop: emmer bread with walnuts
+  work:  emmer-walnut
   label:     New in the shop
   primary:   Emmer walnut
   secondary: 1 kg · €7.50
   meta:      Seasonal walnuts from the weekly market, whole-grain emmer.
 
-# A seasonal example: only picked while the `advent` window in krume.time is open.
+# Only picked while the stollen is in season: its shelf run, inside the advent window.
 
 example
   topic: Butter stollen, baked from the first Sunday of Advent
-  when:  advent
+  work:  stollen
   label:     Advent only
   primary:   Butter stollen
   secondary: 1 kg · €24

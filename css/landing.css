@@ -142,6 +142,7 @@
 .questions-row-2 { grid-template-columns: repeat(2, 1fr); margin-top: 0; }
 .questions-row-1 { grid-template-columns: repeat(2, 1fr); margin-top: 0; }
 .questions-row-3 { grid-template-columns: repeat(3, 1fr); margin-top: 0; }
+.questions-row-5 { margin-top: 0; }
 .q-note {
   font-size: var(--font-size-small);
   color: var(--color-secondary);

@@ -1,0 +1,15 @@
+# works/mill-day.work
+# A yearly event in the yard. An event is a work: it has a date, a time, a place, a price
+# and facts of its own. `by:` names the group that puts it on with the bakery.
+# In season from `lead` days before the day to the day itself.
+
+id:    mill-day
+title: Mill day
+kind:  event
+on:    05-02
+time:  10:00-16:00
+lead:  21
+place: weserstrasse
+by:    drax-mill
+facts:
+  The mill from Dachau sets up its stones in the yard, bread and cake at the long table.

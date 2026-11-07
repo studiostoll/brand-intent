@@ -1,0 +1,15 @@
+# groups/drax-mill.group
+# The mill the flour comes from. Posts speak about it by name, so it has a file:
+# facts about the mill, and the words it published as one. A group is public and the
+# file is not a consent; a person at the mill who is quoted would have a person file.
+
+id:    drax-mill
+name:  Drax mill
+role:  The mill
+where: Dachau
+links: https://example.com/drax
+
+# The mill's own published words, verbatim. Attributed with {group}.
+
+quote
+  Stone-ground, nothing taken out, nothing put in.

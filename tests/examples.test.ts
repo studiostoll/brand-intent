@@ -10,10 +10,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import {
   parseIdentityFile, parseBrandFile, parseFormatFile, parsePurposeFile,
-  parseCompositionFile, parseStoryFile, parsePlaceFile, parseTimeFile, parsePersonFile,
-  checkBrand, checkPurpose, checkStory,
+  parseCompositionFile, parseStoryFile, parsePlaceFile, parseTimeFile, parsePersonFile, parseGroupFile, parseWorkFile,
+  checkBrand, checkPurpose, checkStory, checkPerson, checkGroup, checkWork,
 } from '../parser/index';
-import type { ParsedPurpose, ParsedPlace, ParsedTime, ParsedPerson } from '../parser/index';
+import type { ParsedPurpose, ParsedPlace, ParsedTime, ParsedPerson, ParsedGroup, ParsedWork } from '../parser/index';
 
 const EXAMPLES = join(__dirname, '..', 'examples');
 
@@ -49,6 +49,8 @@ for (const brandId of readdirSync(EXAMPLES)) {
   const purposes: ParsedPurpose[] = [];
   const places: ParsedPlace[] = [];
   const people: ParsedPerson[] = [];
+  const groups: ParsedGroup[] = [];
+  const works: ParsedWork[] = [];
   let time: ParsedTime | null = null;
   const compositions: string[] = [];
   const formats: string[] = [];
@@ -65,6 +67,8 @@ for (const brandId of readdirSync(EXAMPLES)) {
   });
   for (const f of ofType('time')) test(name(f), () => { time = parseTimeFile(read(f), name(f)); });
   for (const f of ofType('person')) test(name(f), () => { people.push(parsePersonFile(read(f), name(f))); });
+  for (const f of ofType('group')) test(name(f), () => { groups.push(parseGroupFile(read(f), name(f))); });
+  for (const f of ofType('work')) test(name(f), () => { works.push(parseWorkFile(read(f), name(f))); });
   for (const f of ofType('format')) test(name(f), () => { formats.push(parseFormatFile(read(f), name(f)).id); });
   for (const f of ofType('purpose')) test(name(f), () => {
     const out = parsePurposeFile(read(f), name(f));
@@ -76,15 +80,23 @@ for (const brandId of readdirSync(EXAMPLES)) {
 
   // Cross-file checks: the brand against its fact files, a purpose's typography, framing and example
   // when:, and every story against the rest.
-  test('.brand photos and families fit the .time and the people', () => {
+  test('.brand photos and families fit the .time, the people, the groups and the works', () => {
     if (!brand) throw new Error('no .brand parsed');
-    const problems = checkBrand(brand, { time, people }, `${brandId}.brand`);
+    const problems = checkBrand(brand, { time, people, groups, works }, `${brandId}.brand`);
     if (problems.length) throw new Error(problems.join('; '));
   });
-  test('purpose typography and framing exist in the .brand, example when: in the .time', () => {
+  test('people, groups and works fit each other, the .time and the places', () => {
+    const problems = [
+      ...people.flatMap(p => checkPerson(p, { groups, places }, `${p.id}.person`)),
+      ...groups.flatMap(g => checkGroup(g, { people }, `${g.id}.group`)),
+      ...works.flatMap(w => checkWork(w, { people, groups, time, places }, `${w.id}.work`)),
+    ];
+    if (problems.length) throw new Error(problems.join('; '));
+  });
+  test('purpose typography and framing exist in the .brand, example when: in the .time, example work: among the works', () => {
     if (!brand) throw new Error('no .brand parsed');
     for (const p of purposes) {
-      const problems = checkPurpose(p, { time }, `${p.id}.purpose`);
+      const problems = checkPurpose(p, { time, works }, `${p.id}.purpose`);
       if (problems.length) throw new Error(problems.join('; '));
     }
     for (const p of purposes) {
@@ -103,7 +115,7 @@ for (const brandId of readdirSync(EXAMPLES)) {
       themes: Object.keys(brand.themes ?? {}),
       photos: (brand.assets?.photos ?? []).map(p => p.id),
       illustrations: (brand.assets?.illustrations ?? []).map(i => i.id),
-      time, people,
+      time, people, groups, works, name: brand.name,
       location: !!brand.location,
     }, name(f));
     if (problems.length) throw new Error(problems.join('; '));

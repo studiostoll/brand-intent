@@ -26,6 +26,8 @@ export interface ParsedPerson {
   since?: string;
   /** The place they belong to. */
   place?: string;
+  /** The group they belong to: the band, the estate. The group's `members:` lists them. */
+  group?: string;
   /** Why they come, what they do. */
   reason?: string;
   /** Facts for AI writing. Not voice. */
@@ -42,7 +44,7 @@ export interface ParsedPerson {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const KEYS = new Set(['id', 'name', 'role', 'since', 'place', 'reason', 'context', 'photos', 'consent', 'until']);
+const KEYS = new Set(['id', 'name', 'role', 'since', 'place', 'group', 'reason', 'context', 'photos', 'consent', 'until']);
 const NAME = /^[a-z][a-z0-9-]*$/;
 
 // ── Main parser ───────────────────────────────────────────────────────────────
@@ -91,6 +93,7 @@ export function parsePersonFile(content: string, fileName: string): ParsedPerson
   if (!raw['role']) throw new Error(`${fileName}: person needs role: (who they are to the brand, as a post would say it)`);
   if (raw['since'] && !isDateOrYear(raw['since'].value)) throw new Error(`${fileName}:${raw['since'].line}: since must be a date YYYY-MM-DD or a year YYYY, got "${raw['since'].value}"`);
   if (raw['place'] && !NAME.test(raw['place'].value)) throw new Error(`${fileName}:${raw['place'].line}: place must be a place id, got "${raw['place'].value}"`);
+  if (raw['group'] && !NAME.test(raw['group'].value)) throw new Error(`${fileName}:${raw['group'].line}: group must be a group id, got "${raw['group'].value}"`);
   for (const key of ['consent', 'until'] as const) {
     if (raw[key] && !isDate(raw[key].value)) throw new Error(`${fileName}:${raw[key].line}: ${key} must be a date YYYY-MM-DD, got "${raw[key].value}"`);
   }
@@ -116,6 +119,7 @@ export function parsePersonFile(content: string, fileName: string): ParsedPerson
     role: raw['role'].value,
     ...(raw['since'] ? { since: raw['since'].value } : {}),
     ...(raw['place'] ? { place: raw['place'].value } : {}),
+    ...(raw['group'] ? { group: raw['group'].value } : {}),
     ...(raw['reason'] ? { reason: raw['reason'].value } : {}),
     ...(raw['context'] ? { context: raw['context'].value } : {}),
     ...(photos ? { photos } : {}),
@@ -140,4 +144,24 @@ export function isWithdrawn(person: Pick<ParsedPerson, 'until'>, date: string): 
 /** Whether a page of a purpose with `person: required` can show something of theirs: a quote or a photo. */
 export function hasSomethingToShow(person: Pick<ParsedPerson, 'quotes' | 'photos'>): boolean {
   return person.quotes.length > 0 || (person.photos?.length ?? 0) > 0;
+}
+
+// ── Cross-file checks ─────────────────────────────────────────────────────────
+
+/** Checks a person against the brand's groups and places. Returns problems as "file: message"; empty when
+ *  they fit. `groups`: the brand's `.group` files (empty = none); undefined = not checked. The person's
+ *  `group:` must exist and list them in its `members:`. `places` likewise for `place:`. */
+export function checkPerson(
+  person: Pick<ParsedPerson, 'id' | 'group' | 'place'>,
+  facts: { groups?: Array<{ id: string; members?: string[] }>; places?: Array<{ id: string }> },
+  fileName: string,
+): string[] {
+  const problems: string[] = [];
+  if (facts.groups && person.group) {
+    const group = facts.groups.find(g => g.id === person.group);
+    if (!group) problems.push(`${fileName}: group "${person.group}" does not exist`);
+    else if (!group.members?.includes(person.id)) problems.push(`${fileName}: group "${group.id}" doesn't list "${person.id}" in its members: (a membership is written on both sides)`);
+  }
+  if (facts.places && person.place && !facts.places.some(p => p.id === person.place)) problems.push(`${fileName}: place "${person.place}" does not exist`);
+  return problems;
 }

@@ -1,6 +1,6 @@
 # Brand Intent / Specification v0.1
 
-This document defines the formal grammar for all Brand Intent file types: the five layers, stories, and the three fact files a story needs: place, time and person. For the reasoning behind these decisions, see [DESIGN.md](DESIGN.md).
+This document defines the formal grammar for all Brand Intent file types: the five layers, stories, and the five fact files a story orchestrates: time, place, person, group and work. For the reasoning behind these decisions, see [DESIGN.md](DESIGN.md).
 
 ---
 
@@ -1010,14 +1010,16 @@ video intro
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
 | `animated` | flag | No | Marks asset as animated |
 | `loop` | flag | No | Marks video/lottie as looping |
-| `when:` | string | No | Photos only. Name of a [`.time`](#time-time) entry the photo fits: a window, a season, a weekly or a date. Absent: all year |
+| `when:` | string | No | Photos only. Name of a [`.time`](#time-time) entry the photo fits: a window or a season. Absent: all year |
 | `framing:` | string | No | Photos only. Id of the [framing](#framing-name-block) module the photo was taken in |
 | `place:` | string | No | Photos only. Where the photo was taken |
 | `person:` | string | No | Photos only. Id of the [`.person`](#person-person) shown. The person's `photos:` lists this photo; `checkBrand` reports an unknown id |
+| `group:` | string | No | Photos only. Id of the [`.group`](#group-group) shown: the band's van, the estate's cellar. The group's `photos:` lists this photo. A photo that shows a face names the `person:`, whose consent it needs; `checkBrand` reports an unknown id |
+| `work:` | string | No | Photos only. Id of the [`.work`](#work-work) shown: the sleeve, the bottle, the loaf. The work's `photos:` lists this photo; `checkBrand` reports an unknown id |
 | `taken:` | date | No | Photos only. Date taken, `YYYY-MM-DD` |
 | `focus:` | `X% Y%` or `none` | No | Photos only. Position of the main subject, measured from the top left. `none`: the photo has no single subject. Consumers keep it inside the crop |
 | `horizon:` | `N%` or `none` | No | Photos only. Height of the horizon line from the top; for a tilted horizon, its mean height. `none`: no horizon visible. Consumers can crop so it meets the [framing](#framing-name-block) horizon |
-| `group:` | string | No | Library group (e.g. `experimental`). Ungrouped assets come first; each group is listed as its own section after them, in order of first appearance. |
+| `section:` | string | No | Library section (e.g. `experimental`). Assets without one come first; each section is listed after them, in order of first appearance. Was `group:` before v0.44; `checkBrand` reports a `group:` that names no `.group` |
 | `gltf:` | string | No | Path to a glTF/GLB 3D model (logos only). When present, the asset renders as a live 3D object; `src` stays as the 2D fallback for thumbnails and export. |
 | `generator:` | string | No | Procedural generator id (logos only). Renders live geometry from code (e.g. `spiral`, `mobius`, `ribbon`); `src` stays as the 2D fallback. |
 | `generator-params` | sub-block | No | Indented block of numeric defaults for the named generator, keyed `name: number`. Each consumer defines its own param names. |
@@ -1111,6 +1113,8 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `framing:` | string | No | Id of a brand `framing` block. Photos for this purpose are shot in that module: implementations open the camera on it and may hide the others. Unknown ids are ignored |
 | `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block this purpose serves by default |
 | `person:` | `required` | No | Every page of this purpose speaks about a [person](#person-person): a quote, a portrait, a regular's recommendation. A page without one, or with a person who has neither a quote nor a photo, is not posted; `checkStory` reports it |
+| `group:` | `required` | No | Every page of this purpose speaks about a [group](#group-group): the band, the estate. A page without one is not posted; `checkStory` reports it |
+| `work:` | `required` | No | Every page of this purpose speaks about a [work](#work-work): the bread of the day, the release. A page without one is not posted; `checkStory` reports it |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable): the form of a slot |
@@ -1269,7 +1273,8 @@ example
 |-----|------|----------|-------------|
 | `topic:` | string | No | What the page is about, one sentence. Becomes the page topic, which people can change and which guides AI writing and review |
 | `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block. Overrides the purpose `goal:` for this page |
-| `when:` | string | No | Name of a [`.time`](#time-time) entry: a window, a season, a weekly or a date. The example is only picked [in season](#when-in-season) |
+| `when:` | string | No | Name of a [`.time`](#time-time) entry: a window or a season. The example is only picked [in season](#when-in-season) |
+| `work:` | string | No | Id of a [`.work`](#work-work) the example is about. The example is only picked while the work is [in season](#in-season), and the page gets the work's variables |
 | `SLOTID:` | string | Yes (1+) | Text for a declared slot. A bare `SLOTID:` takes the following 4-space lines: list items, or line breaks in a text slot |
 
 **Rules:**
@@ -1524,8 +1529,10 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `topic:` | string | No | Story topic: what the whole story is about, one sentence. People can change it per story; it guides AI writing and review on every page |
 | `scrim:` | `none` | No | No [scrim](#photo-look-block) on any page of the story, whatever the brand and the pages' purposes declare |
 | `place:` | string | No | [Place](#place-place) id the story speaks for. When omitted and the brand has exactly one place, the story speaks for that one; with several places, it speaks for the brand in general (sky and weather use the `.brand` `location`, place variables are not available) |
-| `when:` | string | No | Name of a [`.time`](#time-time) entry the story fits: a window, a season, a weekly or a date. Implementations offer the story as a template only [in season](#when-in-season); a weekly or date also gives the occasion variables. Absent: all year |
+| `when:` | string | No | Name of a [`.time`](#time-time) entry the story fits: a window or a season. Implementations offer the story as a template only [in season](#when-in-season). Absent: all year |
 | `person:` | string | No | [Person](#person-person) id the story speaks about. Person variables resolve from it on every page that doesn't name its own |
+| `group:` | string | No | [Group](#group-group) id the story speaks about. Group variables resolve from it on every page that doesn't name its own |
+| `work:` | string | No | [Work](#work-work) id the story is about. Work variables resolve from it on every page that doesn't name its own, and the story is offered only while the work is [in season](#in-season) |
 | `page` | block | Yes (1+) | One page (repeatable). Order in the file = order in the story |
 | `example` | block | No | Texts for the open slots of the pages, about one story topic (repeatable) |
 
@@ -1539,8 +1546,9 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `photo:` | comma list or `camera` | No | Photo ids from the `.brand`. This page starts with one of them instead of the purpose's `photo:` list; with several, implementations pick one per story date, the same one every time for that date (like `illustration:`). `checkStory` reports an unknown id. `photo: camera` instead: the page starts without a photo and asks for one taken now (today's light, today's place); implementations offer the camera in its photo region. It stands alone, and `checkStory` reports it on a purpose with `camera: false` |
 | `theme:` | string | No | Theme name from the `.brand`. This page uses that theme instead of the colours the story starts with (the first page's purpose `palette:`). `checkStory` reports an unknown theme |
 | `topic:` | string | No | Page topic: what this page adds to the story |
-| `when:` | string | No | A [`.time`](#time-time) weekly or date this page is about, for its occasion variables; the story's `when:` otherwise |
 | `person:` | string | No | [Person](#person-person) id this page speaks about, instead of the story's. One page can name one person; a carousel of three regulars is three pages |
+| `group:` | string | No | [Group](#group-group) id this page speaks about, instead of the story's |
+| `work:` | string | No | [Work](#work-work) id this page is about, instead of the story's. One page names one work; the breads of the week are a page list with one work per copy |
 | `repeat:` | `MIN-MAX` | No | The page is a [page list](#page-lists): between MIN and MAX copies of it in a row, e.g. `2-6`. 1 ≤ MIN ≤ MAX. At most one page per story |
 | `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
 
@@ -1597,16 +1605,23 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{season}` | The current season's `label:` | `Frühling`, `Spring` | its length |
 | `{founded}` | The year the brand started | `2019` | 4 |
 | `{years}` | Whole years since the brand started | `7` | 3 |
-| `{occasion}` | The `label:` of the weekly or date the page is about | `Tasting at the counter` | its length |
-| `{occasion-date}` | Its next day, day and month | `2. Mai`, `2 May` | 13 |
-| `{occasion-time}` | Its `time:`, formatted like hours | `19–21 Uhr`, `7–9 PM` | 17 |
-| `{days-until}` | Days from the story's date to the occasion; `0` on the day | `12` | 3 |
 | `{daily NAME}` | The time of that moment of the brand's day | `04:00`, `4:00 AM` | 8 |
 | `{person}` | The person's `name:`, or their `role:` without a name | `Thomas`, `the baker` | its length |
 | `{role}` | The person's `role:` | `Regular in Lemkenhafen` | its length |
 | `{since}` | The year the person has been with the brand | `2006` | 4 |
 | `{since-years}` | Whole years since then | `20` | 3 |
 | `{reason}` | The person's `reason:` | `Holiday without a programme` | its length |
+| `{group}` | The group's `name:` | `Giardini di Mirò` | its length |
+| `{where}` | The group's `where:` | `Reggio Emilia` | its length |
+| `{group-since}` | The year the group has been with the brand | `2001` | 4 |
+| `{group-years}` | Whole years since then | `25` | 3 |
+| `{work}` | The work's `title:` | `Quasi Casa` | its length |
+| `{kind}` | The work's `kind:` | `album`, `bread` | its length |
+| `{by}` | Who the work is by: the names of its `by:` persons and groups, or the brand's name | `Giardini di Mirò` | its length |
+| `{price}` | The work's `price:` | `750 g · €5.80` | its length |
+| `{on}` | The work's next `on:` day, day and month | `24. Oktober`, `24 October` | 13 |
+| `{time}` | The work's `time:`, formatted like hours | `14–18 Uhr`, `2–6 PM` | 17 |
+| `{days-until}` | Days from the story's date to the work's next `on:` day; `0` on the day | `12` | 3 |
 | `{n}` | The page's position in its [page list](#page-lists); only on the page with `repeat:` | `3` | 2 |
 | `{count}` | How many pages the page list has; on any page of a story with a page list | `5` | 2 |
 
@@ -1614,11 +1629,15 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 
 **Place** variables (`{place}`, `{address}`, `{street}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`, `{opening}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` and `{street}` need the place's `address:`, the hours variables its `hours` block, `{opening}` its `opening:`.
 
-**Time** variables come from the brand's [`.time`](#time-time): `{season}` needs `season` blocks, `{founded}` and `{years}` need `founded:`, `{daily NAME}` needs that `daily` entry. The **occasion** variables (`{occasion}`, `{occasion-date}`, `{occasion-time}`, `{days-until}`) come from the weekly or date the page's `when:` names, else the story's; a window or season has no occasion. `{occasion-time}` needs the entry's `time:`. `{days-until}` counts to the entry's next start on or after the story's date; after a one-off date it has no value.
+**Time** variables come from the brand's [`.time`](#time-time): `{season}` needs `season` blocks, `{founded}` and `{years}` need `founded:`, `{daily NAME}` needs that `daily` entry.
 
 **Person** variables (`{person}`, `{role}`, `{since}`, `{since-years}`, `{reason}`) come from the page's person: the one its `person:` names, else the story's. `{since}` and `{since-years}` need the person's `since:`, `{reason}` its `reason:`. `{person}` gives the name only with `name:`; otherwise the role, so a page never names someone who didn't agree.
 
 **Consent is not guessed.** A person file holds what the person agreed to and nothing else: a name, photos, quotes. From the person's `until:` day on, a page that names them is not posted: the preview says why.
+
+**Group** variables (`{group}`, `{where}`, `{group-since}`, `{group-years}`) come from the page's group: the one its `group:` names, else the story's, else the group of the page's person (`group:` in the person file). `{where}` needs the group's `where:`, the since variables its `since:`.
+
+**Work** variables (`{work}`, `{kind}`, `{by}`, `{price}`, `{on}`, `{time}`, `{days-until}`) come from the page's work: the one its `work:` names, else the story's. `{price}` needs `price:`, `{time}` needs `time:`, `{on}` and `{days-until}` need `on:`. `{days-until}` counts to the work's next `on:` day on or after the story's date; after a one-off date it has no value. `{by}` joins several names with the brand's language's "and"; without `by:` it is the brand's name.
 
 **`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
 
@@ -1678,7 +1697,107 @@ A `.story` file must NOT contain: color values, typography values, slot definiti
 
 ## Fact Files
 
-The five layers describe; a story orchestrates. To orchestrate it needs a place, a time and people, and each has a file of the same kind: [`.place`](#place-place) says where, [`.time`](#time-time) says when, [`.person`](#person-person) says who. They hold facts, never voice or colour; a story pulls them in with `place:`, `when:` and `person:`, and their facts reach the page as [variables](#variables). What a fact file doesn't say is not guessed: a closed day has no closing time, a date that passed has no countdown, a person without a name in the file has no name.
+The five layers describe; a story orchestrates. To orchestrate it needs to know when, where, who and what, and each answer has a file of the same kind: [`.time`](#time-time) says when, [`.place`](#place-place) says where, [`.person`](#person-person) and [`.group`](#group-group) say who (one human, or more than one), [`.work`](#work-work) says what the brand puts out or puts on. They hold facts, never voice or colour; a story pulls them in with `when:`, `place:`, `person:`, `group:` and `work:`, and their facts reach the page as [variables](#variables). What a fact file doesn't say is not guessed: a closed day has no closing time, a date that passed has no countdown, a person without a name in the file has no name.
+
+A fact file exists only if posts speak about its subject. Each thing carries its own dates: a place its `opening:`, a person their `since:` and `until:`, a work its `on:` or its `days:`. The `.time` holds only what belongs to the brand as a whole.
+
+## Time (`.time`)
+
+**Cardinality:** Zero or one per brand.
+**File extension:** `.time`
+**Filename convention:** the brand id (e.g., `krume.time`), next to the `.identity` and `.brand`
+
+The brand's rhythm: when it started, its seasons and windows, its day. Facts, not voice: the identity says what the early morning means to the brand, the `.time` says the oven is on at four. Every block is optional. A brand without a `.time` has no seasons and no windows, and everything it posts fits all year.
+
+Nothing in the file is an occasion. A Saturday bread, a baking class, a mill day, a tasting evening have a day or a date of their own and are [works](#work-work); a place's hours are the place's. The `.time` says what is true of the brand as a whole, which is why there is one.
+
+```yaml
+# krume.time
+# The brand's rhythm: when it started, its seasons and windows, its day.
+
+founded: 2019-05-04
+
+season spring
+  label: Spring
+  from:  03-01
+
+season summer
+  label: Summer
+  from:  06-01
+
+season autumn
+  label: Autumn
+  from:  09-01
+
+season winter
+  label: Winter
+  from:  12-01
+
+windows
+  rhubarb: 04-15..06-24
+  advent:  11-27..12-24
+
+daily
+  oven:     04:00  Oven on
+  shelf:    06:00  Everything on the shelf
+  regulars: 07:00  The regulars at the door
+  gone:     12:00  Mostly sold out
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `founded:` | date or year | No | `YYYY-MM-DD` or `YYYY`: when the brand started. `{founded}` and `{years}` show it; a bare year counts from January 1 |
+| `season NAME` | block | No | A season of the brand's year (repeatable, below). At least two when any |
+| `windows` | block | No | Named yearly date windows (below) |
+| `daily` | block | No | Named moments of the brand's day (below) |
+
+Names (`NAME`, window names, daily names) are lowercase kebab-case and unique across the file. `when:` names a window or a season; a daily moment is a time of day, not a season, and is reached with `{daily NAME}`.
+
+### `season NAME` Block
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `label:` | string | Yes | The season's name as people say it. `{season}` shows it |
+| `from:` | `MM-DD` | Yes | The day the season starts |
+
+A season runs until the next season starts, in date order, wrapping over the year end. Start dates are unique. A `.brand` colour family names its season with `season: NAME`.
+
+### `windows` Block
+
+Named yearly date windows for content that only fits part of the year.
+
+```yaml
+windows
+  strawberries: 06-01..07-31
+  plums:        08-01..09-15, 10-01..10-15
+  christmas:    11-27..01-06    # wraps over the year end
+```
+
+Each entry is `name: MM-DD..MM-DD`, with further ranges separated by commas. Ends are inclusive. A range whose start is after its end wraps over the year end.
+
+### `daily` Block
+
+The brand's own clock: named moments of the day, in order.
+
+```yaml
+daily
+  oven:  04:00  Oven on
+  shelf: 06:00  Everything on the shelf
+```
+
+Each line is `name: HH:MM` followed by an optional label. `{daily NAME}` shows the time; AI writing gets the label as a fact, so "on the shelf since six" comes from the file and the identity keeps the sentence as voice.
+
+### `when:` and in season
+
+A `when:` on a purpose example, a brand photo, a story or a story page names one `.time` entry, a window or a season. The content is **in season** on a day inside one of the window's ranges, or inside the season. Content about a work names the work with `work:` instead and is in season when the [work is](#in-season).
+
+Implementations pick and suggest only in-season content, but never remove what a person has already placed. Content without `when:` or `work:` fits all year. An unknown name is an error.
+
+### Exclusion Rule
+
+A `.time` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), a place's opening hours (→ `.place`), events, classes and the days a product is sold (→ `.work`), post texts (→ `.purpose`, `.story`), posting schedules (→ the implementation).
+
+---
 
 ## Place (`.place`)
 
@@ -1750,156 +1869,6 @@ A `.place` never contains: voice or tone (→ `.identity`), visual parameters (�
 
 ---
 
-## Time (`.time`)
-
-**Cardinality:** Zero or one per brand.
-**File extension:** `.time`
-**Filename convention:** the brand id (e.g., `krume.time`), next to the `.identity` and `.brand`
-
-The brand's time: when it started, its seasons and windows, its week and its day. Facts, not voice: the identity says what the early morning means to the brand, the `.time` says the oven is on at four. Every block is optional. A brand without a `.time` has no seasons, no windows and no occasions, and everything it posts fits all year.
-
-```yaml
-# krume.time
-# The brand's time: when it started, its seasons and windows, its week, its day.
-
-founded: 2019-05-04
-
-season spring
-  label: Spring
-  from:  03-01
-
-season summer
-  label: Summer
-  from:  06-01
-
-season autumn
-  label: Autumn
-  from:  09-01
-
-season winter
-  label: Winter
-  from:  12-01
-
-windows
-  rhubarb: 04-15..06-24
-  advent:  11-27..12-24
-
-weekly wheat-blend
-  label:   Wheat blend
-  days:    sat
-  context: 500 g, only on Saturdays, sold out by ten.
-
-weekly baking-class
-  label:   Baking class
-  days:    sat
-  time:    14:00-18:00
-  place:   weserstrasse
-
-date anniversary
-  label:   Five years of Krume
-  on:      2024-05-04
-
-date mill-day
-  label:   Mill day
-  on:      05-02
-  time:    10:00-16:00
-  lead:    21
-  context: The mill from Dachau sets up its stones in the yard, bread and cake at the long table.
-
-daily
-  oven:     04:00  Oven on
-  shelf:    06:00  Everything on the shelf
-  regulars: 07:00  The regulars at the door
-  gone:     12:00  Mostly sold out
-```
-
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `founded:` | date or year | No | `YYYY-MM-DD` or `YYYY`: when the brand started. `{founded}` and `{years}` show it; a bare year counts from January 1 |
-| `season NAME` | block | No | A season of the brand's year (repeatable, below). At least two when any |
-| `windows` | block | No | Named yearly date windows (below) |
-| `weekly NAME` | block | No | Something that happens on fixed weekdays (repeatable, below) |
-| `date NAME` | block | No | A yearly or one-off date (repeatable, below) |
-| `daily` | block | No | Named moments of the brand's day (below) |
-
-Names (`NAME`, window names, daily names) are lowercase kebab-case and unique across the file. `when:` names a window, a season, a weekly or a date; a daily moment is a time of day, not a season, and is reached with `{daily NAME}`.
-
-### `season NAME` Block
-
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `label:` | string | Yes | The season's name as people say it. `{season}` shows it |
-| `from:` | `MM-DD` | Yes | The day the season starts |
-
-A season runs until the next season starts, in date order, wrapping over the year end. Start dates are unique. A `.brand` colour family names its season with `season: NAME`.
-
-### `windows` Block
-
-Named yearly date windows for content that only fits part of the year.
-
-```yaml
-windows
-  strawberries: 06-01..07-31
-  plums:        08-01..09-15, 10-01..10-15
-  christmas:    11-27..01-06    # wraps over the year end
-```
-
-Each entry is `name: MM-DD..MM-DD`, with further ranges separated by commas. Ends are inclusive. A range whose start is after its end wraps over the year end.
-
-### `weekly NAME` Block
-
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `label:` | string | Yes | What it is, as a post would say it. `{occasion}` shows it |
-| `days:` | days | Yes | Weekdays as in [`hours`](#hours-block): `sat`, `thu-fri`, `mon, wed` |
-| `time:` | `HH:MM-HH:MM` or `HH:MM` | No | When on those days. `{occasion-time}` shows it |
-| `place:` | string | No | The [place](#place-place) it happens at |
-| `context:` | string | No | Facts for AI writing: what happens, for whom |
-
-### `date NAME` Block
-
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `label:` | string | Yes | What it is. `{occasion}` shows it |
-| `on:` | date or range | Yes | `MM-DD` for a yearly date, `MM-DD..MM-DD` for a yearly run of days, `YYYY-MM-DD` or `YYYY-MM-DD..YYYY-MM-DD` for a one-off |
-| `time:` | `HH:MM-HH:MM` or `HH:MM` | No | When on that day |
-| `lead:` | int | No | Days before `on` during which the date is in season. Default `14` |
-| `place:` | string | No | The [place](#place-place) it happens at |
-| `context:` | string | No | Facts for AI writing |
-
-A yearly date comes round every year. A one-off date is in season once and never again; the file keeps it as a record.
-
-### `daily` Block
-
-The brand's own clock: named moments of the day, in order.
-
-```yaml
-daily
-  oven:  04:00  Oven on
-  shelf: 06:00  Everything on the shelf
-```
-
-Each line is `name: HH:MM` followed by an optional label. `{daily NAME}` shows the time; AI writing gets the label as a fact, so "on the shelf since six" comes from the file and the identity keeps the sentence as voice.
-
-### `when:` and in season
-
-A `when:` on a purpose example, a brand photo, a story or a story page names one `.time` entry. The content is **in season** on a day when:
-
-| Entry | In season |
-|-------|-----------|
-| window | the day is inside one of its ranges |
-| season | the day is inside the season |
-| weekly | the day is one of its `days:` |
-| date | from `lead` days before its start to its end, inclusive |
-
-Implementations pick and suggest only in-season content, but never remove what a person has already placed. Content without `when:` fits all year. An unknown name is an error.
-
-### Exclusion Rule
-
-A `.time` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), a place's opening hours (→ `.place`), post texts (→ `.purpose`, `.story`), posting schedules (→ the implementation).
-
----
-
 ## Person (`.person`)
 
 **Cardinality:** Zero or more per brand.
@@ -1953,6 +1922,7 @@ quote
 | `role:` | string | Yes | Who they are to the brand, in the brand's language, as a post would say it: `Baker`, `Regular in Lemkenhafen`, `Winemaker of the house wine` |
 | `since:` | date or year | No | `YYYY-MM-DD` or `YYYY`: since when. `{since}` and `{since-years}` show it; a bare year counts from January 1 |
 | `place:` | string | No | The [place](#place-place) they belong to |
+| `group:` | string | No | The [group](#group-group) they belong to: the band, the estate. The group's `members:` lists them |
 | `reason:` | string | No | Why they come, what they do: the fact a goal like "a person with their reason to come" asks for. `{reason}` shows it |
 | `context:` | string | No | Facts for AI writing. Not voice |
 | `photos:` | string list | No | Photo ids from the `.brand` that show them, and may be shown. Each of those photos names this person with `person:` |
@@ -1966,7 +1936,175 @@ A `quote` block holds the person's own words. Implementations offer a person's q
 
 ### Exclusion Rule
 
-A `.person` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the person's quotes (→ `.purpose`, `.story`), an address (→ `.place`), what the person did not agree to.
+A `.person` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the person's quotes (→ `.purpose`, `.story`), an address (→ `.place`), a group's facts (→ `.group`), what the person did not agree to.
+
+---
+
+## Group (`.group`)
+
+**Cardinality:** Zero or more per brand.
+**File extension:** `.group`
+**Filename convention:** the group id (e.g., `giardini-di-miro.group`), in `groups/`
+
+More than one person the brand's posts speak about as one: a band, an estate, a family farm, a mill, a club, a distributor, a label. Facts, not voice. One human is a [person](#person-person), whatever their role; a group is a group however small.
+
+A group is public, and the file is not a consent: it has a region and links, no `consent:` and no `until:`. The humans in it who are named, quoted or shown have their own person files and name the group with `group:`. A group that the brand stops speaking about changes its `role:` ("Former artist") or loses its file.
+
+```yaml
+# groups/giardini-di-miro.group
+# The band. What its members say is in their person files; what the band published as one is here.
+
+id:      giardini-di-miro
+name:    Giardini di Mirò
+role:    Band on the label
+since:   2001
+where:   Reggio Emilia
+members: luca
+links:   https://giardinidimiro.com
+photos:  gdm-stage
+context: Six people, post-rock, on the label from the first record to the last show.
+```
+
+A group with its own published words:
+
+```yaml
+# groups/drax-mill.group
+id:      drax-mill
+name:    Drax mill
+role:    The mill
+where:   Dachau
+links:   https://example.com/drax
+
+quote
+  Stone-ground, nothing taken out, nothing put in.
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `id:` | string | Yes | Group identifier; stories, pages, persons and photos name it with `group:`, works with `by:` |
+| `name:` | string | Yes | The name as posts write it. `{group}` shows it |
+| `role:` | string | Yes | What the group is to the brand, in the brand's language, as a post would say it: `Band on the label`, `Estate of the house wine`, `The mill` |
+| `since:` | date or year | No | `YYYY-MM-DD` or `YYYY`: since when. `{group-since}` and `{group-years}` show it; a bare year counts from January 1 |
+| `where:` | string | No | Region or town, as a post says it. A fact, not a [place](#place-place): a group has no hours. `{where}` shows it |
+| `members:` | string list | No | [Person](#person-person) ids. Each of them names this group with `group:` |
+| `links:` | URL list | No | The group's own pages (`https://`) |
+| `photos:` | string list | No | Photo ids from the `.brand` that show the group. Each of those photos names this group with `group:` |
+| `context:` | string | No | Facts for AI writing. Not voice |
+| `quote` | block | No | Words the group published as one: a statement, liner notes, a back label. Verbatim, one quote per block (repeatable). Attributed with `{group}` |
+
+### Quotes
+
+A group's `quote` blocks follow the [person's](#quotes): offered for the open slots of a page that names the group, never written, extended or rewritten by AI. A remark by a member is the member's quote, in the member's file, even when the group is the subject. A purpose with `group: required` needs a group with at least one quote or one photo.
+
+### Exclusion Rule
+
+A `.group` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the group's quotes (→ `.purpose`, `.story`), an address with hours (→ `.place`), a member's words or consent (→ `.person`), what the group sells or puts on (→ `.work`).
+
+---
+
+## Work (`.work`)
+
+**Cardinality:** Zero or more per brand.
+**File extension:** `.work`
+**Filename convention:** the work id (e.g., `rye-loaf.work`), in `works/`
+
+A thing the brand puts out or puts on, that posts return to: a bread, a wine, a record, a book, an exhibition, a class, a tasting evening, a show, a mill day. Facts, not voice: what it is, who it is by, what it costs, when it is out or when it takes place. `kind:` is the brand's own word for it. The work carries its own date: a one-off or yearly `on:`, or the `days:` it comes round on. That is why an event is a work and not an entry in the `.time`.
+
+```yaml
+# works/rye-loaf.work
+# The classic. The facts a daily-bread page states come from here.
+
+id:     rye-loaf
+title:  Rye loaf
+kind:   bread
+place:  weserstrasse
+price:  750 g · €5.80
+photos: rye-loaf-cut
+facts:
+  Rye 1150 from the mill in Dachau, 18 hours of fermentation, caraway from the Wendland.
+```
+
+A work with its own days, and one with a date:
+
+```yaml
+# works/baking-class.work
+id:     baking-class
+title:  Baking class
+kind:   class
+days:   sat
+time:   14:00-18:00
+place:  weserstrasse
+price:  €85, flour and bread included
+facts:
+  Four hours, six people, two doughs. Everyone leaves with a loaf and a starter.
+```
+
+```yaml
+# works/mill-day.work
+id:     mill-day
+title:  Mill day
+kind:   event
+on:     05-02
+time:   10:00-16:00
+lead:   21
+place:  weserstrasse
+by:     drax-mill
+facts:
+  The mill from Dachau sets up its stones in the yard, bread and cake at the long table.
+```
+
+A release:
+
+```yaml
+# works/quasi-casa.work
+id:     quasi-casa
+title:  Quasi Casa
+kind:   album
+by:     giardini-di-miro
+on:     2025-10-24
+lead:   42
+price:  from €15
+links:  https://www.2ndrec.com/products/quasi-casa
+photos: quasi-casa-sleeve
+facts:
+  A live recording of their final show. 2xLP with download code and a 20-page booklet.
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `id:` | string | Yes | Work identifier; stories, pages, examples and photos name it with `work:` |
+| `title:` | string | Yes | The title as posts write it. `{work}` shows it |
+| `kind:` | string | Yes | What it is, in the brand's own word: `bread`, `wine`, `album`, `class`, `event`, `show`. `{kind}` shows it |
+| `by:` | string list | No | [Person](#person-person) or [group](#group-group) ids the work is by. Absent: the brand's own. `{by}` shows the names |
+| `on:` | date or range | No | `MM-DD` for a yearly date, `MM-DD..MM-DD` for a yearly run of days, `YYYY-MM-DD` or `YYYY-MM-DD..YYYY-MM-DD` for a one-off. The day it comes out, takes place or is on the shelf. `{on}` and `{days-until}` show it |
+| `days:` | days | No | Weekdays as in [`hours`](#hours-block): `sat`, `thu-fri`, `mon, wed`. The days a work comes round on: a Saturday bread, a Thursday tasting |
+| `time:` | `HH:MM-HH:MM` or `HH:MM` | No | When on those days or on that date. `{time}` shows it |
+| `lead:` | int | No | Days before `on` during which the work is in season. Default `14` |
+| `until:` | date | No | `YYYY-MM-DD`: the day after which the work is no longer posted about. A page that names it is not posted |
+| `when:` | string | No | A [`.time`](#time-time) window or season the work fits: a stollen in Advent |
+| `place:` | string | No | The [place](#place-place) it is sold, shown or held at |
+| `price:` | string | No | As a post writes it, with the unit when there is one: `750 g · €5.80`, `from €15`. `{price}` shows it; implementations never compute with it |
+| `links:` | URL list | No | Where to buy, listen, book (`https://`) |
+| `photos:` | string list | No | Photo ids from the `.brand` that show the work. Each of those photos names this work with `work:` |
+| `facts:` | block | No | Facts for AI writing, on the following 2-space lines: ingredients, duration, edition, vintage, line-up. Not voice |
+
+### In season
+
+A work's dates say when content about it fits. A page, a story or an example that names the work is **in season** on a day when every one of these that the work has says so:
+
+| Key | In season |
+|-----|-----------|
+| yearly `on:` | from `lead` days before its start to its end, inclusive; out of season in between |
+| one-off `on:` | from `lead` days before its start, and from then on: the work is out. Before it `{days-until}` counts down |
+| `days:` | the day is one of them |
+| `when:` | the window or season is, as in the [`.time`](#when-and-in-season) |
+| `until:` | the day is not after it |
+
+A work with none of them fits all year. A one-off `on:` is a launch, not an expiry: a record stays in season after its release day. An event that is over is withdrawn with `until:` on its day, or by a yearly `on:` that comes round again.
+
+### Exclusion Rule
+
+A `.work` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts (→ `.purpose`, `.story`), the brand's seasons (→ `.time`), a place's hours (→ `.place`), who made it beyond their id (→ `.person`, `.group`).
 
 ---
 
@@ -1986,7 +2124,7 @@ composed upstream
 .format + .composition (condition the specific act of expression)
 ```
 
-A story adds the three fact files to the context of each page: the [place](#place-place) its `place:` names, the [time](#time-time) entry its `when:` names, the [person](#person-person) its `person:` names. They add facts and variables, never voice.
+A story adds the fact files to the context of each page: the [place](#place-place) its `place:` names, the [time](#time-time) entry its `when:` names, the [person](#person-person), [group](#group-group) and [work](#work-work) its `person:`, `group:` and `work:` name. They add facts and variables, never voice.
 
 The purpose does not filter `.identity` and `.brand` separately. It filters the **composed upstream**, which includes both the strategic reasoning from `.identity` and the operationalized parameters from `.brand`. The parser resolves which layer each key originates from.
 
@@ -2007,9 +2145,11 @@ A parser should warn when:
 - The same context text appears in 3+ purpose files (belongs upstream)
 - A `slot` references a `typography` style not defined in `.brand`
 - A `slot` references a `color` not defined as a theme slot
-- An example, photo, story or page `when:` names an entry the `.time` doesn't declare; a `.brand` still has a `windows` block or a colour family `from:` date
+- An example, photo, story or page `when:` names an entry the `.time` doesn't declare; a `.brand` still has a `windows` block or a colour family `from:` date; a `.time` still has a `weekly` or `date` block (they are works since v0.44); a `.brand` asset still has a library `group:`
 - A colour family names a season the `.time` doesn't declare, or two families name the same season
 - A story, page or photo names a person that doesn't exist; a page of a purpose with `person: required` has no person; a person's `photos:` lists a photo whose `person:` is someone else, or a photo's `person:` isn't in that person's `photos:`; a page of a purpose with `person: required` names a person with neither a quote nor a photo
+- A story, page, person or photo names a group that doesn't exist; a group's `members:` lists a person whose `group:` is another group, or a person's `group:` isn't in that group's `members:`; a group's `photos:` and a photo's `group:` disagree; a page of a purpose with `group: required` has no group, or one with neither a quote nor a photo
+- A story, page, example or photo names a work that doesn't exist; a work's `by:` names an id that is neither a person nor a group; a work's `when:` names an entry the `.time` doesn't declare; a work's `photos:` and a photo's `work:` disagree; a page of a purpose with `work: required` has no work; a page names a work whose `until:` has passed
 - An example `goal:` references a goal not defined in `.identity`
 - A `.purpose` still uses deprecated slot `samples:`
 - An `archetypes` entry references a non-existent `.composition` file
@@ -2017,7 +2157,7 @@ A parser should warn when:
 - A `.story` references a format, purpose or composition that doesn't exist, a composition its purpose doesn't list, or a slot its purpose doesn't declare or fixes with `value:`
 - A fixed or example text in a `.story` exceeds the slot's limits
 - A `.story` names a place that doesn't exist, or uses a place variable without a place (several places and no `place:`), `{address}` without `address:` or an hours variable without `hours`
-- A `.story` uses a time variable the `.time` can't give (no `founded:`, no `season`, no such `daily` entry), an occasion variable without a weekly or date `when:`, or a person variable without a person
+- A `.story` uses a time variable the `.time` can't give (no `founded:`, no `season`, no such `daily` entry), a person variable without a person, a group variable without a group, or a work variable without a work or one the work can't give (`{price}` without `price:`, `{on}` or `{days-until}` without `on:`, `{time}` without `time:`)
 
 ---
 
@@ -2025,7 +2165,7 @@ A parser should warn when:
 
 ### Your Brand
 
-A brand lives in its own folder, named after the brand. The folder contains the brand's `.identity`, `.brand` and `.time` files alongside its formats, purposes, compositions, stories, places and people:
+A brand lives in its own folder, named after the brand. The folder contains the brand's `.identity`, `.brand` and `.time` files alongside its formats, purposes, compositions, stories, places, people, groups and works:
 
 ```
 project/
@@ -2043,8 +2183,12 @@ project/
     │   └── breads-of-the-week.story
     ├── places/
     │   └── harbour.place
-    └── people/
-        └── thomas.person
+    ├── people/
+    │   └── thomas.person
+    ├── groups/
+    │   └── drax-mill.group
+    └── works/
+        └── rye-loaf.work
 ```
 
 Every brand is fully self-contained. Formats, purposes, compositions, stories and fact files are specific to one brand — there are no shared files between brands.
@@ -2065,7 +2209,9 @@ project/
         ├── compositions/
         ├── stories/
         ├── places/
-        └── people/
+        ├── people/
+        ├── groups/
+        └── works/
 ```
 
 The `brand-intent` npm package ships example brands under `examples/`. Run `brand-intent init` to copy them into your own project.

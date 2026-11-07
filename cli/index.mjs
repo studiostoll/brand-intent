@@ -63,7 +63,7 @@ function scaffoldExample(targetDir) {
   const src = join(PKG_ROOT, 'examples', 'krume');
   const dest = join(targetDir, 'examples', 'krume');
   copyDirRecursive(src, dest);
-  console.log('  \u2713 examples/krume/ \u2014 reference implementation (identity, brand, format, purpose, composition, story, place, time, person)');
+  console.log('  \u2713 examples/krume/ \u2014 reference implementation (identity, brand, format, purpose, composition, story, time, place, person, group, work)');
 }
 
 // ── Install skill ──

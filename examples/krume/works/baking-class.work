@@ -1,0 +1,12 @@
+# works/baking-class.work
+# A class on Saturday afternoons. Its days and its time are the work's own.
+
+id:    baking-class
+title: Baking class
+kind:  class
+days:  sat
+time:  14:00-18:00
+place: weserstrasse
+price: €85, flour and bread included
+facts:
+  Four hours, six people, two doughs. Everyone leaves with a loaf and a starter.

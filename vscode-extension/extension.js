@@ -335,7 +335,8 @@ function activate(context) {
             ['label:', 'Display name shown in UI'],
             ['topic:', 'Example: what the page is about'],
             ['goal:', 'Example: identity goal for this page'],
-            ['when:', 'Example: .time entry it fits (window, season, weekly, date)'],
+            ['when:', 'Example: .time entry it fits (window or season)'],
+            ['work:', 'Example: the .work it is about (picked while the work is in season)'],
             ['maxLength:', 'Character limit'],
             ['font:', 'Font family + weight'],
             ['size:', 'Base font size (% of canvas height)'],
@@ -379,6 +380,8 @@ function activate(context) {
             ['density:', 'Content density -- light, medium, or full'],
             ['defaultIcon:', 'Default icon name (Phosphor kebab-case) + weight'],
             ['person: required', 'Every page speaks about a .person'],
+            ['group: required', 'Every page speaks about a .group'],
+            ['work: required', 'Every page speaks about a .work'],
             ['scope', 'Narrow the composed upstream for this purpose'],
             ['voice', 'Purpose-specific writing rules for AI text generation'],
             ['context', 'Add purpose-specific slot guidance'],
@@ -805,10 +808,12 @@ function activate(context) {
     'context': '**`context`** -- Add purpose-specific slot guidance.\n\nIndented text adds only what is genuinely specific to this content type — slot-level instructions that cannot be derived from identity or brand.',
     'label:': '**`label:`** -- Display name for this slot in the UI.',
     'samples:': '**`samples:`** -- Deprecated.\n\nWrite whole pages as `example` blocks instead. Parsers still read slot samples and pair them by position.',
-    'example': '**`example`** -- One example page.\n\nIndented `SLOTID: text` lines fill the slots together, about one topic. A bare `SLOTID:` takes the following 4-space lines (list items).\nOptional: `topic:`, `goal:`, `when:`.',
+    'example': '**`example`** -- One example page.\n\nIndented `SLOTID: text` lines fill the slots together, about one topic. A bare `SLOTID:` takes the following 4-space lines (list items).\nOptional: `topic:`, `goal:`, `when:`, `work:`.',
     'topic:': '**`topic:`** -- What this example page is about, one sentence.\n\nBecomes the page topic for AI writing and review.',
-    'when:': '**`when:`** -- In season.\n\nName of a `.time` entry: a window, a season, a weekly or a date. The example is only picked in season.',
+    'when:': '**`when:`** -- In season.\n\nName of a `.time` entry: a window or a season. The example is only picked in season. Content about a work names the work with `work:` instead.',
+    'work:': '**`work:`** -- On an example: the `.work` it is about, picked while the work is in season. At the top: `work: required`, every page of this purpose speaks about a `.work`.',
     'person:': '**`person:`** -- `person: required`.\n\nEvery page of this purpose speaks about a `.person`: a quote, a portrait, a recommendation. A page without one is not posted.',
+    'group:': '**`group:`** -- `group: required`.\n\nEvery page of this purpose speaks about a `.group`: the band, the estate. A page without one is not posted.',
     'maxLength:': '**`maxLength:`** -- Maximum character count for this slot.',
     'font:': '**`font:`** -- Font family name and weight.',
     'size:': '**`size:`** -- Base font size.\n\nScaled proportionally to the canvas.',
@@ -883,7 +888,11 @@ function activate(context) {
     'name:': '**`name:`** -- Display name (derived from id if omitted).',
     'format:': '**`format:`** -- Format id every page renders at.',
     'topic:': '**`topic:`** -- Topic, one sentence.\n\nAt the top: what the whole story is about. In a page: what this page adds.',
-    'page': '**`page`** -- One page of the story (top level), or `page N` inside an example.\n\n`purpose:` (required), `composition:`, `topic:`, `when:` (a weekly or date), `person:`, and fixed slot texts. A slot the page does not name is open.',
+    'page': '**`page`** -- One page of the story (top level), or `page N` inside an example.\n\n`purpose:` (required), `composition:`, `topic:`, `person:`, `group:`, `work:`, and fixed slot texts. A slot the page does not name is open.',
+    'when:': '**`when:`** -- Name of a `.time` window or season the story fits. Content about an occasion names its work with `work:` instead.',
+    'person:': '**`person:`** -- Person id the story or the page speaks about. Person variables resolve from it.',
+    'group:': '**`group:`** -- Group id the story or the page speaks about. Group variables resolve from it; without one, from the page\'s person\'s group.',
+    'work:': '**`work:`** -- Work id the story or the page is about. Work variables resolve from it, and the content is offered while the work is in season.',
     'example': '**`example`** -- Texts for the open slots, about one story topic.\n\n`topic:` and `page N` blocks (2 spaces) with `topic:` and slot texts (4 spaces).',
     'purpose:': '**`purpose:`** -- Purpose id of this page.',
     'composition:': '**`composition:`** -- Composition id; one of the purpose\'s `compositions:`.\n\nOmitted = the implementation picks one.',
@@ -956,9 +965,9 @@ function activate(context) {
           }
         };
         if (/^\w*$/.test(prefix)) {
-          add([['id: ', 'Story identifier'], ['name: ', 'Display name'], ['format: ', 'Format id'], ['topic: ', 'Story topic'], ['place: ', 'Place id the story speaks for'], ['when: ', '.time entry the story fits'], ['person: ', 'Person id the story speaks about'], ['page', 'One page'], ['example', 'Texts for the open slots']], vscode.CompletionItemKind.Keyword);
+          add([['id: ', 'Story identifier'], ['name: ', 'Display name'], ['format: ', 'Format id'], ['topic: ', 'Story topic'], ['place: ', 'Place id the story speaks for'], ['when: ', '.time window or season the story fits'], ['person: ', 'Person id the story speaks about'], ['group: ', 'Group id the story speaks about'], ['work: ', 'Work id the story is about'], ['page', 'One page'], ['example', 'Texts for the open slots']], vscode.CompletionItemKind.Keyword);
         } else if (/^ {2}\w*$/.test(prefix)) {
-          add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['topic: ', 'Topic'], ['when: ', 'Weekly or date this page is about'], ['person: ', 'Person this page speaks about'], ['page ', 'Example page N'],
+          add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['topic: ', 'Topic'], ['person: ', 'Person this page speaks about'], ['group: ', 'Group this page speaks about'], ['work: ', 'Work this page is about'], ['page ', 'Example page N'],
             ['primary: ', 'Slot text'], ['secondary: ', 'Slot text'], ['detail: ', 'Slot text'], ['meta: ', 'Slot text'], ['cta: ', 'Slot text'], ['label: ', 'Slot text']], vscode.CompletionItemKind.Property);
         } else if (/\{[\w-]*$/.test(prefix)) {
           add([['weekday}', 'Full weekday name'], ['date}', 'Day and month, no year'],
@@ -970,9 +979,11 @@ function activate(context) {
             ['week-hours}', 'The week\'s opening hours, one line per group of days'],
             ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day'], ['opening}', 'The day the place opens (needs opening:)'],
             ['season}', 'The current season\'s label (needs season blocks in .time)'], ['founded}', 'The year the brand started (needs founded:)'], ['years}', 'Whole years since the brand started (needs founded:)'],
-            ['occasion}', 'Label of the weekly or date the page is about (needs when:)'], ['occasion-date}', 'Its next day, day and month'], ['occasion-time}', 'Its time: (needs time: on the entry)'], ['days-until}', 'Days to the occasion; 0 on the day'],
             ['daily ', 'The time of a daily moment: {daily oven}'],
-            ['person}', 'The person\'s name, or their role without a name (needs person:)'], ['role}', 'The person\'s role'], ['since}', 'The year the person has been with the brand (needs since:)'], ['since-years}', 'Whole years since then (needs since:)'], ['reason}', 'The person\'s reason: (needs reason:)']], vscode.CompletionItemKind.Variable);
+            ['person}', 'The person\'s name, or their role without a name (needs person:)'], ['role}', 'The person\'s role'], ['since}', 'The year the person has been with the brand (needs since:)'], ['since-years}', 'Whole years since then (needs since:)'], ['reason}', 'The person\'s reason: (needs reason:)'],
+            ['group}', 'The group\'s name (needs group:, or a person with one)'], ['where}', 'The group\'s where: (needs where:)'], ['group-since}', 'The year the group has been with the brand (needs since:)'], ['group-years}', 'Whole years since then (needs since:)'],
+            ['work}', 'The work\'s title (needs work:)'], ['kind}', 'The work\'s kind'], ['by}', 'Who the work is by, or the brand\'s name'], ['price}', 'The work\'s price: (needs price:)'],
+            ['on}', 'The work\'s next on: day, day and month (needs on:)'], ['time}', 'The work\'s time: (needs time:)'], ['days-until}', 'Days to the work\'s next on: day; 0 on the day (needs on:)']], vscode.CompletionItemKind.Variable);
         }
         return items;
       }
@@ -1027,13 +1038,10 @@ function activate(context) {
         };
         if (/^\w*$/.test(prefix)) {
           add([['founded: ', 'YYYY-MM-DD or YYYY: when the brand started'], ['season ', 'A season of the brand\'s year (label:, from:)'],
-            ['windows', 'Named yearly date windows'], ['weekly ', 'Something on fixed weekdays (label:, days:, time:, place:, context:)'],
-            ['date ', 'A yearly or one-off date (label:, on:, time:, lead:, place:, context:)'], ['daily', 'Named moments of the day']], vscode.CompletionItemKind.Keyword);
+            ['windows', 'Named yearly date windows'], ['daily', 'Named moments of the day']], vscode.CompletionItemKind.Keyword);
         } else if (/^ {2}\w*$/.test(prefix)) {
           const block = [...Array(position.line).keys()].reverse().map(i => document.lineAt(i).text).find(l => /^\S/.test(l)) ?? '';
           if (/^season /.test(block)) add([['label: ', 'The season\'s name as people say it'], ['from: ', 'MM-DD: the day the season starts']], vscode.CompletionItemKind.Property);
-          else if (/^weekly /.test(block)) add([['label: ', 'What it is, as a post would say it'], ['days: ', 'Weekdays: sat, thu-fri, mon, wed'], ['time: ', 'HH:MM-HH:MM or HH:MM'], ['place: ', 'The place it happens at'], ['context: ', 'Facts for AI writing']], vscode.CompletionItemKind.Property);
-          else if (/^date /.test(block)) add([['label: ', 'What it is'], ['on: ', 'MM-DD, MM-DD..MM-DD, YYYY-MM-DD or YYYY-MM-DD..YYYY-MM-DD'], ['time: ', 'HH:MM-HH:MM or HH:MM'], ['lead: ', 'Days before on: it is in season (default 14)'], ['place: ', 'The place it happens at'], ['context: ', 'Facts for AI writing']], vscode.CompletionItemKind.Property);
         }
         return items;
       }
@@ -1049,7 +1057,7 @@ function activate(context) {
         const items = [];
         if (/^\w*$/.test(prefix)) {
           for (const [label, detail] of [['id: ', 'Person identifier'], ['name: ', 'The name as a post may write it (omit: the person is their role)'], ['role: ', 'Who they are to the brand, as a post would say it'],
-            ['since: ', 'YYYY-MM-DD or YYYY: since when'], ['place: ', 'The place they belong to'], ['reason: ', 'Why they come, what they do'], ['context: ', 'Facts for AI writing'],
+            ['since: ', 'YYYY-MM-DD or YYYY: since when'], ['place: ', 'The place they belong to'], ['group: ', 'The group they belong to (its members: lists them)'], ['reason: ', 'Why they come, what they do'], ['context: ', 'Facts for AI writing'],
             ['photos: ', 'Photo ids from the .brand that show them, and may be shown'], ['consent: ', 'YYYY-MM-DD: when the person agreed'], ['until: ', 'YYYY-MM-DD: when the consent ends'], ['quote', 'Their words, verbatim, on the following 2-space lines']]) {
             const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Keyword);
             item.detail = detail;
@@ -1062,8 +1070,44 @@ function activate(context) {
     ' '
   );
 
+  /** Top-level keyword completion for a flat fact file (.group, .work). */
+  const flatProvider = (/** @type {string} */ language, /** @type {[string, string][]} */ keys) => vscode.languages.registerCompletionItemProvider(
+    language,
+    {
+      provideCompletionItems(document, position) {
+        const prefix = document.lineAt(position).text.substring(0, position.character);
+        const items = [];
+        if (/^\w*$/.test(prefix)) {
+          for (const [label, detail] of keys) {
+            const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Keyword);
+            item.detail = detail;
+            items.push(item);
+          }
+        }
+        return items;
+      }
+    },
+    ' '
+  );
+
+  const groupProvider = flatProvider('brand-intent-group', [
+    ['id: ', 'Group identifier'], ['name: ', 'The name as posts write it'], ['role: ', 'What the group is to the brand, as a post would say it'],
+    ['since: ', 'YYYY-MM-DD or YYYY: since when'], ['where: ', 'Region or town, as a post says it (a fact, not a place)'], ['members: ', 'Person ids; each names this group with group:'],
+    ['links: ', 'The group\'s own pages (https)'], ['photos: ', 'Photo ids from the .brand that show the group'], ['context: ', 'Facts for AI writing'],
+    ['quote', 'Words the group published as one, verbatim, on the following 2-space lines'],
+  ]);
+
+  const workProvider = flatProvider('brand-intent-work', [
+    ['id: ', 'Work identifier'], ['title: ', 'The title as posts write it'], ['kind: ', 'What it is, in the brand\'s own word: bread, album, class, event'],
+    ['by: ', 'Person or group ids the work is by (absent: the brand\'s own)'], ['on: ', 'MM-DD, MM-DD..MM-DD, YYYY-MM-DD or YYYY-MM-DD..YYYY-MM-DD: the day it comes out or takes place'],
+    ['days: ', 'Weekdays it comes round on: sat, thu-fri, mon, wed'], ['time: ', 'HH:MM-HH:MM or HH:MM'], ['lead: ', 'Days before on: it is in season (default 14)'],
+    ['until: ', 'YYYY-MM-DD: the day after which it is no longer posted about'], ['when: ', 'A .time window or season it fits'], ['place: ', 'The place it is sold, shown or held at'],
+    ['price: ', 'As a post writes it, with the unit'], ['links: ', 'Where to buy, listen, book (https)'], ['photos: ', 'Photo ids from the .brand that show the work'],
+    ['facts:', 'Facts for AI writing, on the following 2-space lines'],
+  ]);
+
   context.subscriptions.push(
-    compositionProvider, purposeProvider, formatProvider, brandProvider, identityProvider, storyProvider, placeProvider, timeProvider, personProvider,
+    compositionProvider, purposeProvider, formatProvider, brandProvider, identityProvider, storyProvider, placeProvider, timeProvider, personProvider, groupProvider, workProvider,
     compositionHover, purposeHover, formatHover, brandHover, identityHover, storyHover
   );
 }
