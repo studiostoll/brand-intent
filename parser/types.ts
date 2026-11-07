@@ -159,8 +159,9 @@ export interface FamilyPair extends PairCheck {
 
 export interface ColorFamily {
   name: string;
-  /** Start date `MM-DD` (`from:`). Declared on every family or on none. */
-  from?: string;
+  /** The `.time` season this family is for (`season:`). Families without one next to seasonal ones are
+   *  hand-picked contexts: off the borrow cycle, never in season. */
+  season?: string;
   colors: FamilyColor[];
   pairs: FamilyPair[];
 }

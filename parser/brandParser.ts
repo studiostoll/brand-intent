@@ -44,8 +44,8 @@ import {
   levelRuleViolations,
 } from './colorSystem';
 import { parseIconSource, isIconId } from './icons';
-import { parseDateWindowRanges } from './dateWindows';
-import type { DateWindowRange } from './dateWindows';
+import { timeEntryNames, type ParsedTime } from './timeParser';
+import type { ParsedPerson } from './personParser';
 import type { ParsedIconDef } from './icons';
 
 // ── Parsed type ────────────────────────────────────────────────────────────────
@@ -89,6 +89,8 @@ export interface ParsedBrand {
   themePairs?: Record<string, ThemePair>;
   /** Non-fatal color findings: rule violations, rejected family pairs, reach config hints. */
   colorWarnings?: string[];
+  /** Non-fatal findings outside colour: blocks that moved to another file and are ignored here. */
+  warnings?: string[];
   /** Inline themes: theme name → slot name → resolved hex color */
   themes?: Record<string, Record<string, string>>;
   /** Print annotations from inline # comments: slot name → annotation text */
@@ -115,8 +117,6 @@ export interface ParsedBrand {
   camera?: ParsedCameraDef;
   /** Photo treatment (`photo-look` block). Absent → photos stay as taken. */
   photoLook?: ParsedPhotoLookDef;
-  /** Named yearly date windows (`windows` block): name → ranges. Referenced by sample `@name` markers and photo `when:`. */
-  windows?: Record<string, DateWindowRange[]>;
   /** Where the brand is (`location` block). Sky and weather story variables need it. */
   location?: ParsedLocationDef;
 }
@@ -208,13 +208,14 @@ export interface ParsedAssetDef {
   alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
   /** Library group (e.g. "experimental"). Consumers list each group as its own section after the ungrouped assets. */
   group?: string;
-  /** Photos only: name of the date window the photo fits (`when:`). Absent → all year. */
+  /** Photos only: name of the `.time` entry the photo fits (`when:`): a window, a season, a weekly or a date.
+   *  Absent → all year. `checkBrand` checks it against the `.time`. */
   when?: string;
   /** Photos only: the framing module the photo was taken in. */
   framing?: string;
   /** Photos only: where the photo was taken. */
   place?: string;
-  /** Photos only: who is shown, with name and role. */
+  /** Photos only: id of the `.person` shown. `checkBrand` checks it against the people. */
   person?: string;
   /** Photos only: date taken, YYYY-MM-DD. */
   taken?: string;
@@ -304,13 +305,6 @@ const VALID_ADHERENCES = new Set<Adherence>(['strict', 'on-brand', 'flexible']);
 const TONE_CLASSES = new Set<ToneClass>(['light', 'mid', 'dark']);
 const FAMILY_ROLES = new Set<FamilyRole>(['core', 'accent', 'contrast']);
 
-const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-function isMonthDay(value: string): boolean {
-  const m = value.match(/^(\d{2})-(\d{2})$/);
-  if (!m) return false;
-  const month = Number(m[1]), day = Number(m[2]);
-  return month >= 1 && month <= 12 && day >= 1 && day <= DAYS_IN_MONTH[month - 1];
-}
 const FAMILY_ORDERS = new Set<FamilyOrder>(['cycle', 'sequence']);
 const FAMILY_BORROWS = new Set<FamilyBorrow>(['previous', 'next', 'both', 'none']);
 const PAIR_KEYS = ['ground', 'figure', 'text'] as const;
@@ -485,7 +479,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const tonesRaw: Array<{ name: string; values: string[]; line: number }> = [];
   type RawSlot = { slot: string; value: string; line: number };
   type RawLevel = { name: string; line: number; slots: RawSlot[] };
-  type RawFamily = { name: string; line: number; from?: string; colors: Array<{ role: string; value: string; line: number }>; pairs: Array<{ ground: string; figure: string; line: number }>; signal?: { value: string; line: number }; levels: RawLevel[] };
+  type RawFamily = { name: string; line: number; season?: string; colors: Array<{ role: string; value: string; line: number }>; pairs: Array<{ ground: string; figure: string; line: number }>; signal?: { value: string; line: number }; levels: RawLevel[] };
   const levelsRaw: RawLevel[] = [];
   let levelsDeclared = false;
   let currentLevel: RawLevel | null = null;
@@ -521,8 +515,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let locationDeclared = false;
   const photoLookRaw: Record<string, { value: string; line: number }> = {};
   let photoLookDeclared = false;
-  const windowsRaw: Array<{ name: string; value: string; line: number }> = [];
-  let windowsDeclared = false;
+  const warnings: string[] = [];
   const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -807,12 +800,18 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         const colonIdx = trimmed.indexOf(':');
         const key = colonIdx !== -1 ? trimmed.slice(0, colonIdx).trim() : trimmed;
-        if (key === 'from' && colonIdx !== -1) {
+        if (key === 'season' && colonIdx !== -1) {
           const value = trimmed.slice(colonIdx + 1).trim();
-          if (currentFamily.from !== undefined) throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" declares from: twice`);
-          if (!isMonthDay(value)) throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" from: must be "MM-DD" (e.g. 12-01), got "${value}"`);
+          if (currentFamily.season !== undefined) throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" declares season: twice`);
+          if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}" season: must name a .time season (lowercase kebab-case), got "${value}"`);
           inPairs = false;
-          currentFamily.from = value;
+          currentFamily.season = value;
+          continue;
+        }
+        if (key === 'from' && colonIdx !== -1) {
+          // Seasons moved to the .time: a family names its season, the .time says when it starts
+          warnings.push(`${fileName}:${lineNum}: family "${currentFamily.name}" from: is ignored — seasons live in the .time; name the family's season with "season: NAME"`);
+          inPairs = false;
           continue;
         }
         if (key === 'signal' && colonIdx !== -1) {
@@ -822,7 +821,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
           continue;
         }
         if (colonIdx === -1 || !FAMILY_ROLES.has(key as FamilyRole)) {
-          throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}": expected from / core / accent / contrast / signal / level / pairs, got "${trimmed}"`);
+          throw new Error(`${fileName}:${lineNum}: family "${currentFamily.name}": expected season / core / accent / contrast / signal / level / pairs, got "${trimmed}"`);
         }
         inPairs = false;
         currentFamily.colors.push({ role: key, value: trimmed.slice(colonIdx + 1).trim(), line: lineNum });
@@ -990,15 +989,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         else photoLookRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
-      if (activeBlock === 'windows') {
-        const trimmed = raw.trim();
-        if (trimmed.startsWith('#')) continue;
-        const entry = trimmed.replace(/\s+#.*$/, '');
-        const colonIdx = entry.indexOf(':');
-        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: window must be "NAME: MM-DD..MM-DD", got "${trimmed}"`);
-        windowsRaw.push({ name: entry.slice(0, colonIdx).trim(), value: entry.slice(colonIdx + 1).trim(), line: lineNum });
-        continue;
-      }
+      // A leftover windows block (moved to the .time) is skipped line by line
+      if (activeBlock === 'windows') continue;
       if (activeBlock === 'framing') {
         const trimmed = raw.trim();
         if (trimmed.startsWith('#')) continue;
@@ -1112,10 +1104,9 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       continue;
     }
 
-    // windows — named yearly date windows
+    // windows — moved to the .time; the block is ignored with a warning
     if (raw.trim() === 'windows') {
-      if (windowsDeclared) throw new Error(`${fileName}:${lineNum}: duplicate windows block`);
-      windowsDeclared = true;
+      warnings.push(`${fileName}:${lineNum}: windows block is ignored — windows live in the .time now; move it to "${result.id || 'brand'}.time"`);
       activeBlock = 'windows';
       continue;
     }
@@ -1416,13 +1407,13 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         brandColors[c.key] = c.hex;
       }
-      families.push({ name: raw.name, ...(raw.from ? { from: raw.from } : {}), colors, pairs: [] });
+      families.push({ name: raw.name, ...(raw.season ? { season: raw.season } : {}), colors, pairs: [] });
     }
-    // Undated families next to dated ones are hand-picked contexts: off the cycle, never in season.
-    const dated = familiesRaw.filter(f => f.from !== undefined);
-    for (const f of dated) {
-      const twin = dated.find(o => o !== f && o.from === f.from);
-      if (twin) throw new Error(`${fileName}:${f.line}: families "${twin.name}" and "${f.name}" share from: ${f.from}`);
+    // Families without a season next to seasonal ones are hand-picked contexts: off the cycle, never in season.
+    const seasonal = familiesRaw.filter(f => f.season !== undefined);
+    for (const f of seasonal) {
+      const twin = seasonal.find(o => o !== f && o.season === f.season);
+      if (twin) throw new Error(`${fileName}:${f.line}: families "${twin.name}" and "${f.name}" both name season "${f.season}"`);
     }
     colorFamilies = { order, borrow, distance, shared, ...(photoFallback.length > 0 ? { photoFallback } : {}), families };
     if (borrow !== 'none' && reachCoversAll(cycleMembers(families).length, { order, borrow, distance })) {
@@ -1829,17 +1820,6 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
     return def;
   };
-  // Finalise date windows (before assets: photo `when:` references them)
-  if (windowsDeclared) {
-    const windows: Record<string, DateWindowRange[]> = {};
-    for (const w of windowsRaw) {
-      if (!/^[a-z][a-z0-9-]*$/.test(w.name)) throw new Error(`${fileName}:${w.line}: window name must be lowercase kebab-case, got "${w.name}"`);
-      if (windows[w.name]) throw new Error(`${fileName}:${w.line}: duplicate window "${w.name}"`);
-      try { windows[w.name] = parseDateWindowRanges(w.value); }
-      catch (e) { throw new Error(`${fileName}:${w.line}: window "${w.name}": ${(e as Error).message}`); }
-    }
-    result.windows = windows;
-  }
   const photoOnly = ['when', 'framing', 'place', 'person', 'taken', 'focus', 'horizon'];
   for (const [kind, arr] of [['logo', logosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
     for (const key of photoOnly) {
@@ -1848,8 +1828,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
   }
   for (const p of photosRaw) {
-    const when = p.props['when'];
-    if (when && !result.windows?.[when]) throw new Error(`${fileName}: photo "${p.id}" references unknown window "${when}"`);
+    // when: and person: name .time and .person entries; `checkBrand` resolves them
+    for (const key of ['when', 'person'] as const) {
+      const value = p.props[key];
+      if (value && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}: photo "${p.id}": ${key}: must be an id (lowercase kebab-case), got "${value}"`);
+    }
     const taken = p.props['taken'];
     if (taken && !/^\d{4}-\d{2}-\d{2}$/.test(taken)) throw new Error(`${fileName}: photo "${p.id}": taken: must be YYYY-MM-DD, got "${taken}"`);
     const framing = p.props['framing'];
@@ -2085,5 +2068,50 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
   }
 
+  if (warnings.length > 0) result.warnings = warnings;
   return result as ParsedBrand;
+}
+
+// ── Cross-file checks ─────────────────────────────────────────────────────────
+
+/** Checks a brand against its fact files. Returns problems as "file: message"; empty when it fits.
+ *  `time`: the brand's `.time`, or `null` when it has none (then every `when:` and `season:` is unknown);
+ *  undefined = not checked. `people`: the brand's `.person` files (empty = none); undefined = not checked. */
+export function checkBrand(
+  brand: Pick<ParsedBrand, 'colorFamilies' | 'assets'>,
+  facts: { time?: ParsedTime | null; people?: ParsedPerson[] },
+  fileName: string,
+): string[] {
+  const problems: string[] = [];
+  const say = (msg: string) => problems.push(`${fileName}: ${msg}`);
+  const photos = brand.assets?.photos ?? [];
+
+  if (facts.time !== undefined) {
+    const time = facts.time;
+    const noTime = ' (the brand has no .time)';
+    for (const f of brand.colorFamilies?.families ?? []) {
+      if (f.season && !time?.seasons.some(s => s.name === f.season)) say(`family "${f.name}": season "${f.season}" is not in the .time${time ? '' : noTime}`);
+    }
+    for (const p of photos) {
+      if (p.when && !(time && timeEntryNames(time).includes(p.when))) say(`photo "${p.id}": when "${p.when}" is not in the .time${time ? '' : noTime}`);
+    }
+  }
+
+  if (facts.people !== undefined) {
+    const people = new Map(facts.people.map(p => [p.id, p]));
+    for (const p of photos) {
+      if (!p.person) continue;
+      const person = people.get(p.person);
+      if (!person) { say(`photo "${p.id}": person "${p.person}" does not exist`); continue; }
+      if (!person.photos?.includes(p.id)) say(`photo "${p.id}" names person "${person.id}", but their photos: doesn't list it (the person agreed to the photos the file lists)`);
+    }
+    for (const person of facts.people) {
+      for (const id of person.photos ?? []) {
+        const photo = photos.find(p => p.id === id);
+        if (!photo) say(`person "${person.id}": photo "${id}" does not exist`);
+        else if (photo.person !== person.id) say(`person "${person.id}": photo "${id}" ${photo.person ? `shows "${photo.person}"` : 'names no person'} (add "person: ${person.id}" to the photo)`);
+      }
+    }
+  }
+  return problems;
 }

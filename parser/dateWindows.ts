@@ -1,5 +1,5 @@
-// Date windows — named yearly date ranges (`windows` block in .brand).
-// Samples (`@name`) and brand photos (`when:`) that only fit part of the year reference them.
+// Date windows — named yearly date ranges (`windows` block in .time).
+// Examples, photos, stories and pages that only fit part of the year name them with `when:`.
 
 /** One yearly range, inclusive, as `MM-DD`. `from` after `to` wraps over the year end. */
 export interface DateWindowRange {

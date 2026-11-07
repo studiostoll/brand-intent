@@ -6,6 +6,7 @@
  * Contrast math follows WCAG 2.x relative luminance.
  */
 
+import { seasonForDate, type ParsedTime } from './timeParser';
 import type {
   ColorRules,
   ColorFamilies,
@@ -151,9 +152,9 @@ export interface ReachConfig {
  * Indices of the families on the cycle: the dated ones when any family declares `from:`,
  * else all. Undated families next to dated ones are hand-picked contexts (e.g. a plain context) and never borrow.
  */
-export function cycleMembers(families: Pick<ColorFamily, 'from'>[]): number[] {
-  const dated = families.flatMap((f, i) => (f.from ? [i] : []));
-  return dated.length > 0 ? dated : families.map((_, i) => i);
+export function cycleMembers(families: Pick<ColorFamily, 'season'>[]): number[] {
+  const seasonal = families.flatMap((f, i) => (f.season ? [i] : []));
+  return seasonal.length > 0 ? seasonal : families.map((_, i) => i);
 }
 
 /**
@@ -241,20 +242,13 @@ export function toneAnchorsFrom(
 }
 
 /**
- * Family in season on `date`: the one with the latest `from:` on or before that
- * month/day, wrapping to the year's last start before the first one. Uses the
- * date's local calendar day. Undated families never win. -1 when no family declares a date.
+ * Family in season on `date`: the one whose `season:` is the `.time`'s season that day
+ * (`seasonForDate`). Families without a season never win. -1 without a `.time`, without
+ * seasons, or when no family names the day's season.
  */
-export function familyIndexForDate(families: Pick<ColorFamily, 'from'>[], date: Date): number {
-  const today = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  let best = -1;
-  let latest = -1;
-  families.forEach((f, i) => {
-    if (!f.from) return;
-    if (f.from! <= today && (best === -1 || f.from! > families[best].from!)) best = i;
-    if (latest === -1 || f.from! > families[latest].from!) latest = i;
-  });
-  return best !== -1 ? best : latest;
+export function familyIndexForDate(families: Pick<ColorFamily, 'season'>[], time: Pick<ParsedTime, 'seasons'> | undefined, date: Date): number {
+  const season = time && seasonForDate(time, date);
+  return season ? families.findIndex(f => f.season === season.name) : -1;
 }
 
 /** Name of the family that declares `hex` or the color it is a tone of (first match), for error messages. */

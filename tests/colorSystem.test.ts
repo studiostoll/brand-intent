@@ -4,7 +4,8 @@
  * Run: npm test
  */
 
-import { parseBrandFile } from '../parser/brandParser';
+import { parseBrandFile, checkBrand } from '../parser/brandParser';
+import { parseTimeFile } from '../parser/timeParser';
 import {
   contrastRatio,
   toneClass,
@@ -316,7 +317,7 @@ test('family needs exactly one core', () => {
 
 test('unknown family key is rejected', () => {
   const src = `${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    core: #000000\n    highlight: #111111\n`;
-  assertThrows(() => parseBrandFile(src, 't.brand'), /expected from \/ core \/ accent \/ contrast \/ signal \/ level \/ pairs/, 'bad role');
+  assertThrows(() => parseBrandFile(src, 't.brand'), /expected season \/ core \/ accent \/ contrast \/ signal \/ level \/ pairs/, 'bad role');
 });
 
 test('invalid borrow is rejected', () => {
@@ -332,42 +333,52 @@ test('photo-fallback rejects unknown and non-$ refs', () => {
   assertThrows(() => parseBrandFile(seasons('both', '  photo-fallback: #1D0050'), 't.brand'), /photo-fallback entries must be \$refs/, 'hex');
 });
 
-const dated = (a: string, b: string) =>
-  `${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    from: ${a}\n    core: #000000\n    contrast: #111111\n  family B\n    ${b}\n    core: #222222\n    contrast: #333333\n`;
+const seasonal = (a: string, b: string) =>
+  `${HEADER}brand-colors\n  w: #FFFFFF\ncolor-families\n  family A\n    season: ${a}\n    core: #000000\n    contrast: #111111\n  family B\n    ${b}\n    core: #222222\n    contrast: #333333\n`;
+const TIME = parseTimeFile('season winter\n  label: Winter\n  from: 12-01\nseason spring\n  label: Spring\n  from: 03-01\nseason summer\n  label: Summer\n  from: 06-01\nseason autumn\n  label: Autumn\n  from: 09-01\n', 't.time');
 
-test('family from: is parsed', () => {
-  const out = parseBrandFile(dated('12-01', 'from: 06-01'), 't.brand');
-  assertEq(out.colorFamilies!.families.map(f => f.from), ['12-01', '06-01']);
+test('family season: is parsed', () => {
+  const out = parseBrandFile(seasonal('winter', 'season: summer'), 't.brand');
+  assertEq(out.colorFamilies!.families.map(f => f.season), ['winter', 'summer']);
+  assertEq(checkBrand(out, { time: TIME }, 't.brand'), [], 'seasons exist');
 });
 
-test('undated families next to dated ones are off the cycle', () => {
-  const out = parseBrandFile(dated('12-01', 'accent: #444444'), 't.brand');
-  assertEq(out.colorFamilies!.families.map(f => f.from), ['12-01', undefined], 'from');
-  assertEq(familyIndexForDate(out.colorFamilies!.families, new Date(2026, 5, 1)), 0, 'only the dated family is in season');
-  const fam = [{ from: '12-01' }, {}, { from: '03-01' }, { from: '06-01' }];
+test('families without a season next to seasonal ones are off the cycle', () => {
+  const out = parseBrandFile(seasonal('winter', 'accent: #444444'), 't.brand');
+  assertEq(out.colorFamilies!.families.map(f => f.season), ['winter', undefined], 'season');
+  assertEq(familyIndexForDate(out.colorFamilies!.families, TIME, new Date(2026, 0, 1)), 0, 'the seasonal family in its season');
+  assertEq(familyIndexForDate(out.colorFamilies!.families, TIME, new Date(2026, 5, 1)), -1, 'no family for summer');
+  const fam = [{ season: 'winter' }, {}, { season: 'spring' }, { season: 'summer' }];
   assertEq([...reachableFamilies(4, 0, { order: 'cycle', borrow: 'both', distance: 1 }, cycleMembers(fam)).keys()].sort(), [2, 3], 'Plain is skipped');
   assertEq(reachableFamilies(4, 1, { order: 'cycle', borrow: 'both', distance: 1 }, cycleMembers(fam)).size, 0, 'Plain borrows nothing');
 });
 
-test('from: must be a real MM-DD', () => {
-  assertThrows(() => parseBrandFile(dated('13-01', 'from: 06-01'), 't.brand'), /must be "MM-DD"/, 'month 13');
-  assertThrows(() => parseBrandFile(dated('04-31', 'from: 06-01'), 't.brand'), /must be "MM-DD"/, 'April 31');
+test('season: must be an id; from: is ignored with a warning', () => {
+  assertThrows(() => parseBrandFile(seasonal('Winter', 'season: summer'), 't.brand'), /season: must name a .time season/, 'capitalised');
+  const out = parseBrandFile(seasonal('winter', 'from: 06-01'), 't.brand');
+  assertEq(out.colorFamilies!.families.map(f => f.season), ['winter', undefined], 'from: is not a season');
+  assertEq(out.warnings, ['t.brand:13: family "B" from: is ignored — seasons live in the .time; name the family\'s season with "season: NAME"'], 'warning');
 });
 
-test('duplicate from: is rejected', () => {
-  assertThrows(() => parseBrandFile(dated('06-01', 'from: 06-01'), 't.brand'), /share from: 06-01/, 'same date');
+test('two families naming one season is rejected; an unknown season is reported', () => {
+  assertThrows(() => parseBrandFile(seasonal('summer', 'season: summer'), 't.brand'), /both name season "summer"/, 'same season');
+  const out = parseBrandFile(seasonal('winter', 'season: monsoon'), 't.brand');
+  assertEq(checkBrand(out, { time: TIME }, 't.brand'), ['t.brand: family "B": season "monsoon" is not in the .time'], 'unknown');
+  assertEq(checkBrand(out, { time: null }, 't.brand'), ['t.brand: family "A": season "winter" is not in the .time (the brand has no .time)', 't.brand: family "B": season "monsoon" is not in the .time (the brand has no .time)'], 'no .time');
+  assertEq(checkBrand(out, {}, 't.brand'), [], 'not checked');
 });
 
-test('familyIndexForDate picks the season, wrapping over new year', () => {
-  const fam = [{ from: '12-01' }, { from: '03-01' }, { from: '06-01' }, { from: '09-01' }];
-  const at = (m: number, d: number) => familyIndexForDate(fam, new Date(2026, m - 1, d));
+test('familyIndexForDate picks the family of the day\'s season, wrapping over new year', () => {
+  const fam = [{ season: 'winter' }, { season: 'spring' }, { season: 'summer' }, { season: 'autumn' }];
+  const at = (m: number, d: number) => familyIndexForDate(fam, TIME, new Date(2026, m - 1, d));
   assertEq(at(1, 15), 0, 'January → winter');
   assertEq(at(2, 28), 0, 'end of Feb → winter');
   assertEq(at(3, 1), 1, '1 March → spring');
   assertEq(at(8, 31), 2, 'end of Aug → summer');
   assertEq(at(10, 19), 3, 'October → autumn');
   assertEq(at(12, 1), 0, '1 Dec → winter');
-  assertEq(familyIndexForDate([{}, {}], new Date()), -1, 'no dates');
+  assertEq(familyIndexForDate([{}, {}], TIME, new Date()), -1, 'no seasons on the families');
+  assertEq(familyIndexForDate(fam, undefined, new Date()), -1, 'no .time');
 });
 
 // ── Levels ──────────────────────────────────────────────────────────────────
@@ -421,7 +432,7 @@ color-families
     level Strong
       ground: $blue.10
   family Dusk
-    from:   12-01
+    season: winter
     core:   $sky
     accent: $green
     accent: $sky

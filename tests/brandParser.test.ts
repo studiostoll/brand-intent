@@ -7,7 +7,9 @@
  */
 
 import { isInDateWindow } from '../parser/dateWindows';
-import { parseBrandFile } from '../parser/brandParser';
+import { parseBrandFile, checkBrand } from '../parser/brandParser';
+import { parseTimeFile } from '../parser/timeParser';
+import { parsePersonFile } from '../parser/personParser';
 
 // ── Tiny test harness (no dep) ────────────────────────────────────────────────
 
@@ -399,9 +401,9 @@ test('framing caption and goals', () => {
 });
 
 test('photo metadata: framing, place, person, taken', () => {
-  const src = `${HEADER}framing close\n  horizon: none\n\nphoto baeckerin\n  src: photos/b.jpg\n  framing: close\n  place: Backstube, Hauptstraße\n  person: Anna, Bäckerin\n  taken: 2026-05-14\n`;
+  const src = `${HEADER}framing close\n  horizon: none\n\nphoto baeckerin\n  src: photos/b.jpg\n  framing: close\n  place: Backstube, Hauptstraße\n  person: anna\n  taken: 2026-05-14\n`;
   const p = parseBrandFile(src, 'test.brand').assets?.photos?.[0];
-  assertEq([p?.framing, p?.place, p?.person, p?.taken], ['close', 'Backstube, Hauptstraße', 'Anna, Bäckerin', '2026-05-14'], 'metadata');
+  assertEq([p?.framing, p?.place, p?.person, p?.taken], ['close', 'Backstube, Hauptstraße', 'anna', '2026-05-14'], 'metadata');
 });
 
 test('photo metadata rejects unknown framing, bad date, non-photo use', () => {
@@ -502,18 +504,17 @@ test('location rejects missing, bad and unknown keys', () => {
   assertThrows(() => parseBrandFile(`${HEADER}location\n  name: X\n  latitude: 54\n  longitude: 10\nlocation\n`, 'test.brand'), /duplicate location/, 'duplicate');
 });
 
-// ── windows ──────────────────────────────────────────────────────────────────
+// ── windows (moved to the .time) ─────────────────────────────────────────────
 
 console.log('\nwindows:');
 
-test('parses windows block and photo when:', () => {
-  const b = parseBrandFile(`${HEADER}windows\n  strawberries: 05-01..05-31   # peak mid-May\n  plums:  03-01..05-31, 08-15..10-31\n  new-year: 12-27..01-06\n\nphoto berries\n  src: photos/berries.jpg\n  when: strawberries\n`, 'test.brand');
-  assertEq(b.windows, {
-    strawberries: [{ from: '05-01', to: '05-31' }],
-    plums: [{ from: '03-01', to: '05-31' }, { from: '08-15', to: '10-31' }],
-    'new-year': [{ from: '12-27', to: '01-06' }],
-  }, 'windows');
+test('a leftover windows block is ignored with a warning; photo when: stays an id', () => {
+  const b = parseBrandFile(`${HEADER}windows\n  strawberries: 05-01..05-31   # peak mid-May\n  plums:  03-01..05-31, 08-15..10-31\n\nphoto berries\n  src: photos/berries.jpg\n  when: strawberries\n`, 'test.brand');
+  assertEq('windows' in b, false, 'no windows on the brand');
+  assertEq(b.warnings, ['test.brand:5: windows block is ignored — windows live in the .time now; move it to "test.time"'], 'warning');
   assertEq(b.assets?.photos?.[0].when, 'strawberries', 'photo when');
+  assertThrows(() => parseBrandFile(`${HEADER}photo raps\n  src: photos/raps.jpg\n  when: Raps Season\n`, 'test.brand'), /when: must be an id/, 'when id');
+  assertThrows(() => parseBrandFile(`${HEADER}logo main\n  src: logos/main.svg\n  when: raps\n`, 'test.brand'), /photos only/, 'logo when');
 });
 
 test('isInDateWindow: inclusive ends, year-end wrap, multiple ranges', () => {
@@ -526,13 +527,21 @@ test('isInDateWindow: inclusive ends, year-end wrap, multiple ranges', () => {
   assertEq([d(4, 1), d(7, 1), d(9, 20)].map(x => isInDateWindow(zug, x)), [true, false, true], 'two ranges');
 });
 
-test('rejects invalid windows and references', () => {
-  assertThrows(() => parseBrandFile(`${HEADER}windows\n  berries: 05-01-05-31\n`, 'test.brand'), /MM-DD\.\.MM-DD/, 'bad range');
-  assertThrows(() => parseBrandFile(`${HEADER}windows\n  berries: 02-30..03-10\n`, 'test.brand'), /invalid date "02-30"/, 'bad day');
-  assertThrows(() => parseBrandFile(`${HEADER}windows\n  Raps: 05-01..05-31\n`, 'test.brand'), /kebab-case/, 'name');
-  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01..05-31\n  raps: 05-01..05-31\n`, 'test.brand'), /duplicate window/, 'duplicate');
-  assertThrows(() => parseBrandFile(`${HEADER}photo raps\n  src: photos/raps.jpg\n  when: raps\n`, 'test.brand'), /unknown window "raps"/, 'unknown ref');
-  assertThrows(() => parseBrandFile(`${HEADER}windows\n  raps: 05-01..05-31\n\nlogo main\n  src: logos/main.svg\n  when: raps\n`, 'test.brand'), /photos only/, 'logo when');
+test('checkBrand: photo when: against the .time, photo person: against the people', () => {
+  const b = parseBrandFile(`${HEADER}photo jetty\n  src: photos/jetty.jpg\n  when: advent\n  person: thomas\nphoto bike\n  src: photos/bike.jpg\n  person: thomas\nphoto counter\n  src: photos/counter.jpg\n`, 'test.brand');
+  const time = parseTimeFile('windows\n  advent: 11-27..12-24\n', 'test.time');
+  const thomas = parsePersonFile('id: thomas\nrole: Regular\nphotos: jetty, bike\n', 'thomas.person');
+  assertEq(checkBrand(b, { time, people: [thomas] }, 'test.brand'), [], 'fits');
+  assertEq(checkBrand(b, { time: null }, 'test.brand'), ['test.brand: photo "jetty": when "advent" is not in the .time (the brand has no .time)'], 'no .time');
+  assertEq(checkBrand(b, { time: parseTimeFile('', 'test.time') }, 'test.brand'), ['test.brand: photo "jetty": when "advent" is not in the .time'], 'unknown when');
+  assertEq(checkBrand(b, { people: [] }, 'test.brand'), ['test.brand: photo "jetty": person "thomas" does not exist', 'test.brand: photo "bike": person "thomas" does not exist'], 'unknown person');
+  const partial = parsePersonFile('id: thomas\nrole: Regular\nphotos: jetty, counter, gone\n', 'thomas.person');
+  assertEq(checkBrand(b, { people: [partial] }, 'test.brand'), [
+    'test.brand: photo "bike" names person "thomas", but their photos: doesn\'t list it (the person agreed to the photos the file lists)',
+    'test.brand: person "thomas": photo "counter" names no person (add "person: thomas" to the photo)',
+    'test.brand: person "thomas": photo "gone" does not exist',
+  ], 'mismatches');
+  assertEq(checkBrand(b, {}, 'test.brand'), [], 'not checked');
 });
 
 // ── tones ────────────────────────────────────────────────────────────────────
