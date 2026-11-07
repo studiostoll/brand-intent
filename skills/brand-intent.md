@@ -8,15 +8,16 @@ description: Generate and validate on-brand content using Brand Intent files
 
 > If `$ARGUMENTS` is "onboard": run the guided brand onboarding interview (see Onboarding section below).
 > If `$ARGUMENTS` is "example": scaffold the Krume bakery reference implementation into `examples/krume/` and explain what each file does.
-> If `$ARGUMENTS` names a purpose (e.g. "daily-bread", "event", "quote"): compose context from the five layers and generate content for that purpose.
+> If `$ARGUMENTS` names a purpose (e.g. "daily-bread", "event", "quote"): compose context from the layers and generate content for that purpose.
+> If `$ARGUMENTS` names a story (e.g. "today", "breads-of-the-week"): generate the open slots of every page of that story, one topic across all pages, variables left as written.
 > If `$ARGUMENTS` is "validate": read the most recent generated or provided content and run the validation checklist against the brand files.
 > If `$ARGUMENTS` is empty: find the active brand (see File Discovery below), summarize the brand voice and list available purposes.
 
-You are working in a project that uses **Brand Intent**, an open file format for encoding brand identity, expression intent, and content composition rules across five composable layers. This skill teaches you how to read, compose, and validate Brand Intent files.
+You are working in a project that uses **Brand Intent**, an open file format for encoding brand identity, expression intent, and content composition rules across seven composable file types. This skill teaches you how to read, compose, and validate Brand Intent files.
 
-## The Five Layers
+## The File Types
 
-Brand Intent distributes brand knowledge across five independent file types. Each answers one question:
+Brand Intent distributes brand knowledge across five layers plus two files for what the brand posts. Each answers one question:
 
 | Layer | File | Question | Changes |
 |-------|------|----------|---------|
@@ -25,11 +26,13 @@ Brand Intent distributes brand knowledge across five independent file types. Eac
 | **Format** | `.format` | Where does this content appear? | When platforms change |
 | **Purpose** | `.purpose` | What is this content trying to do? | When content types evolve |
 | **Composition** | `.composition` | How are elements composed? | Reusable across brands |
+| **Story** | `.story` | What does the brand post, page by page? | Per post series |
+| **Place** | `.place` | Which site do the posts speak about? | When hours or address change |
 
 The arrow between layers is a **derivation arrow**: Identity contains reasoning. Brand derives expression intent from that reasoning. Format, Purpose, and Composition condition specific acts of expression without repeating what upstream layers establish.
 
 ```
-Identity → Brand → Format → Purpose → Composition
+Identity → Brand → Format → Purpose → Composition   + Story · Place
 ```
 
 ## How to Read Each Layer
@@ -38,7 +41,7 @@ Identity → Brand → Format → Purpose → Composition
 
 **Required:** essence, promise, voice (register, persona, rhythm, always/never), pillars, audience segments.
 
-**Optional:** tagline, positioning, mission, vision, archetype, narrative, values (with behavior statements and `say:`/`not:` examples), anti-audience segments, imagery, image-theme, goal, review.
+**Optional:** tagline, positioning, mission, vision, archetype, narratives (`narrative NAME`, exactly one marked `primary`), values (with behavior statements and `say:`/`not:` examples), anti-audience segments, imagery, image-theme, goal, review.
 
 **The `always`/`never` construct is your primary guardrail.** These are concrete, testable rules. When generating or reviewing content, check every item in `never:` and confirm every item in `always:`. They are not suggestions; they are constraints.
 
@@ -60,15 +63,11 @@ Identity → Brand → Format → Purpose → Composition
 
 ### `.brand`: Derived Expression Intent
 
-Contains: color primitives, semantic themes, font definitions, named typography styles, `voice-constraints` (operationalized voice parameters), `content-defaults`, spacing, divider styles.
+Contains: color primitives (`brand-colors`), semantic themes, color families, fonts, named typography styles, spacing, dividers, badge styles, icons, declared assets (logos, photos, illustrations). Also the brand's place and year: `location` (coordinates for sunrise, sunset and weather variables), `windows` (named yearly date ranges such as `advent: 11-27..12-24`), `camera`, `framing NAME` modules (horizon position, goals) and `photo-look` (saturation, warmth, contrast, scrim).
 
-**`voice-constraints`** are production-enforceable limits derived from identity voice reasoning:
-- `sentence-max:` maximum words per sentence. Enforce this.
-- `headline-pattern:` structural pattern for headlines (e.g., `noun-first`, `verb-first`).
-- `number-format:` `cardinal` means write "drei" not "3".
-- `register:` must match the identity register.
+**For writing you need:** `windows` (an example or story marked `when: NAME` only fits inside that window; outside it, don't pick it), and `framing` when briefing a photo. Writing rules such as `sentence-max` live in the purpose's `voice` block, not here.
 
-**Does NOT contain:** identity reasoning, audience definitions, strategic prose, composition rules.
+**Does NOT contain:** identity reasoning, audience definitions, strategic prose, composition rules, writing rules.
 
 ### `.format`: Canvas Definition
 
@@ -78,7 +77,14 @@ Contains: platform, dimensions, safe zones (danger/crop/comfort), grid, allowed 
 
 ### `.purpose`: Content Type Definition
 
-Contains: semantic slot definitions (primary, secondary, detail, meta, cta, label, credit: attribution, never written by AI), typography and color per slot, sample content, length constraints, `scope`, `context`.
+Contains: semantic slot definitions (primary, secondary, detail, meta, cta, label, credit: attribution, never written by AI), typography and color per slot, `example` pages, length constraints (`maxLength`, `words:`, `sentences:`), `scope`, `context`, a `voice` block with writing rules, a default `goal:` and `framing:`.
+
+**`voice`** holds the production-enforceable writing rules for this content type:
+- `sentence-max:` maximum words per sentence. Enforce this.
+- `headline-pattern:` structural pattern for headlines (e.g., `noun-first`, `verb-first`).
+- `number-format:` `cardinal` means write "drei" not "3"; `digit` the opposite.
+
+**`example`** blocks are whole pages, one topic each, every slot written together. AI writing produces whole pages in this shape, never independent variants per slot. An example with `when: NAME` only fits inside that window of the `.brand`.
 
 **Semantic slots are roles, not positions:**
 - `primary` = main communicative act (headline, key message)
@@ -94,6 +100,16 @@ Contains: slot-to-position mappings in grid or flow mode.
 
 **You rarely need to read this** unless debugging layout issues. Compositions contain zero brand-specific information.
 
+### `.story`: What the Brand Posts
+
+Ordered `page` blocks, each naming a purpose (and optionally a composition, theme, photo). A slot on a page is **fixed** (text written in the story), **variable** (`{date}`, `{weekday}`, `{sunrise}`, `{sunset}`, `{weather}`, `{place}`, `{address}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`, `{n}`, `{count}`), or **open** (left to an example, a person, or AI). `repeat: MIN-MAX` makes a page list. `place:` names a `.place`; `when:` a window.
+
+When writing for a story: fill only open slots, keep one topic across all pages, leave variables exactly as written. Variables are filled by the implementation from the calendar, the sky, a forecast or the place. **Weather and opening times are not guessed:** never replace a variable with a value you made up.
+
+### `.place`: A Site the Posts Speak About
+
+Facts only: `name`, `address`, `latitude`/`longitude`, `context` (what the place is like, for AI writing), `opening` (date a new place opens), `hours` (regular weekly hours; a day not named is closed), `capacity` (`indoor`, `outdoor`). Use `context` and `hours` as facts when writing about the place. Never state a capacity, hour or address the file doesn't give. Before `opening:` the place is not open yet.
+
 ## Composing Context for Content Generation
 
 When generating content for a specific purpose, read all layers silently (do not dump file contents or context notes to the user), then lead with the generated content.
@@ -101,7 +117,9 @@ When generating content for a specific purpose, read all layers silently (do not
 ### Reading layers (internal, not shown to user):
 
 1. **Read `.identity`** — voice.always/never/instead (hard constraints), persona, register, pillars.avoid, anti-audience, values and their examples, positioning; the goal named by the purpose
-2. **Read `.brand`** — voice-constraints: sentence-max, headline-pattern, number-format, register
+2. **Read `.brand`** — `windows` (is a `when:` example in season?), `framing` (for photo briefs)
+2b. **Read the `.purpose` `voice` block** — sentence-max, headline-pattern, number-format
+2c. **Read the story's `.place`** when writing for a `.story` — context, hours, capacity as facts
 3. **Apply `scope` from `.purpose`** — audience and pillar filters narrow the upstream context
 4. **Apply `context` from `.purpose`** — slot-specific instructions, follow literally
 5. **Generate per-slot content** — respect maxLength and any `words:`/`sentences:` range, use the purpose's `example` pages as structural reference (match pattern, not words; all slots of one output share one topic), follow context instructions
@@ -122,7 +140,7 @@ After generating or reviewing content, validate against these rules in order:
 3. **`anti-audience`:** Could this content be read as addressing an anti-audience? If yes, rewrite.
 4. **`pillars.avoid`:** Does the content touch an avoided topic area? If yes, reject.
 5. **`values`:** Does the content contradict any value's behavior statement? If yes, fix.
-6. **`sentence-max`:** Count words in every sentence. Does any exceed the limit? If yes, split.
+6. **`sentence-max`** (purpose `voice`): Count words in every sentence. Does any exceed the limit? If yes, split.
 7. **`headline-pattern`:** Does the headline follow the specified pattern? If not, restructure.
 8. **`maxLength`:** Does each slot's content fit within its character limit? If not, shorten.
 9. **`words:` / `sentences:`:** Is each slot within its editorial range, where one is set? If not, adjust.
@@ -130,6 +148,8 @@ After generating or reviewing content, validate against these rules in order:
 11. **`voice.instead`:** Does the text contain a phrase from the instead list? If yes, rewrite along the replacement.
 12. **`goal`:** Where a goal applies, does the text follow its rules and answer its question?
 13. **`review.copy`:** Answer each question with yes or no. Any no is a failure.
+14. **`when:`:** Is a seasonal example or story used outside its window? If yes, pick another.
+15. **Variables:** Does a story text still contain its `{variables}` unchanged, with no guessed weather, hours or dates? If not, restore them.
 
 When reviewing a photo, check `imagery.always`/`never`, the brand's framing (horizon position) and each `review.image` question.
 
@@ -150,7 +170,9 @@ brandname/
 ├── brandname.brand
 ├── formats/*.format
 ├── purposes/*.purpose
-└── compositions/*.composition
+├── compositions/*.composition
+├── stories/*.story
+└── places/*.place
 ```
 
 ### Finding the active brand
@@ -254,5 +276,7 @@ Read the files and walk the user through them:
 - **`formats/`** — canvas dimensions, safe zones, grid. Where content appears.
 - **`purposes/`** — content type with semantic slots, constraints, and example pages. What content does.
 - **`compositions/`** — spatial arrangement of slots. How elements are placed.
+- **`stories/`** — what Krume posts: `today.story` (one page a day with `{weekday}`, `{sunrise}`, `{closes}`) and `breads-of-the-week.story` (a three-page carousel).
+- **`places/`** — `weserstrasse.place`: the shop, its address, hours and capacity.
 
 If `examples/krume/` doesn't exist, tell the user to run `npx brand-intent init` first.

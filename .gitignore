@@ -13,3 +13,6 @@ DESIGN.md
 CLAUDE.md
 .claude/
 .DS_Store
+
+# Internal working docs (repo is public)
+docs/

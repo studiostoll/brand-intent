@@ -56,6 +56,11 @@
     <meta property="og:title" content="{{ page.title | default: site.title }}">
     <meta property="og:description" content="{{ page.description | default: site.description }}">
     <meta property="og:site_name" content="{{ site.title }}">
+    <meta property="og:image" content="{{ page.image | default: '/assets/og-image.png' | absolute_url }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ page.image | default: '/assets/og-image.png' | absolute_url }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,10 +105,10 @@
             </button>
             <nav class="nav" id="nav-menu" role="navigation" aria-label="Main navigation">
                 <ul>
-                    <li><a href="#framework">Framework</a></li>
-                    <li><a href="#context">Context Engineering</a></li>
-                    <li><a href="#layers">Layers</a></li>
-                    <li><a href="#start">Get Started</a></li>
+                    <li><a href="{{ '/' | relative_url }}#framework">Framework</a></li>
+                    <li><a href="{{ '/' | relative_url }}#layers">Files</a></li>
+                    <li><a href="{{ '/' | relative_url }}#use">Use</a></li>
+                    <li><a href="{{ '/' | relative_url }}#start">Try it</a></li>
                     <li><a href="https://github.com/studiostoll/brand-intent" class="nav-github">GitHub</a></li>
                 </ul>
             </nav>

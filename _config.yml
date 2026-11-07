@@ -23,6 +23,13 @@ exclude:
   - examples/
   - parser/
   - skills/
+  - cli/
+  - tests/
+  - scripts/
+  - plans/
+  - docs/
+  - vscode-extension/
+  - ROADMAP.md
   - .git
   - .gitignore
   - .gitmodules
