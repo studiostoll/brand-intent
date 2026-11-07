@@ -931,10 +931,6 @@ photo-look
 
 **Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
 
-### `windows`: moved to `.time`
-
-Yearly date windows were a `.brand` block until v0.42. They are part of the brand's time, not its expression, and live in the [`.time`](#time-time) file now, with the same syntax. A `windows` block in a `.brand` is an error (`checkBrand`: "windows moved to .time").
-
 ### `location` Block
 
 The area the brand is in, as a whole: an island, a town, a city. Optional; the sky and weather [story variables](#variables) need it unless the story's [place](#place-place) has coordinates. Single sites with an address or opening hours (a shop, an office) are `.place` files, not this block.
