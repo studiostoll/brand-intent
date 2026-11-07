@@ -69,7 +69,7 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
 const RANGE = /^(?:(.+?)\s+)?(\d{2}:\d{2})-(\d{2}:\d{2})$/;
 
 /** `mon`, `mon-fri` or `fri-mon` (wraps over the week end) → the weekdays, Monday first. */
-function parseDays(spec: string): Weekday[] | null {
+export function parseDays(spec: string): Weekday[] | null {
   const m = /^([a-z]{3})(?:-([a-z]{3}))?$/.exec(spec);
   if (!m) return null;
   const from = WEEKDAYS.indexOf(m[1] as Weekday);

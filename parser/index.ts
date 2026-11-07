@@ -1,5 +1,5 @@
 // Brand Intent — reference parser
-// All six parsers are pure functions:
+// All parsers are pure functions:
 // they take a string (file content) and filename, return a parsed object.
 
 export { parseIdentityFile } from './identityParser';
@@ -84,8 +84,12 @@ export type {
 } from './compositionParser';
 
 export { parseStoryFile, checkStory, storyPlace, storyTextVariables, STORY_VARIABLES } from './storyParser';
-export { parsePlaceFile, addressStreet, isOpenYet, weekdayOf, weekOpeningDays, WEEKDAYS } from './placeParser';
+export { parsePlaceFile, addressStreet, isOpenYet, weekdayOf, weekOpeningDays, parseDays, WEEKDAYS } from './placeParser';
 export type { ParsedPlace, OpeningRange, OpeningDays, PlaceCapacity, Weekday } from './placeParser';
+export { parseTimeFile, timeEntry, timeEntryNames, seasonForDate, isInSeason, yearsSince, isMonthDay, isDate, isDateOrYear } from './timeParser';
+export type { ParsedTime, ParsedSeason, ParsedWeekly, ParsedDate, ParsedDailyMoment, TimeSpan, TimeEntry } from './timeParser';
+export { parsePersonFile, personLabel, isWithdrawn, hasSomethingToShow } from './personParser';
+export type { ParsedPerson } from './personParser';
 export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';
