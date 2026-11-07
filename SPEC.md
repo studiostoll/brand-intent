@@ -1017,7 +1017,7 @@ video intro
 | `when:` | string | No | Photos only. Name of a [`.time`](#time-time) entry the photo fits: a window, a season, a weekly or a date. Absent: all year |
 | `framing:` | string | No | Photos only. Id of the [framing](#framing-name-block) module the photo was taken in |
 | `place:` | string | No | Photos only. Where the photo was taken |
-| `person:` | string | No | Photos only. Id of the [`.person`](#person-person) shown. Showing the photo needs that person's `consent photo: yes`; `checkBrand` reports an unknown id |
+| `person:` | string | No | Photos only. Id of the [`.person`](#person-person) shown. The person's `photos:` lists this photo; `checkBrand` reports an unknown id |
 | `taken:` | date | No | Photos only. Date taken, `YYYY-MM-DD` |
 | `focus:` | `X% Y%` or `none` | No | Photos only. Position of the main subject, measured from the top left. `none`: the photo has no single subject. Consumers keep it inside the crop |
 | `horizon:` | `N%` or `none` | No | Photos only. Height of the horizon line from the top; for a tilted horizon, its mean height. `none`: no horizon visible. Consumers can crop so it meets the [framing](#framing-name-block) horizon |
@@ -1114,7 +1114,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `scrim:` | `none` | No | No [scrim](#photo-look-block) under this purpose's text, even when the brand declares one. How dark it gets stays the brand's |
 | `framing:` | string | No | Id of a brand `framing` block. Photos for this purpose are shot in that module: implementations open the camera on it and may hide the others. Unknown ids are ignored |
 | `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block this purpose serves by default |
-| `person:` | `required` | No | Every page of this purpose speaks about a [person](#person-person): a quote, a portrait, a regular's recommendation. A page without one is not posted; `checkStory` reports it |
+| `person:` | `required` | No | Every page of this purpose speaks about a [person](#person-person): a quote, a portrait, a regular's recommendation. A page without one, or with a person who has neither a quote nor a photo, is not posted; `checkStory` reports it |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
 | `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable): the form of a slot |
@@ -1606,7 +1606,7 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{occasion-time}` | Its `time:`, formatted like hours | `19–21 Uhr`, `7–9 PM` | 17 |
 | `{days-until}` | Days from the story's date to the occasion; `0` on the day | `12` | 3 |
 | `{daily NAME}` | The time of that moment of the brand's day | `04:00`, `4:00 AM` | 8 |
-| `{person}` | The person's `name:`, or their `role:` without a name or naming consent | `Thomas`, `die Bäckerin` | its length |
+| `{person}` | The person's `name:`, or their `role:` without a name | `Thomas`, `die Bäckerin` | its length |
 | `{role}` | The person's `role:` | `Gast in Lemkenhafen` | its length |
 | `{since}` | The year the person has been with the brand | `2006` | 4 |
 | `{since-years}` | Whole years since then | `20` | 3 |
@@ -1620,9 +1620,9 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 
 **Time** variables come from the brand's [`.time`](#time-time): `{season}` needs `season` blocks, `{founded}` and `{years}` need `founded:`, `{daily NAME}` needs that `daily` entry. The **occasion** variables (`{occasion}`, `{occasion-date}`, `{occasion-time}`, `{days-until}`) come from the weekly or date the page's `when:` names, else the story's; a window or season has no occasion. `{occasion-time}` needs the entry's `time:`. `{days-until}` counts to the entry's next start on or after the story's date; after a one-off date it has no value.
 
-**Person** variables (`{person}`, `{role}`, `{since}`, `{since-years}`, `{reason}`) come from the page's person: the one its `person:` names, else the story's. `{since}` and `{since-years}` need the person's `since:`, `{reason}` its `reason:`. `{person}` gives the name only with `name:` and `consent name: yes`; otherwise the role, so a page never names someone who didn't agree.
+**Person** variables (`{person}`, `{role}`, `{since}`, `{since-years}`, `{reason}`) come from the page's person: the one its `person:` names, else the story's. `{since}` and `{since-years}` need the person's `since:`, `{reason}` its `reason:`. `{person}` gives the name only with `name:`; otherwise the role, so a page never names someone who didn't agree.
 
-**Consent is not guessed.** A page with a photo whose `person:` has no `consent photo: yes`, or a page of a purpose with `person: required` whose person has no `consent quote: yes`, is not posted: the preview says why.
+**Consent is not guessed.** A person file holds what the person agreed to and nothing else: a name, photos, quotes. From the person's `until:` day on, a page that names them is not posted: the preview says why.
 
 **`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
 
@@ -1682,7 +1682,7 @@ A `.story` file must NOT contain: color values, typography values, slot definiti
 
 ## Fact Files
 
-A story runs; the five layers describe. For a story to run it needs a place, a time and people, and each has a file of the same kind: [`.place`](#place-place) says where, [`.time`](#time-time) says when, [`.person`](#person-person) says who. They hold facts, never voice or colour; a story pulls them in with `place:`, `when:` and `person:`, and their facts reach the page as [variables](#variables). What a fact file doesn't say is not guessed: a closed day has no closing time, a date that passed has no countdown, a person without consent has no name.
+A story runs; the five layers describe. For a story to run it needs a place, a time and people, and each has a file of the same kind: [`.place`](#place-place) says where, [`.time`](#time-time) says when, [`.person`](#person-person) says who. They hold facts, never voice or colour; a story pulls them in with `place:`, `when:` and `person:`, and their facts reach the page as [variables](#variables). What a fact file doesn't say is not guessed: a closed day has no closing time, a date that passed has no countdown, a person without a name in the file has no name.
 
 ## Place (`.place`)
 
@@ -1910,7 +1910,9 @@ A `.time` never contains: voice or tone (→ `.identity`), visual parameters (�
 **File extension:** `.person`
 **Filename convention:** the person id (e.g., `thomas.person`), in `people/`
 
-Someone the brand's posts name, quote or show: the founder, the baker, a regular, a guest, a winemaker, a speaker. Facts and consent, not voice: what the person said is theirs and stays verbatim. One file per person, so that withdrawing a person is deleting one file. A person who agreed to nothing has no file.
+Someone the brand's posts name, quote or show: the founder, the baker, a regular, a guest, a winemaker, a speaker. Facts, not voice: what the person said is theirs and stays verbatim. One file per person, so that withdrawing a person is deleting one file.
+
+The file is the consent. A person who agreed to nothing has no file, and the file holds only what the person agreed to: a `name:` because it may be written, `photos:` because they may be shown, `quote` blocks because they may be quoted. `consent:` records when they agreed, `until:` when that ends.
 
 ```yaml
 # people/thomas.person
@@ -1924,13 +1926,8 @@ place:   lemkenhafen
 reason:  Urlaub ohne Programm
 context: Comes every May for two weeks, cycles to the dyke every morning. Recommends the Steg at seven.
 photos:  thomas-steg, thomas-rad
-
-consent
-  name:  yes
-  photo: yes
-  quote: yes
-  given: 2026-05-02
-  until: 2028-05-02
+consent: 2026-05-02
+until:   2028-05-02
 
 quote
   Ich brauche hier kein Programm. Der Deich reicht.
@@ -1943,47 +1940,37 @@ A person without a name:
 
 ```yaml
 # people/baeckerin.person
-id:     baeckerin
-role:   Bäckerin
-since:  2019
-reason: Hat den Agenturjob gekündigt und den Copyshop zur Bäckerei gemacht.
+id:      baeckerin
+role:    Bäckerin
+since:   2019
+reason:  Hat den Agenturjob gekündigt und den Copyshop zur Bäckerei gemacht.
+consent: 2019-05-04
 
-consent
-  quote: yes
+quote
+  Was weg ist, ist weg. Morgen gibt es neues.
 ```
 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `id:` | string | Yes | Person identifier; stories, pages and photos name it with `person:` |
-| `name:` | string | No | The name as a post may write it, usually a first name. Omitted: the person is their role |
+| `name:` | string | No | The name as a post may write it, usually a first name. Omitted: the person is their role, in every post |
 | `role:` | string | Yes | Who they are to the brand, in the brand's language, as a post would say it: `Bäckerin`, `Gast in Lemkenhafen`, `Winzer des Hausweins` |
 | `since:` | date or year | No | `YYYY-MM-DD` or `YYYY`: since when. `{since}` and `{since-years}` show it; a bare year counts from January 1 |
 | `place:` | string | No | The [place](#place-place) they belong to |
 | `reason:` | string | No | Why they come, what they do: the fact a goal like "a person with their reason to come" asks for. `{reason}` shows it |
 | `context:` | string | No | Facts for AI writing. Not voice |
-| `photos:` | string list | No | Photo ids from the `.brand` that show them. Each of those photos names this person with `person:` |
-| `consent` | block | Yes | What the person agreed to (below); at least one `yes` |
+| `photos:` | string list | No | Photo ids from the `.brand` that show them, and may be shown. Each of those photos names this person with `person:` |
+| `consent:` | date | No | `YYYY-MM-DD`: when the person agreed to what the file holds |
+| `until:` | date | No | `YYYY-MM-DD`: when the consent ends. From that day the person is withdrawn: a page that names them is not posted |
 | `quote` | block | No | Their words, verbatim, one quote per block on the following 2-space lines (repeatable) |
-
-### `consent` Block
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `name:` | `yes` \| `no` | `no` | May be named. Without it `{person}` gives the role |
-| `photo:` | `yes` \| `no` | `no` | May be shown. A page with a photo of them needs it |
-| `quote:` | `yes` \| `no` | `no` | May be quoted. A page of a purpose with `person: required` needs it |
-| `given:` | date | — | When the consent was given |
-| `until:` | date | — | When it ends. After it, every answer is `no` |
-
-The people equivalent of opening hours: what the file doesn't allow, no post does. A block with no `yes` is an error: a person who agreed to nothing has no file.
 
 ### Quotes
 
-A `quote` block holds the person's own words. Implementations offer a person's quotes for the open slots of a page that names the person, the way they offer examples; AI writing never writes, extends or rewrites a quote. A quote in a slot is attributed with `{person}`.
+A `quote` block holds the person's own words. Implementations offer a person's quotes for the open slots of a page that names the person, the way they offer examples; AI writing never writes, extends or rewrites a quote. A quote in a slot is attributed with `{person}`. A purpose with `person: required` needs a person with at least one quote or one photo: something of theirs the page can show.
 
 ### Exclusion Rule
 
-A `.person` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the person's quotes (→ `.purpose`, `.story`), an address (→ `.place`).
+A `.person` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the person's quotes (→ `.purpose`, `.story`), an address (→ `.place`), what the person did not agree to.
 
 ---
 
@@ -2026,7 +2013,7 @@ A parser should warn when:
 - A `slot` references a `color` not defined as a theme slot
 - An example, photo, story or page `when:` names an entry the `.time` doesn't declare; a `.brand` still has a `windows` block or a colour family `from:` date
 - A colour family names a season the `.time` doesn't declare, or two families name the same season
-- A story, page or photo names a person that doesn't exist; a page of a purpose with `person: required` has no person; a person's `photos:` lists a photo whose `person:` is someone else; a `.person` has no `consent` block or one without a `yes`
+- A story, page or photo names a person that doesn't exist; a page of a purpose with `person: required` has no person; a person's `photos:` lists a photo whose `person:` is someone else, or a photo's `person:` isn't in that person's `photos:`; a page of a purpose with `person: required` names a person with neither a quote nor a photo
 - An example `goal:` references a goal not defined in `.identity`
 - A `.purpose` still uses deprecated slot `samples:`
 - An `archetypes` entry references a non-existent `.composition` file

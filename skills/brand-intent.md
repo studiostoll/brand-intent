@@ -29,7 +29,7 @@ Brand Intent distributes brand knowledge across nine file types in three groups:
 | **Story** | `.story` | What does the brand post, page by page? | Per post series |
 | **Place** | `.place` | Which site do the posts speak about? | When hours or address change |
 | **Time** | `.time` | When does the brand live: its seasons, windows, week and day? | When the year or the week changes |
-| **Person** | `.person` | Who do the posts name, quote or show, and what did they agree to? | When a person joins, or withdraws consent |
+| **Person** | `.person` | Who do the posts name, quote or show, and what did they agree to? | When a person joins or withdraws |
 
 The arrow between layers is a **derivation arrow**: Identity contains reasoning. Brand derives expression intent from that reasoning. Format, Purpose, and Composition condition specific acts of expression without repeating what upstream layers establish.
 
@@ -118,7 +118,7 @@ One per brand, facts only: `founded` (date or year), `season NAME` blocks (`labe
 
 ### `.person`: Who the Posts Speak About
 
-One file per person, facts and consent only: `name` (optional), `role` (how a post calls them: `Bäckerin`, `Gast in Lemkenhafen`), `since`, `place`, `reason` (why they come, what they do), `context`, `photos`, a `consent` block (`name`, `photo`, `quote`, each yes or no, `until`), and `quote` blocks with the person's own words. A story or page names a person with `person:`. Write their name only when `name:` is set and `consent name: yes`; otherwise call them by their role. Quote only what a `quote` block holds, verbatim, and only with `consent quote: yes`; never write, extend or rewrite a quote. A purpose with `person: required` needs a person on every page, and without one the page is not posted. Never invent a person, a first name or a reason: a goal that asks for "a person with their reason to come" is answered from a `.person` file or not at all.
+One file per person, facts only: `name` (optional), `role` (how a post calls them: `Bäckerin`, `Gast in Lemkenhafen`), `since`, `place`, `reason` (why they come, what they do), `context`, `photos`, `consent` (the date they agreed), `until` (when that ends), and `quote` blocks with the person's own words. The file is the consent: it holds only what the person agreed to. A story or page names a person with `person:`. Write their name only when `name:` is set; otherwise call them by their role. Quote only what a `quote` block holds, verbatim; never write, extend or rewrite a quote. From `until:` on, a page naming the person does not go out. A purpose with `person: required` needs a person on every page, and without one the page is not posted. Never invent a person, a first name or a reason: a goal that asks for "a person with their reason to come" is answered from a `.person` file or not at all.
 
 ## Composing Context for Content Generation
 
@@ -129,7 +129,7 @@ When generating content for a specific purpose, read all layers silently (do not
 1. **Read `.identity`** — voice.always/never/instead (hard constraints), persona, register, pillars.avoid, anti-audience, values and their examples, positioning; the goal named by the purpose
 2. **Read `.brand`** — `framing` (for photo briefs)
 2b. **Read the `.purpose` `voice` block** — sentence-max, headline-pattern, number-format
-2c. **Read the fact files** when writing for a `.story` — the story's `.place` (context, hours, capacity), the `.time` (is the `when:` entry in season; its label and context; the daily moments), the `.person` (role, since, reason, quotes, consent) as facts
+2c. **Read the fact files** when writing for a `.story` — the story's `.place` (context, hours, capacity), the `.time` (is the `when:` entry in season; its label and context; the daily moments), the `.person` (role, since, reason, quotes, until) as facts
 3. **Apply `scope` from `.purpose`** — audience and pillar filters narrow the upstream context
 4. **Apply `context` from `.purpose`** — slot-specific instructions, follow literally
 5. **Generate per-slot content** — respect maxLength and any `words:`/`sentences:` range, use the purpose's `example` pages as structural reference (match pattern, not words; all slots of one output share one topic), follow context instructions
@@ -160,7 +160,7 @@ After generating or reviewing content, validate against these rules in order:
 13. **`review.copy`:** Answer each question with yes or no. Any no is a failure.
 14. **`when:`:** Is an example, story or page used while its `.time` entry is not in season? If yes, pick another.
 15. **Variables:** Does a story text still contain its `{variables}` unchanged, with no guessed weather, hours, dates, ages or names? If not, restore them.
-16. **Consent:** Is a person named without `consent name: yes`, quoted without `consent quote: yes`, or shown without `consent photo: yes`? Is a quote not verbatim from their file? If yes, the page does not go out.
+16. **Consent:** Is a person named without a `name:` in their file, quoted with words not verbatim from a `quote` block, shown in a photo their file doesn't list, or used past their `until:`? If yes, the page does not go out.
 
 When reviewing a photo, check `imagery.always`/`never`, the brand's framing (horizon position) and each `review.image` question.
 

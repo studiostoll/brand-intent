@@ -373,7 +373,7 @@ description: An open file format for the reasoning behind a brand, written in a 
         What the brand posts, page by page. Each page names a purpose and a composition. A slot can be fixed, open, or hold a variable:
         the date, the weekday, <code>{sunrise}</code> and <code>{sunset}</code> from the brand&rsquo;s coordinates, <code>{weather}</code> from a forecast,
         <code>{opens}</code> and <code>{closes}</code> from a place, <code>{occasion}</code> and <code>{days-until}</code> from the brand&rsquo;s time,
-        <code>{person}</code> and <code>{since}</code> from a person. What is not known is not guessed: without a forecast, on a day the place is closed, or for a person who gave no consent,
+        <code>{person}</code> and <code>{since}</code> from a person. What is not known is not guessed: without a forecast, on a day the place is closed, or for a person whose file has no name,
         the variable has no value and the post doesn&rsquo;t go out. Page lists repeat a page as often as the week needs.
         A story can ask for a photo taken now, with the brand&rsquo;s camera settings.
       </p>
@@ -449,17 +449,14 @@ description: An open file format for the reasoning behind a brand, written in a 
     <div class="layer-body">
       <p>
         Someone the posts name, quote or show: the baker, a regular, a winemaker, a speaker. A name or an anonymous role, since when, their reason,
-        the photos that show them, their own words verbatim, and what they agreed to. A page names a person with <code>person:</code>;
-        without consent it shows the role instead of the name, and a quote or a photo without consent does not go out. Withdrawing a person is deleting one file.
+        the photos that show them, their own words verbatim, and the date they agreed. The file is the consent and holds only what the person agreed to:
+        no name in the file, no name in the post. A page names a person with <code>person:</code>. Withdrawing a person is deleting one file.
       </p>
 <pre><span class="kw">id:</span>     <span class="val">baeckerin</span>
 <span class="kw">role:</span>   <span class="val">B&auml;ckerin</span>
 <span class="kw">since:</span>  <span class="num">2019</span>
 <span class="kw">reason:</span> <span class="val">Hat den Agenturjob gek&uuml;ndigt und den Copyshop zur B&auml;ckerei gemacht.</span>
-
-<span class="kw">consent</span>
-  <span class="meta">name:</span>  <span class="val">no</span>       <span class="cm"># she is "die B&auml;ckerin" in every post</span>
-  <span class="meta">quote:</span> <span class="val">yes</span>
+<span class="kw">consent:</span> <span class="num">2019-05-04</span>  <span class="cm"># no name: she is "die B&auml;ckerin" in every post</span>
 
 <span class="kw">quote</span>
   <span class="val">Was weg ist, ist weg. Morgen gibt es neues.</span></pre>
