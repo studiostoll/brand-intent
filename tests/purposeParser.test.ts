@@ -4,7 +4,8 @@
  * Run: npm test
  */
 
-import { parsePurposeFile } from '../parser/purposeParser';
+import { parsePurposeFile, checkPurpose } from '../parser/purposeParser';
+import { parseTimeFile } from '../parser/timeParser';
 
 let pass = 0;
 let fail = 0;
@@ -161,10 +162,21 @@ test('example validation errors', () => {
   assertThrows(() => withExamples(`example\n${full}  cta: Buy\n`), /fixed value/, 'value slot');
   assertThrows(() => withExamples(`example\n${full}  colour: red\n`), /unknown example key/, 'unknown key');
   assertThrows(() => withExamples(`example\n${full}  primary: again\n`), /duplicate "primary"/, 'duplicate key');
-  assertThrows(() => withExamples(`example\n${full}  when: Christmas\n`), /invalid window name/, 'window name');
+  assertThrows(() => withExamples(`example\n${full}  when: Christmas\n`), /invalid when/, 'when name');
   assertThrows(() => withExamples(`example\n  label: A @christmas\n  primary: B\n  detail:\n    C\n`), /use "when:"/, 'marker in text');
   assertThrows(() => withExamples(`example\n  label: A\n  primary: B\n  detail:\n    [pin] C\n`), /no "marker: icon"/, 'icon without marker');
   assertThrows(() => withExamples(`example\n  topic: nothing\n`), /without slot texts/, 'empty example');
+});
+
+test('person: required, and checkPurpose on example when:', () => {
+  const p = parsePurposeFile(`id: p\ncompositions: panel\nperson: required\n\n${SLOTS}\nexample\n  when: advent\n  label: A\n  primary: B\n  detail:\n    C\n`, 'p.purpose');
+  assertEq(p.person, 'required', 'required');
+  assertEq('person' in withExamples('example\n  label: A\n  primary: B\n  detail:\n    C\n'), false, 'absent');
+  assertThrows(() => parsePurposeFile(`id: p\ncompositions: panel\nperson: thomas\n\n${SLOTS}`, 'p.purpose'), /invalid person "thomas" \(expected required/, 'only required');
+  assertEq(checkPurpose(p, { time: parseTimeFile('windows\n  advent: 11-27..12-24\n', 'p.time') }, 'p.purpose'), [], 'known');
+  assertEq(checkPurpose(p, { time: parseTimeFile('', 'p.time') }, 'p.purpose'), ['p.purpose: example 1: when "advent" is not in the .time'], 'unknown');
+  assertEq(checkPurpose(p, { time: null }, 'p.purpose'), ['p.purpose: example 1: when "advent" is not in the .time (the brand has no .time)'], 'no .time');
+  assertEq(checkPurpose(p, {}, 'p.purpose'), [], 'not checked');
 });
 
 test('slot samples next to example blocks throws', () => {

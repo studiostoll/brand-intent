@@ -7,6 +7,8 @@
 import { parseStoryFile, checkStory, storyPlace, storyTextVariables } from '../parser/storyParser';
 import { addressStreet, type ParsedPlace } from '../parser/placeParser';
 import { parsePurposeFile } from '../parser/purposeParser';
+import { parseTimeFile } from '../parser/timeParser';
+import { parsePersonFile } from '../parser/personParser';
 
 let pass = 0;
 let fail = 0;
@@ -268,14 +270,112 @@ test('an example fills a page list copy by copy, up to its max', () => {
   assertThrows(() => parse(`${list}\nexample\n  page 1\n    secondary: A\n  page 1\n    secondary: B\n  page 1\n    secondary: C\n`), 'more than 2 copies of page 1');
 });
 
-test('when: names the window the story fits', () => {
+const TIME = parseTimeFile(`founded: 2019-05-04
+season winter
+  label: Winter
+  from: 12-01
+season summer
+  label: Summer
+  from: 06-01
+windows
+  christmas: 11-27..12-24
+weekly tasting
+  label: Tasting at the counter
+  days: thu
+  time: 19:00-21:00
+date mill-day
+  label: Mill day
+  on: 05-02
+daily
+  oven: 04:00 Oven on
+`, 't.time');
+const NO_TIME = parseTimeFile('', 't.time');
+
+test('when: names the .time entry the story fits', () => {
   const s = parse('when: christmas\npage\n  purpose: notice\n');
   assertEq(s.when, 'christmas', 'parsed');
   assertEq('when' in parse('page\n  purpose: notice\n'), false, 'absent');
   assertThrows(() => parse('when: Christmas Time\npage\n  purpose: notice\n'), 'invalid when');
-  assertEq(checkStory(s, { ...BRAND, windows: ['christmas'] }, 's.story'), [], 'known window');
-  assertEq(checkStory(s, { ...BRAND, windows: [] }, 's.story'), ['s.story: when "christmas" is not a window in the .brand'], 'unknown window');
+  assertEq(checkStory(s, { ...BRAND, time: TIME }, 's.story'), [], 'known');
+  assertEq(checkStory(s, { ...BRAND, time: NO_TIME }, 's.story'), ['s.story: when "christmas" is not in the .time'], 'unknown');
+  assertEq(checkStory(s, { ...BRAND, time: null }, 's.story'), ['s.story: when "christmas" is not in the .time (the brand has no .time)'], 'no .time');
   assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked when unknown');
+});
+
+test('a page\'s when: names a weekly or a date', () => {
+  const s = parse('page\n  purpose: notice\n  when: tasting\n  primary: {occasion}\n');
+  assertEq(s.pages[0].when, 'tasting', 'parsed');
+  assertEq(checkStory(s, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: slot "primary" is 22 characters long, maxLength is 20'], 'the label\'s length');
+  const w = parse('page\n  purpose: notice\n  when: christmas\n');
+  assertEq(checkStory(w, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: when "christmas" is a window; a page\'s when: names a weekly or a date, for its occasion variables'], 'window on a page');
+  assertEq(checkStory(parse('page\n  purpose: notice\n  when: nothing\n'), { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: when "nothing" is not in the .time'], 'unknown');
+});
+
+test('time variables need their part of the .time', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {season} {founded} {years} {daily oven}\n');
+  assertEq(s.pages[0].texts.primary, '{season} {founded} {years} {daily oven}', 'texts');
+  assertEq(storyTextVariables('{daily oven}'), ['daily oven'], 'daily with its name');
+  assertEq(checkStory(s, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: slot "primary" is 24 characters long, maxLength is 20'], 'Summer + 2019 + 7 + 10:30 AM');
+  assertEq(checkStory(s, { ...BRAND, time: NO_TIME }, 's.story'), [
+    's.story: page 1: variable "{season}" needs season blocks in the .time',
+    's.story: page 1: variable "{founded}" needs founded: in the .time',
+    's.story: page 1: variable "{years}" needs founded: in the .time',
+    's.story: page 1: variable "{daily oven}" needs a daily moment "oven" in the .time',
+  ], 'empty .time');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {daily}\n'), '"{daily}" needs the moment\'s name');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {daily-oven}\n'), 'unknown variable "{daily-oven}"');
+  assertEq(parse('page\n  purpose: notice\n  primary: {daily Oven}\n').pages[0].texts.primary, '{daily Oven}', 'not lowercase: plain text');
+});
+
+test('occasion variables need a weekly or date when:', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {days-until} {occasion-time}\n');
+  assertEq(checkStory(s, { ...BRAND, time: TIME }, 's.story'), [
+    's.story: page 1: variable "{days-until}" needs a weekly or date when: on the page or the story',
+    's.story: page 1: variable "{occasion-time}" needs a weekly or date when: on the page or the story',
+    's.story: page 1: slot "primary" is 21 characters long, maxLength is 20',
+  ], 'no when');
+  const w = parse('when: christmas\npage\n  purpose: notice\n  primary: {days-until}\n');
+  assertEq(checkStory(w, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: variable "{days-until}" needs a weekly or date when: on the page or the story'], 'a window is no occasion');
+  const t = parse('when: tasting\npage\n  purpose: notice\n  primary: {occasion-time}\n');
+  assertEq(checkStory(t, { ...BRAND, time: TIME }, 's.story'), [], 'the story\'s weekly');
+  const m = parse('when: mill-day\npage\n  purpose: notice\n  primary: {occasion-time}\n');
+  assertEq(checkStory(m, { ...BRAND, time: TIME }, 's.story'), ['s.story: page 1: variable "{occasion-time}" needs time: on date "mill-day"'], 'date without time');
+});
+
+const THOMAS = parsePersonFile('id: thomas\nname: Thomas\nrole: Regular in Lemkenhafen\nsince: 2006\nreason: Holiday without a programme\n\nquote\n  The dyke is enough.\n', 'thomas.person');
+const BAKER = parsePersonFile('id: baker\nrole: Baker\n', 'baker.person');
+const REQUIRED = parsePurposeFile('id: portrait\ncompositions: stack\nperson: required\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 20\n\nexample\n  primary: Thomas\n', 'portrait.purpose');
+
+test('person: names the story\'s or the page\'s person', () => {
+  const s = parse('person: thomas\npage\n  purpose: notice\n\npage\n  purpose: notice\n  person: baker\n');
+  assertEq(s.person, 'thomas', 'story');
+  assertEq(s.pages.map(p => p.person), [undefined, 'baker'], 'pages');
+  assertThrows(() => parse('person: Thomas\npage\n  purpose: notice\n'), 'invalid person');
+  assertEq(checkStory(s, { ...BRAND, people: [THOMAS, BAKER] }, 's.story'), [], 'both exist');
+  assertEq(checkStory(s, { ...BRAND, people: [THOMAS] }, 's.story'), ['s.story: page 2: person "baker" does not exist'], 'unknown page person');
+  assertEq(checkStory(s, { ...BRAND, people: [] }, 's.story'), ['s.story: person "thomas" does not exist', 's.story: page 2: person "baker" does not exist'], 'nobody');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'not checked');
+});
+
+test('person variables need a person and what they show', () => {
+  const s = parse('person: thomas\npage\n  purpose: notice\n  primary: {person} {role} {since} {since-years} {reason}\n');
+  assertEq(checkStory(s, { ...BRAND, people: [THOMAS] }, 's.story'), ['s.story: page 1: slot "primary" is 66 characters long, maxLength is 20'], 'at their lengths');
+  const b = parse('person: baker\npage\n  purpose: notice\n  primary: {person}, {since}\n  detail:\n    {reason}\n');
+  assertEq(checkStory(b, { ...BRAND, people: [BAKER] }, 's.story'), [
+    's.story: page 1: variable "{since}" needs since: in person "baker"',
+    's.story: page 1: variable "{reason}" needs reason: in person "baker"',
+  ], 'role as the name, since and reason missing');
+  const n = parse('page\n  purpose: notice\n  primary: {person}\n');
+  assertEq(checkStory(n, { ...BRAND, people: [THOMAS] }, 's.story'), ['s.story: page 1: variable "{person}" needs a person: on the page or the story'], 'no person');
+});
+
+test('person: required needs a person with a quote or a photo', () => {
+  const brand = { ...BRAND, purposes: [PURPOSE, REQUIRED], people: [THOMAS, BAKER] };
+  assertEq(checkStory(parse('person: thomas\npage\n  purpose: portrait\n'), brand, 's.story'), [], 'a quote');
+  assertEq(checkStory(parse('page\n  purpose: portrait\n'), brand, 's.story'), ['s.story: page 1: purpose "portrait" has person: required, but neither the page nor the story names a person'], 'nobody named');
+  assertEq(checkStory(parse('page\n  purpose: portrait\n  person: baker\n'), brand, 's.story'), ['s.story: page 1: person "baker" has neither a quote nor a photo, and purpose "portrait" has person: required'], 'nothing to show');
+  assertEq(checkStory(parse('page\n  purpose: portrait\n'), { ...brand, people: undefined }, 's.story'), [], 'not checked');
 });
 
 test('place: names the story\'s place', () => {

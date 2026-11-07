@@ -10,9 +10,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import {
   parseIdentityFile, parseBrandFile, parseFormatFile, parsePurposeFile,
-  parseCompositionFile, parseStoryFile, parsePlaceFile, checkStory,
+  parseCompositionFile, parseStoryFile, parsePlaceFile, parseTimeFile, parsePersonFile,
+  checkBrand, checkPurpose, checkStory,
 } from '../parser/index';
-import type { ParsedPurpose, ParsedPlace } from '../parser/index';
+import type { ParsedPurpose, ParsedPlace, ParsedTime, ParsedPerson } from '../parser/index';
 
 const EXAMPLES = join(__dirname, '..', 'examples');
 
@@ -47,6 +48,8 @@ for (const brandId of readdirSync(EXAMPLES)) {
 
   const purposes: ParsedPurpose[] = [];
   const places: ParsedPlace[] = [];
+  const people: ParsedPerson[] = [];
+  let time: ParsedTime | null = null;
   const compositions: string[] = [];
   const formats: string[] = [];
   let brand: ReturnType<typeof parseBrandFile> | undefined;
@@ -56,7 +59,12 @@ for (const brandId of readdirSync(EXAMPLES)) {
     const primary = (out.narratives ?? []).filter(n => n.primary);
     if (primary.length !== 1) throw new Error(`expected exactly one primary narrative, got ${primary.length}`);
   });
-  for (const f of ofType('brand')) test(name(f), () => { brand = parseBrandFile(read(f), name(f)); });
+  for (const f of ofType('brand')) test(name(f), () => {
+    brand = parseBrandFile(read(f), name(f));
+    if (brand.warnings?.length) throw new Error(brand.warnings.join('; '));
+  });
+  for (const f of ofType('time')) test(name(f), () => { time = parseTimeFile(read(f), name(f)); });
+  for (const f of ofType('person')) test(name(f), () => { people.push(parsePersonFile(read(f), name(f))); });
   for (const f of ofType('format')) test(name(f), () => { formats.push(parseFormatFile(read(f), name(f)).id); });
   for (const f of ofType('purpose')) test(name(f), () => {
     const out = parsePurposeFile(read(f), name(f));
@@ -66,9 +74,19 @@ for (const brandId of readdirSync(EXAMPLES)) {
   for (const f of ofType('composition')) test(name(f), () => { compositions.push(parseCompositionFile(read(f), name(f)).id); });
   for (const f of ofType('place')) test(name(f), () => { places.push(parsePlaceFile(read(f), name(f))); });
 
-  // Cross-file checks: a purpose's framing, goal-free slots, and every story against the rest.
-  test('purpose typography and framing exist in the .brand', () => {
+  // Cross-file checks: the brand against its fact files, a purpose's typography, framing and example
+  // when:, and every story against the rest.
+  test('.brand photos and families fit the .time and the people', () => {
     if (!brand) throw new Error('no .brand parsed');
+    const problems = checkBrand(brand, { time, people }, `${brandId}.brand`);
+    if (problems.length) throw new Error(problems.join('; '));
+  });
+  test('purpose typography and framing exist in the .brand, example when: in the .time', () => {
+    if (!brand) throw new Error('no .brand parsed');
+    for (const p of purposes) {
+      const problems = checkPurpose(p, { time }, `${p.id}.purpose`);
+      if (problems.length) throw new Error(problems.join('; '));
+    }
     for (const p of purposes) {
       for (const s of p.slots) {
         if (s.typographyRef && !brand.typographies?.[s.typographyRef]) throw new Error(`${p.id}: typography "${s.typographyRef}" is not in the .brand`);
@@ -85,7 +103,7 @@ for (const brandId of readdirSync(EXAMPLES)) {
       themes: Object.keys(brand.themes ?? {}),
       photos: (brand.assets?.photos ?? []).map(p => p.id),
       illustrations: (brand.assets?.illustrations ?? []).map(i => i.id),
-      windows: Object.keys(brand.windows ?? {}),
+      time, people,
       location: !!brand.location,
     }, name(f));
     if (problems.length) throw new Error(problems.join('; '));

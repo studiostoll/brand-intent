@@ -10,6 +10,8 @@
 import { SLOT_IDS, type SlotId } from './types';
 import type { ParsedPurpose } from './purposeParser';
 import { addressStreet, weekOpeningDays, type ParsedPlace } from './placeParser';
+import { timeEntry, timeEntryNames, type ParsedTime, type TimeEntry } from './timeParser';
+import { personLabel, hasSomethingToShow, type ParsedPerson } from './personParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -19,14 +21,18 @@ export type StoryVariable =
   | 'sunrise' | 'sunset' | 'day-length' | 'moon'
   | 'temperature' | 'wind' | 'weather'
   | 'place' | 'address' | 'street' | 'hours' | 'week-hours' | 'opens' | 'closes' | 'opening'
+  | 'season' | 'founded' | 'years' | 'occasion' | 'occasion-date' | 'occasion-time' | 'days-until' | 'daily'
+  | 'person' | 'role' | 'since' | 'since-years' | 'reason'
   | 'n' | 'count';
 
 /** Longest resolved form per variable (German and English), used for the `maxLength` check.
  *  `location`: the variable needs coordinates: the story's place's, else the brand's `location`
- *  block. `place`: it needs the story's
- *  place; `needs`: and that place's `address:` or `hours`. `{place}`, `{address}`, `{street}`, `{hours}` and
- *  `{week-hours}` count at their length for that place (see `checkStory`). */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; list?: true }> = {
+ *  block. `place`: it needs the story's place; `needs`: and that place's `address:`, `hours` or `opening:`.
+ *  `time`: it needs that part of the `.time`; `occasion`: a weekly or date `when:` on the page or the story.
+ *  `person`: it needs the page's person; `personNeeds`: and that key in the person's file.
+ *  A `maxLength` of 0 means the variable counts at the length of the fact it shows (see `checkStory`).
+ *  `{daily NAME}` is written with its moment's name; the table lists it as `daily`. */
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; time?: 'seasons' | 'founded' | 'daily'; occasion?: true; person?: true; personNeeds?: 'since' | 'reason'; list?: true }> = {
   weekday: { maxLength: 10 },                       // "Donnerstag"
   date: { maxLength: 13 },                          // "30. September"
   sunrise: { maxLength: 8, location: true },        // "12:59 PM"
@@ -44,6 +50,19 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   opens: { maxLength: 8, place: true, needs: 'hours' },   // "10:30 AM"
   closes: { maxLength: 8, place: true, needs: 'hours' },
   opening: { maxLength: 13, place: true, needs: 'opening' }, // "30. September"
+  season: { maxLength: 0, time: 'seasons' },         // the season's label
+  founded: { maxLength: 4, time: 'founded' },        // "2019"
+  years: { maxLength: 3, time: 'founded' },          // "7"
+  occasion: { maxLength: 0, occasion: true },        // the weekly's or date's label
+  'occasion-date': { maxLength: 13, occasion: true }, // "30. September"
+  'occasion-time': { maxLength: 17, occasion: true }, // "10:30 AM–10:30 PM"
+  'days-until': { maxLength: 3, occasion: true },    // "365"
+  daily: { maxLength: 8, time: 'daily' },            // "10:30 AM"
+  person: { maxLength: 0, person: true },            // the name, or the role without a name
+  role: { maxLength: 0, person: true },              // the role
+  since: { maxLength: 4, person: true, personNeeds: 'since' },        // "2006"
+  'since-years': { maxLength: 3, person: true, personNeeds: 'since' }, // "20"
+  reason: { maxLength: 0, person: true, personNeeds: 'reason' },      // the reason
   n: { maxLength: 2, list: true },                  // "10": the page's position in its page list
   count: { maxLength: 2, list: true },              // "10": how many pages the page list has
 };
@@ -67,8 +86,11 @@ export interface ParsedStory {
   scrim?: 'none';
   /** Place id the story speaks for. Undefined = the brand's only place, if it has exactly one. */
   place?: string;
-  /** Name of a `.brand` date window the story fits. Undefined = all year. */
+  /** Name of a `.time` entry the story fits: a window, a season, a weekly or a date. Undefined = all year.
+   *  A weekly or date also gives the occasion variables. */
   when?: string;
+  /** Person id the story speaks about. Person variables resolve from it on every page that doesn't name its own. */
+  person?: string;
   pages: ParsedStoryPage[];
   /** Example fills for the open slots, one story topic each. */
   examples: ParsedStoryExample[];
@@ -90,6 +112,10 @@ export interface ParsedStoryPage {
   theme?: string;
   /** Page topic: what this page adds to the story. */
   topic?: string;
+  /** A `.time` weekly or date this page is about, for its occasion variables; the story's `when:` otherwise. */
+  when?: string;
+  /** Person id this page speaks about, instead of the story's. */
+  person?: string;
   /** `repeat: MIN-MAX`: the page is a page list, between `min` and `max` copies of it in a row. At most one per story. */
   repeat?: { min: number; max: number };
   /** Fixed slot texts, may contain `{variable}`s. A slot the page doesn't name is open. */
@@ -114,11 +140,18 @@ export interface ParsedStoryExamplePage {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const VALID_SLOTS = new Set<string>(SLOT_IDS);
-const VARIABLE = /\{([a-z][a-z0-9-]*)\}/g;
+const ID = /^[a-z][a-z0-9-]*$/;
+const VARIABLE = /\{(daily [a-z][a-z0-9-]*|[a-z][a-z0-9-]*)\}/g;
 
-/** Variable names in a text, in order of appearance. */
+/** Variable names in a text, in order of appearance. `{daily oven}` gives "daily oven". */
 export function storyTextVariables(text: string): string[] {
   return [...text.matchAll(VARIABLE)].map(m => m[1]);
+}
+
+/** The table key of a variable name: "daily" for "daily oven". */
+function variableKey(name: string): StoryVariable | undefined {
+  const key = name.startsWith('daily ') ? 'daily' : name;
+  return key in STORY_VARIABLES ? (key as StoryVariable) : undefined;
 }
 
 // ── Main parser ───────────────────────────────────────────────────────────────
@@ -134,6 +167,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   let scrim: 'none' | undefined;
   let place: string | undefined;
   let when: string | undefined;
+  let person: string | undefined;
   const pages: (ParsedStoryPage & { line: number; keys: Set<string> })[] = [];
   const examples: (ParsedStoryExample & { line: number })[] = [];
 
@@ -180,7 +214,8 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   function checkVariables(text: string, lineNum: number, allowed: boolean) {
     for (const v of storyTextVariables(text)) {
       if (!allowed) throw new Error(`${fileName}:${lineNum}: variable "{${v}}" in an example — examples are sample texts, variables belong in page texts`);
-      if (!(v in STORY_VARIABLES)) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map(k => `{${k}}`).join(', ')})`);
+      if (v === 'daily') throw new Error(`${fileName}:${lineNum}: "{daily}" needs the moment's name, e.g. {daily oven}`);
+      if (!variableKey(v)) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map(k => (k === 'daily' ? '{daily NAME}' : `{${k}}`)).join(', ')})`);
     }
   }
 
@@ -233,9 +268,10 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       const colonIdx = line.indexOf(':');
       const key = colonIdx === -1 ? line : line.slice(0, colonIdx).trim();
       const value = colonIdx === -1 ? '' : line.slice(colonIdx + 1).trim();
-      if (key === 'when') {
-        if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid when "${value}" (expected the name of one .brand window)`);
-        when = value;
+      if (key === 'when' || key === 'person') {
+        if (!ID.test(value)) throw new Error(`${fileName}:${lineNum}: invalid ${key} "${value}" (expected the id of one ${key === 'when' ? '.time entry' : '.person'})`);
+        if (key === 'when') when = value;
+        else person = value;
         continue;
       }
       if (key === 'id' || key === 'name' || key === 'format' || key === 'topic' || key === 'place') {
@@ -258,9 +294,13 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     // Page lines (2-space)
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme', 'repeat'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme', 'when', 'person', 'repeat'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
+      else if (read?.key === 'when' || read?.key === 'person') {
+        if (!ID.test(read.value)) throw new Error(`${fileName}:${lineNum}: invalid ${read.key} "${read.value}" (expected the id of one ${read.key === 'when' ? '.time weekly or date' : '.person'})`);
+        currentPage[read.key] = read.value;
+      }
       else if (read?.key === 'illustration') currentPage.illustrations = read.value.split(',').map(id => id.trim()).filter(Boolean);
       else if (read?.key === 'photo') {
         const ids = read.value.split(',').map(id => id.trim()).filter(Boolean);
@@ -368,6 +408,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     ...(scrim ? { scrim } : {}),
     ...(place ? { place } : {}),
     ...(when ? { when } : {}),
+    ...(person ? { person } : {}),
     pages: pages.map(({ line: _line, keys: _keys, ...p }) => p),
     examples: examples.map(({ line: _line, ...ex }) => ({
       ...ex,
@@ -387,9 +428,24 @@ export function storyPlace(story: Pick<ParsedStory, 'place'>, places: ParsedPlac
   return places.length === 1 ? places[0] : undefined;
 }
 
-/** A text with each variable at its longest form, `{hours}` as its longest lines for the place. */
-function longestText(text: string, place: ParsedPlace | undefined): string {
+/** What a page's variables resolve from, as far as the brand's files are known. */
+interface PageFacts {
+  place?: ParsedPlace;
+  time?: ParsedTime | null;
+  /** The weekly or date the page's (else the story's) `when:` names. */
+  occasion?: Extract<TimeEntry, { kind: 'weekly' | 'date' }>;
+  person?: ParsedPerson;
+}
+
+/** A text with each variable at its longest form, `{hours}` as its longest lines for the place, a label
+ *  or a name at its length. */
+function longestText(text: string, { place, time, occasion, person }: PageFacts): string {
   return text.replace(VARIABLE, (_, v: string) => {
+    if (v === 'season') return 'x'.repeat(Math.max(0, ...(time?.seasons ?? []).map(s => s.label.length)));
+    if (v === 'occasion') return 'x'.repeat(occasion ? (occasion.kind === 'weekly' ? occasion.weekly : occasion.date).label.length : 0);
+    if (v === 'person') return 'x'.repeat(person ? personLabel(person).length : 0);
+    if (v === 'role') return 'x'.repeat(person?.role.length ?? 0);
+    if (v === 'reason') return 'x'.repeat(person?.reason?.length ?? 0);
     if (v === 'place') return 'x'.repeat(place?.name.length ?? 0);
     if (v === 'address') return 'x'.repeat(place?.address?.length ?? 0);
     if (v === 'street') return 'x'.repeat(place?.address ? addressStreet(place.address).length : 0);
@@ -404,7 +460,7 @@ function longestText(text: string, place: ParsedPlace | undefined): string {
       if (!lines.length) return 'x'.repeat(HOURS_CLOSED_LENGTH);
       return lines.map(l => 'x'.repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join('\n');
     }
-    return 'x'.repeat(STORY_VARIABLES[v as StoryVariable]?.maxLength ?? 0);
+    return 'x'.repeat(STORY_VARIABLES[variableKey(v)!]?.maxLength ?? 0);
   });
 }
 
@@ -413,10 +469,13 @@ function longestText(text: string, place: ParsedPlace | undefined): string {
  *  `location: false` reports sky and weather variables (the brand has no `location` block) unless
  *  the story's place has coordinates.
  *  `places` (the brand's .place files) is checked when given: the story's `place:`, and the
- *  place that place variables need. */
+ *  place that place variables need.
+ *  `time` (the brand's .time, `null` when it has none) is checked when given: every `when:`, and what
+ *  the time and occasion variables need. `people` (the brand's .person files, empty when none) likewise:
+ *  every `person:`, a purpose's `person: required`, and what the person variables need. */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[]; windows?: string[] },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[]; time?: ParsedTime | null; people?: ParsedPerson[] },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -424,23 +483,62 @@ export function checkStory(
   if (!brand.formats.includes(story.format)) say(`format "${story.format}" does not exist`);
   const place = brand.places ? storyPlace(story, brand.places) : undefined;
   if (brand.places && story.place && !place) say(`place "${story.place}" does not exist`);
-  if (brand.windows && story.when && !brand.windows.includes(story.when)) say(`when "${story.when}" is not a window in the .brand`);
+
+  const { time, people } = brand;
+  const noTime = time ? '' : ' (the brand has no .time)';
+  const timeNames = time ? timeEntryNames(time) : [];
+  /** The `.time` entry a `when:` names, reporting an unknown one; undefined when unknown or unchecked. */
+  const whenEntry = (when: string | undefined, where: string): TimeEntry | undefined => {
+    if (!when || time === undefined) return undefined;
+    const entry = time ? timeEntry(time, when) : undefined;
+    if (!entry) say(`${where}when "${when}" is not in the .time${noTime}`);
+    return entry;
+  };
+  const occasionOf = (entry: TimeEntry | undefined): PageFacts['occasion'] =>
+    entry && (entry.kind === 'weekly' || entry.kind === 'date') ? entry : undefined;
+  const storyEntry = whenEntry(story.when, '');
+  const persons = people && new Map(people.map(p => [p.id, p]));
+  /** The person a `person:` names, reporting an unknown one; undefined when unknown or unchecked. */
+  const personOf = (id: string | undefined, where: string): ParsedPerson | undefined => {
+    if (!id || !persons) return undefined;
+    const person = persons.get(id);
+    if (!person) say(`${where}person "${id}" does not exist`);
+    return person;
+  };
+  const storyPerson = personOf(story.person, '');
 
   const purposes = new Map(brand.purposes.map(p => [p.id, p]));
-  const checkTexts = (where: string, purpose: ParsedPurpose, texts: Partial<Record<SlotId, string>>) => {
+  const checkTexts = (where: string, purpose: ParsedPurpose, texts: Partial<Record<SlotId, string>>, facts: PageFacts, personNamed: boolean) => {
     for (const [slotId, text] of Object.entries(texts) as [SlotId, string][]) {
       const slot = purpose.slots.find(s => s.id === slotId);
       if (!slot) { say(`${where}: slot "${slotId}" is not declared by purpose "${purpose.id}"`); continue; }
       if (slot.value) { say(`${where}: slot "${slotId}" has a fixed value in purpose "${purpose.id}"`); continue; }
       for (const v of new Set(storyTextVariables(text))) {
-        const variable = STORY_VARIABLES[v as StoryVariable];
+        const variable = STORY_VARIABLES[variableKey(v)!];
         if (variable?.location && brand.location === false && place?.latitude === undefined) say(`${where}: variable "{${v}}" needs a location block in the .brand`);
         if (variable?.place && brand.places && !(story.place && !place)) {
           if (!place) say(`${where}: variable "{${v}}" needs a place: ${brand.places.length > 1 ? 'name it with "place:"' : 'add a .place file'}`);
           else if (variable.needs && !place[variable.needs]) say(`${where}: variable "{${v}}" needs ${{ hours: 'an hours block', address: 'an address:', opening: 'an opening:' }[variable.needs]} in place "${place.id}"`);
         }
+        if (variable?.time && time !== undefined) {
+          if (variable.time === 'seasons' && !time?.seasons.length) say(`${where}: variable "{${v}}" needs season blocks in the .time${noTime}`);
+          if (variable.time === 'founded' && !time?.founded) say(`${where}: variable "{${v}}" needs founded: in the .time${noTime}`);
+          if (variable.time === 'daily') {
+            const name = v.slice('daily '.length);
+            if (!time?.daily.some(d => d.name === name)) say(`${where}: variable "{${v}}" needs a daily moment "${name}" in the .time${noTime}`);
+          }
+        }
+        if (variable?.occasion && time !== undefined) {
+          const occasion = facts.occasion;
+          if (!occasion) say(`${where}: variable "{${v}}" needs a weekly or date when: on the page or the story`);
+          else if (v === 'occasion-time' && !(occasion.kind === 'weekly' ? occasion.weekly : occasion.date).time) say(`${where}: variable "{${v}}" needs time: on ${occasion.kind} "${occasion.name}"`);
+        }
+        if (variable?.person && persons) {
+          if (!personNamed) say(`${where}: variable "{${v}}" needs a person: on the page or the story`);
+          else if (facts.person && variable.personNeeds && !facts.person[variable.personNeeds]) say(`${where}: variable "{${v}}" needs ${variable.personNeeds}: in person "${facts.person.id}"`);
+        }
       }
-      const longest = longestText(text, place);
+      const longest = longestText(text, facts);
       const parts = slot.slotType === 'list' ? longest.split('\n') : [longest];
       if (slot.slotType === 'list' && slot.maxItems && parts.length > slot.maxItems) say(`${where}: slot "${slotId}" has ${parts.length} items, maxItems is ${slot.maxItems}`);
       for (const part of parts) {
@@ -449,10 +547,24 @@ export function checkStory(
     }
   };
 
+  /** What each page's variables resolve from: its own `when:` and `person:`, else the story's. */
+  const pageFacts = story.pages.map((page, i): [PageFacts, boolean] => {
+    const where = `page ${i + 1}: `;
+    const entry = page.when ? whenEntry(page.when, where) : storyEntry;
+    if (page.when && entry && entry.kind !== 'weekly' && entry.kind !== 'date') say(`${where}when "${page.when}" is a ${entry.kind}; a page's when: names a weekly or a date, for its occasion variables`);
+    const person = page.person ? personOf(page.person, where) : storyPerson;
+    return [{ place, time, occasion: occasionOf(entry), person }, !!(page.person ?? story.person)];
+  });
+
   story.pages.forEach((page, i) => {
     const where = `page ${i + 1}`;
+    const [facts, personNamed] = pageFacts[i];
     const purpose = purposes.get(page.purpose);
     if (!purpose) { say(`${where}: purpose "${page.purpose}" does not exist`); return; }
+    if (purpose.person === 'required' && persons) {
+      if (!personNamed) say(`${where}: purpose "${purpose.id}" has person: required, but neither the page nor the story names a person`);
+      else if (facts.person && !hasSomethingToShow(facts.person)) say(`${where}: person "${facts.person.id}" has neither a quote nor a photo, and purpose "${purpose.id}" has person: required`);
+    }
     if (page.composition) {
       if (!brand.compositions.includes(page.composition)) say(`${where}: composition "${page.composition}" does not exist`);
       else if (!purpose.preferredCompositions.includes(page.composition)) say(`${where}: composition "${page.composition}" is not one of purpose "${purpose.id}"'s compositions`);
@@ -465,12 +577,12 @@ export function checkStory(
     }
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
-    checkTexts(where, purpose, page.texts);
+    checkTexts(where, purpose, page.texts, facts, personNamed);
   });
   story.examples.forEach((ex, i) => {
     for (const ep of ex.pages) {
       const purpose = purposes.get(story.pages[ep.page - 1].purpose);
-      if (purpose) checkTexts(`example ${i + 1}, page ${ep.page}`, purpose, ep.texts);
+      if (purpose) checkTexts(`example ${i + 1}, page ${ep.page}`, purpose, ep.texts, ...pageFacts[ep.page - 1]);
       if (ep.photo && brand.photos && !brand.photos.includes(ep.photo)) say(`example ${i + 1}, page ${ep.page}: photo "${ep.photo}" does not exist`);
     }
   });

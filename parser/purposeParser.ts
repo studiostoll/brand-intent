@@ -9,6 +9,7 @@ import { SLOT_IDS, type SlotId } from './types';
 import { parseIconRef, parseListItem, splitLabelledItem } from './icons';
 import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
+import { timeEntryNames, type ParsedTime } from './timeParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -49,6 +50,10 @@ export interface ParsedPurpose {
   framing?: string;
   /** `goal: <id>` — the identity goal this purpose serves by default. */
   goal?: string;
+  /** `person: required` — every page of this purpose speaks about a `.person`: a quote, a portrait, a
+   *  regular's recommendation. A page without one, or with a person who has neither a quote nor a photo,
+   *  is not posted; `checkStory` reports it. */
+  person?: 'required';
   /** When false, photo/video analysis skips this purpose (no AI text generation). Default: true. */
   analyze?: boolean;
   /** Default icon for the icon slot. Resolves in the brand set first, then Phosphor (see resolveIconRef). */
@@ -68,7 +73,8 @@ export interface ParsedExample {
   topic?: string;
   /** Identity goal id; overrides the purpose `goal:` for this page. */
   goal?: string;
-  /** Date window name from the `.brand` `windows` block; undefined = all year. */
+  /** Name of a `.time` entry (a window, a season, a weekly or a date) the example fits; undefined = all year.
+   *  `checkPurpose` checks it against the `.time`. */
   when?: string;
   /** Text per slot. List items are newline-separated. Slots with `value:` never appear. */
   texts: Partial<Record<SlotId, string>>;
@@ -188,6 +194,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let scrim: 'none' | undefined;
   let framing: string | undefined;
   let goal: string | undefined;
+  let person: 'required' | undefined;
   let analyze: boolean | undefined;
   let defaultIcon: IconRef | undefined;
   let bgPrompt: string | undefined;
@@ -356,7 +363,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       currentExample.keyLines[key] = lineNum;
       if (key === 'topic' || key === 'goal' || key === 'when') {
         if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
-        if (key === 'when' && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid window name "${value}" (lowercase kebab-case)`);
+        if (key === 'when' && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid when "${value}" (the name of one .time entry, lowercase kebab-case)`);
         currentExample[key] = value;
         continue;
       }
@@ -473,6 +480,14 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     // Goal: one of the identity's `goal NAME` blocks
     if (line.startsWith('goal:') && !raw.startsWith(' ')) {
       goal = line.slice(5).trim() || undefined;
+      continue;
+    }
+
+    // Every page of this purpose speaks about a person
+    if (line.startsWith('person:') && !raw.startsWith(' ')) {
+      const value = line.slice(7).trim();
+      if (value !== 'required') throw new Error(`${fileName}:${lineNum}: invalid person "${value}" (expected required: every page names a .person)`);
+      person = 'required';
       continue;
     }
 
@@ -846,7 +861,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
   const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, ...(person ? { person } : {}), analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 
 /** Validate `example` blocks against the declared slots, or build examples from deprecated slot
@@ -908,4 +923,19 @@ function resolveExamples(
     }
     return { texts, ...(when ? { when } : {}), legacy: true };
   });
+}
+
+// ── Cross-file checks ─────────────────────────────────────────────────────────
+
+/** Checks a purpose against the brand's `.time`. Returns problems as "file: message"; empty when it fits.
+ *  `time`: the brand's `.time`, or `null` when it has none (then every example `when:` is unknown);
+ *  undefined = not checked. */
+export function checkPurpose(purpose: Pick<ParsedPurpose, 'examples'>, facts: { time?: ParsedTime | null }, fileName: string): string[] {
+  const problems: string[] = [];
+  if (facts.time === undefined) return problems;
+  const names = facts.time ? timeEntryNames(facts.time) : [];
+  purpose.examples.forEach((ex, i) => {
+    if (ex.when && !names.includes(ex.when)) problems.push(`${fileName}: example ${i + 1}: when "${ex.when}" is not in the .time${facts.time ? '' : ' (the brand has no .time)'}`);
+  });
+  return problems;
 }
