@@ -16,59 +16,30 @@
   display: block;
 }
 
-/* ── Hero ── */
+/* ── Hero: one yellow block, full bleed, fixed colours in both themes ── */
 .hero {
-  padding: var(--space-3xl) 0;
-  border-bottom: 1px solid var(--color-divider);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
-  gap: var(--space-2xl);
-  align-items: start;
-}
-.hero h1 {
-  margin-bottom: var(--space-lg);
-}
-.hero-copy { min-width: 0; }
-.hero-copy .layer-chain { flex-wrap: wrap; row-gap: 0.3rem; }
-
-/* The stage: the signature yellow, the phone bleeding out at the bottom, as on the OG card. */
-.hero-stage {
-  position: relative;
+  --color-primary: #111;
+  --color-secondary: #222;
+  --color-tertiary: #444;
+  --color-light: #777;
+  --color-link: #111;
+  --color-border-strong: #111;
   background: var(--color-accent-1);
-  height: 600px;
+  color: #111;
+  margin: calc(-1 * var(--space-3xl)) calc(50% - 50vw) 0;
+  padding: var(--space-xl) calc(50vw - 50%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 480px);
+  gap: var(--space-2xl);
+  align-items: stretch;
   overflow: hidden;
 }
-.hero-stage .phone {
-  position: absolute;
-  left: 50%; top: 48px;
-  width: 340px; max-width: none;
-  margin: 0;
-  transform: translateX(-50%);
-}
-.hero-switch {
-  display: flex; flex-wrap: wrap;
-  gap: 0 var(--space-lg);
-  margin-top: var(--space-sm);
-  font-family: var(--font-monospace);
-  font-size: var(--font-size-small);
-}
-.hero-switch button {
-  appearance: none; background: none; border: 0; padding: 0.35rem 0;
-  font: inherit; color: var(--color-tertiary); cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-.hero-switch button:hover { color: var(--color-text); }
-.hero-switch button.is-active { color: var(--color-text); border-bottom-color: var(--color-accent-1); }
-.hero-stage-note {
-  margin: var(--space-sm) 0 0;
-  font-size: var(--font-size-small);
-  color: var(--color-tertiary);
-  line-height: 1.6;
-}
+.hero h1 { margin: 0 0 var(--space-md); color: #111; }
+.hero a { color: #111; }
 .hero-lead {
   font-size: 1.05rem;
-  color: var(--color-secondary);
-  margin-bottom: var(--space-lg);
+  color: #222;
+  margin: 0 0 var(--space-lg);
 }
 .hero-cta {
   display: flex;
@@ -77,25 +48,63 @@
   flex-wrap: wrap;
   margin-bottom: var(--space-2xl);
 }
+.hero .btn-primary { background: #111; color: #fff; }
+.hero .btn-primary:hover, .hero .btn-primary:focus { opacity: 0.8; }
+.hero .btn-ghost { color: #111; border-bottom-color: #111; }
 /* .btn-primary, .btn-ghost live in _themes/css/components.css (shared) */
 .landing-section p > .btn-ghost + .btn-ghost,
 .landing-section p > .btn-primary + .btn-ghost { margin-left: var(--space-md); }
+.hero-copy { min-width: 0; display: flex; flex-direction: column; }
+.hero-copy .hero-cta { margin-bottom: var(--space-xl); }
+.hero-copy .layer-chain { margin-top: auto; }
 
-/* Layer chain */
+/* Layer chain: the three groups of section 03, one row each, the file types as chips */
 .layer-chain {
-  display: flex;
+  margin: 0;
+  border-top: 1px solid rgba(0,0,0,0.3);
+}
+.layer-chain > div {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  gap: var(--space-md);
   align-items: center;
-  gap: 0;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.3);
+}
+.layer-chain dt { margin: 0; font-size: var(--font-size-small); color: #111; }
+.layer-chain dd { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.layer-chain dd span {
   font-family: var(--font-monospace);
   font-size: var(--font-size-small);
-  color: var(--color-tertiary);
+  color: #111;
+  border: 1px solid #111;
+  padding: 0.1rem 0.4rem;
+  line-height: 1.3;
 }
-.layer-chain span { color: var(--color-secondary); }
-.chain-arrow, .chain-plus, .chain-dot {
-  margin: 0 0.6rem;
-  color: var(--color-light);
+.layer-chain i { font-style: normal; color: #111; font-family: var(--font-monospace); font-size: var(--font-size-small); }
+
+/* The stage: the phone bleeding out of the block's bottom, as on the OG card. */
+.hero-stage-wrap { display: flex; flex-direction: column; min-width: 0; }
+.hero-stage {
+  position: relative;
+  height: 560px;
+  cursor: pointer;
+  overflow: hidden;
 }
-.chain-plus { margin-left: 1rem; }
+.hero-stage .phone {
+  position: absolute;
+  left: 50%; top: 0;
+  width: 340px; max-width: none;
+  margin: 0;
+  transform: translateX(-50%);
+}
+.hero-credit {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--font-size-small);
+  color: #444;
+  text-align: center;
+}
+.hero-credit a { color: #444; }
 
 /* ── Five Questions Row ── */
 .questions-row {
@@ -448,6 +457,28 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   color: #D4C4B0;
   font-weight: 400; font-size: 2.6cqw; line-height: 1.4;
 }
+.pc-divider { display: none; }
+
+/* Theme Shop: flour ground, dark roast text, no scrim. */
+.post-canvas.theme-shop { background: #FAF6F0; color: #2C1810; }
+.post-canvas.theme-shop .pc-logo { color: #2C1810; }
+.post-canvas.theme-shop .pc-label { background: #C8A47E; color: #2C1810; }
+.post-canvas.theme-shop .pc-secondary, .post-canvas.theme-shop .pc-meta { color: #5C3A28; }
+.post-canvas.theme-shop::before { display: none; }
+/* No photo: the theme's ground carries the page. */
+.post-canvas.no-photo img, .post-canvas.no-photo::before { display: none; }
+/* simple-stack.composition: flow mode, a bottom-left panel two thirds wide, the logo sticky bottom right. */
+.post-canvas.comp-stack { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
+.post-canvas.comp-stack > div { align-self: flex-start; }
+.post-canvas.comp-stack > div:not(.pc-logo):not(.pc-label) { width: 67%; }
+.post-canvas.comp-stack .pc-label { order: 1; align-self: flex-start; }
+.post-canvas.comp-stack .pc-primary { order: 2; margin-top: 2cqw; }
+.post-canvas.comp-stack .pc-divider { order: 3; display: block; width: 100%; height: 0.15cqw; background: #C8A47E; margin: 2cqw 0; }
+.post-canvas.comp-stack .pc-secondary { order: 4; }
+.post-canvas.comp-stack .pc-meta { order: 5; margin-top: 2cqw; }
+.post-canvas.comp-stack .pc-logo { order: 6; position: absolute; right: 3.7%; bottom: 3.7%; }
+.post-canvas.comp-stack::before { background: linear-gradient(to right, rgba(44,24,16,0.4) 0%, rgba(44,24,16,0.4) 55%, rgba(44,24,16,0) 85%); }
+
 .post-caption {
   font-size: var(--font-size-small);
   color: var(--color-tertiary);
@@ -529,9 +560,11 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .question-card { border-right: none; border-bottom: 1px solid var(--color-border); }
   .question-card:last-child { border-bottom: none; }
   .questions-row-2, .questions-row-1, .questions-row-3 { grid-template-columns: 1fr; }
-  .hero { grid-template-columns: 1fr; gap: var(--space-xl); }
-  .hero-stage { height: 530px; }
-  .hero-stage .phone { width: 300px; top: 32px; }
+  .hero { grid-template-columns: 1fr; gap: var(--space-xl); padding-top: var(--space-xl); }
+  .hero-copy .layer-chain { margin-top: var(--space-lg); }
+  .layer-chain > div { grid-template-columns: 1fr; gap: 0.35rem; }
+  .hero-stage { height: 500px; }
+  .hero-stage .phone { width: 300px; top: 0; }
   .changelog > div { grid-template-columns: 1fr; gap: 0.25rem; }
   .changelog dt span { display: inline; margin-left: 0.5rem; }
   .author { grid-template-columns: 1fr; }
@@ -539,6 +572,6 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .layer-name small { display: block; margin-left: 0; }
   .layer-chain { flex-wrap: wrap; gap: 0.25rem; }
   .chain-arrow { margin: 0 0.3rem; }
-  .hero { padding: var(--space-xl) 0; }
+  .hero { padding: var(--space-xl) calc(50vw - 50%); }
   .landing-section { padding: var(--space-xl) 0; }
 }

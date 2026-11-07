@@ -2,6 +2,7 @@
 layout: default
 title: What a brand means. Authored, structured, shared.
 description: An open file format for the reasoning behind a brand, written in a design studio while running brands with clients. Nine plain-text file types, readable by people and by AI agents.
+hide_bar: true
 ---
 
 <!-- ═══ HERO ═══ -->
@@ -19,25 +20,11 @@ description: An open file format for the reasoning behind a brand, written in a 
     <a href="#post" class="btn-primary">Where every line comes from</a>
     <a href="https://github.com/studiostoll/brand-intent/blob/main/SPEC.md" class="btn-ghost">Read the spec</a>
   </div>
-  <div class="layer-chain">
-    <span>identity</span>
-    <span class="chain-arrow">&rarr;</span>
-    <span>brand</span>
-    <span class="chain-arrow">&rarr;</span>
-    <span>format</span>
-    <span class="chain-arrow">&rarr;</span>
-    <span>purpose</span>
-    <span class="chain-arrow">&rarr;</span>
-    <span>composition</span>
-    <span class="chain-plus">+</span>
-    <span>story</span>
-    <span class="chain-plus">+</span>
-    <span>place</span>
-    <span class="chain-dot">&middot;</span>
-    <span>time</span>
-    <span class="chain-dot">&middot;</span>
-    <span>person</span>
-  </div>
+  <dl class="layer-chain">
+    <div><dt>Five layers describe the brand</dt><dd><span>.identity</span><i>&rarr;</i><span>.brand</span><i>&rarr;</i><span>.format</span><i>&rarr;</i><span>.purpose</span><i>&rarr;</i><span>.composition</span></dd></div>
+    <div><dt>A story orchestrates</dt><dd><span>.story</span></dd></div>
+    <div><dt>Three fact files say what is true</dt><dd><span>.place</span><span>.time</span><span>.person</span></dd></div>
+  </dl>
 </div>
 <div class="hero-stage-wrap">
   <div class="hero-stage">
@@ -60,6 +47,7 @@ description: An open file format for the reasoning behind a brand, written in a 
           <div class="pc-label">Fresh today</div>
           <div class="pc-secondary">750 g &middot; &euro;5.80</div>
           <div class="pc-primary">Rye loaf</div>
+          <div class="pc-divider" aria-hidden="true"></div>
           <div class="pc-meta">Rye 1150, 18 hours of fermentation, caraway from the Wendland.</div>
         </div>
         <div class="feed-actions">
@@ -73,13 +61,7 @@ description: An open file format for the reasoning behind a brand, written in a 
       </div>
     </div>
   </div>
-  <div class="hero-switch" role="tablist" aria-label="Examples from daily-bread.purpose">
-    <button type="button" class="is-active" data-example="0" aria-pressed="true">Fresh today</button>
-    <button type="button" data-example="1" aria-pressed="false">Saturdays only</button>
-    <button type="button" data-example="2" aria-pressed="false">New in the shop</button>
-    <button type="button" data-example="3" aria-pressed="false">Advent only</button>
-  </div>
-  <p class="hero-stage-note">Four <code>example</code> pages of <a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/purposes/daily-bread.purpose">daily-bread.purpose</a>, rendered from the Krume files. Photo: <a href="https://unsplash.com/photos/2uiZDQYTHBM">Skyler Ewing, Unsplash</a>.</p>
+  <p class="hero-credit">Photos: <a href="https://unsplash.com/@skylerewing">Skyler Ewing</a> and <a href="https://unsplash.com/@diegoarenasderodrigo">Diego Arenas de Rodrigo</a>, Unsplash.</p>
 </div>
 </section>
 
@@ -614,32 +596,44 @@ description: An open file format for the reasoning behind a brand, written in a 
 </section>
 
 <script>
-  // The four example pages of daily-bread.purpose, as the files write them.
+  // The example pages of daily-bread.purpose, each rendered differently: composition, theme, photo or none.
   (function () {
     var examples = [
-      { label: 'Fresh today',     primary: 'Rye loaf',      secondary: '750 g · €5.80', meta: 'Rye 1150, 18 hours of fermentation, caraway from the Wendland.' },
-      { label: 'Saturdays only',  primary: 'Wheat blend',   secondary: '500 g · €4.20', meta: 'Tipo 1 from the Drax mill, 72 % hydration.' },
-      { label: 'New in the shop', primary: 'Emmer walnut',  secondary: '1 kg · €7.50',  meta: 'Seasonal walnuts from the weekly market, whole-grain emmer.' },
-      { label: 'Advent only',     primary: 'Butter stollen', secondary: '1 kg · €24',   meta: 'Butter from Brandenburg, matured for three weeks. On the shelf from 27 November.' }
+      { label: 'Fresh today',     primary: 'Rye loaf',       secondary: '750 g · €5.80', meta: 'Rye 1150, 18 hours of fermentation, caraway from the Wendland.',
+        comp: 'editorial',    theme: 'Chalkboard', photo: '/assets/krume-post.webp' },
+      { label: 'Saturdays only',  primary: 'Wheat blend',    secondary: '500 g · €4.20', meta: 'Tipo 1 from the Drax mill, 72 % hydration.',
+        comp: 'simple-stack', theme: 'Chalkboard', photo: '/assets/krume-post-2.webp' },
+      { label: 'New in the shop', primary: 'Emmer walnut',   secondary: '1 kg · €7.50',  meta: 'Seasonal walnuts from the weekly market, whole-grain emmer.',
+        comp: 'editorial',    theme: 'Chalkboard', photo: '/assets/krume-post-3.webp' },
+      { label: 'Advent only',     primary: 'Butter stollen', secondary: '1 kg · €24',    meta: 'Butter from Brandenburg, matured for three weeks. On the shelf from 27 November.',
+        comp: 'simple-stack', theme: 'Shop',       photo: null }
     ];
+    examples.forEach(function (ex) { if (ex.photo) { var im = new Image(); im.src = ex.photo; } });
     var stage = document.querySelector('.hero-stage');
-    var buttons = document.querySelectorAll('.hero-switch button');
-    if (!stage || !buttons.length) return;
+    if (!stage) return;
+    var canvas = stage.querySelector('.post-canvas');
+    var current = 0;
     function show(i) {
+      current = i;
       var ex = examples[i];
       stage.querySelector('.pc-label').textContent = ex.label;
       stage.querySelector('.pc-primary').textContent = ex.primary;
       stage.querySelector('.pc-secondary').textContent = ex.secondary;
       stage.querySelector('.pc-meta').textContent = ex.meta;
-      var caption = stage.querySelector('.feed-caption');
-      caption.innerHTML = '<strong>krume</strong> ' + ex.meta;
-      buttons.forEach(function (b, j) {
-        b.classList.toggle('is-active', j === i);
-        b.setAttribute('aria-pressed', j === i ? 'true' : 'false');
-      });
+      stage.querySelector('.feed-caption').innerHTML = '<strong>krume</strong> ' + ex.meta;
+      canvas.classList.toggle('comp-stack', ex.comp === 'simple-stack');
+      canvas.classList.toggle('theme-shop', ex.theme === 'Shop');
+      canvas.classList.toggle('no-photo', !ex.photo);
+      if (ex.photo) canvas.querySelector('img').src = ex.photo;
     }
-    buttons.forEach(function (b) {
-      b.addEventListener('click', function () { show(Number(b.dataset.example)); });
-    });
+    function next() { show((current + 1) % examples.length); }
+    show(0);
+    stage.addEventListener('click', next);
+    var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!still) {
+      var timer = setInterval(next, 6000);
+      stage.addEventListener('mouseenter', function () { clearInterval(timer); timer = 0; });
+      stage.addEventListener('mouseleave', function () { if (!timer) timer = setInterval(next, 6000); });
+    }
   })();
 </script>
