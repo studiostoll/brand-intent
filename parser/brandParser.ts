@@ -660,7 +660,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         const colonIdx = trimmed.indexOf(':');
         if (colonIdx !== -1) {
           const key = trimmed.slice(0, colonIdx).trim();
-          const value = trimmed.slice(colonIdx + 1).trim();
+          // The value starts with "#" (hex), so a comment is the first "#" after whitespace: "white: #FAF6F0   # flour"
+          const value = trimmed.slice(colonIdx + 1).trim().replace(/\s+#.*$/, '');
           if (indentLen <= 2) {
             // Top-level color line: "  primary: #0324B1"
             // Brand colors are solid primitives only — alpha belongs in theme slots.

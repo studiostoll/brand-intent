@@ -230,18 +230,21 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
     const raw = lines[i];
-    const line = raw.trim();
+    const fullLine = raw.trim();
 
     // Blank line
-    if (line === '') continue;
+    if (fullLine === '') continue;
 
     // Comment — ALL # lines go to description now
-    if (line.startsWith('#')) {
-      const text = line.slice(1).trim();
+    if (fullLine.startsWith('#')) {
+      const text = fullLine.slice(1).trim();
       if (!firstHashText) firstHashText = text;
       description = description ? `${description} ${text}` : text;
       continue;
     }
+
+    // Inline comments after a value are allowed; a composition has no free text that could hold "#"
+    const line = fullLine.replace(/\s+#.*$/, '');
 
     // id: field
     if (line.startsWith('id:')) {

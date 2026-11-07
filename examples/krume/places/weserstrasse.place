@@ -1,0 +1,26 @@
+# weserstrasse.place
+# The shop. Facts only: where it is, how many people fit, when it's open.
+# Stories name it with `place:` and show its facts with {address}, {hours}, {opens}, {closes}.
+# Voice belongs to krume.identity, colours to krume.brand.
+
+id:        weserstrasse
+name:      Krume
+address:   Weserstraße 17, 12045 Berlin
+latitude:  52.4855
+longitude: 13.4297
+context:   Former copy shop with one counter and three breads a day. Regulars at seven, sold out by noon on Saturdays. No seating, two benches outside.
+
+# Regular weekly hours. Holidays and one-off closures are not part of the file.
+# A day not named is closed; naming it keeps that visible.
+
+hours
+  tue-fri: 07:00-14:00
+  sat:     07:00-13:00
+  sun:     closed
+  mon:     closed
+
+# Standing room at the counter, the benches outside.
+
+capacity
+  indoor:  6
+  outdoor: 8

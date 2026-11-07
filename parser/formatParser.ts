@@ -115,7 +115,8 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
 
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
-    const line = lines[i].trim();
+    // Inline comments ("grid: 5 4   # rows × cols") are allowed; no format value contains "#"
+    const line = lines[i].trim().replace(/\s+#.*$/, '');
 
     // Blank lines and comments
     if (!line || line.startsWith('#')) continue;

@@ -26,10 +26,12 @@ vision:  Eine Nachbarschaft, in der niemand mehr erklären muss,
 
 archetype: craftsman
 
-# ── Narrative ──
-# The origin story. Useful for about pages, editorial, press.
+# ── Narratives ──
+# Named stories. Exactly one carries `primary`: the default story
+# for about pages, editorial, press. The others serve specific goals.
 
-narrative
+narrative Mehl Wasser Zeit
+  primary
   Gegründet 2019, als die Bäckerin ihren Agenturjob
   kündigte, um das zu tun, was sie jeden Morgen seit
   ihrem sechzehnten Lebensjahr getan hat: Brot backen.
@@ -37,6 +39,19 @@ narrative
   Die erste Woche war der Ofen zu klein. Die zweite
   Woche war das Brot zu schnell ausverkauft.
   Beides hat sich nicht geändert.
+
+narrative Achtzehn Stunden
+  Das Brot entsteht in achtzehn Stunden. Kein Schritt
+  wird abgekürzt, kein Mehl wird ersetzt. Drei Sorten
+  am Tag, nicht dreißig. Was weg ist, ist weg - morgen
+  gibt es neues.
+
+narrative Weserstraße
+  Die Weserstraße hat sich verändert. Die Mieten steigen,
+  die Spätis verschwinden. Krume bleibt. Nicht weil wir
+  uns gegen irgendwas stemmen, sondern weil der Ofen
+  morgens um vier an ist und die Stammkunden um sieben
+  vor der Tür stehen. Das ist der ganze Widerstand.
 
 # ── Voice ──
 # The voice is the baker herself: direct, dry, proud of the work.
@@ -168,6 +183,7 @@ goal craft
   label:    Handwerk zeigen
   share:    60%
   question: Wie entsteht das Brot?
+  narratives: Achtzehn Stunden
   always:
     - einen konkreten Arbeitsschritt, eine Mehlsorte oder eine Zeit nennen
 
@@ -175,6 +191,7 @@ goal kiez
   label:    Kiez
   share:    30%
   question: Wer kommt hierher und warum?
+  narratives: Weserstraße
   always:
     - eine Person mit Vornamen und ihrem Grund zu kommen
 

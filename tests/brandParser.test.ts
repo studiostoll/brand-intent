@@ -601,6 +601,18 @@ test('rejects broken tones', () => {
   assertThrows(p('tones\n  steps: 10, 30\n  $blue: #0B1A30 #2B4C7E\n\ntheme T\n  background: $blue.20\n'), /unknown brand color "\$blue\.20"/, 'unknown step');
 });
 
+// ── Inline comments (SPEC: allowed after any value) ──────────────────────────
+
+console.log('\nInline comments:');
+
+test('flat brand color keeps its hex when a comment follows', () => {
+  const src = `${HEADER}brand-colors\n  primary: #2C1810   # dark roast - the colour of a crust\n  white:   #FAF6F0 # flour\n    pantone: 7527 C   # print\ntheme Laden\n  background: $white\n  text-primary: $primary\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.brandColors, { primary: '#2C1810', white: '#FAF6F0' }, 'brandColors');
+  assertEq(out.brandColorPrint?.white?.pantone, '7527 C', 'print spec');
+  assertEq(out.themes?.Laden?.background, '#FAF6F0', 'theme resolves the commented colour');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

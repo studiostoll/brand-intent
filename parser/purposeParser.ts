@@ -273,7 +273,10 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
     const raw = lines[i];
-    const line = raw.trim();
+    // `text` keeps the line as written, for free text (context, example and sample texts, bg-prompt).
+    // `line` has a trailing inline comment ("density: light   # …") stripped, for structural lines.
+    const text = raw.trim();
+    const line = text.replace(/\s+#.*$/, '');
 
     // Blank line
     if (line === '') continue;
@@ -341,14 +344,14 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       if (raw.startsWith('    ')) {
         if (!exampleMultiKey) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line)`);
         const prev = currentExample.texts[exampleMultiKey];
-        currentExample.texts[exampleMultiKey] = prev ? `${prev}\n${line}` : line;
+        currentExample.texts[exampleMultiKey] = prev ? `${prev}\n${text}` : text;
         continue;
       }
       exampleMultiKey = null;
-      const colonIdx = line.indexOf(':');
-      if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" in example, got "${line}"`);
-      const key = line.slice(0, colonIdx).trim();
-      const value = line.slice(colonIdx + 1).trim();
+      const colonIdx = text.indexOf(':');
+      if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" in example, got "${text}"`);
+      const key = text.slice(0, colonIdx).trim();
+      const value = (key === 'topic' || key === 'goal' || key === 'when' ? line : text).slice(colonIdx + 1).trim();
       if (key in currentExample.keyLines) throw new Error(`${fileName}:${lineNum}: duplicate "${key}" in example`);
       currentExample.keyLines[key] = lineNum;
       if (key === 'topic' || key === 'goal' || key === 'when') {
@@ -393,7 +396,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // context block lines (2-space indent, free-form text)
     if (inContextBlock && raw.startsWith('  ')) {
-      contextLines.push(line);
+      contextLines.push(text);
       continue;
     } else if (inContextBlock && !raw.startsWith(' ')) {
       inContextBlock = false;
@@ -481,7 +484,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // Background placeholder prompt: "bg-prompt: Mach dein Selfie"
     if (line.startsWith('bg-prompt:')) {
-      bgPrompt = line.slice(10).trim().replace(/^["']|["']$/g, '');
+      bgPrompt = text.slice(10).trim().replace(/^["']|["']$/g, '');
       continue;
     }
 

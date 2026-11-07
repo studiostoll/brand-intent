@@ -59,5 +59,15 @@ test('an unknown post value is refused', () => {
   assertThrows(() => parseFormatFile(format('instagram') + 'post: reel\n', 'f.format'), 'post must be');
 });
 
+console.log('\ninline comments:');
+
+test('values keep their meaning when a comment follows', () => {
+  const f = parseFormatFile('id: 4:5   # the feed portrait\nlabel: 4:5\nsublabel: Feed Portrait\ncategory: instagram # platform\npost: feed\nsize: 1080 1350  # px\ngrid: 5 4           # 5 rows × 4 columns\ncrop: 0 34 0 34     # profile grid\ncomfort: 40 # margin\npurposes: daily-bread, seasonal-special   # editorially valid here\n', 'x.format');
+  assertEq(f.id, '4:5', 'id');
+  assertEq(f.category, 'instagram', 'category');
+  assertEq(f.grid, { rows: 5, cols: 4 }, 'grid');
+  assertEq(f.purposes, ['daily-bread', 'seasonal-special'], 'purposes');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

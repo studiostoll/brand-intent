@@ -11,6 +11,10 @@ compositions: editorial, simple-stack
 density: light
 palette: dynamic
 
+# Default goal (krume.identity) and camera framing (krume.brand) for this purpose.
+goal:    craft
+framing: tresen
+
 # ── Voice ──
 # Purpose-specific writing rules for AI text generation.
 
@@ -84,3 +88,13 @@ example
   primary:   Emmer-Walnuss
   secondary: 1 kg · 7,50 €
   meta:      Saisonale Walnüsse vom Wochenmarkt, Emmer-Vollkorn.
+
+# A seasonal example: only picked while the `advent` window in krume.brand is open.
+
+example
+  topic: Butter stollen, baked from the first Sunday of Advent
+  when:  advent
+  label:     Nur im Advent
+  primary:   Butterstollen
+  secondary: 1 kg · 24 €
+  meta:      Butter aus Brandenburg, drei Wochen gereift. Ab dem 27. November im Regal.

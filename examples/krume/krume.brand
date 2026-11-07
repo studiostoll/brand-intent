@@ -151,3 +151,46 @@ divider ruler
   align: left
   spacing: m
 
+
+# ── Place and time ──
+# Where the brand is as a whole, for sunrise, sunset and weather in stories.
+# The shop itself, with address and hours, is places/weserstrasse.place.
+
+location
+  name:      Berlin-Neukölln
+  latitude:  52.48
+  longitude: 13.43
+
+# Yearly windows. Examples and stories that only fit part of the year
+# reference them with `when:`; implementations only suggest them in season.
+
+windows
+  rhabarber: 04-15..06-24
+  advent:    11-27..12-24
+
+# ── Photos ──
+# What photos show is in krume.identity (imagery). How they are
+# framed and treated is decided here.
+
+camera
+  facing: rear
+  grid:   3
+
+framing backstube
+  label:       Backstube
+  horizon:     none
+  description: Hands, dough and tools lead. No far line in the frame.
+  goals:       craft
+
+framing tresen
+  label:       Tresen
+  horizon:     45%
+  description: The counter at eye level, the street through the shop window behind it.
+  caption:     Who is buying what, and why they came.
+  goals:       kiez, service
+
+photo-look
+  saturation: -10      # flour, crust and wood, not a food blog
+  warmth:     6        # the light of the bakery, early
+  contrast:   5
+  scrim:      40%      # under light text on a photo, at most this dark
