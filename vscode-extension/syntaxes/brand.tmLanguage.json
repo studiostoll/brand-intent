@@ -21,7 +21,7 @@
     { "include": "#color-rules-entry" },
     { "include": "#color-families-property" },
     { "include": "#family-header" },
-    { "include": "#family-from" },
+    { "include": "#family-season" },
     { "include": "#family-role" },
     { "include": "#family-pairs-keyword" },
     { "include": "#color-mode-enum" },
@@ -36,7 +36,6 @@
     { "include": "#color-group-reference" },
     { "include": "#color-group-entry-property" },
     { "include": "#icons-counter-header" },
-    { "include": "#window-entry" },
     { "include": "#icon-entry" },
     { "include": "#counter-value" },
     { "include": "#framing-horizon" },
@@ -203,13 +202,13 @@
         "6": { "name": "variable.other.brand-intent-brand" }
       }
     },
-    "family-from": {
-      "comment": "Family start date: from: MM-DD",
-      "match": "^(\\s{4,})(from)(:\\s*)(\\d{2}-\\d{2})\\s*$",
+    "family-season": {
+      "comment": "The .time season a family is for: season: NAME",
+      "match": "^(\\s{4,})(season)(:\\s*)([a-z][a-z0-9-]*)\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
-        "4": { "name": "constant.numeric.brand-intent-brand" }
+        "4": { "name": "entity.name.type.brand-intent-brand" }
       }
     },
     "family-pairs-keyword": {
@@ -458,8 +457,8 @@
       }
     },
     "icons-counter-header": {
-      "comment": "Bare `icons` / `counter` / `camera` / `photo-look` / `windows` / `location` block headers.",
-      "match": "^(icons|counter|camera|photo-look|windows|location)\\s*$",
+      "comment": "Bare `icons` / `counter` / `camera` / `photo-look` / `location` block headers.",
+      "match": "^(icons|counter|camera|photo-look|location)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }
@@ -478,16 +477,6 @@
         "9": { "name": "variable.parameter.brand-intent-brand" },
         "10": { "name": "string.unquoted.brand-intent-brand" },
         "11": { "name": "comment.line.number-sign.brand-intent-brand" }
-      }
-    },
-    "window-entry": {
-      "comment": "windows entry: NAME: MM-DD..MM-DD[, MM-DD..MM-DD]",
-      "match": "^(\\s{2,})([a-z][a-z0-9-]*)(:\\s*)(\\d{2}-\\d{2}\\.\\.\\d{2}-\\d{2}(?:\\s*,\\s*\\d{2}-\\d{2}\\.\\.\\d{2}-\\d{2})*)\\s*(#.*)?$",
-      "captures": {
-        "2": { "name": "variable.other.brand-intent-brand" },
-        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
-        "4": { "name": "constant.numeric.brand-intent-brand" },
-        "5": { "name": "comment.line.number-sign.brand-intent-brand" }
       }
     },
     "framing-horizon": {
@@ -535,7 +524,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|windows|location)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|location)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

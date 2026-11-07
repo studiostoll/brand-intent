@@ -11,7 +11,12 @@ TypeScript parsers for all Brand Intent file types.
 | `formatParser.ts` | `.format` | `parseFormatFile(content, fileName)` |
 | `purposeParser.ts` | `.purpose` | `parsePurposeFile(content, fileName)` |
 | `compositionParser.ts` | `.composition` | `parseCompositionFile(content, fileName)` |
-| `storyParser.ts` | `.story` | `parseStoryFile(content, fileName)`; `checkStory(story, brand, fileName)` checks it against the brand's purposes, compositions and formats |
+| `storyParser.ts` | `.story` | `parseStoryFile(content, fileName)`; `checkStory(story, brand, fileName)` checks it against the brand's purposes, compositions, formats, places, time and people |
+| `placeParser.ts` | `.place` | `parsePlaceFile(content, fileName)` |
+| `timeParser.ts` | `.time` | `parseTimeFile(content, fileName)`; `isInSeason(time, name, date)` answers a `when:` for a day |
+| `personParser.ts` | `.person` | `parsePersonFile(content, fileName)` |
+
+Cross-file checks: `checkBrand(brand, { time, people }, fileName)` (photo `when:` and `person:`, family `season:`), `checkPurpose(purpose, { time }, fileName)` (example `when:`), `checkStory` (above). Each returns problems as `file: message`.
 
 All parsers are **pure functions**: they take a string (file content) and a filename (for error messages), and return a parsed object. No I/O, no side effects, no dependencies beyond `types.ts`.
 
@@ -35,4 +40,4 @@ const brand = parseBrandFile(
 ## Notes
 
 - These parsers throw on validation errors, with the filename and line number included in the error message.
-- Non-fatal findings (deprecated syntax) are returned in `warnings` (`parsePurposeFile`) as `file:line: message`, so implementations can show them in their UI.
+- Non-fatal findings (deprecated syntax, blocks that moved to another file) are returned in `warnings` (`parsePurposeFile`, `parseBrandFile`) as `file:line: message`, so implementations can show them in their UI.

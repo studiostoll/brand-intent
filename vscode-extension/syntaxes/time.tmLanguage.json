@@ -1,0 +1,93 @@
+{
+  "scopeName": "source.brand-intent-time",
+  "name": "Brand Intent Time",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#founded" },
+    { "include": "#named-block" },
+    { "include": "#block-header" },
+    { "include": "#window-entry" },
+    { "include": "#daily-entry" },
+    { "include": "#property" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.brand-intent-time"
+    },
+    "founded": {
+      "match": "^(founded)(:)\\s+(\\d{4}(?:-\\d{2}-\\d{2})?)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-time" },
+        "2": { "name": "punctuation.separator.brand-intent-time" },
+        "3": { "name": "constant.numeric.brand-intent-time" }
+      }
+    },
+    "named-block": {
+      "comment": "season NAME, weekly NAME, date NAME",
+      "match": "^(season|weekly|date)\\s+([a-z][a-z0-9-]*)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-time" },
+        "2": { "name": "entity.name.type.brand-intent-time" }
+      }
+    },
+    "block-header": {
+      "match": "^(windows|daily)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-time" }
+      }
+    },
+    "window-entry": {
+      "comment": "windows entry: NAME: MM-DD..MM-DD[, MM-DD..MM-DD]",
+      "match": "^\\s{2}([a-z][a-z0-9-]*)(:)\\s*(\\d{2}-\\d{2}\\.\\.\\d{2}-\\d{2}(?:\\s*,\\s*\\d{2}-\\d{2}\\.\\.\\d{2}-\\d{2})*)\\s*(#.*)?$",
+      "captures": {
+        "1": { "name": "entity.name.type.brand-intent-time" },
+        "2": { "name": "punctuation.separator.brand-intent-time" },
+        "3": { "name": "constant.numeric.brand-intent-time" },
+        "4": { "name": "comment.line.number-sign.brand-intent-time" }
+      }
+    },
+    "daily-entry": {
+      "comment": "daily entry: NAME: HH:MM  Label",
+      "match": "^\\s{2}([a-z][a-z0-9-]*)(:)\\s*(\\d{2}:\\d{2})(?:\\s+(.*?))?\\s*$",
+      "captures": {
+        "1": { "name": "entity.name.type.brand-intent-time" },
+        "2": { "name": "punctuation.separator.brand-intent-time" },
+        "3": { "name": "constant.numeric.brand-intent-time" },
+        "4": { "name": "string.unquoted.brand-intent-time" }
+      }
+    },
+    "property": {
+      "match": "^\\s{2}(label|from|days|time|place|context|on|lead)(:)\\s*(.*)$",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-time" },
+        "2": { "name": "punctuation.separator.brand-intent-time" },
+        "3": {
+          "patterns": [
+            { "match": "\\d{4}-\\d{2}-\\d{2}(?:\\.\\.\\d{4}-\\d{2}-\\d{2})?|\\d{2}-\\d{2}(?:\\.\\.\\d{2}-\\d{2})?|\\d{2}:\\d{2}(?:-\\d{2}:\\d{2})?|\\b\\d+\\b", "name": "constant.numeric.brand-intent-time" },
+            { "match": "\\b(?:mon|tue|wed|thu|fri|sat|sun)\\b", "name": "constant.language.brand-intent-time" },
+            { "match": "\\s+#.*$", "name": "comment.line.number-sign.brand-intent-time" }
+          ]
+        }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "patterns": [
+        {
+          "match": "^(founded|season|weekly|date|windows|daily)(?=:|\\s|$)",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-time" }
+          }
+        },
+        {
+          "match": "^\\s{2}(label|from|days|time|place|context|on|lead)(?=:|\\s|$)",
+          "captures": {
+            "1": { "name": "support.type.property-name.brand-intent-time" }
+          }
+        }
+      ]
+    }
+  }
+}

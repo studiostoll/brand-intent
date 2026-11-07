@@ -179,11 +179,13 @@ A Brand Intent brand lives in its own folder, named after the brand:
 brandname/
 ├── brandname.identity
 ├── brandname.brand
+├── brandname.time
 ├── formats/*.format
 ├── purposes/*.purpose
 ├── compositions/*.composition
 ├── stories/*.story
-└── places/*.place
+├── places/*.place
+└── people/*.person
 ```
 
 ### Finding the active brand
@@ -289,5 +291,7 @@ Read the files and walk the user through them:
 - **`compositions/`** — spatial arrangement of slots. How elements are placed.
 - **`stories/`** — what Krume posts: `today.story` (one page a day with `{weekday}`, `{sunrise}`, `{closes}`) and `breads-of-the-week.story` (a three-page carousel).
 - **`places/`** — `weserstrasse.place`: the shop, its address, hours and capacity.
+- **`krume.time`** — founded 2019, four seasons, the rhubarb and advent windows, the Saturday wheat blend, mill day, and the day from `oven: 04:00` to `gone: 12:00`.
+- **`people/`** — `baker.person`: the baker, by role only (no `name:`), with her quotes. The file is the consent.
 
 If `examples/krume/` doesn't exist, tell the user to run `npx brand-intent init` first.

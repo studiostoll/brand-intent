@@ -17,7 +17,7 @@
       "name": "comment.line.number-sign.brand-intent-story"
     },
     "top-field": {
-      "match": "^(id:|format:|scrim:|place:|when:)\\s+(.*)",
+      "match": "^(id:|format:|scrim:|place:|when:|person:)\\s+(.*)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-story" },
         "2": { "name": "entity.name.type.brand-intent-story" }
@@ -37,7 +37,7 @@
       }
     },
     "reference": {
-      "match": "^\\s+(purpose|composition|illustration|photo|theme|repeat)(:)\\s+([\\w:, -]+)",
+      "match": "^\\s+(purpose|composition|illustration|photo|theme|when|person|repeat)(:)\\s+([\\w:, -]+)",
       "captures": {
         "1": { "name": "support.type.property-name.brand-intent-story" },
         "2": { "name": "punctuation.separator.brand-intent-story" },
@@ -52,21 +52,21 @@
       }
     },
     "variable": {
-      "comment": "{weekday}, {date}, {sunrise} … placeholders in page texts",
-      "match": "\\{[a-z][a-z0-9-]*\\}",
+      "comment": "{weekday}, {date}, {sunrise}, {daily oven} … placeholders in page texts",
+      "match": "\\{(?:daily [a-z][a-z0-9-]*|[a-z][a-z0-9-]*)\\}",
       "name": "variable.other.brand-intent-story"
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|format:|topic:|scrim:|place:|when:|page|example)(?=\\s|$)",
+          "match": "^(id:|name:|format:|topic:|scrim:|place:|when:|person:|page|example)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-story" }
           }
         },
         {
-          "match": "^\\s+(purpose|composition|illustration|photo|theme|repeat|topic|primary|secondary|detail|meta|cta|label|credit)(?=:|\\s|$)",
+          "match": "^\\s+(purpose|composition|illustration|photo|theme|when|person|repeat|topic|primary|secondary|detail|meta|cta|label|credit)(?=:|\\s|$)",
           "captures": {
             "1": { "name": "support.type.property-name.brand-intent-story" }
           }

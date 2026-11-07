@@ -16,6 +16,9 @@ Brand Intent is an open specification for defining brand identity, visual langua
 | Purpose | `.purpose` | Content types, text slots, typography overrides |
 | Composition | `.composition` | How elements are arranged on the canvas |
 | Story | `.story` | Ordered pages with fixed, variable (`{weekday}`, `{date}`) and open texts |
+| Place | `.place` | A site the posts speak about: address, capacity, opening hours |
+| Time | `.time` | When the brand lives: founding, seasons, windows, week, dates, day |
+| Person | `.person` | Someone the posts name, quote or show, and what they agreed to |
 
 This extension adds:
 - **Syntax coloring** -- keywords, values, slot names, rows, columns, hex colors

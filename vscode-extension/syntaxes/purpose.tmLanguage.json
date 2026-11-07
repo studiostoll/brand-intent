@@ -124,7 +124,7 @@
       }
     },
     "framing-field": {
-      "match": "^(framing:|goal:)\\s+([\\w-]+)",
+      "match": "^(framing:|goal:|person:)\\s+([\\w-]+)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-purpose" },
         "2": { "name": "entity.name.type.brand-intent-purpose" }
@@ -265,7 +265,7 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|illustration:|camera:|scrim:|framing:|goal:|analyze:|bg-prompt:|context|slot|example)(?=\\s|$)",
+          "match": "^(id:|name:|compositions:|density:|defaultIcon:|scope|voice|palette:|logo:|photo:|video:|illustration:|camera:|scrim:|framing:|goal:|person:|analyze:|bg-prompt:|context|slot|example)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-purpose" }
           }

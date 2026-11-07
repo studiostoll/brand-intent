@@ -1,0 +1,54 @@
+{
+  "scopeName": "source.brand-intent-person",
+  "name": "Brand Intent Person",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#date-field" },
+    { "include": "#top-field" },
+    { "include": "#quote-header" },
+    { "include": "#quote-line" },
+    { "include": "#keyword-partial" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^#.*$",
+      "name": "comment.line.number-sign.brand-intent-person"
+    },
+    "date-field": {
+      "match": "^(since|consent|until)(:)\\s+(\\d{4}(?:-\\d{2}-\\d{2})?)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-person" },
+        "2": { "name": "punctuation.separator.brand-intent-person" },
+        "3": { "name": "constant.numeric.brand-intent-person" }
+      }
+    },
+    "top-field": {
+      "match": "^(id|name|role|place|reason|context|photos)(:)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-person" },
+        "2": { "name": "punctuation.separator.brand-intent-person" },
+        "3": { "name": "string.unquoted.brand-intent-person" }
+      }
+    },
+    "quote-header": {
+      "match": "^(quote)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-person" }
+      }
+    },
+    "quote-line": {
+      "comment": "The person's words, verbatim",
+      "match": "^\\s{2}(\\S.*)$",
+      "captures": {
+        "1": { "name": "string.quoted.brand-intent-person" }
+      }
+    },
+    "keyword-partial": {
+      "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
+      "match": "^(id|name|role|since|place|reason|context|photos|consent|until|quote)(?=:|\\s|$)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-person" }
+      }
+    }
+  }
+}
