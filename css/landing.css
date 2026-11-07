@@ -334,7 +334,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 .post-canvas {
   /* 4:5 canvas, five rows by four columns, comfort margin 40 of 1080 px.
      Sizes in cqw follow krume.brand: headline at its autofit-max 10, kicker at 3.5,
-     caption 2.2, label 2. Tafel theme: flour on dark roast, over the photo with a dark
+     caption 2.6, label 2.2. Tafel theme: flour on dark roast, over the photo with a dark
      scrim from below, at most the 40 % krume.brand allows under light text. */
   container-type: inline-size;
   position: relative;
@@ -380,18 +380,19 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 }
 .pc-secondary {
   grid-row: 2; grid-column: 1 / 5;
-  align-self: center;
+  align-self: end;
   color: #D4C4B0;
   font-weight: 400; font-size: 3.5cqw; line-height: 1.3;
 }
 .pc-primary {
   grid-row: 3; grid-column: 1 / 5;
-  align-self: end;
+  align-self: start;
   font-weight: 700; font-size: 10cqw; line-height: 1.15;
   letter-spacing: -0.015em;
 }
 .pc-meta {
-  grid-row: 5; grid-column: 1 / 4;
+  /* meta is cols 1--3 in editorial.composition; col 4 belongs to the cta, and this page has none */
+  grid-row: 5; grid-column: 1 / 5;
   align-self: end;
   color: #D4C4B0;
   font-weight: 400; font-size: 2.6cqw; line-height: 1.4;
