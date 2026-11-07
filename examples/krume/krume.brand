@@ -161,13 +161,6 @@ location
   latitude:  52.48
   longitude: 13.43
 
-# Yearly windows. Examples and stories that only fit part of the year
-# reference them with `when:`; implementations only suggest them in season.
-
-windows
-  rhubarb: 04-15..06-24
-  advent:    11-27..12-24
-
 # ── Photos ──
 # What photos show is in krume.identity (imagery). How they are
 # framed and treated is decided here.

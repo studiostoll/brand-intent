@@ -1,0 +1,19 @@
+# people/baker.person
+# The baker behind the counter. No name in the file: posts call her the baker.
+# The file is the consent: it holds only what she agreed to.
+
+id:      baker
+role:    Baker
+since:   2019-05-04
+place:   weserstrasse
+reason:  Quit her agency job and turned the copy shop into a bakery.
+context: Starts at four, sells out by noon on Saturdays. Names every flour and every mill.
+consent: 2019-05-04
+
+# Her words, verbatim. AI writing never writes, extends or rewrites a quote.
+
+quote
+  What's gone is gone. Tomorrow there's more.
+
+quote
+  Three breads a day. If you want twelve, there's a supermarket on Sonnenallee.

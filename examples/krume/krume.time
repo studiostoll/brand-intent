@@ -1,0 +1,60 @@
+# krume.time
+# When the brand lives: its founding, its seasons and windows, its week, its day.
+# Facts only. What the early morning means to Krume is in krume.identity;
+# that the oven is on at four is here.
+
+founded: 2019-05-04
+
+# ── Seasons ──
+# A season runs until the next one starts. {season} shows the label.
+
+season spring
+  label: Spring
+  from:  03-01
+
+season summer
+  label: Summer
+  from:  06-01
+
+season autumn
+  label: Autumn
+  from:  09-01
+
+season winter
+  label: Winter
+  from:  12-01
+
+# ── Windows ──
+# Yearly windows for content that only fits part of the year.
+# Examples, photos, stories and pages name them with `when:`.
+
+windows
+  rhubarb: 04-15..06-24
+  advent:  11-27..12-24
+
+# ── The week ──
+
+weekly wheat-blend
+  label:   Wheat blend
+  days:    sat
+  context: 500 g, Tipo 1 from the Drax mill, only on Saturdays, sold out by ten.
+
+# ── Dates ──
+# A yearly date is in season from `lead` days before it.
+
+date mill-day
+  label:   Mill day
+  on:      05-02
+  time:    10:00-16:00
+  lead:    21
+  place:   weserstrasse
+  context: The mill from Dachau sets up its stones in the yard, bread and cake at the long table.
+
+# ── The day ──
+# {daily NAME} shows the time; the label is a fact for AI writing.
+
+daily
+  oven:     04:00  Oven on
+  shelf:    06:00  Everything on the shelf
+  regulars: 07:00  The regulars at the door
+  gone:     12:00  Mostly sold out

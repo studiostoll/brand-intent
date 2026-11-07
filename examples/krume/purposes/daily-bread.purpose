@@ -75,8 +75,11 @@ example
   secondary: 750 g · €5.80
   meta:      Rye 1150, 18 hours of fermentation, caraway from the Wendland.
 
+# A weekly example: only picked on the days of the `wheat-blend` weekly in krume.time.
+
 example
   topic: The wheat blend, only on Saturdays
+  when:  wheat-blend
   label:     Saturdays only
   primary:   Wheat blend
   secondary: 500 g · €4.20
