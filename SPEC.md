@@ -1682,7 +1682,7 @@ A `.story` file must NOT contain: color values, typography values, slot definiti
 
 ## Fact Files
 
-A story runs; the five layers describe. For a story to run it needs a place, a time and people, and each has a file of the same kind: [`.place`](#place-place) says where, [`.time`](#time-time) says when, [`.person`](#person-person) says who. They hold facts, never voice or colour; a story pulls them in with `place:`, `when:` and `person:`, and their facts reach the page as [variables](#variables). What a fact file doesn't say is not guessed: a closed day has no closing time, a date that passed has no countdown, a person without a name in the file has no name.
+The five layers describe; a story orchestrates. To orchestrate it needs a place, a time and people, and each has a file of the same kind: [`.place`](#place-place) says where, [`.time`](#time-time) says when, [`.person`](#person-person) says who. They hold facts, never voice or colour; a story pulls them in with `place:`, `when:` and `person:`, and their facts reach the page as [variables](#variables). What a fact file doesn't say is not guessed: a closed day has no closing time, a date that passed has no countdown, a person without a name in the file has no name.
 
 ## Place (`.place`)
 
