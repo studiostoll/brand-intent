@@ -52,6 +52,17 @@ fi
 echo "New version:     $NEW"
 echo ""
 
+# ── Site changelog must already name the new version ──
+# index.html carries the changelog by hand (section id="changelog").
+# Add the vX.Y entry and the heading, commit, then release.
+
+SHORT="${NEW%.*}"
+if ! grep -q "<dt>v$SHORT " "$ROOT/index.html" || ! grep -q "<h2>Version $SHORT," "$ROOT/index.html"; then
+  echo "Error: index.html has no changelog entry for v$SHORT."
+  echo "Add <dt>v$SHORT …</dt> to <dl class=\"changelog\"> and the <h2>Version $SHORT, …</h2> heading, commit, then rerun."
+  exit 1
+fi
+
 # ── Bump both package.json files ──
 
 node -e "
