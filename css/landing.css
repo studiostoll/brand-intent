@@ -83,8 +83,10 @@
 }
 .layer-chain i { font-style: normal; color: #111; font-family: var(--font-monospace); font-size: var(--font-size-small); }
 
-/* The stage: the phone bleeding out of the block's bottom, as on the OG card. */
-.hero-stage-wrap { display: flex; flex-direction: column; min-width: 0; }
+/* The stage: the phone stands on the band's bottom edge and is cut there, as on the OG card. */
+.hero { padding-bottom: 0; border-bottom: 1px solid var(--color-border); }
+.hero-copy { padding-bottom: var(--space-xl); }
+.hero-stage-wrap { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
 .hero-stage {
   position: relative;
   height: 560px;
@@ -97,14 +99,8 @@
   width: 340px; max-width: none;
   margin: 0;
   transform: translateX(-50%);
+  box-shadow: none;
 }
-.hero-credit {
-  margin: var(--space-sm) 0 0;
-  font-size: var(--font-size-small);
-  color: #444;
-  text-align: center;
-}
-.hero-credit a { color: #444; }
 
 /* ── Five Questions Row ── */
 .questions-row {
@@ -369,7 +365,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 }
 .feed-avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: #2C1810; color: #C8A47E;
+  background: #2C1810; color: #FAF6F0;
   display: inline-flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 15px;
 }
@@ -393,92 +389,13 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 }
 
 .post-canvas {
-  /* 4:5 canvas, five rows by four columns, comfort margin 40 of 1080 px.
-     Sizes in cqw follow krume.brand: headline at its autofit-max 10, kicker at 3.5,
-     caption 2.6, label 2.2. Tafel theme: flour on dark roast, over the photo with a dark
-     scrim from below, at most the 40 % krume.brand allows under light text. */
-  container-type: inline-size;
-  position: relative;
+  /* A page rendered by Brand Atelier from the example files, 1080 × 1350 */
   aspect-ratio: 4 / 5;
   width: 100%;
   background: #2C1810;
-  color: #FAF6F0;
-  font-family: 'Hanken Grotesk', sans-serif;
-  display: grid;
-  grid-template-rows: repeat(5, 1fr);
-  grid-template-columns: repeat(4, 1fr);
-  padding: 3.7%;
-  box-sizing: border-box;
-  overflow: hidden;
 }
-.post-canvas img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.post-canvas::before {
-  content: "";
-  position: absolute; inset: 0;
-  z-index: 1;
-  background: linear-gradient(to top, rgba(44,24,16,0.4) 0%, rgba(44,24,16,0.4) 40%, rgba(44,24,16,0.25) 60%, rgba(44,24,16,0) 85%);
-}
-.post-canvas > div { position: relative; z-index: 2; }
-.pc-logo {
-  grid-row: 1; grid-column: 1 / 3;
-  align-self: start;
-  color: #C8A47E;
-}
-.pc-logo svg { height: 5.5cqw; width: auto; display: block; }
+.post-canvas img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .feed-avatar svg { height: 16px; width: auto; display: block; }
-.pc-label {
-  grid-row: 1; grid-column: 3 / 5;
-  justify-self: end; align-self: start;
-  background: #8B4513; color: #FAF6F0;
-  font-weight: 600; font-size: 2.2cqw; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.2;
-  padding: 1cqw 1.8cqw;
-  border-radius: 0.6cqw;
-}
-.pc-secondary {
-  grid-row: 2; grid-column: 1 / 5;
-  align-self: end;
-  color: #D4C4B0;
-  font-weight: 400; font-size: 3.5cqw; line-height: 1.3;
-}
-.pc-primary {
-  grid-row: 3; grid-column: 1 / 5;
-  align-self: start;
-  font-weight: 700; font-size: 10cqw; line-height: 1.15;
-  letter-spacing: -0.015em;
-}
-.pc-meta {
-  /* meta is cols 1--3 in editorial.composition; col 4 belongs to the cta, and this page has none */
-  grid-row: 5; grid-column: 1 / 5;
-  align-self: end;
-  color: #D4C4B0;
-  font-weight: 400; font-size: 2.6cqw; line-height: 1.4;
-}
-.pc-divider { display: none; }
-
-/* Theme Shop: flour ground, dark roast text, no scrim. */
-.post-canvas.theme-shop { background: #FAF6F0; color: #2C1810; }
-.post-canvas.theme-shop .pc-logo { color: #2C1810; }
-.post-canvas.theme-shop .pc-label { background: #C8A47E; color: #2C1810; }
-.post-canvas.theme-shop .pc-secondary, .post-canvas.theme-shop .pc-meta { color: #5C3A28; }
-.post-canvas.theme-shop::before { display: none; }
-/* No photo: the theme's ground carries the page. */
-.post-canvas.no-photo img, .post-canvas.no-photo::before { display: none; }
-/* simple-stack.composition: flow mode, a bottom-left panel two thirds wide, the logo sticky bottom right. */
-.post-canvas.comp-stack { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
-.post-canvas.comp-stack > div { align-self: flex-start; }
-.post-canvas.comp-stack > div:not(.pc-logo):not(.pc-label) { width: 67%; }
-.post-canvas.comp-stack .pc-label { order: 1; align-self: flex-start; }
-.post-canvas.comp-stack .pc-primary { order: 2; margin-top: 2cqw; }
-.post-canvas.comp-stack .pc-divider { order: 3; display: block; width: 100%; height: 0.15cqw; background: #C8A47E; margin: 2cqw 0; }
-.post-canvas.comp-stack .pc-secondary { order: 4; }
-.post-canvas.comp-stack .pc-meta { order: 5; margin-top: 2cqw; }
-.post-canvas.comp-stack .pc-logo { order: 6; position: absolute; right: 3.7%; bottom: 3.7%; }
-.post-canvas.comp-stack::before { background: linear-gradient(to right, rgba(44,24,16,0.4) 0%, rgba(44,24,16,0.4) 55%, rgba(44,24,16,0) 85%); }
 
 .post-caption {
   font-size: var(--font-size-small);
@@ -563,6 +480,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .questions-row-2, .questions-row-1, .questions-row-3 { grid-template-columns: 1fr; }
   .hero { grid-template-columns: 1fr; gap: var(--space-xl); padding-top: var(--space-xl); }
   .hero-copy .layer-chain { margin-top: var(--space-lg); }
+  .hero-copy { padding-bottom: 0; }
   .layer-chain > div { grid-template-columns: 1fr; gap: 0.35rem; }
   .hero-stage { height: 500px; }
   .hero-stage .phone { width: 300px; top: 0; }
@@ -573,6 +491,6 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .layer-name small { display: block; margin-left: 0; }
   .layer-chain { flex-wrap: wrap; gap: 0.25rem; }
   .chain-arrow { margin: 0 0.3rem; }
-  .hero { padding: var(--space-xl) calc(50vw - 50%); }
+  .hero { padding: var(--space-xl) calc(50vw - 50%) 0; }
   .landing-section { padding: var(--space-xl) 0; }
 }

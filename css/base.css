@@ -154,7 +154,7 @@ tbody tr:nth-child(odd) td { background-color: var(--color-surface-secondary); }
 .masthead {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   padding-top: var(--space-md);
   padding-bottom: var(--space-md);
   margin-bottom: var(--space-3xl);
@@ -162,6 +162,7 @@ tbody tr:nth-child(odd) td { background-color: var(--color-surface-secondary); }
 .masthead-title {
   font-size: var(--font-size-masthead);
   font-weight: var(--font-weight-regular);
+  line-height: 1;
   color: var(--color-primary);
   margin: 0;
 }
@@ -171,14 +172,15 @@ tbody tr:nth-child(odd) td { background-color: var(--color-surface-secondary); }
 }
 .masthead-title a:hover {
   text-decoration: underline;
-  text-underline-offset: 0.35em;
-  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 0.05em;
   opacity: 1;
 }
 .masthead-title .tagline {
   display: block;
   font-size: 0.9rem;
-  margin-top: 0.3rem;
+  line-height: 1.15;
+  margin-top: 0.25rem;
   color: var(--color-light);
 }
 
