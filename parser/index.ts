@@ -92,8 +92,8 @@ export { parsePersonFile, checkPerson, personLabel, isWithdrawn, hasSomethingToS
 export type { ParsedPerson } from './personParser';
 export { parseGroupFile, checkGroup, groupHasSomethingToShow } from './groupParser';
 export type { ParsedGroup } from './groupParser';
-export { parseWorkFile, checkWork, isWorkInSeason, daysUntil, isWorkWithdrawn } from './workParser';
-export type { ParsedWork, WorkDate } from './workParser';
+export { parseWorkFile, checkWork, isWorkInSeason, daysUntil, isWorkWithdrawn, workItem, isHexItem, colorDistance } from './workParser';
+export type { ParsedWork, WorkDate, WorkItem } from './workParser';
 export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
 export type { SlotId, ZoneInsets, TextAlign } from './types';

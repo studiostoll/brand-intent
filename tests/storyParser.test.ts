@@ -427,6 +427,29 @@ test('group variables need a group, or a person with one', () => {
   assertEq(checkStory(n, { ...BRAND, groups: [FENSTER] }, 's.story'), ['s.story: page 1: variable "{group}" needs a group: on the page or the story, or a person with a group'], 'no group');
 });
 
+test('item variables and background: {item}', () => {
+  const COLOURS = parseWorkFile('id: colour-of-the-day\ntitle: Colour of the day\nkind: series\non: 2026-12-01\nitems:\n  #1F3A5F  Harbour Night\n    After dark.\n  #F2C14E  Mustard\n    Warm.\n', 'c.work');
+  const WORDS = parseWorkFile('id: word-of-the-week\ntitle: Word of the week\nkind: series\non: 2026-01-05\nitems:\n  Fernweh  Far-sickness\n', 'w.work');
+  const s = parse('work: colour-of-the-day\npage\n  purpose: notice\n  background: {item}\n  primary: {item-name}\n');
+  assertEq(s.pages[0].background, '{item}', 'parsed');
+  assertEq(checkStory(s, { ...BRAND, works: [COLOURS] }, 's.story'), [], 'fits');
+  const w = parse('work: word-of-the-week\npage\n  purpose: notice\n  background: {item}\n  primary: {item} {item-note}\n');
+  assertEq(checkStory(w, { ...BRAND, works: [WORDS] }, 's.story'), [
+    's.story: page 1: background {item} needs colours, but item "Fernweh" of work "word-of-the-week" is not #RRGGBB',
+    's.story: page 1: variable "{item-note}" needs a note on every item of work "word-of-the-week", "Fernweh" has none',
+  ], 'words are no colours');
+  const n = parse('work: rye-loaf\npage\n  purpose: notice\n  background: {item}\n  primary: {item}\n');
+  assertEq(checkStory(n, { ...BRAND, works: [LOAF] }, 's.story'), [
+    's.story: page 1: background {item} needs items: in work "rye-loaf"',
+    's.story: page 1: variable "{item}" needs items: in work "rye-loaf"',
+  ], 'no items');
+  const none = parse('page\n  purpose: notice\n  background: {item}\n');
+  assertEq(checkStory(none, { ...BRAND, works: [COLOURS] }, 's.story'), ['s.story: page 1: background {item} needs a work: on the page or the story'], 'no work');
+  assertEq(parse('page\n  purpose: notice\n  background: #FFCC00\n').pages[0].background, '#FFCC00', 'a fixed hex');
+  assertThrows(() => parse('page\n  purpose: notice\n  background: {work}\n'), 'invalid background');
+  assertThrows(() => parse('page\n  purpose: notice\n  background: yellow\n'), 'invalid background');
+});
+
 test('work variables need a work and what it has', () => {
   const s = parse('work: nachtfahrt\npage\n  purpose: notice\n  primary: {work} {kind} {by} {price}\n  detail:\n    {on} {days-until}\n');
   assertEq(checkStory(s, { ...BRAND, works: [ALBUM], groups: [FENSTER], people: [LENA] }, 's.story'), [

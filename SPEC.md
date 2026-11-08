@@ -1545,6 +1545,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. One id always shows that illustration; with several, implementations pick one per story date, the same one every time for that date, so a preview and the posted page match. When omitted, the purpose's `illustration:` applies |
 | `photo:` | comma list or `camera` | No | Photo ids from the `.brand`. This page starts with one of them instead of the purpose's `photo:` list; with several, implementations pick one per story date, the same one every time for that date (like `illustration:`). `checkStory` reports an unknown id. `photo: camera` instead: the page starts without a photo and asks for one taken now (today's light, today's place); implementations offer the camera in its photo region. It stands alone, and `checkStory` reports it on a purpose with `camera: false` |
 | `theme:` | string | No | Theme name from the `.brand`. This page uses that theme instead of the colours the story starts with (the first page's purpose `palette:`). `checkStory` reports an unknown theme |
+| `background:` | `#RRGGBB` or `{item}` | No | The page's ground, instead of the theme's background. `{item}` is the day's [item](#items) of the page's work: a colour of the day. Text and logo follow the brand's contrast rule against it. `checkStory` reports `{item}` without a work, without `items:`, or with an item that is not `#RRGGBB` |
 | `topic:` | string | No | Page topic: what this page adds to the story |
 | `person:` | string | No | [Person](#person-person) id this page speaks about, instead of the story's. One page can name one person; a carousel of three regulars is three pages |
 | `group:` | string | No | [Group](#group-group) id this page speaks about, instead of the story's |
@@ -1622,6 +1623,9 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{on}` | The work's next `on:` day, day and month | `24. Oktober`, `24 October` | 13 |
 | `{time}` | The work's `time:`, formatted like hours | `14–18 Uhr`, `2–6 PM` | 17 |
 | `{days-until}` | Days from the story's date to the work's next `on:` day; `0` on the day | `12` | 3 |
+| `{item}` | The value of the day's [item](#items) of the work | `#1F3A5F` | its length |
+| `{item-name}` | That item's name | `Harbour Night` | its length |
+| `{item-note}` | That item's note | `The colour of the quay after dark.` | its length |
 | `{n}` | The page's position in its [page list](#page-lists); only on the page with `repeat:` | `3` | 2 |
 | `{count}` | How many pages the page list has; on any page of a story with a page list | `5` | 2 |
 
@@ -1637,7 +1641,7 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 
 **Group** variables (`{group}`, `{where}`, `{group-since}`, `{group-years}`) come from the page's group: the one its `group:` names, else the story's, else the group of the page's person (`group:` in the person file). `{where}` needs the group's `where:`, the since variables its `since:`.
 
-**Work** variables (`{work}`, `{kind}`, `{by}`, `{price}`, `{on}`, `{time}`, `{days-until}`) come from the page's work: the one its `work:` names, else the story's. `{price}` needs `price:`, `{time}` needs `time:`, `{on}` and `{days-until}` need `on:`. `{days-until}` counts to the work's next `on:` day on or after the story's date; after a one-off date it has no value. `{by}` joins several names with the brand's language's "and"; without `by:` it is the brand's name.
+**Work** variables (`{work}`, `{kind}`, `{by}`, `{price}`, `{on}`, `{time}`, `{days-until}`) come from the page's work: the one its `work:` names, else the story's. `{price}` needs `price:`, `{time}` needs `time:`, `{on}` and `{days-until}` need `on:`. `{days-until}` counts to the work's next `on:` day on or after the story's date; after a one-off date it has no value. `{by}` joins several names with the brand's language's "and"; without `by:` it is the brand's name. `{item}`, `{item-name}` and `{item-note}` need `items:` and show the day's [item](#items); on a day without one (before the start, after `until:`, the list used up) the page is not posted. `checkStory` reports `{item-name}` or `{item-note}` when an item has no name or note.
 
 **`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
 
@@ -2087,6 +2091,7 @@ facts:
 | `links:` | URL list | No | Where to buy, listen, book (`https://`) |
 | `photos:` | string list | No | Photo ids from the `.brand` that show the work. Each of those photos names this work with `work:` |
 | `facts:` | block | No | Facts for AI writing, on the following 2-space lines: ingredients, duration, edition, vintage, line-up. Not voice |
+| `items:` | block | No | A series' items, one per time the work comes round: see [Items](#items). A bare `items:`, or `items: cycle` to start over after the last |
 
 ### In season
 
@@ -2101,6 +2106,44 @@ A work's dates say when content about it fits. A page, a story or an example tha
 | `until:` | the day is not after it |
 
 A work with none of them fits all year. A one-off `on:` is a launch, not an expiry: a record stays in season after its release day. An event that is over is withdrawn with `until:` on its day, or by a yearly `on:` that comes round again.
+
+### Items
+
+A work that is a series lists what each time brings: a colour of the day, a word of the week. One item per 2-space line, `VALUE  Name` (two spaces before the optional name), its optional note on the 4-space lines below. The list's order is the posting order.
+
+```yaml
+# works/colour-of-the-day.work
+id:     colour-of-the-day
+title:  Colour of the day
+kind:   series
+on:     2026-12-01
+until:  2026-12-31
+items:
+  #1F3A5F  Harbour Night
+    The colour of the quay after dark.
+  #F2C14E  Mustard
+    The awning of the corner shop.
+```
+
+```yaml
+# works/word-of-the-week.work
+id:     word-of-the-week
+title:  Word of the week
+kind:   series
+on:     2026-01-05
+days:   mon
+items:  cycle
+  Fernweh  Far-sickness
+  Feierabend  The hour work ends
+```
+
+- **Which item a day gets:** the work comes round on its `on:` date and then on each of its `days:` (every day without `days:`), and each time takes the next item. Between two times the last one's item holds: the word of the week all week.
+- **No item:** before `on:`, after `until:`, and after the last item. Each item is used once, so nothing repeats; `items: cycle` starts over instead.
+- **Needs a one-off `on:`** (`YYYY-MM-DD`): items count from it.
+- **A value is plain text.** Where it is used decides what it must be: in a slot anything goes, a story page's `background: {item}` needs `#RRGGBB`.
+- **Errors:** an empty list, a value listed twice (case ignored), two `#RRGGBB` values closer than 0.03 in OKLab (they look the same). A `#` line inside the list is an item; only `# …` with a space is a comment.
+
+An item's value is a fact about the work, what this time brings, not the brand's look: a colour of the day is the subject of its post, not a brand colour.
 
 ### Exclusion Rule
 

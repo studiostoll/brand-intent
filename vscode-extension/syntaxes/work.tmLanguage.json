@@ -7,6 +7,9 @@
     { "include": "#days-field" },
     { "include": "#top-field" },
     { "include": "#facts-header" },
+    { "include": "#items-header" },
+    { "include": "#item-hex" },
+    { "include": "#item-note" },
     { "include": "#facts-line" },
     { "include": "#keyword-partial" }
   ],
@@ -51,6 +54,29 @@
       "captures": {
         "1": { "name": "keyword.control.brand-intent-work" },
         "2": { "name": "punctuation.separator.brand-intent-work" }
+      }
+    },
+    "items-header": {
+      "match": "^(items)(:)\\s*(cycle)?\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-work" },
+        "2": { "name": "punctuation.separator.brand-intent-work" },
+        "3": { "name": "constant.language.brand-intent-work" }
+      }
+    },
+    "item-hex": {
+      "comment": "An item whose value is a colour: #RRGGBB  Name",
+      "match": "^\\s{2}(#[0-9a-fA-F]{6})(?:\\s{2,}(\\S.*))?$",
+      "captures": {
+        "1": { "name": "constant.other.color.brand-intent-work" },
+        "2": { "name": "entity.name.tag.brand-intent-work" }
+      }
+    },
+    "item-note": {
+      "comment": "An item's note, on 4-space lines",
+      "match": "^\\s{4}(\\S.*)$",
+      "captures": {
+        "1": { "name": "comment.block.documentation.brand-intent-work" }
       }
     },
     "facts-line": {

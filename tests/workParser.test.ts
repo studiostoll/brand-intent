@@ -4,7 +4,7 @@
  * Run: npm test
  */
 
-import { parseWorkFile, checkWork, isWorkInSeason, daysUntil, isWorkWithdrawn } from '../parser/workParser';
+import { parseWorkFile, checkWork, isWorkInSeason, daysUntil, isWorkWithdrawn, workItem, colorDistance } from '../parser/workParser';
 import { parseTimeFile } from '../parser/timeParser';
 
 let pass = 0;
@@ -180,6 +180,66 @@ test('daysUntil counts to the next on: day; nothing after a one-off', () => {
   assertEq(isWorkWithdrawn(SHOW, '2026-11-20'), false, 'on its until: day');
   assertEq(isWorkWithdrawn(SHOW, '2026-11-21'), true, 'after');
   assertEq(isWorkWithdrawn(BLEND, '2030-01-01'), false, 'no until');
+});
+
+
+console.log('\nitems:');
+
+const SERIES = parse(`${HEAD}on: 2026-12-01\nuntil: 2026-12-31\nitems\n`.replace('items\n', `items:
+  #1F3A5F  Harbour Night
+    The colour of the quay
+    after dark.
+  #F2C14E  Mustard
+  # warm ones next
+  #C8553D
+`));
+
+test('items: value, name, note; # lines inside are items unless "# …"', () => {
+  assertEq(SERIES.items, [
+    { value: '#1F3A5F', name: 'Harbour Night', note: 'The colour of the quay after dark.' },
+    { value: '#F2C14E', name: 'Mustard' },
+    { value: '#C8553D' },
+  ], 'items');
+  assertEq(SERIES.itemsCycle, undefined, 'no cycle');
+  const words = parse(`${HEAD}on: 2026-01-05\ndays: mon\nitems: cycle\n  Wanderlust  The urge to go\n  Fernweh\n`);
+  assertEq(words.items!.map(i => i.value), ['Wanderlust', 'Fernweh'], 'words');
+  assertEq(words.itemsCycle, true, 'cycle');
+});
+
+test('items: errors', () => {
+  assertThrows(() => parse(`${HEAD}items:\n  Fernweh\n`), 'needs a one-off on:');
+  assertThrows(() => parse(`${HEAD}on: 05-02\nitems:\n  Fernweh\n`), 'needs a one-off on:');
+  assertThrows(() => parse(`${HEAD}on: 2026-01-05\nitems:\n`), 'empty items');
+  assertThrows(() => parse(`${HEAD}on: 2026-01-05\nitems: shuffle\n  Fernweh\n`), 'items: cycle');
+  assertThrows(() => parse(`${HEAD}on: 2026-01-05\nitems:\n  Fernweh\n  fernweh\n`), 'repeats line');
+  assertThrows(() => parse(`${HEAD}on: 2026-01-05\nitems:\n  #FDF6E3  One\n  #FFF8E7  Two\n`), 'looks the same');
+  assertThrows(() => parse(`${HEAD}on: 2026-01-05\nitems:\n      Fernweh\n`), 'unexpected indent');
+});
+
+test('colorDistance: OKLab, black to white is 1', () => {
+  assertEq(Math.round(colorDistance('#000000', '#FFFFFF') * 1000) / 1000, 1, 'black-white');
+  assertEq(colorDistance('#268BD2', '#268bd2'), 0, 'case');
+});
+
+test('workItem: one per day from on:, none before, after the last or after until:', () => {
+  assertEq(workItem(SERIES, day(2026, 11, 30)), undefined, 'before');
+  assertEq(workItem(SERIES, day(2026, 12, 1))?.value, '#1F3A5F', 'first day');
+  assertEq(workItem(SERIES, day(2026, 12, 3))?.value, '#C8553D', 'third day');
+  assertEq(workItem(SERIES, day(2026, 12, 4)), undefined, 'list used up');
+  const long = { ...SERIES, items: Array.from({ length: 40 }, (_, i) => ({ value: `w${i}` })) };
+  assertEq(workItem(long, day(2026, 12, 31))?.value, 'w30', 'on until:');
+  assertEq(workItem(long, day(2027, 1, 1)), undefined, 'after until:');
+});
+
+test('workItem: days: count the times it comes round, the item holds in between; cycle starts over', () => {
+  const weekly = parse(`${HEAD}on: 2026-01-05\ndays: mon\nitems: cycle\n  Wanderlust\n  Fernweh\n`);
+  assertEq(workItem(weekly, day(2026, 1, 5))?.value, 'Wanderlust', 'first Monday');
+  assertEq(workItem(weekly, day(2026, 1, 11))?.value, 'Wanderlust', 'the Sunday after');
+  assertEq(workItem(weekly, day(2026, 1, 12))?.value, 'Fernweh', 'second Monday');
+  assertEq(workItem(weekly, day(2026, 1, 19))?.value, 'Wanderlust', 'starts over');
+  const fromSunday = parse(`${HEAD}on: 2026-01-04\ndays: mon\nitems:\n  Wanderlust\n`);
+  assertEq(workItem(fromSunday, day(2026, 1, 4)), undefined, 'on: is not one of its days');
+  assertEq(workItem(fromSunday, day(2026, 1, 5))?.value, 'Wanderlust', 'first Monday');
 });
 
 console.log('\ncross-file:');

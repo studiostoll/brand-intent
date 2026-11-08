@@ -7,6 +7,9 @@
  * That is why an event is a work and not an entry in the `.time`. `isWorkInSeason` says whether
  * content about the work fits a day; `daysUntil` counts to its next `on:` day.
  *
+ * A work that is a series lists its `items:`, one per time it comes round, from its one-off `on:` date:
+ * a colour of the day, a word of the week. `workItem` says which item a day gets.
+ *
  * Strict, line-based format. Every line must match a known pattern or be blank.
  * Throws on parse errors with file name and line number.
  */
@@ -15,6 +18,13 @@ import { isDate, isMonthDay, isInSeason, timeEntryNames, parseTimeSpan, parseDay
 import { WEEKDAYS, type Weekday } from './placeParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
+
+/** One item of a series: its value as written (`{item}`), an optional name (`{item-name}`) and note (`{item-note}`). */
+export interface WorkItem {
+  value: string;
+  name?: string;
+  note?: string;
+}
 
 /** When a work comes out, takes place or is on the shelf. `MM-DD` start and end for a yearly date,
  *  `YYYY-MM-DD` for a one-off; a single day has `to` = `from`. */
@@ -56,6 +66,10 @@ export interface ParsedWork {
   photos?: string[];
   /** Facts for AI writing, as written, lines joined with newlines. Not voice. */
   facts?: string;
+  /** A series' items in posting order, one per time the work comes round from its `on:` date. */
+  items?: WorkItem[];
+  /** `items: cycle`: the items start over after the last. Absent: each item is used once, then there is none. */
+  itemsCycle?: true;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -64,6 +78,36 @@ const KEYS = new Set(['id', 'title', 'kind', 'by', 'on', 'days', 'time', 'lead',
 const NAME = /^[a-z][a-z0-9-]*$/;
 const LINK = /^https:\/\/\S+$/;
 const DEFAULT_LEAD = 14;
+const HEX = /^#[0-9a-fA-F]{6}$/;
+/** Two hex items closer than this (OKLab distance) look the same: a repeat in disguise. */
+const NEAR_DUPLICATE = 0.03;
+
+/** Whether an item's value is a colour, `#RRGGBB`. Such a value can fill a story page's `background:`. */
+export function isHexItem(value: string): boolean {
+  return HEX.test(value);
+}
+
+/** OKLab of a `#RRGGBB` (Björn Ottosson's matrices). */
+function oklab(hex: string): [number, number, number] {
+  const [r, g, b] = [1, 3, 5].map(i => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
+
+/** Perceptual distance of two `#RRGGBB` colours (Euclidean in OKLab; ~0.02 is just visible). */
+export function colorDistance(a: string, b: string): number {
+  const [p, q] = [oklab(a), oklab(b)];
+  return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+}
 
 // ── Main parser ───────────────────────────────────────────────────────────────
 
@@ -72,19 +116,23 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
   let description = '';
   let facts: { lines: string[]; line: number } | null = null;
   let inFacts = false;
+  let items: { list: Array<WorkItem & { line: number }>; line: number; cycle: boolean } | null = null;
+  let inItems = false;
 
   content.split('\n').forEach((rawLine, i) => {
     const lineNum = i + 1;
     const indent = rawLine.length - rawLine.trimStart().length;
     const line = rawLine.trim();
     if (line === '') return;
-    if (line.startsWith('#') && (indent === 0 || !inFacts)) {
+    // A `#` line is a comment, except in facts and items, where only `# …` is (an item can be a hex value)
+    if (line.startsWith('#') && (indent === 0 || (!inFacts && !inItems) || (inItems && /^#(\s|$)/.test(line)))) {
       if (indent === 0) description = description ? `${description} ${line.slice(1).trim()}` : line.slice(1).trim();
       return;
     }
 
     if (indent === 0) {
       inFacts = false;
+      inItems = false;
       const colonIdx = line.indexOf(':');
       if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" or a "facts:" block, got "${line}"`);
       const key = line.slice(0, colonIdx).trim();
@@ -98,10 +146,30 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
         inFacts = true;
         return;
       }
+      if (key === 'items') {
+        if (items) throw new Error(`${fileName}:${lineNum}: duplicate "items"`);
+        if (value && value !== 'cycle') throw new Error(`${fileName}:${lineNum}: items is a bare "items:" or "items: cycle", the items go on the following 2-space lines, got "${value}"`);
+        items = { list: [], line: lineNum, cycle: value === 'cycle' };
+        inItems = true;
+        return;
+      }
       if (!KEYS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS].join(', ')} or a facts: block)`);
       if (raw[key]) throw new Error(`${fileName}:${lineNum}: duplicate "${key}"`);
       if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
       raw[key] = { value, line: lineNum };
+      return;
+    }
+
+    // An item: `VALUE  Name` on a 2-space line, its note on the 4-space lines below
+    if (inItems && items) {
+      if (indent === 2) {
+        const m = /^(\S(?:.*?\S)?)(?:\s{2,}(\S.*))?$/.exec(line)!;
+        items.list.push({ value: m[1], ...(m[2] ? { name: m[2] } : {}), line: lineNum });
+        return;
+      }
+      const item = items.list[items.list.length - 1];
+      if (indent !== 4 || !item) throw new Error(`${fileName}:${lineNum}: unexpected indent (an item is "VALUE  Name" on a 2-space line, its note on 4-space lines below)`);
+      item.note = item.note ? `${item.note} ${line}` : line;
       return;
     }
 
@@ -171,6 +239,19 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
   }
   const factsBlock = facts as { lines: string[]; line: number } | null;
   if (factsBlock && factsBlock.lines.length === 0) throw new Error(`${fileName}:${factsBlock.line}: empty facts (the facts go on the following 2-space lines)`);
+  const itemsBlock = items as { list: Array<WorkItem & { line: number }>; line: number; cycle: boolean } | null;
+  if (itemsBlock) {
+    if (itemsBlock.list.length === 0) throw new Error(`${fileName}:${itemsBlock.line}: empty items (one item per 2-space line: "VALUE  Name")`);
+    if (!on || on.yearly) throw new Error(`${fileName}:${itemsBlock.line}: items count from the work's start, which needs a one-off on: YYYY-MM-DD`);
+    itemsBlock.list.forEach((item, i) => {
+      for (const other of itemsBlock.list.slice(0, i)) {
+        if (other.value.toLowerCase() === item.value.toLowerCase()) throw new Error(`${fileName}:${item.line}: item "${item.value}" repeats line ${other.line}`);
+        if (isHexItem(item.value) && isHexItem(other.value) && colorDistance(item.value, other.value) < NEAR_DUPLICATE) {
+          throw new Error(`${fileName}:${item.line}: item ${item.value} looks the same as ${other.value} on line ${other.line} (closer than ${NEAR_DUPLICATE} in OKLab)`);
+        }
+      }
+    });
+  }
 
   return {
     id: raw['id'].value,
@@ -189,6 +270,8 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
     ...(links ? { links } : {}),
     ...(photos ? { photos } : {}),
     ...(factsBlock ? { facts: factsBlock.lines.join('\n') } : {}),
+    ...(itemsBlock ? { items: itemsBlock.list.map(({ line: _, ...item }) => item) } : {}),
+    ...(itemsBlock?.cycle ? { itemsCycle: true as const } : {}),
   };
 }
 
@@ -241,6 +324,30 @@ export function daysUntil(work: Pick<ParsedWork, 'on'>, date: Date): number | un
 /** Whether the work is withdrawn on a `YYYY-MM-DD` day: after its `until:`. */
 export function isWorkWithdrawn(work: Pick<ParsedWork, 'until'>, date: string): boolean {
   return !!work.until && date > work.until;
+}
+
+// ── Items ─────────────────────────────────────────────────────────────────────
+
+/** The item a day gets: the work comes round on its `on:` date and then on each of its `days:` (every day
+ *  without them), and each time takes the next item. Between two times the last one's item holds (a word
+ *  of the week all week). Undefined before the start, after `until:`, and after the last item unless the
+ *  items cycle. */
+export function workItem(work: Pick<ParsedWork, 'on' | 'days' | 'until' | 'items' | 'itemsCycle'>, date: Date): WorkItem | undefined {
+  const { on, items } = work;
+  if (!items?.length || !on || on.yearly) return undefined;
+  if (work.until && ymd(date) > work.until) return undefined;
+  const start = localDate(on.from);
+  const span = daysBetween(start, date);
+  if (span < 0) return undefined;
+  let times = 0;
+  for (let d = 0; d <= span; d++) {
+    const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + d);
+    if (!work.days || work.days.includes(WEEKDAYS[(day.getDay() + 6) % 7])) times++;
+  }
+  if (times === 0) return undefined;
+  const index = times - 1;
+  if (index >= items.length && !work.itemsCycle) return undefined;
+  return items[index % items.length];
 }
 
 // ── Cross-file checks ─────────────────────────────────────────────────────────

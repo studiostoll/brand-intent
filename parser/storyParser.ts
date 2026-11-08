@@ -13,7 +13,7 @@ import { addressStreet, weekOpeningDays, type ParsedPlace } from './placeParser'
 import { timeEntry, type ParsedTime, type TimeEntry } from './timeParser';
 import { personLabel, hasSomethingToShow, type ParsedPerson } from './personParser';
 import { groupHasSomethingToShow, type ParsedGroup } from './groupParser';
-import type { ParsedWork } from './workParser';
+import { isHexItem, type ParsedWork } from './workParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -27,6 +27,7 @@ export type StoryVariable =
   | 'person' | 'role' | 'since' | 'since-years' | 'reason'
   | 'group' | 'where' | 'group-since' | 'group-years'
   | 'work' | 'kind' | 'by' | 'price' | 'on' | 'time' | 'days-until'
+  | 'item' | 'item-name' | 'item-note'
   | 'n' | 'count';
 
 /** Longest resolved form per variable (German and English), used for the `maxLength` check.
@@ -37,7 +38,7 @@ export type StoryVariable =
  *  `work` likewise, with `groupNeeds` and `workNeeds`.
  *  A `maxLength` of 0 means the variable counts at the length of the fact it shows (see `checkStory`).
  *  `{daily NAME}` is written with its moment's name; the table lists it as `daily`. */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; time?: 'seasons' | 'founded' | 'daily'; person?: true; personNeeds?: 'since' | 'reason'; group?: true; groupNeeds?: 'where' | 'since'; work?: true; workNeeds?: 'price' | 'on' | 'time'; list?: true }> = {
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; time?: 'seasons' | 'founded' | 'daily'; person?: true; personNeeds?: 'since' | 'reason'; group?: true; groupNeeds?: 'where' | 'since'; work?: true; workNeeds?: 'price' | 'on' | 'time' | 'items'; list?: true }> = {
   weekday: { maxLength: 10 },                       // "Donnerstag"
   date: { maxLength: 13 },                          // "30. September"
   sunrise: { maxLength: 8, location: true },        // "12:59 PM"
@@ -75,6 +76,9 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   on: { maxLength: 13, work: true, workNeeds: 'on' },                // "30. September"
   time: { maxLength: 17, work: true, workNeeds: 'time' },            // "10:30 AM–10:30 PM"
   'days-until': { maxLength: 3, work: true, workNeeds: 'on' },       // "365"
+  item: { maxLength: 0, work: true, workNeeds: 'items' },            // the day's item: "#002B36"
+  'item-name': { maxLength: 0, work: true, workNeeds: 'items' },     // its name
+  'item-note': { maxLength: 0, work: true, workNeeds: 'items' },     // its note
   n: { maxLength: 2, list: true },                  // "10": the page's position in its page list
   count: { maxLength: 2, list: true },              // "10": how many pages the page list has
 };
@@ -128,6 +132,9 @@ export interface ParsedStoryPage {
   camera?: true;
   /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
   theme?: string;
+  /** The page's ground: `#RRGGBB`, or `{item}` for the day's item of the page's work. Text and logo follow
+   *  the brand's contrast rule against it. */
+  background?: string;
   /** Page topic: what this page adds to the story. */
   topic?: string;
   /** Person id this page speaks about, instead of the story's. */
@@ -319,7 +326,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
       if (/^when\s*:/.test(line)) throw new Error(`${fileName}:${lineNum}: when: is not a page key: a page about an occasion names its work with "work:" (an event is a work since v0.44); a window or season goes on the story`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme', 'person', 'group', 'work', 'repeat'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme', 'background', 'person', 'group', 'work', 'repeat'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'person' || read?.key === 'group' || read?.key === 'work') {
@@ -335,6 +342,10 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         } else currentPage.photos = ids;
       }
       else if (read?.key === 'theme') currentPage.theme = read.value;
+      else if (read?.key === 'background') {
+        if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== '{item}') throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
+        currentPage.background = read.value;
+      }
       else if (read?.key === 'repeat') {
         const m = /^(\d+)\s*-\s*(\d+)$/.exec(read.value);
         const min = m ? parseInt(m[1], 10) : 0;
@@ -479,6 +490,10 @@ function longestText(text: string, { place, time, person, group, work, byNames }
     if (v === 'work') return 'x'.repeat(work?.title.length ?? 0);
     if (v === 'kind') return 'x'.repeat(work?.kind.length ?? 0);
     if (v === 'price') return 'x'.repeat(work?.price?.length ?? 0);
+    if (v === 'item' || v === 'item-name' || v === 'item-note') {
+      const field = v === 'item' ? 'value' : v === 'item-name' ? 'name' : 'note';
+      return 'x'.repeat(Math.max(0, ...(work?.items ?? []).map(item => item[field]?.length ?? 0)));
+    }
     if (v === 'by') {
       const names = byNames ?? [];
       return 'x'.repeat(names.reduce((n, name) => n + name.length, 0) + Math.max(0, names.length - 1) * BY_AND_LENGTH);
@@ -598,6 +613,11 @@ export function checkStory(
         if (variable?.work && workMap) {
           if (!named.work) say(`${where}: variable "{${v}}" needs a work: on the page or the story`);
           else if (facts.work && variable.workNeeds && !facts.work[variable.workNeeds]) say(`${where}: variable "{${v}}" needs ${variable.workNeeds}: in work "${facts.work.id}"`);
+          else if (facts.work?.items && (v === 'item-name' || v === 'item-note')) {
+            const field = v === 'item-name' ? 'name' : 'note';
+            const bare = facts.work.items.find(item => !item[field]);
+            if (bare) say(`${where}: variable "{${v}}" needs a ${field} on every item of work "${facts.work.id}", "${bare.value}" has none`);
+          }
         }
       }
       const longest = longestText(text, facts);
@@ -647,6 +667,14 @@ export function checkStory(
     }
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
+    if (page.background === '{item}' && workMap) {
+      if (!named.work) say(`${where}: background {item} needs a work: on the page or the story`);
+      else if (facts.work && !facts.work.items) say(`${where}: background {item} needs items: in work "${facts.work.id}"`);
+      else if (facts.work) {
+        const notHex = facts.work.items!.find(item => !isHexItem(item.value));
+        if (notHex) say(`${where}: background {item} needs colours, but item "${notHex.value}" of work "${facts.work.id}" is not #RRGGBB`);
+      }
+    }
     checkTexts(where, purpose, page.texts, facts, named);
   });
   story.examples.forEach((ex, i) => {
