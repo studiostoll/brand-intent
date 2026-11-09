@@ -1,6 +1,6 @@
 # Brand Intent
 
-An open file format specification for making brand intent machine-readable.
+An open language to describe a brand: its voice, its behaviour, its look and the facts it stands on. People and AI agents read and write it alike.
 
 Five layers. One brand. Any agent.
 

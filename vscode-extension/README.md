@@ -1,12 +1,12 @@
 # Brand Intent Language Extension
 
-VS Code extension providing syntax highlighting, autocomplete, and hover documentation for all file types in the **Brand Intent** specification.
+VS Code extension providing syntax highlighting, autocomplete, and hover documentation for all file types in the **Brand Intent** language.
 
 ---
 
 ## What this extension does
 
-Brand Intent is an open specification for defining brand identity, visual language, and content architecture in plain-text DSL files.
+Brand Intent is an open language to describe a brand: its voice, its behaviour, its look and the facts it stands on.
 
 | File type | Extension | Defines |
 |---|---|---|
