@@ -1004,7 +1004,7 @@ video intro
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `label:` | string | No | Display label (defaults to block id) |
-| `src:` | string | Yes | Path to asset file (relative to brand base). A subfolder below the top folder is the library section, named as written: `photos/Tasting/glaeser.jpg` sits in "Tasting". Files directly in `photos/` come first, then each section in order of first appearance. One subfolder at most. Before v0.46 the section was a `section:` key; the parser now rejects it |
+| `src:` | string | Yes | Path to asset file (relative to brand base). A subfolder below the top folder is the library section, named as written: `photos/Tasting/glaeser.jpg` sits in "Tasting". Files directly in `photos/` come first, then the sections: newest first by the latest one-off `on:` of the [`.work`](#work-work)s their photos show, the rest in order of first appearance. One subfolder at most. Before v0.46 the section was a `section:` key; the parser now rejects it |
 | `aspect:` | float | No | Aspect ratio (width / height) |
 | `scale:` | float | No | Size multiplier when rendered |
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
