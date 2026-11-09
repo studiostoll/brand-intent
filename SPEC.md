@@ -1004,7 +1004,7 @@ video intro
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `label:` | string | No | Display label (defaults to block id) |
-| `src:` | string | Yes | Path to asset file (relative to brand base) |
+| `src:` | string | Yes | Path to asset file (relative to brand base). A subfolder below the top folder is the library section, named as written: `photos/Tasting/glaeser.jpg` sits in "Tasting". Files directly in `photos/` come first, then each section in order of first appearance. One subfolder at most. Before v0.46 the section was a `section:` key; the parser now rejects it |
 | `aspect:` | float | No | Aspect ratio (width / height) |
 | `scale:` | float | No | Size multiplier when rendered |
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
@@ -1019,7 +1019,6 @@ video intro
 | `taken:` | date | No | Photos only. Date taken, `YYYY-MM-DD` |
 | `focus:` | `X% Y%` or `none` | No | Photos only. Position of the main subject, measured from the top left. `none`: the photo has no single subject. Consumers keep it inside the crop |
 | `horizon:` | `N%` or `none` | No | Photos only. Height of the horizon line from the top; for a tilted horizon, its mean height. `none`: no horizon visible. Consumers can crop so it meets the [framing](#framing-name-block) horizon |
-| `section:` | string | No | Library section (e.g. `experimental`). Assets without one come first; each section is listed after them, in order of first appearance. Was `group:` before v0.44; `checkBrand` reports a `group:` that names no `.group` |
 | `gltf:` | string | No | Path to a glTF/GLB 3D model (logos only). When present, the asset renders as a live 3D object; `src` stays as the 2D fallback for thumbnails and export. |
 | `generator:` | string | No | Procedural generator id (logos only). Renders live geometry from code (e.g. `spiral`, `mobius`, `ribbon`); `src` stays as the 2D fallback. |
 | `generator-params` | sub-block | No | Indented block of numeric defaults for the named generator, keyed `name: number`. Each consumer defines its own param names. |

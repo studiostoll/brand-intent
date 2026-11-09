@@ -208,8 +208,9 @@ export interface ParsedAssetDef {
   /** Logos only: artwork per horizontal placement, declared via `align-left` / `align-center` / `align-right`
    *  sub-blocks. Consumers render the variant matching where the logo sits, else the base `src`. */
   alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
-  /** Library section (e.g. "experimental"). Consumers list each section after the assets without one.
-   *  Was `group:` before v0.44. */
+  /** Library section: the subfolder the file sits in (`photos/Tasting/x.jpg` → "Tasting"), exactly as named.
+   *  Absent for a file directly in its top folder. Consumers list each section after the assets without one.
+   *  Since v0.46; before, a `section:` key. */
   section?: string;
   /** Photos only: name of the `.time` entry the photo fits (`when:`): a window or a season.
    *  Absent → all year. `checkBrand` checks it against the `.time`. */
@@ -1799,7 +1800,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['loop'] === 'true') def.loop = true;
     if (raw.props['gltf']) def.gltfSrc = raw.props['gltf'];
     if (raw.props['generator']) def.generator = raw.props['generator'];
-    if (raw.props['section']) def.section = raw.props['section'];
+    const folders = def.src.split('/').slice(1, -1);
+    if (folders.length === 1) def.section = folders[0].normalize('NFC');
     if (raw.props['when']) def.when = raw.props['when'];
     for (const key of ['framing', 'place', 'person', 'group', 'work', 'taken'] as const) {
       if (raw.props[key]) def[key] = raw.props[key];
@@ -1831,15 +1833,23 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   for (const [kind, arr] of [['logo', logosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
     for (const key of photoOnly) {
       const a = arr.find(r => r.props[key]);
-      if (a && key === 'group') throw new Error(`${fileName}: ${kind} "${a.id}": group: names a .group and is for photos only; a library section is "section:" since v0.44`);
+      if (a && key === 'group') throw new Error(`${fileName}: ${kind} "${a.id}": group: names a .group and is for photos only; a library section is the subfolder since v0.46`);
       if (a) throw new Error(`${fileName}: ${kind} "${a.id}": ${key}: is for photos only`);
+    }
+  }
+  // The library section is the subfolder: one level below the top folder, never deeper, never a key.
+  for (const [kind, arr] of [['logo', logosRaw], ['photo', photosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
+    for (const a of arr) {
+      if (a.props['section'] !== undefined) throw new Error(`${fileName}: ${kind} "${a.id}": section: is gone since v0.46; the section is the subfolder, put the file in ${kind === 'illustration' ? 'its folder' : `${kind}s`}/<section>/`);
+      const src = a.props['src'] ?? '';
+      if (src.split('/').length > 3) throw new Error(`${fileName}: ${kind} "${a.id}": src: "${src}" is nested too deep; one subfolder (the section) is the limit`);
     }
   }
   for (const p of photosRaw) {
     // when:, person:, group: and work: name .time, .person, .group and .work entries; `checkBrand` resolves them
     for (const key of ['when', 'person', 'group', 'work'] as const) {
       const value = p.props[key];
-      if (value && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}: photo "${p.id}": ${key}: must be an id (lowercase kebab-case), got "${value}"${key === 'group' ? ' (a library section is "section:" since v0.44)' : ''}`);
+      if (value && !/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}: photo "${p.id}": ${key}: must be an id (lowercase kebab-case), got "${value}"${key === 'group' ? ' (a library section is the subfolder since v0.46)' : ''}`);
     }
     const taken = p.props['taken'];
     if (taken && !/^\d{4}-\d{2}-\d{2}$/.test(taken)) throw new Error(`${fileName}: photo "${p.id}": taken: must be YYYY-MM-DD, got "${taken}"`);
@@ -2142,7 +2152,7 @@ export function checkBrand(
       }
     }
   };
-  mirror('group', facts.groups, ' (a library section is "section:" since v0.44)');
+  mirror('group', facts.groups, ' (a library section is the subfolder since v0.46)');
   mirror('work', facts.works, '');
   return problems;
 }

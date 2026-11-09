@@ -372,14 +372,16 @@ test('align sub-blocks only apply to logos', () => {
   assertEq(out.assets?.photos?.[0]?.alignVariants, undefined, 'no variants on photos');
 });
 
-test('assets take an optional section; group: on a photo names a .group', () => {
-  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n\nphoto old\n  src: photos/old.jpg\n  section: experimental\n  group: drax-mill\n  work: rye-loaf\n\nvideo clip\n  src: videos/clip.mp4\n  section: experimental\n`;
+test('the section is the subfolder; group: on a photo names a .group', () => {
+  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n\nphoto old\n  src: photos/Old days/old.jpg\n  group: drax-mill\n  work: rye-loaf\n\nvideo clip\n  src: videos/experimental/clip.mp4\n`;
   const out = parseBrandFile(src, 'test.brand');
   assertEq(out.assets?.photos?.[0]?.section, undefined, 'photo without a section');
-  assertEq(out.assets?.photos?.[1]?.section, 'experimental', 'photo in a section');
+  assertEq(out.assets?.photos?.[1]?.section, 'Old days', 'photo in a section, folder name as written');
+  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/p.jpg\n  section: old\n`, 'test.brand'), /section: is gone since v0.46/, 'section key');
+  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/a/b/p.jpg\n`, 'test.brand'), /nested too deep/, 'two subfolders');
   assertEq([out.assets?.photos?.[1]?.group, out.assets?.photos?.[1]?.work], ['drax-mill', 'rye-loaf'], 'photo group and work');
   assertEq(out.assets?.videos?.[0]?.section, 'experimental', 'video in a section');
-  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/clip.mp4\n  group: experimental\n`, 'test.brand'), /a library section is "section:" since v0.44/, 'group on a video');
+  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/clip.mp4\n  group: experimental\n`, 'test.brand'), /a library section is the subfolder since v0.46/, 'group on a video');
   assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/p.jpg\n  group: Drax Mill\n`, 'test.brand'), /group: must be an id/, 'group id');
 });
 
@@ -555,7 +557,7 @@ test('checkBrand: photo group: and work: mirror the group\'s and work\'s photos:
   const album = parseWorkFile('id: nachtfahrt\ntitle: Nachtfahrt\nkind: album\nphotos: sleeve\n', 'nachtfahrt.work');
   assertEq(checkBrand(b, { groups: [fenster], works: [album] }, 'test.brand'), [], 'fits');
   assertEq(checkBrand(b, { groups: [], works: [] }, 'test.brand'), [
-    'test.brand: photo "van": group "fenster" does not exist (a library section is "section:" since v0.44)',
+    'test.brand: photo "van": group "fenster" does not exist (a library section is the subfolder since v0.46)',
     'test.brand: photo "sleeve": work "nachtfahrt" does not exist',
   ], 'unknown');
   const partial = parseGroupFile('id: fenster\nname: Fenster\nrole: Band\nphotos: stage, gone\n', 'fenster.group');
