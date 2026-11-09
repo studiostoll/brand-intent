@@ -221,6 +221,7 @@ hide_bar: true
         The expression: colours and themes, fonts and typography styles, spacing, dividers, badges, icons.
         And the brand&rsquo;s place in the world: a <code>location</code> for sunrise and weather,
         a <code>camera</code>, <code>framing</code> modules for photos, a <code>photo-look</code>.
+        The photo library is the <code>photos/</code> folder: a file&rsquo;s name is its id, its folders are the sections.
         Every value traces back to a sentence in the identity.
       </p>
 <pre><span class="kw">brand-colors</span>
@@ -568,16 +569,16 @@ hide_bar: true
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
   <span class="section-label">06 / Recent changes</span>
-  <h2>Version 0.45, November 2026.</h2>
+  <h2>Version 0.46, November 2026.</h2>
   <p>The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
 
   <dl class="changelog">
+    <div><dt>v0.46 <span>9 Nov 2026</span></dt><dd>The photo library is the <code>photos/</code> folder: drop a file in and it is a photo, its name the id, its folders the sections, two levels deep. A <code>photo</code> block only adds facts; <code>src:</code> and <code>section:</code> are gone. <code>brand-intent photos</code> writes the file list.</dd></div>
     <div><dt>v0.45 <span>8 Nov 2026</span></dt><dd>A work can be a series: its <code>items</code> come one per day or per week, never twice, with <code>{item}</code>, <code>{item-name}</code> and <code>{item-note}</code>. A story page takes its <code>background</code> from a hex or from the day&rsquo;s item.</dd></div>
     <div><dt>v0.44 <span>7 Nov 2026</span></dt><dd>The <code>.group</code> and <code>.work</code> files: more than one person under one name, and what the brand puts out or puts on. An event is a work with its own date; <code>weekly</code> and <code>date</code> leave the <code>.time</code>. Asset <code>group:</code> is now <code>section:</code>.</dd></div>
     <div><dt>v0.43 <span>7 Nov 2026</span></dt><dd>The <code>.time</code> and <code>.person</code> files. Seasons and windows leave the <code>.brand</code>; a person is the consent, with a date it ends. Stories and pages name a person and a time entry.</dd></div>
     <div><dt>v0.42 <span>6 Nov 2026</span></dt><dd>A story page can ask for a photo taken now, with the brand&rsquo;s camera. Brand photos get a <code>focus</code> point and a <code>horizon</code> line.</dd></div>
     <div><dt>v0.41 <span>6 Nov 2026</span></dt><dd>Page lists: a story page repeats as often as needed, with <code>{n}</code> and <code>{count}</code>. Stories get <code>when:</code>, the date window they fit.</dd></div>
-    <div><dt>v0.40 <span>4 Nov 2026</span></dt><dd>The <code>credit</code> slot, for the attribution a licence or a weather source asks for. Never written by AI.</dd></div>
   </dl>
 </section>
 
