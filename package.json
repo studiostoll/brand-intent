@@ -36,10 +36,13 @@
   "scripts": {
     "release": "./scripts/release.sh",
     "typecheck": "tsc -p .",
-    "test": "tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/icons.test.ts && tsx tests/purposeParser.test.ts && tsx tests/storyParser.test.ts && tsx tests/placeParser.test.ts && tsx tests/timeParser.test.ts && tsx tests/personParser.test.ts && tsx tests/groupParser.test.ts && tsx tests/workParser.test.ts && tsx tests/formatParser.test.ts && tsx tests/compositionParser.test.ts && tsx tests/realBrands.test.ts && tsx tests/examples.test.ts"
+    "build:cli": "esbuild cli/check.ts --bundle --platform=node --format=esm --target=node20 --log-level=warning --outfile=cli/check.mjs",
+    "prepack": "npm run build:cli",
+    "test": "npm run --silent build:cli && tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/icons.test.ts && tsx tests/purposeParser.test.ts && tsx tests/storyParser.test.ts && tsx tests/placeParser.test.ts && tsx tests/timeParser.test.ts && tsx tests/personParser.test.ts && tsx tests/groupParser.test.ts && tsx tests/workParser.test.ts && tsx tests/formatParser.test.ts && tsx tests/compositionParser.test.ts && tsx tests/realBrands.test.ts && tsx tests/examples.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "esbuild": "^0.25.12",
     "tsx": "^4.19.0",
     "typescript": "^6.0.3"
   },

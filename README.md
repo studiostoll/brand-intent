@@ -51,6 +51,13 @@ Two skills are now installed in your AI agent.
 
 Edit your Brand Intent files whenever strategy or expression evolves. Regenerate briefs after any change.
 
+Check a brand folder after every change: every file parses, and every id a file names is there.
+
+```bash
+npx brand-intent check path/to/brand
+npx brand-intent photos path/to/brand   # after adding or moving photos: rewrite photos/index.json
+```
+
 ## Documentation
 
 - [Specification](SPEC.md): formal grammar for all file types

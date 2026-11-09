@@ -2258,6 +2258,8 @@ project/
 
 The `brand-intent` npm package ships example brands under `examples/`. Run `brand-intent init` to copy them into your own project.
 
+**Checking a brand folder.** `brand-intent check <brand folder>` parses every file and checks the files against each other, with the same checks a consumer runs: a story's purpose, composition, format, theme, photo, time entry, person, group and work exist; a purpose's typography and framing are in the `.brand`; people, groups and works name each other correctly; `photos/index.json` is current and the photo library resolves. It prints `✗` for each problem and `!` for each warning, and exits 1 on any problem, so it runs as a CI step. Warnings (an ignored key, a file in `photos/` that is no image) never fail it.
+
 ---
 
 *Brand Intent Specification v0.1 / April 2026*

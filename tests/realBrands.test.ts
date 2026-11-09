@@ -1,15 +1,15 @@
 /**
- * Regression test: every real brand file in brand-atelier must still parse
- * cleanly with this parser.
+ * Regression test: every real brand in brand-atelier must pass `brand-intent check`
+ * with this parser: every file parses and every id it names is there.
  *
  * Atelier may lawfully be behind a breaking change it has not adopted yet: a parse error whose
  * message names the version it came with ("… since v0.44") is tolerated while Atelier's
  * package.json pins an older brand-intent. Once Atelier is bumped, it fails the suite again.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseBrandFile, photoLibrary } from '../parser/brandParser';
+import { checkFolder } from '../cli/check';
 
 const ATELIER = '/Users/christophestoll/Documents/GitHub/brand-atelier/app';
 const BRANDS_DIR = `${ATELIER}/public/brands`;
@@ -32,21 +32,13 @@ for (const brandId of readdirSync(BRANDS_DIR)) {
   let dirStat;
   try { dirStat = statSync(brandDir); } catch { continue; }
   if (!dirStat.isDirectory() || brandId.startsWith('.')) continue;
-  const brandFile = join(brandDir, `${brandId}.brand`);
-  try {
-    const content = readFileSync(brandFile, 'utf8');
-    const parsed = parseBrandFile(content, brandFile);
-    const photoIndex = join(brandDir, 'photos', 'index.json');
-    if (existsSync(photoIndex)) photoLibrary(parsed.assets?.photos, JSON.parse(readFileSync(photoIndex, 'utf8')), brandFile);
-    const groupsLabel = parsed.colorGroups ? `${parsed.colorGroups.length} groups` : 'flat';
-    const colorCount = Object.keys(parsed.brandColors ?? {}).length;
-    console.log(`  ✓ ${brandId}: ${colorCount} colors (${groupsLabel}), ${Object.keys(parsed.themes ?? {}).length} themes`);
-    pass++;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    if (tolerated(message)) { console.log(`  ~ ${brandId}: ${message} (Atelier not yet bumped)`); toleratedCount++; }
-    else { console.log(`  ✗ ${brandId}: ${message}`); fail++; }
-  }
+  // Every problem `brand-intent check` finds; a breaking-change error Atelier has not adopted yet is tolerated.
+  const { errors, counts } = checkFolder(brandDir, brandId);
+  const real = errors.filter(e => !tolerated(e));
+  toleratedCount += errors.length - real.length;
+  for (const e of errors.filter(tolerated)) console.log(`  ~ ${brandId}: ${e} (Atelier not yet bumped)`);
+  if (real.length) { fail++; for (const e of real) console.log(`  ✗ ${brandId}: ${e}`); }
+  else { pass++; console.log(`  ✓ ${brandId}: ${Object.values(counts).reduce((a, b) => a + b, 0)} files`); }
 }
 
 console.log(`\n${pass} brands parsed, ${fail} failed${toleratedCount ? `, ${toleratedCount} behind the bump` : ''}`);
