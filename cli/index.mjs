@@ -120,6 +120,42 @@ const cwd = process.cwd();
 const pkg = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'));
 console.log(`Brand Intent v${pkg.version}\n`);
 
+// ── photos: write photos/index.json ──
+
+const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'];
+
+/** Image files below `photosDir`, relative to it, NFC, sorted. Hidden files and index.json are skipped. */
+function listPhotos(photosDir, prefix = '') {
+  const out = [];
+  for (const name of readdirSync(join(photosDir, prefix))) {
+    if (name.startsWith('.') || (!prefix && name === 'index.json')) continue;
+    const rel = prefix ? `${prefix}/${name}` : name;
+    if (statSync(join(photosDir, rel)).isDirectory()) { out.push(...listPhotos(photosDir, rel)); continue; }
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
+    if (PHOTO_EXTENSIONS.includes(ext)) out.push(rel.normalize('NFC'));
+    else console.log(`  ! photos/${rel}: not a photo, left out`);
+  }
+  return out.sort();
+}
+
+if (command === 'photos') {
+  const check = args.includes('--check');
+  const dirs = args.slice(1).filter(a => a !== '--check');
+  let stale = 0;
+  for (const dir of dirs.length ? dirs : ['.']) {
+    const photosDir = join(resolve(cwd, dir), 'photos');
+    if (!existsSync(photosDir)) { console.log(`  - ${dir}: no photos/ folder`); continue; }
+    const indexFile = join(photosDir, 'index.json');
+    const next = JSON.stringify(listPhotos(photosDir), null, 2) + '\n';
+    const current = existsSync(indexFile) ? readFileSync(indexFile, 'utf-8') : '';
+    if (current === next) { console.log(`  ✓ ${dir}: photos/index.json is current`); continue; }
+    if (check) { console.log(`  ✗ ${dir}: photos/index.json is out of date; run brand-intent photos ${dir}`); stale++; continue; }
+    writeFileSync(indexFile, next, 'utf-8');
+    console.log(`  ✓ ${dir}: photos/index.json written (${JSON.parse(next).length} photos)`);
+  }
+  process.exit(stale ? 1 : 0);
+}
+
 if (command && command !== 'init' && command !== 'install-skills' && command !== '--help' && command !== '-h') {
   console.log(`  Unknown command: ${command}\n`);
 }
@@ -128,6 +164,7 @@ if (!command || command === '--help' || command === '-h') {
   console.log('Usage:');
   console.log('  brand-intent init              Install the Brand Intent and Brief skills for your AI agent');
   console.log('  brand-intent install-skills     Same as init (alias)');
+  console.log('  brand-intent photos [folder…]   Write photos/index.json: the photo files below photos/ (--check: only compare)');
   console.log('');
   console.log('Example:');
   console.log('  npx brand-intent init');

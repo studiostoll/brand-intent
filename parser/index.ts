@@ -5,7 +5,7 @@
 export { parseIdentityFile } from './identityParser';
 export type { ParsedIdentity, ParsedVoice, ParsedReplacement, ParsedPillars, ParsedAudience, ParsedAntiAudience, ParsedValue, ParsedImagery, ParsedImageTheme, ParsedGoal, ParsedReview } from './identityParser';
 
-export { parseBrandFile, checkBrand } from './brandParser';
+export { parseBrandFile, checkBrand, photoLibrary, PHOTO_EXTENSIONS } from './brandParser';
 export {
   contrastRatio,
   relativeLuminance,

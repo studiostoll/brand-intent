@@ -952,7 +952,9 @@ One location per brand. A brand whose sites lie in one area keeps that area here
 
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
-Brand-declared assets — curated logos, photos, and videos that ship with the brand. Each asset has an id (block header), a display label, and a source file path.
+Brand-declared assets — curated logos, photos, and videos that ship with the brand. Each asset has an id (block header), a display label, and, for logos and videos, a source file path.
+
+**The photo library is the `photos/` folder.** Every image below it is a photo; its id is the file name without extension (`photos/Tasting/notizen.jpg` → `notizen`), so a file name is lowercase kebab-case and unique across all folders. A `photo` block names no file: it adds facts (label, `work:`, `focus:` …) to the file of its id. A file without a block is in the library with its id as label. Folders are the library's structure, named as written, two levels at most: the first is a section (`Tasting`, `Releases`), the second a group within it (`Releases/Nachtfahrt`). Files directly in `photos/` come first, then the sections, newest first by the latest one-off `on:` of the [`.work`](#work-work)s their photos show, the rest in order of first appearance; the groups within a section sort the same way. `photos/index.json` lists the files (paths below `photos/`); `brand-intent photos <brand folder>` writes it, `--check` only compares. Consumers resolve the library with `photoLibrary(blocks, files)`, which rejects a block without a file, a file name that is no id, two files of one name and a third folder level. Before v0.46 a photo named its file with `src:` and its section with `section:`; the parser rejects both.
 
 ```yaml
 logo primary
@@ -986,14 +988,12 @@ logo spiral
   aspect: 1
   animated
 
-photo hero
+photo hero                 # photos/hero.jpg
   label: Hero Shot
-  src: photos/hero.jpg
 
-photo old-harbour
+photo old-harbour          # photos/Harbour/old-harbour.jpg
   label: Old Harbour
-  src: photos/harbour.jpg
-  group: experimental
+  focus: 40% 55%
 
 video intro
   label: Intro Clip
@@ -1004,7 +1004,7 @@ video intro
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `label:` | string | No | Display label (defaults to block id) |
-| `src:` | string | Yes | Path to asset file (relative to brand base). A subfolder below the top folder is the library section, named as written: `photos/Tasting/glaeser.jpg` sits in "Tasting". Files directly in `photos/` come first, then the sections: newest first by the latest one-off `on:` of the [`.work`](#work-work)s their photos show, the rest in order of first appearance. One subfolder at most. Before v0.46 the section was a `section:` key; the parser now rejects it |
+| `src:` | string | Yes (logos, videos) | Path to the asset file (relative to brand base). A subfolder below the top folder is the library section, named as written: `videos/Events/clip.mp4` sits in "Events". One subfolder at most. Photos take no `src:`: their file is `photos/…/<id>.<ext>` (see above) |
 | `aspect:` | float | No | Aspect ratio (width / height) |
 | `scale:` | float | No | Size multiplier when rendered |
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |

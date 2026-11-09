@@ -7,9 +7,9 @@
  * package.json pins an older brand-intent. Once Atelier is bumped, it fails the suite again.
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseBrandFile } from '../parser/brandParser';
+import { parseBrandFile, photoLibrary } from '../parser/brandParser';
 
 const ATELIER = '/Users/christophestoll/Documents/GitHub/brand-atelier/app';
 const BRANDS_DIR = `${ATELIER}/public/brands`;
@@ -36,6 +36,8 @@ for (const brandId of readdirSync(BRANDS_DIR)) {
   try {
     const content = readFileSync(brandFile, 'utf8');
     const parsed = parseBrandFile(content, brandFile);
+    const photoIndex = join(brandDir, 'photos', 'index.json');
+    if (existsSync(photoIndex)) photoLibrary(parsed.assets?.photos, JSON.parse(readFileSync(photoIndex, 'utf8')), brandFile);
     const groupsLabel = parsed.colorGroups ? `${parsed.colorGroups.length} groups` : 'flat';
     const colorCount = Object.keys(parsed.brandColors ?? {}).length;
     console.log(`  ✓ ${brandId}: ${colorCount} colors (${groupsLabel}), ${Object.keys(parsed.themes ?? {}).length} themes`);

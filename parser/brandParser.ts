@@ -210,8 +210,11 @@ export interface ParsedAssetDef {
   alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
   /** Library section: the subfolder the file sits in (`photos/Tasting/x.jpg` → "Tasting"), exactly as named.
    *  Absent for a file directly in its top folder. Consumers list each section after the assets without one.
-   *  Since v0.46; before, a `section:` key. */
+   *  Since v0.46; before, a `section:` key. Photos get it from `photoLibrary`. */
   section?: string;
+  /** Photos only: the second folder level (`photos/Releases/Nachtfahrt/x.jpg` → section "Releases",
+   *  subsection "Nachtfahrt"). Set by `photoLibrary`. */
+  subsection?: string;
   /** Photos only: name of the `.time` entry the photo fits (`when:`): a window or a season.
    *  Absent → all year. `checkBrand` checks it against the `.time`. */
   when?: string;
@@ -1802,6 +1805,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['generator']) def.generator = raw.props['generator'];
     const folders = def.src.split('/').slice(1, -1);
     if (folders.length === 1) def.section = folders[0].normalize('NFC');
+    // A photo's file, section and subsection come from the folder (`photoLibrary`); the block holds facts only.
     if (raw.props['when']) def.when = raw.props['when'];
     for (const key of ['framing', 'place', 'person', 'group', 'work', 'taken'] as const) {
       if (raw.props[key]) def[key] = raw.props[key];
@@ -1838,6 +1842,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
   }
   // The library section is the subfolder: one level below the top folder, never deeper, never a key.
+  // A photo names no file at all: its file is photos/…/<id>.<ext>, found by `photoLibrary`.
+  for (const p of photosRaw) {
+    if (p.props['src'] !== undefined) throw new Error(`${fileName}: photo "${p.id}": src: is gone since v0.46; the file name is the id, put the file at photos/${p.id}.jpg or in a folder below photos/`);
+    if (!/^[a-z][a-z0-9-]*$/.test(p.id)) throw new Error(`${fileName}: photo "${p.id}": the id is the file name and must be lowercase kebab-case`);
+  }
   for (const [kind, arr] of [['logo', logosRaw], ['photo', photosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
     for (const a of arr) {
       if (a.props['section'] !== undefined) throw new Error(`${fileName}: ${kind} "${a.id}": section: is gone since v0.46; the section is the subfolder, put the file in ${kind === 'illustration' ? 'its folder' : `${kind}s`}/<section>/`);
@@ -2096,6 +2105,48 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
  *  `time`: the brand's `.time`, or `null` when it has none (then every `when:` and `season:` is unknown);
  *  undefined = not checked. `people`, `groups`, `works`: the brand's `.person`, `.group` and `.work` files
  *  (empty = none); undefined = not checked. */
+/** Image files a photo library may hold. */
+export const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'] as const;
+
+/**
+ * The brand's photo library: every image file below `photos/`, its id the file name without extension.
+ * `files` are paths relative to `photos/` (`photos/index.json`, written by `brand-intent photos`), e.g.
+ * `"Tasting/notizen.jpg"`. Up to two folder levels: the first is the `section`, the second the `subsection`,
+ * both named as written. A `photo <id>` block adds facts (label, work, focus…) to the file of that name;
+ * a file without one is in the library with its id as label.
+ *
+ * Order: declared photos in declaration order, then the rest in `files` order.
+ * Throws on a declared photo without a file, a file name that is no id, two files with one name,
+ * or a third folder level.
+ */
+export function photoLibrary(declared: ParsedAssetDef[] | undefined, files: string[], fileName: string): ParsedAssetDef[] {
+  const byId = new Map<string, { src: string; section?: string; subsection?: string }>();
+  for (const raw of files) {
+    const path = raw.normalize('NFC');
+    const parts = path.split('/');
+    const name = parts[parts.length - 1];
+    const dot = name.lastIndexOf('.');
+    const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
+    if (!(PHOTO_EXTENSIONS as readonly string[]).includes(ext)) throw new Error(`${fileName}: photos/${path}: not a photo (${PHOTO_EXTENSIONS.join(', ')})`);
+    const id = name.slice(0, dot);
+    if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}: photos/${path}: the file name is the photo's id and must be lowercase kebab-case (e.g. glas-am-fenster.${ext})`);
+    if (parts.length > 3) throw new Error(`${fileName}: photos/${path}: nested too deep; two folders below photos/ are the limit`);
+    const other = byId.get(id);
+    if (other) throw new Error(`${fileName}: photos/${path} and ${other.src} have the same name; a photo's file name is its id and must be unique`);
+    byId.set(id, { src: `photos/${path}`, ...(parts.length > 1 ? { section: parts[0] } : {}), ...(parts.length > 2 ? { subsection: parts[1] } : {}) });
+  }
+  const out: ParsedAssetDef[] = [];
+  for (const d of declared ?? []) {
+    const file = byId.get(d.id);
+    if (!file) throw new Error(`${fileName}: photo "${d.id}" has no file; put ${d.id}.jpg (or .png, .webp…) below photos/`);
+    const { section: _s, subsection: _ss, ...facts } = d;
+    out.push({ ...facts, ...file });
+    byId.delete(d.id);
+  }
+  for (const [id, file] of byId) out.push({ id, label: id, ...file });
+  return out;
+}
+
 export function checkBrand(
   brand: Pick<ParsedBrand, 'colorFamilies' | 'assets'>,
   facts: { time?: ParsedTime | null; people?: ParsedPerson[]; groups?: ParsedGroup[]; works?: ParsedWork[] },

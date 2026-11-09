@@ -7,7 +7,7 @@
  */
 
 import { isInDateWindow } from '../parser/dateWindows';
-import { parseBrandFile, checkBrand } from '../parser/brandParser';
+import { parseBrandFile, photoLibrary, checkBrand } from '../parser/brandParser';
 import { parseTimeFile } from '../parser/timeParser';
 import { parsePersonFile } from '../parser/personParser';
 import { parseGroupFile } from '../parser/groupParser';
@@ -366,23 +366,36 @@ test('parses logo align variants', () => {
   assertEq(logo?.scale, 1.1, 'key after sub-block belongs to the logo');
 });
 
-test('align sub-blocks only apply to logos', () => {
-  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n  align-left\n    src: photos/other.jpg\n`;
+test('a video\'s section is its subfolder; group: on a photo names a .group', () => {
+  const src = `${HEADER}photo old\n  group: drax-mill\n  work: rye-loaf\n\nvideo clip\n  src: videos/experimental/clip.mp4\n`;
   const out = parseBrandFile(src, 'test.brand');
-  assertEq(out.assets?.photos?.[0]?.alignVariants, undefined, 'no variants on photos');
+  assertEq([out.assets?.photos?.[0]?.group, out.assets?.photos?.[0]?.work], ['drax-mill', 'rye-loaf'], 'photo group and work');
+  assertEq(out.assets?.videos?.[0]?.section, 'experimental', 'video in a section');
+  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/a/b/clip.mp4\n`, 'test.brand'), /nested too deep/, 'two subfolders');
+  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  section: old\n`, 'test.brand'), /section: is gone since v0.46/, 'section key');
+  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/clip.mp4\n  group: experimental\n`, 'test.brand'), /a library section is the subfolder since v0.46/, 'group on a video');
+  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  group: Drax Mill\n`, 'test.brand'), /group: must be an id/, 'group id');
 });
 
-test('the section is the subfolder; group: on a photo names a .group', () => {
-  const src = `${HEADER}photo hero\n  src: photos/hero.jpg\n\nphoto old\n  src: photos/Old days/old.jpg\n  group: drax-mill\n  work: rye-loaf\n\nvideo clip\n  src: videos/experimental/clip.mp4\n`;
-  const out = parseBrandFile(src, 'test.brand');
-  assertEq(out.assets?.photos?.[0]?.section, undefined, 'photo without a section');
-  assertEq(out.assets?.photos?.[1]?.section, 'Old days', 'photo in a section, folder name as written');
-  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/p.jpg\n  section: old\n`, 'test.brand'), /section: is gone since v0.46/, 'section key');
-  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/a/b/p.jpg\n`, 'test.brand'), /nested too deep/, 'two subfolders');
-  assertEq([out.assets?.photos?.[1]?.group, out.assets?.photos?.[1]?.work], ['drax-mill', 'rye-loaf'], 'photo group and work');
-  assertEq(out.assets?.videos?.[0]?.section, 'experimental', 'video in a section');
-  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/clip.mp4\n  group: experimental\n`, 'test.brand'), /a library section is the subfolder since v0.46/, 'group on a video');
-  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/p.jpg\n  group: Drax Mill\n`, 'test.brand'), /group: must be an id/, 'group id');
+test('a photo names no file: src: is gone, the id is the file name', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/p.jpg\n`, 'test.brand'), /src: is gone since v0.46/, 'src key');
+  assertThrows(() => parseBrandFile(`${HEADER}photo Old_Mill\n  label: Mill\n`, 'test.brand'), /lowercase kebab-case/, 'id is no file name');
+});
+
+test('photoLibrary: files below photos/ are the library, blocks add facts', () => {
+  const declared = parseBrandFile(`${HEADER}photo mill\n  label: The mill\n  work: rye-loaf\n\nphoto hero\n  label: Hero\n`, 'test.brand').assets?.photos;
+  const lib = photoLibrary(declared, ['hero.jpg', 'Releases/Rye/mill.jpeg', 'Old days/oven.png', 'Releases/cover.webp'], 'test.brand');
+  assertEq(lib.map(p => p.id), ['mill', 'hero', 'oven', 'cover'], 'declared first, in their order, then the rest in file order');
+  assertEq(lib[0], { id: 'mill', label: 'The mill', src: 'photos/Releases/Rye/mill.jpeg', work: 'rye-loaf', section: 'Releases', subsection: 'Rye' }, 'two levels');
+  assertEq(lib[1], { id: 'hero', label: 'Hero', src: 'photos/hero.jpg' }, 'top folder: no section');
+  assertEq(lib[2], { id: 'oven', label: 'oven', src: 'photos/Old days/oven.png', section: 'Old days' }, 'undeclared file: label = id, folder as written');
+  assertEq(lib[3].subsection, undefined, 'file directly in a section');
+  assertEq(photoLibrary(undefined, ['Caf\u0065\u0301/a.jpg'], 't')[0].section, 'Café', 'folder name NFC');
+  assertThrows(() => photoLibrary(declared, ['hero.jpg'], 'test.brand'), /photo "mill" has no file/, 'declared without file');
+  assertThrows(() => photoLibrary(undefined, ['a/x.jpg', 'b/x.png'], 'test.brand'), /same name/, 'duplicate name');
+  assertThrows(() => photoLibrary(undefined, ['IMG_1234.jpg'], 'test.brand'), /lowercase kebab-case/, 'camera name');
+  assertThrows(() => photoLibrary(undefined, ['a/b/c/x.jpg'], 'test.brand'), /nested too deep/, 'three levels');
+  assertThrows(() => photoLibrary(undefined, ['notes.txt'], 'test.brand'), /not a photo/, 'not an image');
 });
 
 // ── framing ──────────────────────────────────────────────────────────────────
@@ -408,26 +421,26 @@ test('framing caption and goals', () => {
 });
 
 test('photo metadata: framing, place, person, taken', () => {
-  const src = `${HEADER}framing close\n  horizon: none\n\nphoto baeckerin\n  src: photos/b.jpg\n  framing: close\n  place: Backstube, Hauptstraße\n  person: anna\n  taken: 2026-05-14\n`;
+  const src = `${HEADER}framing close\n  horizon: none\n\nphoto baeckerin\n  framing: close\n  place: Backstube, Hauptstraße\n  person: anna\n  taken: 2026-05-14\n`;
   const p = parseBrandFile(src, 'test.brand').assets?.photos?.[0];
   assertEq([p?.framing, p?.place, p?.person, p?.taken], ['close', 'Backstube, Hauptstraße', 'anna', '2026-05-14'], 'metadata');
 });
 
 test('photo metadata rejects unknown framing, bad date, non-photo use', () => {
-  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  framing: nope\n`, 'test.brand'), /unknown framing/, 'unknown framing');
-  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  taken: 14.05.2026\n`, 'test.brand'), /YYYY-MM-DD/, 'bad date');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  framing: nope\n`, 'test.brand'), /unknown framing/, 'unknown framing');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  taken: 14.05.2026\n`, 'test.brand'), /YYYY-MM-DD/, 'bad date');
   assertThrows(() => parseBrandFile(`${HEADER}logo a\n  src: a.svg\n  place: Burg\n`, 'test.brand'), /for photos only/, 'logo');
 });
 
 test('photo focus and horizon', () => {
-  const src = `${HEADER}photo a\n  src: a.jpg\n  focus: 45% 30.5%\n  horizon: 58%\n\nphoto b\n  src: b.jpg\n  focus: none\n  horizon: none\n\nphoto c\n  src: c.jpg\n`;
+  const src = `${HEADER}photo a\n  focus: 45% 30.5%\n  horizon: 58%\n\nphoto b\n  focus: none\n  horizon: none\n\nphoto c\n`;
   const [a, b, c] = parseBrandFile(src, 'test.brand').assets?.photos ?? [];
   assertEq([a?.focus, a?.horizon], [{ x: 45, y: 30.5 }, 58], 'declared');
   assertEq([b?.focus, b?.horizon], [null, null], 'none');
   assertEq(['focus' in (c ?? {}), 'horizon' in (c ?? {})], [false, false], 'absent');
-  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  focus: 45%\n`, 'test.brand'), /focus: must be/, 'one value');
-  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  horizon: 0.6\n`, 'test.brand'), /horizon: must be/, 'no percent');
-  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  src: a.jpg\n  horizon: 120%\n`, 'test.brand'), /above 100%/, 'range');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  focus: 45%\n`, 'test.brand'), /focus: must be/, 'one value');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  horizon: 0.6\n`, 'test.brand'), /horizon: must be/, 'no percent');
+  assertThrows(() => parseBrandFile(`${HEADER}photo a\n  horizon: 120%\n`, 'test.brand'), /above 100%/, 'range');
   assertThrows(() => parseBrandFile(`${HEADER}logo a\n  src: a.svg\n  focus: 50% 50%\n`, 'test.brand'), /for photos only/, 'logo');
 });
 
@@ -516,11 +529,11 @@ test('location rejects missing, bad and unknown keys', () => {
 console.log('\nwindows:');
 
 test('a leftover windows block is ignored with a warning; photo when: stays an id', () => {
-  const b = parseBrandFile(`${HEADER}windows\n  strawberries: 05-01..05-31   # peak mid-May\n  plums:  03-01..05-31, 08-15..10-31\n\nphoto berries\n  src: photos/berries.jpg\n  when: strawberries\n`, 'test.brand');
+  const b = parseBrandFile(`${HEADER}windows\n  strawberries: 05-01..05-31   # peak mid-May\n  plums:  03-01..05-31, 08-15..10-31\n\nphoto berries\n  when: strawberries\n`, 'test.brand');
   assertEq('windows' in b, false, 'no windows on the brand');
   assertEq(b.warnings, ['test.brand:5: windows block is ignored — windows live in the .time now; move it to "test.time"'], 'warning');
   assertEq(b.assets?.photos?.[0].when, 'strawberries', 'photo when');
-  assertThrows(() => parseBrandFile(`${HEADER}photo raps\n  src: photos/raps.jpg\n  when: Raps Season\n`, 'test.brand'), /when: must be an id/, 'when id');
+  assertThrows(() => parseBrandFile(`${HEADER}photo raps\n  when: Raps Season\n`, 'test.brand'), /when: must be an id/, 'when id');
   assertThrows(() => parseBrandFile(`${HEADER}logo main\n  src: logos/main.svg\n  when: raps\n`, 'test.brand'), /photos only/, 'logo when');
 });
 
@@ -535,7 +548,7 @@ test('isInDateWindow: inclusive ends, year-end wrap, multiple ranges', () => {
 });
 
 test('checkBrand: photo when: against the .time, photo person: against the people', () => {
-  const b = parseBrandFile(`${HEADER}photo jetty\n  src: photos/jetty.jpg\n  when: advent\n  person: thomas\nphoto bike\n  src: photos/bike.jpg\n  person: thomas\nphoto counter\n  src: photos/counter.jpg\n`, 'test.brand');
+  const b = parseBrandFile(`${HEADER}photo jetty\n  when: advent\n  person: thomas\nphoto bike\n  person: thomas\nphoto counter\n`, 'test.brand');
   const time = parseTimeFile('windows\n  advent: 11-27..12-24\n', 'test.time');
   const thomas = parsePersonFile('id: thomas\nrole: Regular\nphotos: jetty, bike\n', 'thomas.person');
   assertEq(checkBrand(b, { time, people: [thomas] }, 'test.brand'), [], 'fits');
@@ -552,7 +565,7 @@ test('checkBrand: photo when: against the .time, photo person: against the peopl
 });
 
 test('checkBrand: photo group: and work: mirror the group\'s and work\'s photos:', () => {
-  const b = parseBrandFile(`${HEADER}photo van\n  src: photos/van.jpg\n  group: fenster\nphoto sleeve\n  src: photos/sleeve.jpg\n  work: nachtfahrt\nphoto stage\n  src: photos/stage.jpg\n`, 'test.brand');
+  const b = parseBrandFile(`${HEADER}photo van\n  group: fenster\nphoto sleeve\n  work: nachtfahrt\nphoto stage\n`, 'test.brand');
   const fenster = parseGroupFile('id: fenster\nname: Fenster\nrole: Band\nphotos: van\n', 'fenster.group');
   const album = parseWorkFile('id: nachtfahrt\ntitle: Nachtfahrt\nkind: album\nphotos: sleeve\n', 'nachtfahrt.work');
   assertEq(checkBrand(b, { groups: [fenster], works: [album] }, 'test.brand'), [], 'fits');
