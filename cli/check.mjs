@@ -4232,20 +4232,28 @@ function parseWorkFile(content, fileName) {
   let inFacts = false;
   let items = null;
   let inItems = false;
+  const reviews = [];
+  let review = null;
   content.split("\n").forEach((rawLine, i) => {
     const lineNum = i + 1;
     const indent = rawLine.length - rawLine.trimStart().length;
     const line = rawLine.trim();
     if (line === "") return;
-    if (line.startsWith("#") && (indent === 0 || !inFacts && !inItems || inItems && /^#(\s|$)/.test(line))) {
+    if (line.startsWith("#") && (indent === 0 || !inFacts && !inItems && !review || inItems && /^#(\s|$)/.test(line))) {
       if (indent === 0) description = description ? `${description} ${line.slice(1).trim()}` : line.slice(1).trim();
       return;
     }
     if (indent === 0) {
       inFacts = false;
       inItems = false;
+      review = null;
+      if (line === "review") {
+        review = { lines: [], keys: {}, line: lineNum };
+        reviews.push(review);
+        return;
+      }
       const colonIdx = line.indexOf(":");
-      if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" or a "facts:" block, got "${line}"`);
+      if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value", a "facts:" block or a review block, got "${line}"`);
       const key = line.slice(0, colonIdx).trim();
       const rest = line.slice(colonIdx + 1).trim();
       const value = key === "links" ? rest : rest.replace(/\s+#.*$/, "");
@@ -4263,10 +4271,22 @@ function parseWorkFile(content, fileName) {
         inItems = true;
         return;
       }
-      if (!KEYS4.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS4].join(", ")} or a facts: block)`);
+      if (!KEYS4.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS4].join(", ")} , a facts: block or a review block)`);
       if (raw[key]) throw new Error(`${fileName}:${lineNum}: duplicate "${key}"`);
       if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
       raw[key] = { value, line: lineNum };
+      return;
+    }
+    if (review) {
+      if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent (a review's lines use 2 spaces under "review")`);
+      const key = /^(by|on|link):\s*(.*)$/.exec(line);
+      if (key && review.lines.length === 0) {
+        if (review.keys[key[1]] !== void 0) throw new Error(`${fileName}:${lineNum}: duplicate "${key[1]}" in review`);
+        if (!key[2]) throw new Error(`${fileName}:${lineNum}: empty ${key[1]} in review`);
+        review.keys[key[1]] = key[2].trim();
+        return;
+      }
+      review.lines.push(line);
       return;
     }
     if (inItems && items) {
@@ -4355,6 +4375,12 @@ function parseWorkFile(content, fileName) {
       }
     });
   }
+  for (const r of reviews) {
+    if (!r.keys["by"]) throw new Error(`${fileName}:${r.line}: review needs by: (who wrote it where, as a post credits it)`);
+    if (r.lines.length === 0) throw new Error(`${fileName}:${r.line}: empty review (the critic's words go on the 2-space lines after by:, on: and link:)`);
+    if (r.keys["on"] !== void 0 && !isDate2(r.keys["on"])) throw new Error(`${fileName}:${r.line}: review on must be a date YYYY-MM-DD, got "${r.keys["on"]}"`);
+    if (r.keys["link"] !== void 0 && !LINK2.test(r.keys["link"])) throw new Error(`${fileName}:${r.line}: review link must be an https link, got "${r.keys["link"]}"`);
+  }
   return {
     id: raw["id"].value,
     description,
@@ -4373,7 +4399,13 @@ function parseWorkFile(content, fileName) {
     ...photos ? { photos } : {},
     ...factsBlock ? { facts: factsBlock.lines.join("\n") } : {},
     ...itemsBlock ? { items: itemsBlock.list.map(({ line: _, ...item }) => item) } : {},
-    ...itemsBlock?.cycle ? { itemsCycle: true } : {}
+    ...itemsBlock?.cycle ? { itemsCycle: true } : {},
+    reviews: reviews.map((r) => ({
+      text: r.lines.join("\n"),
+      by: r.keys["by"],
+      ...r.keys["on"] ? { on: r.keys["on"] } : {},
+      ...r.keys["link"] ? { link: r.keys["link"] } : {}
+    }))
   };
 }
 function checkWork(work, facts, fileName) {

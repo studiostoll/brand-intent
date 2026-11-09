@@ -3,6 +3,7 @@
   "name": "Brand Intent Work",
   "patterns": [
     { "include": "#comment" },
+    { "include": "#review" },
     { "include": "#date-field" },
     { "include": "#days-field" },
     { "include": "#top-field" },
@@ -17,6 +18,38 @@
     "comment": {
       "match": "^#.*$",
       "name": "comment.line.number-sign.brand-intent-work"
+    },
+    "review": {
+      "comment": "A critic's words, verbatim: by:, on: and link: first, then the words, up to the next unindented line",
+      "begin": "^(review)\\s*$",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.brand-intent-work" }
+      },
+      "end": "^(?=\\S)",
+      "patterns": [
+        {
+          "match": "^\\s{2}(on)(:)\\s+(\\d{4}-\\d{2}-\\d{2})\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-work" },
+            "2": { "name": "punctuation.separator.brand-intent-work" },
+            "3": { "name": "constant.numeric.brand-intent-work" }
+          }
+        },
+        {
+          "match": "^\\s{2}(by|link)(:)\\s+(.*)$",
+          "captures": {
+            "1": { "name": "keyword.control.brand-intent-work" },
+            "2": { "name": "punctuation.separator.brand-intent-work" },
+            "3": { "name": "string.unquoted.brand-intent-work" }
+          }
+        },
+        {
+          "match": "^\\s{2}(\\S.*)$",
+          "captures": {
+            "1": { "name": "string.quoted.brand-intent-work" }
+          }
+        }
+      ]
     },
     "date-field": {
       "comment": "on: MM-DD, MM-DD..MM-DD, YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD; until: YYYY-MM-DD; time: HH:MM-HH:MM; lead: N",
@@ -88,7 +121,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id|title|kind|by|on|days|time|lead|until|when|place|price|links|photos|facts)(?=:|\\s|$)",
+      "match": "^(id|title|kind|by|on|days|time|lead|until|when|place|price|links|photos|facts|review)(?=:|\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-work" }
       }

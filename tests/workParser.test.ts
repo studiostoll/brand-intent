@@ -65,6 +65,7 @@ facts:
     by: ['giardini-di-miro'], on: { from: '2025-10-24', to: '2025-10-24', yearly: false }, lead: 42,
     price: 'from €15', links: ['https://www.2ndrec.com/products/quasi-casa'], photos: ['quasi-casa-sleeve'],
     facts: 'A live recording of their final show.\n2xLP with download code and a 20-page booklet.',
+    reviews: [],
   }, 'parsed');
 });
 
@@ -240,6 +241,36 @@ test('workItem: days: count the times it comes round, the item holds in between;
   const fromSunday = parse(`${HEAD}on: 2026-01-04\ndays: mon\nitems:\n  Wanderlust\n`);
   assertEq(workItem(fromSunday, day(2026, 1, 4)), undefined, 'on: is not one of its days');
   assertEq(workItem(fromSunday, day(2026, 1, 5))?.value, 'Wanderlust', 'first Monday');
+});
+
+console.log('\nreviews:');
+
+test('review blocks: by, on, link, then the words verbatim', () => {
+  const w = parse(`${HEAD}review
+  by:   Jane Roe, Field Notes
+  on:   2025-11-02
+  link: https://example.com/review#quasi
+  A record that knows when to stop.
+  # Not a comment: the critic's words as written.
+review
+  by: Sam Poe, Quiet Pages
+  Quiet, then loud.
+  by: no means a key once the words have started.
+`);
+  assertEq(w.reviews, [
+    { text: "A record that knows when to stop.\n# Not a comment: the critic's words as written.", by: 'Jane Roe, Field Notes', on: '2025-11-02', link: 'https://example.com/review#quasi' },
+    { text: 'Quiet, then loud.\nby: no means a key once the words have started.', by: 'Sam Poe, Quiet Pages' },
+  ]);
+  assertEq(parse(HEAD).reviews, [], 'none');
+});
+
+test('review errors', () => {
+  assertThrows(() => parse(`${HEAD}review\n  Words without a credit.\n`), 'review needs by:');
+  assertThrows(() => parse(`${HEAD}review\n  by: Jane Roe\n`), 'empty review');
+  assertThrows(() => parse(`${HEAD}review\n  by: Jane Roe\n  by: Sam Poe\n  Words.\n`), 'duplicate "by" in review');
+  assertThrows(() => parse(`${HEAD}review\n  by: Jane Roe\n  on: 2025-11\n  Words.\n`), 'review on must be a date');
+  assertThrows(() => parse(`${HEAD}review\n  by: Jane Roe\n  link: http://example.com\n  Words.\n`), 'review link must be an https link');
+  assertThrows(() => parse(`${HEAD}review\n    by: Jane Roe\n`), 'a review\'s lines use 2 spaces');
 });
 
 console.log('\ncross-file:');

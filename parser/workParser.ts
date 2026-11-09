@@ -26,6 +26,15 @@ export interface WorkItem {
   note?: string;
 }
 
+/** What a critic wrote about the work, verbatim: the words, who wrote it where (`by:`, the credit as a post
+ *  writes it), when (`on:`) and where to read it (`link:`). Never written, extended or rewritten by AI. */
+export interface WorkReview {
+  text: string;
+  by: string;
+  on?: string;
+  link?: string;
+}
+
 /** When a work comes out, takes place or is on the shelf. `MM-DD` start and end for a yearly date,
  *  `YYYY-MM-DD` for a one-off; a single day has `to` = `from`. */
 export interface WorkDate {
@@ -70,6 +79,8 @@ export interface ParsedWork {
   items?: WorkItem[];
   /** `items: cycle`: the items start over after the last. Absent: each item is used once, then there is none. */
   itemsCycle?: true;
+  /** What critics wrote about it, verbatim, in file order. Empty when there are none. */
+  reviews: WorkReview[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -118,6 +129,9 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
   let inFacts = false;
   let items: { list: Array<WorkItem & { line: number }>; line: number; cycle: boolean } | null = null;
   let inItems = false;
+  type ReviewDraft = { lines: string[]; keys: Record<string, string>; line: number };
+  const reviews: ReviewDraft[] = [];
+  let review: ReviewDraft | null = null;
 
   content.split('\n').forEach((rawLine, i) => {
     const lineNum = i + 1;
@@ -125,7 +139,7 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
     const line = rawLine.trim();
     if (line === '') return;
     // A `#` line is a comment, except in facts and items, where only `# …` is (an item can be a hex value)
-    if (line.startsWith('#') && (indent === 0 || (!inFacts && !inItems) || (inItems && /^#(\s|$)/.test(line)))) {
+    if (line.startsWith('#') && (indent === 0 || (!inFacts && !inItems && !review) || (inItems && /^#(\s|$)/.test(line)))) {
       if (indent === 0) description = description ? `${description} ${line.slice(1).trim()}` : line.slice(1).trim();
       return;
     }
@@ -133,8 +147,14 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
     if (indent === 0) {
       inFacts = false;
       inItems = false;
+      review = null;
+      if (line === 'review') {
+        review = { lines: [], keys: {}, line: lineNum };
+        reviews.push(review);
+        return;
+      }
       const colonIdx = line.indexOf(':');
-      if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" or a "facts:" block, got "${line}"`);
+      if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value", a "facts:" block or a review block, got "${line}"`);
       const key = line.slice(0, colonIdx).trim();
       // A URL keeps its `#`; elsewhere a trailing ` # …` is a comment
       const rest = line.slice(colonIdx + 1).trim();
@@ -153,10 +173,24 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
         inItems = true;
         return;
       }
-      if (!KEYS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS].join(', ')} or a facts: block)`);
+      if (!KEYS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS].join(', ')} , a facts: block or a review block)`);
       if (raw[key]) throw new Error(`${fileName}:${lineNum}: duplicate "${key}"`);
       if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
       raw[key] = { value, line: lineNum };
+      return;
+    }
+
+    // A review: its by:, on: and link: lines first, then the critic's words as written
+    if (review) {
+      if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent (a review's lines use 2 spaces under "review")`);
+      const key = /^(by|on|link):\s*(.*)$/.exec(line);
+      if (key && review.lines.length === 0) {
+        if (review.keys[key[1]] !== undefined) throw new Error(`${fileName}:${lineNum}: duplicate "${key[1]}" in review`);
+        if (!key[2]) throw new Error(`${fileName}:${lineNum}: empty ${key[1]} in review`);
+        review.keys[key[1]] = key[2].trim();
+        return;
+      }
+      review.lines.push(line);
       return;
     }
 
@@ -253,6 +287,13 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
     });
   }
 
+  for (const r of reviews) {
+    if (!r.keys['by']) throw new Error(`${fileName}:${r.line}: review needs by: (who wrote it where, as a post credits it)`);
+    if (r.lines.length === 0) throw new Error(`${fileName}:${r.line}: empty review (the critic's words go on the 2-space lines after by:, on: and link:)`);
+    if (r.keys['on'] !== undefined && !isDate(r.keys['on'])) throw new Error(`${fileName}:${r.line}: review on must be a date YYYY-MM-DD, got "${r.keys['on']}"`);
+    if (r.keys['link'] !== undefined && !LINK.test(r.keys['link'])) throw new Error(`${fileName}:${r.line}: review link must be an https link, got "${r.keys['link']}"`);
+  }
+
   return {
     id: raw['id'].value,
     description,
@@ -272,6 +313,12 @@ export function parseWorkFile(content: string, fileName: string): ParsedWork {
     ...(factsBlock ? { facts: factsBlock.lines.join('\n') } : {}),
     ...(itemsBlock ? { items: itemsBlock.list.map(({ line: _, ...item }) => item) } : {}),
     ...(itemsBlock?.cycle ? { itemsCycle: true as const } : {}),
+    reviews: reviews.map(r => ({
+      text: r.lines.join('\n'),
+      by: r.keys['by'],
+      ...(r.keys['on'] ? { on: r.keys['on'] } : {}),
+      ...(r.keys['link'] ? { link: r.keys['link'] } : {}),
+    })),
   };
 }
 

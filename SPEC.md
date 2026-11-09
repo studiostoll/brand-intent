@@ -1939,7 +1939,7 @@ A `quote` block holds the person's own words. Implementations offer a person's q
 
 ### Exclusion Rule
 
-A `.person` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the person's quotes (→ `.purpose`, `.story`), an address (→ `.place`), a group's facts (→ `.group`), what the person did not agree to.
+A `.person` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the person's quotes (→ `.purpose`, `.story`), an address (→ `.place`), a group's facts (→ `.group`), a critic's review (→ `.work`), what the person did not agree to.
 
 ---
 
@@ -2001,7 +2001,7 @@ A group's `quote` blocks follow the [person's](#quotes): offered for the open sl
 
 ### Exclusion Rule
 
-A `.group` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the group's quotes (→ `.purpose`, `.story`), an address with hours (→ `.place`), a member's words or consent (→ `.person`), what the group sells or puts on (→ `.work`).
+A `.group` never contains: voice or tone (→ `.identity`), visual parameters (→ `.brand`), post texts other than the group's quotes (→ `.purpose`, `.story`), an address with hours (→ `.place`), a member's words or consent (→ `.person`), what the group sells or puts on and what critics wrote about it (→ `.work`).
 
 ---
 
@@ -2071,6 +2071,12 @@ links:  https://www.2ndrec.com/products/quasi-casa
 photos: quasi-casa-sleeve
 facts:
   A live recording of their final show. 2xLP with download code and a 20-page booklet.
+
+review
+  by:   Jane Roe, Field Notes
+  on:   2025-11-02
+  link: https://example.com/field-notes/quasi-casa
+  A farewell that never raises its voice.
 ```
 
 | Key | Type | Required | Description |
@@ -2091,6 +2097,7 @@ facts:
 | `photos:` | string list | No | Photo ids from the `.brand` that show the work. Each of those photos names this work with `work:` |
 | `facts:` | block | No | Facts for AI writing, on the following 2-space lines: ingredients, duration, edition, vintage, line-up. Not voice |
 | `items:` | block | No | A series' items, one per time the work comes round: see [Items](#items). A bare `items:`, or `items: cycle` to start over after the last |
+| `review` | block | No | What a critic wrote about the work, verbatim: see [Reviews](#reviews) (repeatable) |
 
 ### In season
 
@@ -2143,6 +2150,22 @@ items:  cycle
 - **Errors:** an empty list, a value listed twice (case ignored), two `#RRGGBB` values closer than 0.03 in OKLab (they look the same). A `#` line inside the list is an item; only `# …` with a space is a comment.
 
 An item's value is a fact about the work, what this time brings, not the brand's look: a colour of the day is the subject of its post, not a brand colour.
+
+### Reviews
+
+A `review` block holds what a critic wrote about the work: a record review, a restaurant critic's line, a jury's words. Its 2-space lines start with the keys, then the words:
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `by:` | Yes | Who wrote it where, as a post credits it: `Jane Roe, Field Notes` |
+| `on:` | No | `YYYY-MM-DD`: when it appeared |
+| `link:` | No | Where to read it (`https://`) |
+
+The words follow on the next 2-space lines, as published; a `#` line among them is part of the words. Once the words have started, a line that begins with `by:` is a word, not a key.
+
+Reviews follow the [person's quotes](#quotes): implementations offer them for the open slots of a page that names the work, verbatim, in quotation marks and credited with the review's `by:`. AI writing never writes, extends, shortens or rewrites a review. A critic is not a person of the brand: a review never goes into a `.person` or a `.group`, and needs no consent, because it was published.
+
+**Errors:** a review without `by:`, or without words; a key twice; `on:` that is not a date; `link:` that is not `https://`.
 
 ### Exclusion Rule
 
