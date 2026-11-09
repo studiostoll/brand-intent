@@ -223,16 +223,24 @@ hide_bar: true
         a <code>camera</code>, <code>framing</code> modules for photos, a <code>photo-look</code>.
         Every value traces back to a sentence in the identity.
       </p>
-<pre><span class="kw">framing</span> <span class="sl">counter</span>
-  <span class="meta">horizon:</span>     <span class="num">45%</span>
-  <span class="meta">description:</span> <span class="val">The counter at eye level, the street through the shop window behind it.</span>
-  <span class="meta">goals:</span>       <span class="val">kiez, service</span>
+<pre><span class="kw">brand-colors</span>
+  <span class="meta">primary:</span>   <span class="num">#2C1810</span>   <span class="cm"># dark roast: a well-baked crust</span>
+  <span class="meta">accent1:</span>   <span class="num">#C8A47E</span>   <span class="cm"># crust: dividers and highlights</span>
+  <span class="meta">white:</span>     <span class="num">#FAF6F0</span>   <span class="cm"># flour: not pure white, slightly warm</span>
 
-<span class="kw">photo-look</span>
-  <span class="meta">saturation:</span> <span class="num">-10</span>      <span class="cm"># flour, crust and wood, not a food blog</span>
-  <span class="meta">warmth:</span>     <span class="num">6</span>        <span class="cm"># the light of the bakery, early</span>
-  <span class="meta">contrast:</span>   <span class="num">5</span>
-  <span class="meta">scrim:</span>      <span class="num">40%</span>      <span class="cm"># under light text on a photo, at most this dark</span></pre>
+<span class="kw">theme</span> <span class="sl">Shop</span>
+  <span class="meta">background:</span>   <span class="ref">$white</span>
+  <span class="meta">text-primary:</span> <span class="ref">$primary</span>
+  <span class="meta">divider:</span>      <span class="ref">$accent1</span>
+
+<span class="kw">font</span> <span class="sl">primary</span>
+  <span class="meta">name:</span>   <span class="val">Hanken Grotesk</span>
+  <span class="meta">source:</span> <span class="val">google</span>
+
+<span class="kw">typography</span> <span class="sl">headline</span>
+  <span class="meta">weight:</span>     <span class="num">700</span>
+  <span class="meta">size:</span>       <span class="num">6</span>
+  <span class="meta">lineHeight:</span> <span class="num">1.15</span></pre>
     </div>
   </div>
 
