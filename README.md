@@ -28,7 +28,7 @@ Plus `.story`: ordered pages built from purposes and compositions, with fixed, v
 
 ### 1. Install the VS Code extension
 
-Syntax highlighting, autocomplete, and validation for all file types.
+Syntax highlighting, autocomplete, and hover documentation for all file types. To check a brand's files, run `npx brand-intent check path/to/brand`.
 
 ```
 ext install studiostoll.brand-intent-lang

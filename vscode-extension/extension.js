@@ -895,7 +895,94 @@ function activate(context) {
     'work:': '**`work:`** -- Work id the story or the page is about. Work variables resolve from it, and the content is offered while the work is in season.',
     'example': '**`example`** -- Texts for the open slots, about one story topic.\n\n`topic:` and `page N` blocks (2 spaces) with `topic:` and slot texts (4 spaces).',
     'purpose:': '**`purpose:`** -- Purpose id of this page.',
+    'place:': '**`place:`** -- Place id the story speaks for.\n\nOmitted with exactly one place: that one. With several: the brand in general, and place variables are not available.',
+    'scrim:': '**`scrim:`** -- `none`: no scrim on any page of the story.',
+    'prompt': '**`prompt`** -- The brief for writing the open slots anew for every date the story is posted on.\n\nFree text on 2-space lines; an optional `model:` as the first line. At most one per story. Braces in a prompt are plain text.',
+    'model:': '**`model:`** -- Name of the model that writes, lowercase kebab-case.\n\nOnly as the first line of `prompt`. The names belong to the implementation. Absent = its default.',
+    'illustration:': '**`illustration:`** -- Illustration ids from the `.brand`, comma-separated.\n\nWith several, one is picked per story date.',
+    'photo:': '**`photo:`** -- Photo ids from the `.brand`, or `camera`.\n\nWith several, one is picked per story date.',
+    'theme:': '**`theme:`** -- Theme name from the `.brand` for this page.',
+    'background:': '**`background:`** -- The page\'s ground: `#RRGGBB`, or `{item}` for the day\'s item of the page\'s work.',
+    'repeat:': '**`repeat:`** -- `MIN-MAX`: the page is a page list, between MIN and MAX copies in a row. At most one per story.',
     'composition:': '**`composition:`** -- Composition id; one of the purpose\'s `compositions:`.\n\nOmitted = the implementation picks one.',
+  };
+
+  /** @type {Record<string, string>} */
+  const PLACE_HOVER_DOCS = {
+    'id:': '**`id:`** -- Place identifier.',
+    'name:': '**`name:`** -- The place\'s name, as people say it.',
+    'address:': '**`address:`** -- Postal address. `{street}` is the part up to its first comma.',
+    'latitude:': '**`latitude:`** -- Decimal degrees, north positive. Sky and weather variables need it.',
+    'longitude:': '**`longitude:`** -- Decimal degrees, east positive. Sky and weather variables need it.',
+    'maps:': '**`maps:`** -- Link to the place on a map.',
+    'context:': '**`context:`** -- Facts for AI writing.',
+    'opening:': '**`opening:`** -- `YYYY-MM-DD`: the day the place opens. `{opening}` shows it.',
+    'hours': '**`hours`** -- Regular opening hours.\n\nOne line per day or range of days: `mon-fri: 07:00-18:00`, with optional labelled ranges.',
+    'capacity': '**`capacity`** -- People the place holds: `indoor:` and `outdoor:`.',
+    'indoor:': '**`indoor:`** -- People inside.',
+    'outdoor:': '**`outdoor:`** -- People outside.',
+  };
+
+  /** @type {Record<string, string>} */
+  const TIME_HOVER_DOCS = {
+    'founded:': '**`founded:`** -- `YYYY-MM-DD` or `YYYY`: when the brand started. `{founded}` and `{years}` need it.',
+    'season': '**`season NAME`** -- A season of the brand\'s year, with `label:` and `from:`. A `when:` can name it.',
+    'label:': '**`label:`** -- The season\'s name as people say it. `{season}` shows it.',
+    'from:': '**`from:`** -- `MM-DD`: the day the season starts.',
+    'windows': '**`windows`** -- Named yearly date windows, one per 2-space line. A `when:` can name one.',
+    'daily': '**`daily`** -- Named moments of the day, one per 2-space line. `{daily NAME}` shows its time.',
+  };
+
+  /** @type {Record<string, string>} */
+  const PERSON_HOVER_DOCS = {
+    'id:': '**`id:`** -- Person identifier.',
+    'name:': '**`name:`** -- The name as a post may write it. Omitted = the person is their role.',
+    'role:': '**`role:`** -- Who they are to the brand, as a post would say it.',
+    'since:': '**`since:`** -- `YYYY-MM-DD` or `YYYY`: since when they have been with the brand.',
+    'place:': '**`place:`** -- The place they belong to.',
+    'group:': '**`group:`** -- The group they belong to; its `members:` lists them.',
+    'reason:': '**`reason:`** -- Why they come, what they do.',
+    'context:': '**`context:`** -- Facts for AI writing.',
+    'photos:': '**`photos:`** -- Photo ids from the `.brand` that show them, and may be shown.',
+    'consent:': '**`consent:`** -- `YYYY-MM-DD`: when the person agreed.',
+    'until:': '**`until:`** -- `YYYY-MM-DD`: when the consent ends.',
+    'quote': '**`quote`** -- Their words, verbatim, on the following 2-space lines.',
+  };
+
+  /** @type {Record<string, string>} */
+  const GROUP_HOVER_DOCS = {
+    'id:': '**`id:`** -- Group identifier.',
+    'name:': '**`name:`** -- The name as posts write it.',
+    'role:': '**`role:`** -- What the group is to the brand, as a post would say it.',
+    'since:': '**`since:`** -- `YYYY-MM-DD` or `YYYY`: since when.',
+    'where:': '**`where:`** -- Region or town, as a post says it. A fact, not a place.',
+    'members:': '**`members:`** -- Person ids; each names this group with `group:`.',
+    'links:': '**`links:`** -- The group\'s own pages (`https://`).',
+    'photos:': '**`photos:`** -- Photo ids from the `.brand` that show the group.',
+    'context:': '**`context:`** -- Facts for AI writing.',
+    'quote': '**`quote`** -- Words the group published as one, verbatim, on the following 2-space lines.',
+  };
+
+  /** @type {Record<string, string>} */
+  const WORK_HOVER_DOCS = {
+    'id:': '**`id:`** -- Work identifier.',
+    'title:': '**`title:`** -- The title as posts write it.',
+    'kind:': '**`kind:`** -- What it is, in the brand\'s own word: bread, album, class, event.',
+    'by:': '**`by:`** -- Person or group ids the work is by; absent = the brand\'s own.\n\nIn a `review`: who wrote it where, as a post credits it.',
+    'on:': '**`on:`** -- The day it comes out or takes place: `MM-DD`, `MM-DD..MM-DD`, `YYYY-MM-DD` or `YYYY-MM-DD..YYYY-MM-DD`.\n\nIn a `review`: `YYYY-MM-DD`, when it appeared.',
+    'days:': '**`days:`** -- Weekdays it comes round on: `sat`, `thu-fri`, `mon, wed`.',
+    'time:': '**`time:`** -- `HH:MM-HH:MM` or `HH:MM`.',
+    'lead:': '**`lead:`** -- Days before `on:` it is in season (default 14).',
+    'until:': '**`until:`** -- `YYYY-MM-DD`: the day after which it is no longer posted about.',
+    'when:': '**`when:`** -- A `.time` window or season it fits.',
+    'place:': '**`place:`** -- The place it is sold, shown or held at.',
+    'price:': '**`price:`** -- As a post writes it, with the unit.',
+    'links:': '**`links:`** -- Where to buy, listen, book (`https://`).',
+    'photos:': '**`photos:`** -- Photo ids from the `.brand` that show the work.',
+    'facts:': '**`facts:`** -- Facts for AI writing, on the following 2-space lines.',
+    'items:': '**`items:`** -- A series\' items, one per time the work comes round.\n\nOne per 2-space line, `VALUE  Name` (two spaces before the optional name), its note on 4-space lines. `items: cycle` starts over after the last. Needs a one-off `on:`.',
+    'review': '**`review`** -- What a critic wrote about the work, verbatim.\n\n`by:` (required), `on:` and `link:` first, then the words on the following 2-space lines.',
+    'link:': '**`link:`** -- Where to read the review (`https://`).',
   };
 
   /**
@@ -951,6 +1038,11 @@ function activate(context) {
     makeHoverProvider(STORY_HOVER_DOCS)
   );
 
+  const factHovers = [
+    ['brand-intent-place', PLACE_HOVER_DOCS], ['brand-intent-time', TIME_HOVER_DOCS], ['brand-intent-person', PERSON_HOVER_DOCS],
+    ['brand-intent-group', GROUP_HOVER_DOCS], ['brand-intent-work', WORK_HOVER_DOCS],
+  ].map(([language, docs]) => vscode.languages.registerHoverProvider(/** @type {string} */ (language), makeHoverProvider(/** @type {Record<string, string>} */ (docs))));
+
   const storyProvider = vscode.languages.registerCompletionItemProvider(
     'brand-intent-story',
     {
@@ -965,25 +1057,32 @@ function activate(context) {
           }
         };
         if (/^\w*$/.test(prefix)) {
-          add([['id: ', 'Story identifier'], ['name: ', 'Display name'], ['format: ', 'Format id'], ['topic: ', 'Story topic'], ['place: ', 'Place id the story speaks for'], ['when: ', '.time window or season the story fits'], ['person: ', 'Person id the story speaks about'], ['group: ', 'Group id the story speaks about'], ['work: ', 'Work id the story is about'], ['page', 'One page'], ['example', 'Texts for the open slots']], vscode.CompletionItemKind.Keyword);
+          add([['id: ', 'Story identifier'], ['name: ', 'Display name'], ['format: ', 'Format id'], ['topic: ', 'Story topic'], ['place: ', 'Place id the story speaks for'], ['when: ', '.time window or season the story fits'], ['person: ', 'Person id the story speaks about'], ['group: ', 'Group id the story speaks about'], ['work: ', 'Work id the story is about'], ['scrim: ', 'none: no scrim on any page'], ['page', 'One page'], ['example', 'Texts for the open slots'], ['prompt', 'The brief for writing the open slots anew for every date']], vscode.CompletionItemKind.Keyword);
         } else if (/^ {2}\w*$/.test(prefix)) {
-          add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['topic: ', 'Topic'], ['person: ', 'Person this page speaks about'], ['group: ', 'Group this page speaks about'], ['work: ', 'Work this page is about'], ['page ', 'Example page N'],
+          const block = [...Array(position.line).keys()].reverse().map(i => document.lineAt(i).text).find(l => /^\S/.test(l) && !l.startsWith('#'));
+          if (block?.trim() === 'prompt') {
+            // model: is only valid as the block's first line; everything else is the brief
+            if (document.lineAt(position.line - 1).text.trim() === 'prompt') add([['model: ', 'Name of the model that writes (optional, first line only)']], vscode.CompletionItemKind.Property);
+            return items;
+          }
+          add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['illustration: ', 'Illustration ids from the .brand'], ['photo: ', 'Photo ids from the .brand, or camera'], ['theme: ', 'Theme name from the .brand'], ['background: ', '#RRGGBB or {item}'], ['repeat: ', 'MIN-MAX: a page list'], ['topic: ', 'Topic'], ['person: ', 'Person this page speaks about'], ['group: ', 'Group this page speaks about'], ['work: ', 'Work this page is about'], ['page ', 'Example page N'],
             ['primary: ', 'Slot text'], ['secondary: ', 'Slot text'], ['detail: ', 'Slot text'], ['meta: ', 'Slot text'], ['cta: ', 'Slot text'], ['label: ', 'Slot text']], vscode.CompletionItemKind.Property);
         } else if (/\{[\w-]*$/.test(prefix)) {
-          add([['weekday}', 'Full weekday name'], ['date}', 'Day and month, no year'],
+          add([['weekday}', 'Full weekday name'], ['weekday short}', 'Abbreviated weekday name, no period'], ['date}', 'Day and month, no year'], ['date short}', 'Day and abbreviated month, no year'],
             ['sunrise}', 'Sunrise, local time (needs location)'], ['sunset}', 'Sunset, local time (needs location)'],
             ['day-length}', 'Sunrise to sunset (needs location)'], ['moon}', 'Moon phase (needs location)'],
             ['temperature}', 'Highest temperature of the day (needs location)'], ['wind}', 'Strongest daytime wind, Beaufort (needs location)'],
             ['weather}', 'The day\'s condition (needs location)'],
             ['place}', 'The place\'s name'], ['address}', 'The place\'s address'], ['street}', 'Street and number: the address up to its first comma'], ['hours}', 'The day\'s opening hours, one range per line'],
             ['week-hours}', 'The week\'s opening hours, one line per group of days'],
-            ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day'], ['opening}', 'The day the place opens (needs opening:)'],
+            ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day'], ['opening}', 'The day the place opens (needs opening:)'], ['opening short}', 'That day with the abbreviated month (needs opening:)'],
             ['season}', 'The current season\'s label (needs season blocks in .time)'], ['founded}', 'The year the brand started (needs founded:)'], ['years}', 'Whole years since the brand started (needs founded:)'],
             ['daily ', 'The time of a daily moment: {daily oven}'],
             ['person}', 'The person\'s name, or their role without a name (needs person:)'], ['role}', 'The person\'s role'], ['since}', 'The year the person has been with the brand (needs since:)'], ['since-years}', 'Whole years since then (needs since:)'], ['reason}', 'The person\'s reason: (needs reason:)'],
             ['group}', 'The group\'s name (needs group:, or a person with one)'], ['where}', 'The group\'s where: (needs where:)'], ['group-since}', 'The year the group has been with the brand (needs since:)'], ['group-years}', 'Whole years since then (needs since:)'],
             ['work}', 'The work\'s title (needs work:)'], ['kind}', 'The work\'s kind'], ['by}', 'Who the work is by, or the brand\'s name'], ['price}', 'The work\'s price: (needs price:)'],
-            ['on}', 'The work\'s next on: day, day and month (needs on:)'], ['time}', 'The work\'s time: (needs time:)'], ['days-until}', 'Days to the work\'s next on: day; 0 on the day (needs on:)']], vscode.CompletionItemKind.Variable);
+            ['on}', 'The work\'s next on: day, day and month (needs on:)'], ['on short}', 'That day with the abbreviated month (needs on:)'], ['time}', 'The work\'s time: (needs time:)'], ['days-until}', 'Days to the work\'s next on: day; 0 on the day (needs on:)'],
+            ['item}', 'The value of the day\'s item of the work (needs items:)'], ['item-name}', 'That item\'s name'], ['item-note}', 'That item\'s note']], vscode.CompletionItemKind.Variable);
         }
         return items;
       }
@@ -1070,8 +1169,8 @@ function activate(context) {
     ' '
   );
 
-  /** Top-level keyword completion for a flat fact file (.group, .work). */
-  const flatProvider = (/** @type {string} */ language, /** @type {[string, string][]} */ keys) => vscode.languages.registerCompletionItemProvider(
+  /** Top-level keyword completion for a flat fact file (.group, .work); `blocks` names the keys inside a block. */
+  const flatProvider = (/** @type {string} */ language, /** @type {[string, string][]} */ keys, /** @type {Record<string, [string, string][]>} */ blocks = {}) => vscode.languages.registerCompletionItemProvider(
     language,
     {
       provideCompletionItems(document, position) {
@@ -1080,6 +1179,13 @@ function activate(context) {
         if (/^\w*$/.test(prefix)) {
           for (const [label, detail] of keys) {
             const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Keyword);
+            item.detail = detail;
+            items.push(item);
+          }
+        } else if (/^ {2}\w*$/.test(prefix)) {
+          const block = [...Array(position.line).keys()].reverse().map(i => document.lineAt(i).text).find(l => /^\S/.test(l))?.trim() ?? '';
+          for (const [label, detail] of blocks[block] ?? []) {
+            const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Property);
             item.detail = detail;
             items.push(item);
           }
@@ -1104,11 +1210,15 @@ function activate(context) {
     ['until: ', 'YYYY-MM-DD: the day after which it is no longer posted about'], ['when: ', 'A .time window or season it fits'], ['place: ', 'The place it is sold, shown or held at'],
     ['price: ', 'As a post writes it, with the unit'], ['links: ', 'Where to buy, listen, book (https)'], ['photos: ', 'Photo ids from the .brand that show the work'],
     ['facts:', 'Facts for AI writing, on the following 2-space lines'],
-  ]);
+    ['items:', 'A series\' items, one per 2-space line: VALUE  Name'], ['items: cycle', 'Items that start over after the last'],
+    ['review', 'A critic\'s words, verbatim: by:, on:, link:, then the words'],
+  ], {
+    review: [['by: ', 'Who wrote it where, as a post credits it (required)'], ['on: ', 'YYYY-MM-DD: when it appeared'], ['link: ', 'Where to read it (https)']],
+  });
 
   context.subscriptions.push(
     compositionProvider, purposeProvider, formatProvider, brandProvider, identityProvider, storyProvider, placeProvider, timeProvider, personProvider, groupProvider, workProvider,
-    compositionHover, purposeHover, formatHover, brandHover, identityHover, storyHover
+    compositionHover, purposeHover, formatHover, brandHover, identityHover, storyHover, ...factHovers
   );
 }
 
