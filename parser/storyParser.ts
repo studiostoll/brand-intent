@@ -37,10 +37,11 @@ export type StoryVariable =
  *  `person`: it needs the page's person; `personNeeds`: and that key in the person's file. `group` and
  *  `work` likewise, with `groupNeeds` and `workNeeds`.
  *  A `maxLength` of 0 means the variable counts at the length of the fact it shows (see `checkStory`).
- *  `{daily NAME}` is written with its moment's name; the table lists it as `daily`. */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; time?: 'seasons' | 'founded' | 'daily'; person?: true; personNeeds?: 'since' | 'reason'; group?: true; groupNeeds?: 'where' | 'since'; work?: true; workNeeds?: 'price' | 'on' | 'time' | 'items'; list?: true }> = {
-  weekday: { maxLength: 10 },                       // "Donnerstag"
-  date: { maxLength: 13 },                          // "30. September"
+ *  `{daily NAME}` is written with its moment's name; the table lists it as `daily`.
+ *  `shortMaxLength`: the variable has a short form, written `{NAME short}`, and this is its longest. */
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; shortMaxLength?: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; time?: 'seasons' | 'founded' | 'daily'; person?: true; personNeeds?: 'since' | 'reason'; group?: true; groupNeeds?: 'where' | 'since'; work?: true; workNeeds?: 'price' | 'on' | 'time' | 'items'; list?: true }> = {
+  weekday: { maxLength: 10, shortMaxLength: 3 },    // "Donnerstag", short "Thu"
+  date: { maxLength: 13, shortMaxLength: 7 },       // "30. September", short "30. Sep"
   sunrise: { maxLength: 8, location: true },        // "12:59 PM"
   sunset: { maxLength: 8, location: true },
   'day-length': { maxLength: 15, location: true },  // "16 Std. 59 Min."
@@ -55,7 +56,7 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   'week-hours': { maxLength: 0, place: true, needs: 'hours' },
   opens: { maxLength: 8, place: true, needs: 'hours' },   // "10:30 AM"
   closes: { maxLength: 8, place: true, needs: 'hours' },
-  opening: { maxLength: 13, place: true, needs: 'opening' }, // "30. September"
+  opening: { maxLength: 13, shortMaxLength: 7, place: true, needs: 'opening' }, // "30. September"
   season: { maxLength: 0, time: 'seasons' },         // the season's label
   founded: { maxLength: 4, time: 'founded' },        // "2019"
   years: { maxLength: 3, time: 'founded' },          // "7"
@@ -73,7 +74,7 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; locatio
   kind: { maxLength: 0, work: true },                // the kind
   by: { maxLength: 0, work: true },                  // the names of its by: ids, or the brand's name
   price: { maxLength: 0, work: true, workNeeds: 'price' },           // the price
-  on: { maxLength: 13, work: true, workNeeds: 'on' },                // "30. September"
+  on: { maxLength: 13, shortMaxLength: 7, work: true, workNeeds: 'on' }, // "30. September"
   time: { maxLength: 17, work: true, workNeeds: 'time' },            // "10:30 AM–10:30 PM"
   'days-until': { maxLength: 3, work: true, workNeeds: 'on' },       // "365"
   item: { maxLength: 0, work: true, workNeeds: 'items' },            // the day's item: "#002B36"
@@ -173,17 +174,23 @@ export interface ParsedStoryExamplePage {
 
 const VALID_SLOTS = new Set<string>(SLOT_IDS);
 const ID = /^[a-z][a-z0-9-]*$/;
-const VARIABLE = /\{(daily [a-z][a-z0-9-]*|[a-z][a-z0-9-]*)\}/g;
+const VARIABLE = /\{([a-z][a-z0-9-]*(?: [a-z][a-z0-9-]*)?)\}/g;
 
-/** Variable names in a text, in order of appearance. `{daily oven}` gives "daily oven". */
+/** Variable names in a text, in order of appearance, each with its second word: `{daily oven}` gives
+ *  "daily oven", `{date short}` gives "date short". */
 export function storyTextVariables(text: string): string[] {
   return [...text.matchAll(VARIABLE)].map(m => m[1]);
 }
 
-/** The table key of a variable name: "daily" for "daily oven". */
+/** The table key of a variable name: its first word, so "daily" for "daily oven" and "date" for "date short". */
 function variableKey(name: string): StoryVariable | undefined {
-  const key = name.startsWith('daily ') ? 'daily' : name;
+  const key = name.split(' ')[0];
   return key in STORY_VARIABLES ? (key as StoryVariable) : undefined;
+}
+
+/** Whether a variable name asks for the short form: "date short". `{daily short}` is the moment named "short". */
+function isShort(name: string): boolean {
+  return name.endsWith(' short') && !name.startsWith('daily ');
 }
 
 // ── Main parser ───────────────────────────────────────────────────────────────
@@ -254,7 +261,13 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     for (const v of storyTextVariables(text)) {
       if (!allowed) throw new Error(`${fileName}:${lineNum}: variable "{${v}}" in an example — examples are sample texts, variables belong in page texts`);
       if (v === 'daily') throw new Error(`${fileName}:${lineNum}: "{daily}" needs the moment's name, e.g. {daily oven}`);
-      if (!variableKey(v)) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map(k => (k === 'daily' ? '{daily NAME}' : `{${k}}`)).join(', ')})`);
+      const key = variableKey(v);
+      if (!key) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map(k => (k === 'daily' ? '{daily NAME}' : `{${k}}`)).join(', ')})`);
+      if (key !== 'daily' && v !== key) {
+        const short = Object.entries(STORY_VARIABLES).filter(([, d]) => d.shortMaxLength).map(([k]) => `{${k} short}`).join(', ');
+        if (!isShort(v)) throw new Error(`${fileName}:${lineNum}: "{${v}}": the only word after a variable's name is "short" (${short})`);
+        if (!STORY_VARIABLES[key].shortMaxLength) throw new Error(`${fileName}:${lineNum}: "{${v}}": {${key}} has no short form (${short})`);
+      }
     }
   }
 
@@ -544,7 +557,8 @@ function longestText(text: string, { place, time, person, group, work, byNames }
       if (!lines.length) return 'x'.repeat(HOURS_CLOSED_LENGTH);
       return lines.map(l => 'x'.repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join('\n');
     }
-    return 'x'.repeat(STORY_VARIABLES[variableKey(v)!]?.maxLength ?? 0);
+    const variable = STORY_VARIABLES[variableKey(v)!];
+    return 'x'.repeat((isShort(v) ? variable?.shortMaxLength : variable?.maxLength) ?? 0);
   });
 }
 

@@ -52,8 +52,8 @@
       }
     },
     "variable": {
-      "comment": "{weekday}, {date}, {sunrise}, {daily oven} … placeholders in page texts",
-      "match": "\\{(?:daily [a-z][a-z0-9-]*|[a-z][a-z0-9-]*)\\}",
+      "comment": "{weekday}, {date short}, {sunrise}, {daily oven} … placeholders in page texts",
+      "match": "\\{[a-z][a-z0-9-]*(?: [a-z][a-z0-9-]*)?\\}",
       "name": "variable.other.brand-intent-story"
     },
     "keyword-partial": {

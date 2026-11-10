@@ -114,6 +114,17 @@ test('{weekday} and {date} in page texts', () => {
   assertEq(storyTextVariables('{weekday}, {date}'), ['weekday', 'date'], 'names');
 });
 
+test('{NAME short}: the short form of the weekday and the three dates', () => {
+  const s = parse('page\n  purpose: notice\n  primary: {weekday short}, {date short}, {opening short}, {on short}\n');
+  assertEq(s.pages[0].texts.primary, '{weekday short}, {date short}, {opening short}, {on short}', 'texts');
+  assertEq(storyTextVariables('{weekday short}, {date}'), ['weekday short', 'date'], 'names with their second word');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {weather short}\n'), '"{weather short}": {weather} has no short form ({weekday short}, {date short}, {opening short}, {on short})');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {date long}\n'), '"{date long}": the only word after a variable\'s name is "short"');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {clock short}\n'), 'unknown variable "{clock short}"');
+  assertEq(parse('page\n  purpose: notice\n  primary: {date:short}\n').pages[0].texts.primary, '{date:short}', 'a colon: plain text');
+  assertEq(storyTextVariables('{daily short}'), ['daily short'], 'a daily moment named short');
+});
+
 test('unknown variable is an error, plain braces stay text', () => {
   assertThrows(() => parse('page\n  purpose: notice\n  primary: Open {clock}\n'), 'unknown variable "{clock}"');
   assertEq(parse('page\n  purpose: notice\n  primary: a {B} c\n').pages[0].texts.primary, 'a {B} c', 'not a variable');
@@ -177,6 +188,10 @@ test('slots: undeclared, fixed by the purpose, maxLength with variables, list li
   ], 'problems (primary fits: 19 of 20 with the longest weekday)');
   const long = parse('page\n  purpose: notice\n  primary: Open {weekday} {date}\n');
   assertEq(checkStory(long, BRAND, 's.story'), ['s.story: page 1: slot "primary" is 29 characters long, maxLength is 20'], 'variables at longest form');
+  const short = parse('page\n  purpose: notice\n  primary: Open {weekday short} {date short}\n');
+  assertEq(checkStory(short, BRAND, 's.story'), [], 'short forms count at their own longest: 16 of 20');
+  const shortLong = parse('page\n  purpose: notice\n  primary: We open on {weekday short} {date short}\n');
+  assertEq(checkStory(shortLong, BRAND, 's.story'), ['s.story: page 1: slot "primary" is 22 characters long, maxLength is 20'], '11 + 3 + 1 + 7');
 });
 
 test('example texts are checked too', () => {

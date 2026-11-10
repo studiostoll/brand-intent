@@ -4425,10 +4425,10 @@ function checkWork(work, facts, fileName) {
 
 // parser/storyParser.ts
 var STORY_VARIABLES = {
-  weekday: { maxLength: 10 },
-  // "Donnerstag"
-  date: { maxLength: 13 },
-  // "30. September"
+  weekday: { maxLength: 10, shortMaxLength: 3 },
+  // "Donnerstag", short "Thu"
+  date: { maxLength: 13, shortMaxLength: 7 },
+  // "30. September", short "30. Sep"
   sunrise: { maxLength: 8, location: true },
   // "12:59 PM"
   sunset: { maxLength: 8, location: true },
@@ -4450,7 +4450,7 @@ var STORY_VARIABLES = {
   opens: { maxLength: 8, place: true, needs: "hours" },
   // "10:30 AM"
   closes: { maxLength: 8, place: true, needs: "hours" },
-  opening: { maxLength: 13, place: true, needs: "opening" },
+  opening: { maxLength: 13, shortMaxLength: 7, place: true, needs: "opening" },
   // "30. September"
   season: { maxLength: 0, time: "seasons" },
   // the season's label
@@ -4486,7 +4486,7 @@ var STORY_VARIABLES = {
   // the names of its by: ids, or the brand's name
   price: { maxLength: 0, work: true, workNeeds: "price" },
   // the price
-  on: { maxLength: 13, work: true, workNeeds: "on" },
+  on: { maxLength: 13, shortMaxLength: 7, work: true, workNeeds: "on" },
   // "30. September"
   time: { maxLength: 17, work: true, workNeeds: "time" },
   // "10:30 AM–10:30 PM"
@@ -4509,13 +4509,16 @@ var HOURS_CLOSED_LENGTH = 11;
 var BY_AND_LENGTH = 5;
 var VALID_SLOTS3 = new Set(SLOT_IDS);
 var ID = /^[a-z][a-z0-9-]*$/;
-var VARIABLE = /\{(daily [a-z][a-z0-9-]*|[a-z][a-z0-9-]*)\}/g;
+var VARIABLE = /\{([a-z][a-z0-9-]*(?: [a-z][a-z0-9-]*)?)\}/g;
 function storyTextVariables(text) {
   return [...text.matchAll(VARIABLE)].map((m) => m[1]);
 }
 function variableKey(name) {
-  const key = name.startsWith("daily ") ? "daily" : name;
+  const key = name.split(" ")[0];
   return key in STORY_VARIABLES ? key : void 0;
+}
+function isShort(name) {
+  return name.endsWith(" short") && !name.startsWith("daily ");
 }
 function parseStoryFile(content, fileName) {
   const lines = content.split("\n");
@@ -4568,7 +4571,13 @@ function parseStoryFile(content, fileName) {
     for (const v of storyTextVariables(text)) {
       if (!allowed) throw new Error(`${fileName}:${lineNum}: variable "{${v}}" in an example \u2014 examples are sample texts, variables belong in page texts`);
       if (v === "daily") throw new Error(`${fileName}:${lineNum}: "{daily}" needs the moment's name, e.g. {daily oven}`);
-      if (!variableKey(v)) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map((k) => k === "daily" ? "{daily NAME}" : `{${k}}`).join(", ")})`);
+      const key = variableKey(v);
+      if (!key) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map((k) => k === "daily" ? "{daily NAME}" : `{${k}}`).join(", ")})`);
+      if (key !== "daily" && v !== key) {
+        const short = Object.entries(STORY_VARIABLES).filter(([, d]) => d.shortMaxLength).map(([k]) => `{${k} short}`).join(", ");
+        if (!isShort(v)) throw new Error(`${fileName}:${lineNum}: "{${v}}": the only word after a variable's name is "short" (${short})`);
+        if (!STORY_VARIABLES[key].shortMaxLength) throw new Error(`${fileName}:${lineNum}: "{${v}}": {${key}} has no short form (${short})`);
+      }
     }
   }
   function closeBlocks() {
@@ -4821,7 +4830,8 @@ function longestText(text, { place, time, person, group, work, byNames }) {
       if (!lines.length) return "x".repeat(HOURS_CLOSED_LENGTH);
       return lines.map((l) => "x".repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join("\n");
     }
-    return "x".repeat(STORY_VARIABLES[variableKey(v)]?.maxLength ?? 0);
+    const variable = STORY_VARIABLES[variableKey(v)];
+    return "x".repeat((isShort(v) ? variable?.shortMaxLength : variable?.maxLength) ?? 0);
   });
 }
 function checkStory(story, brand, fileName) {

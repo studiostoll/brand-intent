@@ -1653,7 +1653,18 @@ Times are local time in the time zone the story is posted in. Moon phases: new m
 
 **Weather is not guessed.** When no forecast exists for the date (too far ahead, or the service doesn't answer), implementations don't fill in a value: a preview shows a placeholder, a scheduled post doesn't go out. A page that shows a weather value credits its source; implementations add the credit themselves, as the source's terms require it.
 
-An unknown name is an error. Braces that don't form a lowercase `{name}` stay plain text. Variables appear only in page texts, never in topics or examples. For `maxLength`, a variable counts at its longest form (column "Longest").
+**Short forms.** Four variables have a short form, written with the word `short` after the name. It is for lines that hold several facts and must not break:
+
+| Variable | Resolves to | Example | Longest |
+|----------|-------------|---------|---------|
+| `{weekday short}` | Abbreviated weekday name, no period | `Mi`, `Wed` | 3 |
+| `{date short}` | Day and abbreviated month, no year | `30. Okt`, `30 Oct` | 7 |
+| `{opening short}` | The place's `opening:`, likewise | `28. Nov`, `28 Nov` | 7 |
+| `{on short}` | The work's day, likewise | `28. Nov`, `28 Nov` | 7 |
+
+Month abbreviations are the first three letters of the month's name in the brand's language and never end in a period, so a comma can follow (`Mi, 30. Okt, 14 °C`). German weekdays are two letters, English three. A short form needs what its variable needs. `short` after any other variable is an error, and so is any other word; `{daily NAME}` is the only variable whose second word is a name.
+
+An unknown name is an error. Braces that don't form a lowercase `{name}` or `{name word}` stay plain text. Variables appear only in page texts, never in topics or examples. For `maxLength`, a variable counts at its longest form (column "Longest").
 
 ### `example` Block
 
