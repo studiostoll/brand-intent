@@ -96,5 +96,8 @@ export { parseWorkFile, checkWork, isWorkInSeason, daysUntil, isWorkWithdrawn, w
 export type { ParsedWork, WorkDate, WorkItem, WorkReview } from './workParser';
 export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamplePage, StoryVariable } from './storyParser';
 
+export { checkFiles } from './checkFiles';
+export type { BrandFiles, FileIssue } from './checkFiles';
+
 export type { SlotId, ZoneInsets, TextAlign } from './types';
 export { SLOT_IDS } from './types';

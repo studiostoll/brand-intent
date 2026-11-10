@@ -38,7 +38,7 @@
     "typecheck": "tsc -p .",
     "build:cli": "esbuild cli/check.ts --bundle --platform=node --format=esm --target=node20 --log-level=warning --outfile=cli/check.mjs",
     "prepack": "npm run build:cli && npm run build:lib",
-    "test": "npm run --silent build:cli && npm run --silent build:lib && tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/icons.test.ts && tsx tests/purposeParser.test.ts && tsx tests/storyParser.test.ts && tsx tests/placeParser.test.ts && tsx tests/timeParser.test.ts && tsx tests/personParser.test.ts && tsx tests/groupParser.test.ts && tsx tests/workParser.test.ts && tsx tests/formatParser.test.ts && tsx tests/compositionParser.test.ts && tsx tests/realBrands.test.ts && tsx tests/examples.test.ts && tsx tests/dist.test.ts",
+    "test": "npm run --silent build:cli && npm run --silent build:lib && tsx tests/brandParser.test.ts && tsx tests/identityParser.test.ts && tsx tests/colorSystem.test.ts && tsx tests/icons.test.ts && tsx tests/purposeParser.test.ts && tsx tests/storyParser.test.ts && tsx tests/placeParser.test.ts && tsx tests/timeParser.test.ts && tsx tests/personParser.test.ts && tsx tests/groupParser.test.ts && tsx tests/workParser.test.ts && tsx tests/formatParser.test.ts && tsx tests/compositionParser.test.ts && tsx tests/checkFiles.test.ts && tsx tests/realBrands.test.ts && tsx tests/examples.test.ts && tsx tests/dist.test.ts",
     "build:lib": "esbuild parser/index.ts --bundle --platform=neutral --format=esm --target=es2022 --log-level=warning --outfile=dist/index.mjs"
   },
   "devDependencies": {

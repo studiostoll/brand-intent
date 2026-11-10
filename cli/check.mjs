@@ -4797,6 +4797,45 @@ function storyPlace(story, places) {
   if (story.place) return places.find((p) => p.id === story.place);
   return places.length === 1 ? places[0] : void 0;
 }
+function variableProblem(v, src) {
+  const key = variableKey(v);
+  if (!key) return `unknown variable "{${v}}"`;
+  const variable = STORY_VARIABLES[key];
+  const needs = (what) => `variable "{${v}}" needs ${what}`;
+  const { place, time } = src;
+  if (variable.location && src.location === false && place?.latitude === void 0) return needs("a location block in the .brand");
+  if (variable.place && src.places && !src.placeUnknown) {
+    if (!place) return needs(`a place: ${src.places.length > 1 ? 'name it with "place:"' : "add a .place file"}`);
+    if (variable.needs && !place[variable.needs]) return needs(`${{ hours: "an hours block", address: "an address:", opening: "an opening:" }[variable.needs]} in place "${place.id}"`);
+  }
+  if (variable.time && time !== void 0) {
+    const noTime = time ? "" : " (the brand has no .time)";
+    if (variable.time === "seasons" && !time?.seasons.length) return needs(`season blocks in the .time${noTime}`);
+    if (variable.time === "founded" && !time?.founded) return needs(`founded: in the .time${noTime}`);
+    if (variable.time === "daily") {
+      const name = v.slice("daily ".length);
+      if (!time?.daily.some((d) => d.name === name)) return needs(`a daily moment "${name}" in the .time${noTime}`);
+    }
+  }
+  if (variable.person && src.checked.person) {
+    if (!src.named.person) return needs(src.nameIt.person);
+    if (src.person && variable.personNeeds && !src.person[variable.personNeeds]) return needs(`${variable.personNeeds}: in person "${src.person.id}"`);
+  }
+  if (variable.group && src.checked.group) {
+    if (!src.named.group) return needs(src.nameIt.group);
+    if (src.group && variable.groupNeeds && !src.group[variable.groupNeeds]) return needs(`${variable.groupNeeds}: in group "${src.group.id}"`);
+  }
+  if (variable.work && src.checked.work) {
+    if (!src.named.work) return needs(src.nameIt.work);
+    if (src.work && variable.workNeeds && !src.work[variable.workNeeds]) return needs(`${variable.workNeeds}: in work "${src.work.id}"`);
+    if (src.work?.items && (v === "item-name" || v === "item-note")) {
+      const field = v === "item-name" ? "name" : "note";
+      const bare = src.work.items.find((item) => !item[field]);
+      if (bare) return needs(`a ${field} on every item of work "${src.work.id}", "${bare.value}" has none`);
+    }
+  }
+  return void 0;
+}
 function longestText(text, { place, time, person, group, work, byNames }) {
   return text.replace(VARIABLE, (_, v) => {
     if (v === "season") return "x".repeat(Math.max(0, ...(time?.seasons ?? []).map((s) => s.label.length)));
@@ -4891,37 +4930,20 @@ function checkStory(story, brand, fileName) {
         continue;
       }
       for (const v of new Set(storyTextVariables(text))) {
-        const variable = STORY_VARIABLES[variableKey(v)];
-        if (variable?.location && brand.location === false && place?.latitude === void 0) say(`${where}: variable "{${v}}" needs a location block in the .brand`);
-        if (variable?.place && brand.places && !(story.place && !place)) {
-          if (!place) say(`${where}: variable "{${v}}" needs a place: ${brand.places.length > 1 ? 'name it with "place:"' : "add a .place file"}`);
-          else if (variable.needs && !place[variable.needs]) say(`${where}: variable "{${v}}" needs ${{ hours: "an hours block", address: "an address:", opening: "an opening:" }[variable.needs]} in place "${place.id}"`);
-        }
-        if (variable?.time && time !== void 0) {
-          if (variable.time === "seasons" && !time?.seasons.length) say(`${where}: variable "{${v}}" needs season blocks in the .time${noTime}`);
-          if (variable.time === "founded" && !time?.founded) say(`${where}: variable "{${v}}" needs founded: in the .time${noTime}`);
-          if (variable.time === "daily") {
-            const name = v.slice("daily ".length);
-            if (!time?.daily.some((d) => d.name === name)) say(`${where}: variable "{${v}}" needs a daily moment "${name}" in the .time${noTime}`);
-          }
-        }
-        if (variable?.person && persons) {
-          if (!named.person) say(`${where}: variable "{${v}}" needs a person: on the page or the story`);
-          else if (facts.person && variable.personNeeds && !facts.person[variable.personNeeds]) say(`${where}: variable "{${v}}" needs ${variable.personNeeds}: in person "${facts.person.id}"`);
-        }
-        if (variable?.group && groupMap) {
-          if (!named.group) say(`${where}: variable "{${v}}" needs a group: on the page or the story, or a person with a group`);
-          else if (facts.group && variable.groupNeeds && !facts.group[variable.groupNeeds]) say(`${where}: variable "{${v}}" needs ${variable.groupNeeds}: in group "${facts.group.id}"`);
-        }
-        if (variable?.work && workMap) {
-          if (!named.work) say(`${where}: variable "{${v}}" needs a work: on the page or the story`);
-          else if (facts.work && variable.workNeeds && !facts.work[variable.workNeeds]) say(`${where}: variable "{${v}}" needs ${variable.workNeeds}: in work "${facts.work.id}"`);
-          else if (facts.work?.items && (v === "item-name" || v === "item-note")) {
-            const field = v === "item-name" ? "name" : "note";
-            const bare = facts.work.items.find((item) => !item[field]);
-            if (bare) say(`${where}: variable "{${v}}" needs a ${field} on every item of work "${facts.work.id}", "${bare.value}" has none`);
-          }
-        }
+        const problem = variableProblem(v, {
+          location: brand.location,
+          places: brand.places,
+          place,
+          placeUnknown: !!story.place && !place,
+          time,
+          person: facts.person,
+          group: facts.group,
+          work: facts.work,
+          named,
+          checked: { person: !!persons, group: !!groupMap, work: !!workMap },
+          nameIt: { person: "a person: on the page or the story", group: "a group: on the page or the story, or a person with a group", work: "a work: on the page or the story" }
+        });
+        if (problem) say(`${where}: ${problem}`);
       }
       const longest = longestText(text, facts);
       const parts = slot.slotType === "list" ? longest.split("\n") : [longest];
@@ -4993,6 +5015,108 @@ function checkStory(story, brand, fileName) {
   return problems;
 }
 
+// parser/checkFiles.ts
+function checkFiles(files) {
+  const issues = [];
+  const { brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works } = files;
+  const error = (file, message) => issues.push({ severity: "error", file, message });
+  const warning = (file, message) => issues.push({ severity: "warning", file, message });
+  const errorsOf = (file, problems) => problems.forEach((p) => error(file, p.startsWith(`${file}: `) ? p.slice(file.length + 2) : p));
+  const unique = (ext, list) => {
+    const seen = /* @__PURE__ */ new Set();
+    for (const { id } of list) {
+      if (seen.has(id)) error(`${id}.${ext}`, `more than one .${ext} has the id "${id}"`);
+      seen.add(id);
+    }
+  };
+  unique("purpose", purposes);
+  unique("composition", compositions);
+  unique("format", formats);
+  const purposeIds = new Set(purposes.map((p) => p.id));
+  for (const format of formats) {
+    for (const id of format.purposes ?? []) {
+      if (!purposeIds.has(id)) error(`${format.id}.format`, `purposes: purpose "${id}" does not exist`);
+    }
+  }
+  const compositionIds = new Set(compositions.map((c) => c.id));
+  const used = /* @__PURE__ */ new Set();
+  for (const purpose of purposes) {
+    const file = `${purpose.id}.purpose`;
+    if (!purpose.preferredCompositions.length) warning(file, "compositions: is empty, so the purpose is never placed on a canvas");
+    for (const id of purpose.preferredCompositions) {
+      used.add(id);
+      if (!compositionIds.has(id)) error(file, `compositions: composition "${id}" does not exist`);
+    }
+  }
+  for (const composition of compositions) {
+    const file = `${composition.id}.composition`;
+    if (!used.has(composition.id)) warning(file, "no purpose lists this composition, so it is never used");
+    if (composition.mode === "grid" && composition.sticky.length) warning(file, "sticky: is for flow mode; a grid-mode composition ignores it");
+  }
+  const firstTheme = Object.values(brand?.themes ?? {})[0];
+  const themeKeys = firstTheme && new Set(Object.keys(firstTheme));
+  for (const purpose of purposes) {
+    const file = `${purpose.id}.purpose`;
+    if (identity) {
+      for (const id of purpose.scope?.audience ?? []) {
+        if (!(id in identity.audiences)) error(file, `scope: audience "${id}" is not in the .identity`);
+      }
+    }
+    errorsOf(file, checkPurpose(purpose, { time, works }, file));
+    if (brand) {
+      for (const slot of purpose.slots) {
+        if (slot.typographyRef && !brand.typographies?.[slot.typographyRef]) error(file, `typography "${slot.typographyRef}" is not in the .brand`);
+        if (slot.colorRef && themeKeys && !themeKeys.has(slot.colorRef)) error(file, `slot "${slot.id}": color "${slot.colorRef}" is not a slot of the .brand's themes`);
+      }
+      if (purpose.framing && !brand.framings?.some((fr) => fr.id === purpose.framing)) error(file, `framing "${purpose.framing}" is not in the .brand`);
+    }
+    const place = storyPlace({}, places);
+    purpose.examples.forEach((example, i) => {
+      const work = example.work ? works.find((w) => w.id === example.work) : void 0;
+      for (const [slotId, text] of Object.entries(example.texts)) {
+        for (const v of new Set(storyTextVariables(text ?? ""))) {
+          const problem = variableProblem(v, {
+            location: brand && !!brand.location,
+            places,
+            place,
+            time,
+            work,
+            named: { person: false, group: false, work: !!example.work },
+            checked: { person: true, group: true, work: true },
+            nameIt: { person: "a person, which a purpose example cannot name", group: "a group, which a purpose example cannot name", work: "a work: on the example" }
+          });
+          if (problem) error(file, `example ${i + 1}, slot "${slotId}": ${problem}`);
+        }
+      }
+    });
+  }
+  if (brand) errorsOf(`${brand.id}.brand`, checkBrand(brand, { time, people, groups, works }, `${brand.id}.brand`));
+  for (const p of people) errorsOf(`${p.id}.person`, checkPerson(p, { groups, places }, `${p.id}.person`));
+  for (const g of groups) errorsOf(`${g.id}.group`, checkGroup(g, { people }, `${g.id}.group`));
+  for (const w of works) errorsOf(`${w.id}.work`, checkWork(w, { people, groups, time, places }, `${w.id}.work`));
+  if (brand) {
+    for (const story of stories) {
+      const file = `${story.id}.story`;
+      errorsOf(file, checkStory(story, {
+        purposes,
+        places,
+        time,
+        people,
+        groups,
+        works,
+        compositions: [...compositionIds],
+        formats: formats.map((f) => f.id),
+        themes: Object.keys(brand.themes ?? {}),
+        photos: files.photos ?? (brand.assets?.photos ?? []).map((p) => p.id),
+        illustrations: (brand.assets?.illustrations ?? []).map((i) => i.id),
+        name: brand.name,
+        location: !!brand.location
+      }, file));
+    }
+  }
+  return issues;
+}
+
 // cli/check.ts
 var SKIP_DIRS = /* @__PURE__ */ new Set(["node_modules", ".git", ".github", ".claude"]);
 function listPhotos(photosDir, prefix = "", skipped = []) {
@@ -5041,7 +5165,8 @@ function checkFolder(dir, label = dir) {
   };
   const brandFiles = ofType("brand");
   if (brandFiles.length !== 1) errors.push(`${brandFiles.length ? "more than one" : "no"} .brand file in ${dir}; a brand folder has exactly one`.replace(` in ${dir}`, ` in ${label}`));
-  for (const f of ofType("identity")) attempt(f, () => parseIdentityFile(read(f), name(f)));
+  let identity;
+  for (const f of ofType("identity")) identity = attempt(f, () => parseIdentityFile(read(f), name(f))) ?? identity;
   let brand;
   for (const f of brandFiles.slice(0, 1)) brand = attempt(f, () => parseBrandFile(read(f), name(f)));
   if (brand?.warnings?.length) warnings.push(...brand.warnings);
@@ -5055,8 +5180,9 @@ function checkFolder(dir, label = dir) {
   const groups = collect("group", parseGroupFile);
   const works = collect("work", parseWorkFile);
   const places = collect("place", parsePlaceFile);
-  const formats = collect("format", parseFormatFile).map((f) => f.id);
-  const compositions = collect("composition", parseCompositionFile).map((c) => c.id);
+  const formats = collect("format", parseFormatFile);
+  const compositions = collect("composition", parseCompositionFile);
+  const stories = collect("story", parseStoryFile);
   const purposes = collect("purpose", parsePurposeFile);
   for (const p of purposes) if (p.warnings?.length) warnings.push(...p.warnings);
   const photosDir = join(dir, "photos");
@@ -5073,40 +5199,8 @@ function checkFolder(dir, label = dir) {
       if (library) photoIds = library.map((p) => p.id);
     }
   }
-  if (brand) {
-    const fileName = name(brandFiles[0]);
-    errors.push(...checkBrand(brand, { time, people, groups, works }, fileName));
-    for (const p of purposes) {
-      errors.push(...checkPurpose(p, { time, works }, `${p.id}.purpose`));
-      for (const s of p.slots) {
-        if (s.typographyRef && !brand.typographies?.[s.typographyRef]) errors.push(`${p.id}.purpose: typography "${s.typographyRef}" is not in the .brand`);
-      }
-      if (p.framing && !brand.framings?.some((fr) => fr.id === p.framing)) errors.push(`${p.id}.purpose: framing "${p.framing}" is not in the .brand`);
-    }
-  }
-  errors.push(
-    ...people.flatMap((p) => checkPerson(p, { groups, places }, `${p.id}.person`)),
-    ...groups.flatMap((g) => checkGroup(g, { people }, `${g.id}.group`)),
-    ...works.flatMap((w) => checkWork(w, { people, groups, time, places }, `${w.id}.work`))
-  );
-  for (const f of ofType("story")) {
-    const story = attempt(f, () => parseStoryFile(read(f), name(f)));
-    if (!story || !brand) continue;
-    errors.push(...checkStory(story, {
-      purposes,
-      compositions,
-      formats,
-      places,
-      themes: Object.keys(brand.themes ?? {}),
-      photos: photoIds,
-      illustrations: (brand.assets?.illustrations ?? []).map((i) => i.id),
-      time,
-      people,
-      groups,
-      works,
-      name: brand.name,
-      location: !!brand.location
-    }, name(f)));
+  for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds })) {
+    (issue.severity === "error" ? errors : warnings).push(`${issue.file}: ${issue.message}`);
   }
   return { errors, warnings, counts };
 }

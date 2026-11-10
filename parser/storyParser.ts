@@ -511,6 +511,68 @@ export function storyPlace(story: Pick<ParsedStory, 'place'>, places: ParsedPlac
   return places.length === 1 ? places[0] : undefined;
 }
 
+/** What a text's variables resolve from. A list that is undefined is not checked. */
+export interface VariableSources {
+  /** Whether the .brand has a `location` block. */
+  location?: boolean;
+  places?: ParsedPlace[];
+  /** The place the text's variables read. */
+  place?: ParsedPlace;
+  /** A place was named that does not exist: reported where it is named, not per variable. */
+  placeUnknown?: boolean;
+  time?: ParsedTime | null;
+  person?: ParsedPerson;
+  group?: ParsedGroup;
+  work?: ParsedWork;
+  /** Which subjects are named at all, whether or not their file exists. */
+  named: { person: boolean; group: boolean; work: boolean };
+  /** Which subjects' files are known. */
+  checked: { person: boolean; group: boolean; work: boolean };
+  /** What a variable without its subject asks for: "a work: on the page or the story". */
+  nameIt: { person: string; group: string; work: string };
+}
+
+/** Why a variable (as `storyTextVariables` gives it) cannot be filled from these sources, or undefined. */
+export function variableProblem(v: string, src: VariableSources): string | undefined {
+  const key = variableKey(v);
+  if (!key) return `unknown variable "{${v}}"`;
+  const variable = STORY_VARIABLES[key];
+  const needs = (what: string) => `variable "{${v}}" needs ${what}`;
+  const { place, time } = src;
+  if (variable.location && src.location === false && place?.latitude === undefined) return needs('a location block in the .brand');
+  if (variable.place && src.places && !src.placeUnknown) {
+    if (!place) return needs(`a place: ${src.places.length > 1 ? 'name it with "place:"' : 'add a .place file'}`);
+    if (variable.needs && !place[variable.needs]) return needs(`${{ hours: 'an hours block', address: 'an address:', opening: 'an opening:' }[variable.needs]} in place "${place.id}"`);
+  }
+  if (variable.time && time !== undefined) {
+    const noTime = time ? '' : ' (the brand has no .time)';
+    if (variable.time === 'seasons' && !time?.seasons.length) return needs(`season blocks in the .time${noTime}`);
+    if (variable.time === 'founded' && !time?.founded) return needs(`founded: in the .time${noTime}`);
+    if (variable.time === 'daily') {
+      const name = v.slice('daily '.length);
+      if (!time?.daily.some(d => d.name === name)) return needs(`a daily moment "${name}" in the .time${noTime}`);
+    }
+  }
+  if (variable.person && src.checked.person) {
+    if (!src.named.person) return needs(src.nameIt.person);
+    if (src.person && variable.personNeeds && !src.person[variable.personNeeds]) return needs(`${variable.personNeeds}: in person "${src.person.id}"`);
+  }
+  if (variable.group && src.checked.group) {
+    if (!src.named.group) return needs(src.nameIt.group);
+    if (src.group && variable.groupNeeds && !src.group[variable.groupNeeds]) return needs(`${variable.groupNeeds}: in group "${src.group.id}"`);
+  }
+  if (variable.work && src.checked.work) {
+    if (!src.named.work) return needs(src.nameIt.work);
+    if (src.work && variable.workNeeds && !src.work[variable.workNeeds]) return needs(`${variable.workNeeds}: in work "${src.work.id}"`);
+    if (src.work?.items && (v === 'item-name' || v === 'item-note')) {
+      const field = v === 'item-name' ? 'name' : 'note';
+      const bare = src.work.items.find(item => !item[field]);
+      if (bare) return needs(`a ${field} on every item of work "${src.work.id}", "${bare.value}" has none`);
+    }
+  }
+  return undefined;
+}
+
 /** What a page's variables resolve from, as far as the brand's files are known. */
 interface PageFacts {
   place?: ParsedPlace;
@@ -634,37 +696,13 @@ export function checkStory(
       if (!slot) { say(`${where}: slot "${slotId}" is not declared by purpose "${purpose.id}"`); continue; }
       if (slot.value) { say(`${where}: slot "${slotId}" has a fixed value in purpose "${purpose.id}"`); continue; }
       for (const v of new Set(storyTextVariables(text))) {
-        const variable = STORY_VARIABLES[variableKey(v)!];
-        if (variable?.location && brand.location === false && place?.latitude === undefined) say(`${where}: variable "{${v}}" needs a location block in the .brand`);
-        if (variable?.place && brand.places && !(story.place && !place)) {
-          if (!place) say(`${where}: variable "{${v}}" needs a place: ${brand.places.length > 1 ? 'name it with "place:"' : 'add a .place file'}`);
-          else if (variable.needs && !place[variable.needs]) say(`${where}: variable "{${v}}" needs ${{ hours: 'an hours block', address: 'an address:', opening: 'an opening:' }[variable.needs]} in place "${place.id}"`);
-        }
-        if (variable?.time && time !== undefined) {
-          if (variable.time === 'seasons' && !time?.seasons.length) say(`${where}: variable "{${v}}" needs season blocks in the .time${noTime}`);
-          if (variable.time === 'founded' && !time?.founded) say(`${where}: variable "{${v}}" needs founded: in the .time${noTime}`);
-          if (variable.time === 'daily') {
-            const name = v.slice('daily '.length);
-            if (!time?.daily.some(d => d.name === name)) say(`${where}: variable "{${v}}" needs a daily moment "${name}" in the .time${noTime}`);
-          }
-        }
-        if (variable?.person && persons) {
-          if (!named.person) say(`${where}: variable "{${v}}" needs a person: on the page or the story`);
-          else if (facts.person && variable.personNeeds && !facts.person[variable.personNeeds]) say(`${where}: variable "{${v}}" needs ${variable.personNeeds}: in person "${facts.person.id}"`);
-        }
-        if (variable?.group && groupMap) {
-          if (!named.group) say(`${where}: variable "{${v}}" needs a group: on the page or the story, or a person with a group`);
-          else if (facts.group && variable.groupNeeds && !facts.group[variable.groupNeeds]) say(`${where}: variable "{${v}}" needs ${variable.groupNeeds}: in group "${facts.group.id}"`);
-        }
-        if (variable?.work && workMap) {
-          if (!named.work) say(`${where}: variable "{${v}}" needs a work: on the page or the story`);
-          else if (facts.work && variable.workNeeds && !facts.work[variable.workNeeds]) say(`${where}: variable "{${v}}" needs ${variable.workNeeds}: in work "${facts.work.id}"`);
-          else if (facts.work?.items && (v === 'item-name' || v === 'item-note')) {
-            const field = v === 'item-name' ? 'name' : 'note';
-            const bare = facts.work.items.find(item => !item[field]);
-            if (bare) say(`${where}: variable "{${v}}" needs a ${field} on every item of work "${facts.work.id}", "${bare.value}" has none`);
-          }
-        }
+        const problem = variableProblem(v, {
+          location: brand.location, places: brand.places, place, placeUnknown: !!story.place && !place, time,
+          person: facts.person, group: facts.group, work: facts.work, named,
+          checked: { person: !!persons, group: !!groupMap, work: !!workMap },
+          nameIt: { person: 'a person: on the page or the story', group: 'a group: on the page or the story, or a person with a group', work: 'a work: on the page or the story' },
+        });
+        if (problem) say(`${where}: ${problem}`);
       }
       const longest = longestText(text, facts);
       const parts = slot.slotType === 'list' ? longest.split('\n') : [longest];

@@ -1280,6 +1280,7 @@ example
 - Slot keys must be slots the purpose declares. A slot with `value:` takes no example text.
 - An example may leave a slot out (the slot stays empty on that page), but every slot without `value:` must be filled by at least one example.
 - `maxLength`, `words:` and `sentences:` apply to example texts as they apply to any text in the slot.
+- An example text may contain [variables](#variables). They fill from the brand's only place, the `.time` and the example's `work:`; an example names no person and no group, so their variables have nothing to fill from. `checkFiles` reports a variable that cannot be filled.
 - AI writing produces whole pages in this shape, never independent variants per slot.
 
 **Deprecated: slot `samples:`.** Files written before `example` blocks list texts per slot (`samples: A | B` or multi-line `- ` entries, with a trailing ` @name` window marker). Parsers still read them, pair the samples by position into examples (`@name` becomes `when:`) and warn. Implementations should show the warning to the people editing the brand. A purpose with `example` blocks must not also have slot `samples:`.
@@ -1664,7 +1665,7 @@ Times are local time in the time zone the story is posted in. Moon phases: new m
 
 Month abbreviations are the first three letters of the month's name in the brand's language and never end in a period, so a comma can follow (`Mi, 30. Okt, 14 °C`). German weekdays are two letters, English three. A short form needs what its variable needs. `short` after any other variable is an error, and so is any other word; `{daily NAME}` is the only variable whose second word is a name.
 
-An unknown name is an error. Braces that don't form a lowercase `{name}` or `{name word}` stay plain text. Variables appear only in page texts, never in topics or examples. For `maxLength`, a variable counts at its longest form (column "Longest").
+An unknown name is an error. Braces that don't form a lowercase `{name}` or `{name word}` stay plain text. Variables appear in page texts and in a purpose's example texts, never in topics or a story's examples. For `maxLength`, a variable counts at its longest form (column "Longest").
 
 ### `example` Block
 
@@ -2330,7 +2331,7 @@ project/
 
 The `brand-intent` npm package ships example brands under `examples/`. Run `brand-intent init` to copy them into your own project.
 
-**Checking a brand folder.** `brand-intent check <brand folder>` parses every file and checks the files against each other, with the same checks a consumer runs: a story's purpose, composition, format, theme, photo, time entry, person, group and work exist; a purpose's typography and framing are in the `.brand`; people, groups and works name each other correctly; `photos/index.json` is current and the photo library resolves. It prints `✗` for each problem and `!` for each warning, and exits 1 on any problem, so it runs as a CI step. Warnings (an ignored key, a file in `photos/` that is no image) never fail it.
+**Checking a brand folder.** `brand-intent check <brand folder>` parses every file and checks the files against each other, with the same checks a consumer runs: a story's purpose, composition, format, theme, photo, time entry, person, group and work exist; a format's `purposes:` and a purpose's `compositions:` name files that exist; a purpose's typography, slot `color:` and framing are in the `.brand`, its `scope` audiences in the `.identity`; the variables in a purpose's examples can be filled; people, groups and works name each other correctly; no two purposes, compositions or formats share an id; `photos/index.json` is current and the photo library resolves. A composition no purpose lists, a purpose without compositions and `sticky:` in a grid-mode composition are warnings. Everything but the photo index is one function over parsed files, `checkFiles(files)`, which returns each issue with its severity, file and message, so an application that has already loaded a brand runs the same check without a folder. It prints `✗` for each problem and `!` for each warning, and exits 1 on any problem, so it runs as a CI step. Warnings (an ignored key, a file in `photos/` that is no image) never fail it.
 
 ---
 

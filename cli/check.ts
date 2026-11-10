@@ -1,6 +1,6 @@
 /**
  * `brand-intent check <folder>`: parse every Brand Intent file in a brand folder and check the files
- * against each other (ids, typography, framing, people, groups, works, the .time, the photo library).
+ * against each other (`checkFiles` in the parser), plus what only a folder shows: the photo library's index.
  *
  * Bundled to cli/check.mjs (`npm run build:cli`) so the CLI runs on plain Node without TypeScript.
  */
@@ -10,9 +10,9 @@ import { join, relative } from 'node:path';
 import {
   parseIdentityFile, parseBrandFile, parseFormatFile, parsePurposeFile,
   parseCompositionFile, parseStoryFile, parsePlaceFile, parseTimeFile, parsePersonFile, parseGroupFile, parseWorkFile,
-  checkBrand, checkPurpose, checkStory, checkPerson, checkGroup, checkWork, photoLibrary, PHOTO_EXTENSIONS,
+  checkFiles, photoLibrary, PHOTO_EXTENSIONS,
 } from '../parser/index';
-import type { ParsedBrand, ParsedPurpose, ParsedPlace, ParsedTime, ParsedPerson, ParsedGroup, ParsedWork } from '../parser/index';
+import type { ParsedBrand, ParsedIdentity, ParsedPurpose, ParsedPlace, ParsedTime, ParsedPerson, ParsedGroup, ParsedWork } from '../parser/index';
 
 /** Folders a brand repo keeps next to its files: never brand content. */
 const SKIP_DIRS = new Set(['node_modules', '.git', '.github', '.claude']);
@@ -72,7 +72,8 @@ export function checkFolder(dir: string, label = dir): CheckResult {
   const brandFiles = ofType('brand');
   if (brandFiles.length !== 1) errors.push(`${brandFiles.length ? 'more than one' : 'no'} .brand file in ${dir}; a brand folder has exactly one`.replace(` in ${dir}`, ` in ${label}`));
 
-  for (const f of ofType('identity')) attempt(f, () => parseIdentityFile(read(f), name(f)));
+  let identity: ParsedIdentity | undefined;
+  for (const f of ofType('identity')) identity = attempt(f, () => parseIdentityFile(read(f), name(f))) ?? identity;
   let brand: ParsedBrand | undefined;
   for (const f of brandFiles.slice(0, 1)) brand = attempt(f, () => parseBrandFile(read(f), name(f)));
   if (brand?.warnings?.length) warnings.push(...brand.warnings);
@@ -85,8 +86,9 @@ export function checkFolder(dir: string, label = dir): CheckResult {
   const groups: ParsedGroup[] = collect('group', parseGroupFile);
   const works: ParsedWork[] = collect('work', parseWorkFile);
   const places: ParsedPlace[] = collect('place', parsePlaceFile);
-  const formats = collect('format', parseFormatFile).map(f => f.id);
-  const compositions = collect('composition', parseCompositionFile).map(c => c.id);
+  const formats = collect('format', parseFormatFile);
+  const compositions = collect('composition', parseCompositionFile);
+  const stories = collect('story', parseStoryFile);
   const purposes: ParsedPurpose[] = collect('purpose', parsePurposeFile);
   for (const p of purposes) if (p.warnings?.length) warnings.push(...p.warnings);
 
@@ -106,34 +108,8 @@ export function checkFolder(dir: string, label = dir): CheckResult {
     }
   }
 
-  if (brand) {
-    const fileName = name(brandFiles[0]);
-    errors.push(...checkBrand(brand, { time, people, groups, works }, fileName));
-    for (const p of purposes) {
-      errors.push(...checkPurpose(p, { time, works }, `${p.id}.purpose`));
-      for (const s of p.slots) {
-        if (s.typographyRef && !brand.typographies?.[s.typographyRef]) errors.push(`${p.id}.purpose: typography "${s.typographyRef}" is not in the .brand`);
-      }
-      if (p.framing && !brand.framings?.some(fr => fr.id === p.framing)) errors.push(`${p.id}.purpose: framing "${p.framing}" is not in the .brand`);
-    }
-  }
-  errors.push(
-    ...people.flatMap(p => checkPerson(p, { groups, places }, `${p.id}.person`)),
-    ...groups.flatMap(g => checkGroup(g, { people }, `${g.id}.group`)),
-    ...works.flatMap(w => checkWork(w, { people, groups, time, places }, `${w.id}.work`)),
-  );
-
-  for (const f of ofType('story')) {
-    const story = attempt(f, () => parseStoryFile(read(f), name(f)));
-    if (!story || !brand) continue;
-    errors.push(...checkStory(story, {
-      purposes, compositions, formats, places,
-      themes: Object.keys(brand.themes ?? {}),
-      photos: photoIds,
-      illustrations: (brand.assets?.illustrations ?? []).map(i => i.id),
-      time, people, groups, works, name: brand.name,
-      location: !!brand.location,
-    }, name(f)));
+  for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds })) {
+    (issue.severity === 'error' ? errors : warnings).push(`${issue.file}: ${issue.message}`);
   }
 
   return { errors, warnings, counts };

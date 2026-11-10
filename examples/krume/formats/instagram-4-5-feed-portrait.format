@@ -19,4 +19,4 @@ comfort:  40            # px - safe reading margin
 
 # Which purposes are editorially valid here.
 # This is a brand decision, not a technical constraint.
-purposes: daily-bread, seasonal-special, baking-tip
+purposes: daily-bread
