@@ -1534,6 +1534,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `work:` | string | No | [Work](#work-work) id the story is about. Work variables resolve from it on every page that doesn't name its own, and the story is offered only while the work is [in season](#in-season) |
 | `page` | block | Yes (1+) | One page (repeatable). Order in the file = order in the story |
 | `example` | block | No | Texts for the open slots of the pages, about one story topic (repeatable) |
+| `prompt` | block | No | The brief for writing the open slots anew for every date the story is posted on (at most one). See [`prompt` Block](#prompt-block) |
 
 ### `page` Block
 
@@ -1558,7 +1559,7 @@ Every slot of the purpose is one of three kinds on a page:
 |------|------------|---------|
 | Fixed | `primary: Open today` | Always this text |
 | Variable | `label: From {date}` | Fixed text with placeholders, resolved for the story's date |
-| Open | slot not named | Filled from the story's examples, by the person, or by AI writing |
+| Open | slot not named | Filled from the story's examples, by the person, by AI writing, or by the story's [prompt](#prompt-block) |
 
 A slot with `value:` in the purpose is fixed there and is never named on a page.
 
@@ -1691,6 +1692,43 @@ example
 - An example fills only open slots: a slot fixed on the page takes no example text.
 - An example may leave pages or slots out; they stay open.
 - The purpose's slot limits (`maxLength`, list `maxItems`) apply to page and example texts alike; `words:` and `sentences:` are guidance as for any text in the slot.
+
+### `prompt` Block
+
+A story that is posted again and again can have its open slots written anew each time. The `prompt` block is the brief for that: what to look at and what to say about it. It is free text on 2-space lines, kept as written.
+
+```yaml
+page
+  purpose: note
+  label:   {weekday}
+
+example
+  page 1
+    primary: Rain is good news for the sourdough.
+    credit:  Rain all day in the valley
+
+prompt
+  model: haiku
+  Look at today's weather and the season.
+  Say in one sentence what it means for the bread,
+  and name in the credit what the sentence refers to.
+```
+
+**The prompt is only the brief.** Who the brand is and how it speaks is in the `.identity`; what the page is for, its slots and their limits are in the `.purpose`. Implementations give a model those files together with the prompt, the story's date, the story's examples and the texts written for earlier dates, so the block doesn't repeat any of it.
+
+| Key | Indent | Description |
+|-----|--------|-------------|
+| `model:` | 2 | Optional, only as the block's first line: the name of the model that writes, lowercase kebab-case. The names belong to the implementation, which reports one it doesn't know. Absent: the implementation's default |
+| text | 2 | The brief, every further line |
+
+**Rules:**
+- A story has at most one `prompt`, and it has text.
+- The prompt writes open slots only, as an example does: a slot fixed on the page keeps its text. `checkStory` reports a prompt in a story without an open slot.
+- The purpose's slot limits (`maxLength`, list `maxItems`) bind what is written. Implementations check the result and don't post a text that breaks them.
+- The examples stay: they are what a preview shows, and they show the model what a good text looks like.
+- Braces in a prompt are plain text. Variables belong in page texts.
+
+**Written text is not posted unseen.** Implementations show a person what was written for a date before it goes out, with what it refers to, and that person can stop it.
 
 ### Exclusion Rule
 

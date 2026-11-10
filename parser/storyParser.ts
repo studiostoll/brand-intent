@@ -1,6 +1,6 @@
 /**
  * Parser for .story files: ordered pages, each a purpose + composition with
- * fixed, variable or open slots, plus example fills for the open slots.
+ * fixed, variable or open slots, plus example fills for the open slots and an optional prompt that writes them.
  *
  * Strict, line-based format. Every line must match a known pattern or be blank.
  * Throws on parse errors with file name and line number. Cross-file checks
@@ -116,6 +116,11 @@ export interface ParsedStory {
   pages: ParsedStoryPage[];
   /** Example fills for the open slots, one story topic each. */
   examples: ParsedStoryExample[];
+  /** The `prompt` block: the brief for writing the open slots anew for each date the story is posted on.
+   *  Lines as written, joined with newlines. */
+  prompt?: string;
+  /** `model:` of the prompt block: the name of the model that writes. Undefined = the implementation's default. */
+  promptModel?: string;
 }
 
 export interface ParsedStoryPage {
@@ -208,6 +213,11 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   let multiKey: SlotId | null = null;
   let multiIndent = 0;
   const examplePageLines = new Map<ParsedStoryExamplePage, number>();
+  // The `prompt` block: its header line once seen, whether its lines are being read, and its text
+  let promptLine = 0;
+  let inPrompt = false;
+  const promptLines: string[] = [];
+  let promptModel: string | undefined;
 
   /** `key: value` line of a page or example page: topic, one of `extra`, or a slot text.
    *  Returns the `extra` key and value, or the slot of a bare `slot:` line. */
@@ -253,6 +263,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     currentExample = null;
     currentExamplePage = null;
     multiKey = null;
+    inPrompt = false;
   }
 
   for (let i = 0; i < lines.length; i++) {
@@ -262,6 +273,17 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     const indent = raw.length - raw.trimStart().length;
 
     if (line === '') continue;
+
+    // Prompt lines are free text, kept as written (a line may start with "#")
+    if (inPrompt && indent >= 2) {
+      // `model:` is a key only as the block's first line; anywhere else the line is part of the brief
+      const model = promptLines.length === 0 && promptModel === undefined ? /^model:\s*(.*)$/.exec(line) : null;
+      if (model) {
+        if (!ID.test(model[1])) throw new Error(`${fileName}:${lineNum}: invalid model "${model[1]}" (expected a model name like haiku)`);
+        promptModel = model[1];
+      } else promptLines.push(line);
+      continue;
+    }
 
     if (line.startsWith('#')) {
       if (indent === 0) description = description ? `${description} ${line.slice(1).trim()}` : line.slice(1).trim();
@@ -292,6 +314,12 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       if (line === 'example') {
         currentExample = { pages: [], line: lineNum };
         examples.push(currentExample);
+        continue;
+      }
+      if (line === 'prompt') {
+        if (promptLine) throw new Error(`${fileName}:${lineNum}: duplicate "prompt" (a story has one)`);
+        promptLine = lineNum;
+        inPrompt = true;
         continue;
       }
       const colonIdx = line.indexOf(':');
@@ -397,6 +425,8 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     if (!target.texts[multiKey]) throw new Error(`${fileName}:${lines.length}: "${multiKey}:" has no text`);
   }
 
+  if (promptLine && promptLines.length === 0) throw new Error(`${fileName}:${promptLine}: "prompt" has no text (write the brief on the following, indented lines)`);
+
   if (!id) throw new Error(`${fileName}: missing story id (add "id:" line)`);
   if (!format) throw new Error(`${fileName}: missing "format:" line`);
   if (pages.length === 0) throw new Error(`${fileName}: no pages defined`);
@@ -455,6 +485,8 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         return rest;
       }),
     })),
+    ...(promptLines.length ? { prompt: promptLines.join('\n') } : {}),
+    ...(promptModel ? { promptModel } : {}),
   };
 }
 
@@ -677,6 +709,10 @@ export function checkStory(
     }
     checkTexts(where, purpose, page.texts, facts, named);
   });
+  if (story.prompt) {
+    const open = story.pages.some(page => purposes.get(page.purpose)?.slots.some(slot => !slot.value && page.texts[slot.id] === undefined));
+    if (!open && story.pages.every(page => purposes.has(page.purpose))) say('prompt: no page has an open slot for it to write');
+  }
   story.examples.forEach((ex, i) => {
     for (const ep of ex.pages) {
       const purpose = purposes.get(story.pages[ep.page - 1].purpose);

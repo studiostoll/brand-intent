@@ -478,5 +478,23 @@ test('group: required and work: required', () => {
   assertEq(checkStory(parse('page\n  purpose: release\n'), { ...brand, works: undefined }, 's.story'), [], 'not checked');
 });
 
+test('prompt block: the brief that writes the open slots', () => {
+  const s = parse('page\n  purpose: notice\n\nexample\n  page 1\n    primary: Open today\n\nprompt\n  Look at what the week brought.\n\n  # one line, {not a variable}\n  Write the headline.\n');
+  assertEq(s.prompt, 'Look at what the week brought.\n# one line, {not a variable}\nWrite the headline.', 'lines as written');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'primary and detail are open');
+  assertEq(parse('page\n  purpose: notice\n').prompt, undefined, 'no prompt');
+  const after = parse('prompt\n  Write it.\npage\n  purpose: notice\n  primary: Open\n');
+  assertEq([after.prompt, after.pages[0].texts.primary], ['Write it.', 'Open'], 'a block after the prompt');
+  const fixed = parse('page\n  purpose: notice\n  primary: Open\n  detail:\n    One\nprompt\n  Write it.\n');
+  assertEq(checkStory(fixed, BRAND, 's.story'), ['s.story: prompt: no page has an open slot for it to write'], 'every slot fixed');
+  const m = parse('page\n  purpose: notice\nprompt\n  model: small-one\n  Write it.\n  model: stays text\n');
+  assertEq([m.promptModel, m.prompt], ['small-one', 'Write it.\nmodel: stays text'], 'model: as the first line');
+  assertEq(s.promptModel, undefined, 'no model');
+  assertThrows(() => parse('page\n  purpose: notice\nprompt\n  model: Big One\n  Write it.\n'), 'invalid model');
+  assertThrows(() => parse('page\n  purpose: notice\nprompt\n  model: small-one\n'), '"prompt" has no text');
+  assertThrows(() => parse('page\n  purpose: notice\nprompt\n'), '"prompt" has no text');
+  assertThrows(() => parse('page\n  purpose: notice\nprompt\n  One.\nprompt\n  Two.\n'), 'duplicate "prompt"');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

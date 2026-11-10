@@ -24,7 +24,7 @@
       }
     },
     "block-header": {
-      "match": "^(page|example)\\s*$",
+      "match": "^(page|example|prompt)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-story" }
       }
@@ -60,7 +60,7 @@
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
       "patterns": [
         {
-          "match": "^(id:|name:|format:|topic:|scrim:|place:|when:|person:|group:|work:|page|example)(?=\\s|$)",
+          "match": "^(id:|name:|format:|topic:|scrim:|place:|when:|person:|group:|work:|page|example|prompt)(?=\\s|$)",
           "captures": {
             "1": { "name": "keyword.control.brand-intent-story" }
           }

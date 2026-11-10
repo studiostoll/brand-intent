@@ -4538,6 +4538,10 @@ function parseStoryFile(content, fileName) {
   let multiKey = null;
   let multiIndent = 0;
   const examplePageLines = /* @__PURE__ */ new Map();
+  let promptLine = 0;
+  let inPrompt = false;
+  const promptLines = [];
+  let promptModel;
   function readKey(line, lineNum, target, extra, allowVariables) {
     const colonIdx = line.indexOf(":");
     if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value", got "${line}"`);
@@ -4572,6 +4576,7 @@ function parseStoryFile(content, fileName) {
     currentExample = null;
     currentExamplePage = null;
     multiKey = null;
+    inPrompt = false;
   }
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
@@ -4579,6 +4584,14 @@ function parseStoryFile(content, fileName) {
     const line = raw.trim();
     const indent = raw.length - raw.trimStart().length;
     if (line === "") continue;
+    if (inPrompt && indent >= 2) {
+      const model = promptLines.length === 0 && promptModel === void 0 ? /^model:\s*(.*)$/.exec(line) : null;
+      if (model) {
+        if (!ID.test(model[1])) throw new Error(`${fileName}:${lineNum}: invalid model "${model[1]}" (expected a model name like haiku)`);
+        promptModel = model[1];
+      } else promptLines.push(line);
+      continue;
+    }
     if (line.startsWith("#")) {
       if (indent === 0) description = description ? `${description} ${line.slice(1).trim()}` : line.slice(1).trim();
       continue;
@@ -4606,6 +4619,12 @@ ${line}` : line;
       if (line === "example") {
         currentExample = { pages: [], line: lineNum };
         examples.push(currentExample);
+        continue;
+      }
+      if (line === "prompt") {
+        if (promptLine) throw new Error(`${fileName}:${lineNum}: duplicate "prompt" (a story has one)`);
+        promptLine = lineNum;
+        inPrompt = true;
         continue;
       }
       const colonIdx = line.indexOf(":");
@@ -4705,6 +4724,7 @@ ${line}` : line;
     const target = currentExamplePage ?? currentPage;
     if (!target.texts[multiKey]) throw new Error(`${fileName}:${lines.length}: "${multiKey}:" has no text`);
   }
+  if (promptLine && promptLines.length === 0) throw new Error(`${fileName}:${promptLine}: "prompt" has no text (write the brief on the following, indented lines)`);
   if (!id) throw new Error(`${fileName}: missing story id (add "id:" line)`);
   if (!format) throw new Error(`${fileName}: missing "format:" line`);
   if (pages.length === 0) throw new Error(`${fileName}: no pages defined`);
@@ -4759,7 +4779,9 @@ ${line}` : line;
         const { line: _l, keys: _k, ...rest } = p;
         return rest;
       })
-    }))
+    })),
+    ...promptLines.length ? { prompt: promptLines.join("\n") } : {},
+    ...promptModel ? { promptModel } : {}
   };
 }
 function storyPlace(story, places) {
@@ -4947,6 +4969,10 @@ function checkStory(story, brand, fileName) {
     }
     checkTexts(where, purpose, page.texts, facts, named);
   });
+  if (story.prompt) {
+    const open = story.pages.some((page) => purposes.get(page.purpose)?.slots.some((slot) => !slot.value && page.texts[slot.id] === void 0));
+    if (!open && story.pages.every((page) => purposes.has(page.purpose))) say("prompt: no page has an open slot for it to write");
+  }
   story.examples.forEach((ex, i) => {
     for (const ep of ex.pages) {
       const purpose = purposes.get(story.pages[ep.page - 1].purpose);
