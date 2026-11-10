@@ -16,3 +16,6 @@ CLAUDE.md
 
 # Internal working docs (repo is public)
 docs/
+
+# Built parser (npm run build:lib, built in prepack)
+dist/
