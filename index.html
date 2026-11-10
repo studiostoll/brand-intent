@@ -331,6 +331,7 @@ hide_bar: true
         <code>{weekday}</code>, <code>{sunrise}</code>, <code>{weather}</code>, <code>{closes}</code>, <code>{days-until}</code>, <code>{person}</code>.
         A variable without a value is not guessed: no forecast, or a closed day, and the post doesn&rsquo;t go out.
         Page lists repeat a page as often as the week needs.
+        A <code>prompt</code> block is the brief that writes the open slots anew for every date, and a person sees the text before it goes out.
       </p>
 <pre><span class="kw">id:</span>     <span class="val">today</span>
 <span class="kw">format:</span> <span class="val">4:5</span>
@@ -573,16 +574,16 @@ hide_bar: true
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
   <span class="section-label">06 / Recent changes</span>
-  <h2>Version 0.47, November 2026.</h2>
+  <h2>Version 0.48, November 2026.</h2>
   <p>The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
 
   <dl class="changelog">
+    <div><dt>v0.48 <span>10 Nov 2026</span></dt><dd>A story can carry a <code>prompt</code>: the brief that writes its open slots anew for every date it is posted on, with <code>model:</code> naming who writes. The identity, the purpose and the examples are given along, so the block holds only the task; what is written is shown to a person before it goes out.</dd></div>
     <div><dt>v0.47 <span>9 Nov 2026</span></dt><dd>A work keeps what critics wrote: a <code>review</code> block holds their words verbatim, credited with <code>by:</code>. <code>brand-intent check</code> parses a brand folder and checks its files against each other, the same command for an agent, a repo&rsquo;s CI and an app.</dd></div>
     <div><dt>v0.46 <span>9 Nov 2026</span></dt><dd>The photo library is the <code>photos/</code> folder: drop a file in and it is a photo, its name the id, its folders the sections, two levels deep. A <code>photo</code> block only adds facts; <code>src:</code> and <code>section:</code> are gone. <code>brand-intent photos</code> writes the file list.</dd></div>
     <div><dt>v0.45 <span>8 Nov 2026</span></dt><dd>A work can be a series: its <code>items</code> come one per day or per week, never twice, with <code>{item}</code>, <code>{item-name}</code> and <code>{item-note}</code>. A story page takes its <code>background</code> from a hex or from the day&rsquo;s item.</dd></div>
     <div><dt>v0.44 <span>7 Nov 2026</span></dt><dd>The <code>.group</code> and <code>.work</code> files: more than one person under one name, and what the brand puts out or puts on. An event is a work with its own date; <code>weekly</code> and <code>date</code> leave the <code>.time</code>. Asset <code>group:</code> is now <code>section:</code>.</dd></div>
     <div><dt>v0.43 <span>7 Nov 2026</span></dt><dd>The <code>.time</code> and <code>.person</code> files. Seasons and windows leave the <code>.brand</code>; a person is the consent, with a date it ends. Stories and pages name a person and a time entry.</dd></div>
-    <div><dt>v0.42 <span>6 Nov 2026</span></dt><dd>A story page can ask for a photo taken now, with the brand&rsquo;s camera. Brand photos get a <code>focus</code> point and a <code>horizon</code> line.</dd></div>
   </dl>
 </section>
 
