@@ -1450,7 +1450,7 @@ sticky: bottom s
 - `flow:` default fill
 - `flow: panel POSITION WIDTH HEIGHT [inset]` floating panel (e.g., `panel bottom-left 2/3 1/1`). Without `inset` the panel sits on the canvas edges. With `inset` the box keeps its size, its outer edges sit on the safe-area lines (aligned with a logo in the same corner), and the padding inside is equal on all sides.
 - `flow: split EDGE FRACTION` split layout (e.g., `split bottom 1/2`)
-- `flow: width FRACTION` narrower text (e.g., `width 3/4`). The flow's slots take this share of the flow's width, each on the side its text is aligned to. No surface is drawn behind them.
+- `flow: width FRACTION` narrower text (e.g., `width 3/4`). The flow's content takes this share of the flow's width, on the side its first slot's text is aligned to. No surface is drawn behind it.
 
 **Properties** (indented, no pipe):
 - `direction: vertical | horizontal`

@@ -102,7 +102,7 @@ export interface ParsedFlowRegion {
     edge: 'top' | 'bottom' | 'left' | 'right';
     fraction: number;  // e.g. 0.5 = half, 0.333 = one third
   };
-  /** Width: the flow's slots take this share of the flow's width (e.g. 0.75), each on the side its text is aligned to. No surface behind them. */
+  /** Width: the flow's content takes this share of the flow's width (e.g. 0.75), on the side its first slot's text is aligned to. No surface behind it. */
   width?: number;
   /** Flow direction (default: vertical). */
   direction: 'vertical' | 'horizontal';
