@@ -10,30 +10,36 @@ import { join, relative } from 'node:path';
 import {
   parseIdentityFile, parseBrandFile, parseFormatFile, parsePurposeFile,
   parseCompositionFile, parseStoryFile, parsePlaceFile, parseTimeFile, parsePersonFile, parseGroupFile, parseWorkFile,
-  checkFiles, photoLibrary, PHOTO_EXTENSIONS,
+  checkFiles, photoLibrary, videoLibrary, PHOTO_EXTENSIONS, VIDEO_EXTENSIONS,
 } from '../parser/index';
 import type { ParsedBrand, ParsedIdentity, ParsedPurpose, ParsedPlace, ParsedTime, ParsedPerson, ParsedGroup, ParsedWork } from '../parser/index';
 
 /** Folders a brand repo keeps next to its files: never brand content. */
 const SKIP_DIRS = new Set(['node_modules', '.git', '.github', '.claude']);
 
-/** Image files below `photosDir`, relative to it, NFC, sorted. Hidden files and index.json are skipped. */
-export function listPhotos(photosDir: string, prefix = '', skipped: string[] = []): string[] {
+/** The two media libraries of a brand folder: `media/photos/` and `media/videos/`. */
+export const MEDIA_KINDS = [
+  { kind: 'photo', folder: 'media/photos', extensions: PHOTO_EXTENSIONS as readonly string[] },
+  { kind: 'video', folder: 'media/videos', extensions: VIDEO_EXTENSIONS as readonly string[] },
+] as const;
+
+/** Files with one of `extensions` below `mediaDir`, relative to it, NFC, sorted. Hidden files and index.json are skipped. */
+export function listMedia(mediaDir: string, extensions: readonly string[], prefix = '', skipped: string[] = []): string[] {
   const out: string[] = [];
-  for (const name of readdirSync(join(photosDir, prefix))) {
+  for (const name of readdirSync(join(mediaDir, prefix))) {
     if (name.startsWith('.') || (!prefix && name === 'index.json')) continue;
     const rel = prefix ? `${prefix}/${name}` : name;
-    if (statSync(join(photosDir, rel)).isDirectory()) { out.push(...listPhotos(photosDir, rel, skipped)); continue; }
+    if (statSync(join(mediaDir, rel)).isDirectory()) { out.push(...listMedia(mediaDir, extensions, rel, skipped)); continue; }
     const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
-    if ((PHOTO_EXTENSIONS as readonly string[]).includes(ext)) out.push(rel.normalize('NFC'));
+    if (extensions.includes(ext)) out.push(rel.normalize('NFC'));
     else skipped.push(rel);
   }
   return out.sort();
 }
 
-/** The `photos/index.json` text a folder should have. */
-export function photoIndexText(photosDir: string, skipped?: string[]): string {
-  return JSON.stringify(listPhotos(photosDir, '', skipped), null, 2) + '\n';
+/** The `index.json` text a media folder (`media/photos/`, `media/videos/`) should have. */
+export function mediaIndexText(mediaDir: string, extensions: readonly string[], skipped?: string[]): string {
+  return JSON.stringify(listMedia(mediaDir, extensions, '', skipped), null, 2) + '\n';
 }
 
 export interface CheckResult {
@@ -92,19 +98,28 @@ export function checkFolder(dir: string, label = dir): CheckResult {
   const purposes: ParsedPurpose[] = collect('purpose', parsePurposeFile);
   for (const p of purposes) if (p.warnings?.length) warnings.push(...p.warnings);
 
-  // The photo library: the files below photos/, listed in photos/index.json.
-  const photosDir = join(dir, 'photos');
+  // The media libraries: the files below media/photos/ and media/videos/, each listed in its index.json.
+  // `photos/` and `videos/` beside the .brand file are where they lay before v0.52.
+  for (const old of ['photos', 'videos']) {
+    if (existsSync(join(dir, old))) errors.push(`${old}/ is media/${old}/ since v0.52; move the folder, then run: npx brand-intent media ${label === '.' ? '' : label}`.trimEnd());
+  }
   let photoIds = (brand?.assets?.photos ?? []).map(p => p.id);
-  if (existsSync(photosDir)) {
+  for (const { kind, folder, extensions } of MEDIA_KINDS) {
+    const mediaDir = join(dir, folder);
+    const declared = kind === 'photo' ? brand?.assets?.photos : brand?.assets?.videos;
+    if (!existsSync(mediaDir)) {
+      if (declared?.length && !existsSync(join(dir, `${kind}s`))) errors.push(`${kind} "${declared[0].id}" has no file: there is no ${folder}/ folder`);
+      continue;
+    }
     const skipped: string[] = [];
-    const expected = photoIndexText(photosDir, skipped);
-    for (const s of skipped) warnings.push(`photos/${s}: not a photo, left out of the library`);
-    const indexFile = join(photosDir, 'index.json');
+    const expected = mediaIndexText(mediaDir, extensions, skipped);
+    for (const s of skipped) warnings.push(`${folder}/${s}: not a ${kind}, left out of the library`);
+    const indexFile = join(mediaDir, 'index.json');
     const current = existsSync(indexFile) ? readFileSync(indexFile, 'utf8') : '';
-    if (current !== expected) errors.push(`photos/index.json is out of date; run: npx brand-intent photos ${label === '.' ? '' : label}`.trimEnd());
+    if (current !== expected) errors.push(`${folder}/index.json is out of date; run: npx brand-intent media ${label === '.' ? '' : label}`.trimEnd());
     if (brand) {
-      const library = attempt(indexFile, () => photoLibrary(brand!.assets?.photos, JSON.parse(expected), name(brandFiles[0])));
-      if (library) photoIds = library.map(p => p.id);
+      const library = attempt(indexFile, () => (kind === 'photo' ? photoLibrary : videoLibrary)(declared, JSON.parse(expected), name(brandFiles[0])));
+      if (library && kind === 'photo') photoIds = library.map(p => p.id);
     }
   }
 

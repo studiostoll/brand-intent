@@ -952,9 +952,9 @@ One location per brand. A brand whose sites lie in one area keeps that area here
 
 ### `logo NAME`, `photo NAME`, `video NAME` Blocks
 
-Brand-declared assets — curated logos, photos, and videos that ship with the brand. Each asset has an id (block header), a display label, and, for logos and videos, a source file path.
+Brand-declared assets — curated logos, photos, and videos that ship with the brand. Each asset has an id (block header), a display label, and, for logos, a source file path.
 
-**The photo library is the `photos/` folder.** Every image below it is a photo; its id is the file name without extension (`photos/Tasting/notizen.jpg` → `notizen`), so a file name is lowercase kebab-case and unique across all folders. A `photo` block names no file: it adds facts (label, `work:`, `focus:` …) to the file of its id. A file without a block is in the library with its id as label. Folders are the library's structure, named as written, two levels at most: the first is a section (`Tasting`, `Releases`), the second a group within it (`Releases/Nachtfahrt`). Files directly in `photos/` come first, then the sections, newest first by the latest one-off `on:` of the [`.work`](#work-work)s their photos show, the rest in order of first appearance; the groups within a section sort the same way. `photos/index.json` lists the files (paths below `photos/`); `brand-intent photos <brand folder>` writes it, `--check` only compares. Consumers resolve the library with `photoLibrary(blocks, files)`, which rejects a block without a file, a file name that is no id, two files of one name and a third folder level. Before v0.46 a photo named its file with `src:` and its section with `section:`; the parser rejects both.
+**The media libraries are two folders: `media/photos/` and `media/videos/`.** Every image below `media/photos/` is a photo, every video file below `media/videos/` a video (`.mp4`, `.mov`, `.webm`). The id is the file name without extension (`media/photos/Tasting/notizen.jpg` → `notizen`), so a file name is lowercase kebab-case and unique across all folders of its library. A `photo` or `video` block names no file: it adds facts (a label, for a photo `work:`, `focus:` …, for a video `loop`) to the file of its id. A file without a block is in the library with its id as label. Folders are the library's structure, named as written, two levels at most: the first is a section (`Tasting`, `Releases`), the second a group within it (`Releases/Nachtfahrt`). Files directly in the library folder come first, then the sections, newest first by the latest one-off `on:` of the [`.work`](#work-work)s their photos show, the rest in order of first appearance; the groups within a section sort the same way. Each library has an `index.json` that lists its files (paths below the folder); `brand-intent media <brand folder>` writes both, `--check` only compares. Consumers resolve the libraries with `photoLibrary(blocks, files)` and `videoLibrary(blocks, files)`, which reject a block without a file, a file name that is no id, two files of one name and a third folder level. Before v0.46 a photo named its file with `src:` and its section with `section:`; before v0.52 the photos lay in `photos/`, the videos in `videos/` with a `src:` on each `video` block. The parser rejects the keys, `brand-intent check` the old folders.
 
 ```yaml
 logo primary
@@ -988,23 +988,22 @@ logo spiral
   aspect: 1
   animated
 
-photo hero                 # photos/hero.jpg
+photo hero                 # media/photos/hero.jpg
   label: Hero Shot
 
-photo old-harbour          # photos/Harbour/old-harbour.jpg
+photo old-harbour          # media/photos/Harbour/old-harbour.jpg
   label: Old Harbour
   focus: 40% 55%
 
-video intro
+video intro                # media/videos/intro.mp4
   label: Intro Clip
-  src: videos/intro.mp4
   loop
 ```
 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `label:` | string | No | Display label (defaults to block id) |
-| `src:` | string | Yes (logos, videos) | Path to the asset file (relative to brand base). A subfolder below the top folder is the library section, named as written: `videos/Events/clip.mp4` sits in "Events". One subfolder at most. Photos take no `src:`: their file is `photos/…/<id>.<ext>` (see above) |
+| `src:` | string | Yes (logos) | Path to the asset file (relative to brand base). A subfolder below the top folder is the library section, named as written: `logos/Seasonal/mark.svg` sits in "Seasonal". One subfolder at most. Photos and videos take no `src:`: their file is `media/photos/…/<id>.<ext>` or `media/videos/…/<id>.<ext>` (see above) |
 | `aspect:` | float | No | Aspect ratio (width / height) |
 | `scale:` | float | No | Size multiplier when rendered |
 | `lottie:` | string | No | Path to Lottie JSON (for animated assets) |
@@ -2331,7 +2330,7 @@ project/
 
 The `brand-intent` npm package ships example brands under `examples/`. Run `brand-intent init` to copy them into your own project.
 
-**Checking a brand folder.** `brand-intent check <brand folder>` parses every file and checks the files against each other, with the same checks a consumer runs: a story's purpose, composition, format, theme, photo, time entry, person, group and work exist; a format's `purposes:` and a purpose's `compositions:` name files that exist; a purpose's typography, slot `color:` and framing are in the `.brand`, its `scope` audiences in the `.identity`; the variables in a purpose's examples can be filled; people, groups and works name each other correctly; no two purposes, compositions or formats share an id; `photos/index.json` is current and the photo library resolves. A composition no purpose lists, a purpose without compositions and `sticky:` in a grid-mode composition are warnings. Everything but the photo index is one function over parsed files, `checkFiles(files)`, which returns each issue with its severity, file and message, so an application that has already loaded a brand runs the same check without a folder. It prints `✗` for each problem and `!` for each warning, and exits 1 on any problem, so it runs as a CI step. Warnings (an ignored key, a file in `photos/` that is no image) never fail it.
+**Checking a brand folder.** `brand-intent check <brand folder>` parses every file and checks the files against each other, with the same checks a consumer runs: a story's purpose, composition, format, theme, photo, time entry, person, group and work exist; a format's `purposes:` and a purpose's `compositions:` name files that exist; a purpose's typography, slot `color:` and framing are in the `.brand`, its `scope` audiences in the `.identity`; the variables in a purpose's examples can be filled; people, groups and works name each other correctly; no two purposes, compositions or formats share an id; `media/photos/index.json` and `media/videos/index.json` are current, both libraries resolve, and no `photos/` or `videos/` folder is left beside the `.brand` file. A composition no purpose lists, a purpose without compositions and `sticky:` in a grid-mode composition are warnings. Everything but the media indexes is one function over parsed files, `checkFiles(files)`, which returns each issue with its severity, file and message, so an application that has already loaded a brand runs the same check without a folder. It prints `✗` for each problem and `!` for each warning, and exits 1 on any problem, so it runs as a CI step. Warnings (an ignored key, a file in `media/photos/` that is no image) never fail it.
 
 ---
 

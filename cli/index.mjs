@@ -120,25 +120,35 @@ const cwd = process.cwd();
 const pkg = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'));
 console.log(`Brand Intent v${pkg.version}\n`);
 
-// ── photos and check: from the bundled checker (cli/check.ts → cli/check.mjs) ──
+// ── media and check: from the bundled checker (cli/check.ts → cli/check.mjs) ──
 
 if (command === 'photos') {
-  const { photoIndexText } = await import('./check.mjs');
+  console.log('  brand-intent photos is brand-intent media since v0.52: photos live in media/photos/, videos in media/videos/.\n');
+  process.exit(1);
+}
+
+if (command === 'media') {
+  const { mediaIndexText, MEDIA_KINDS } = await import('./check.mjs');
   const check = args.includes('--check');
   const dirs = args.slice(1).filter(a => a !== '--check');
   let stale = 0;
   for (const dir of dirs.length ? dirs : ['.']) {
-    const photosDir = join(resolve(cwd, dir), 'photos');
-    if (!existsSync(photosDir)) { console.log(`  - ${dir}: no photos/ folder`); continue; }
-    const indexFile = join(photosDir, 'index.json');
-    const skipped = [];
-    const next = photoIndexText(photosDir, skipped);
-    for (const s of skipped) console.log(`  ! ${dir}/photos/${s}: not a photo, left out`);
-    const current = existsSync(indexFile) ? readFileSync(indexFile, 'utf-8') : '';
-    if (current === next) { console.log(`  ✓ ${dir}: photos/index.json is current`); continue; }
-    if (check) { console.log(`  ✗ ${dir}: photos/index.json is out of date; run brand-intent photos ${dir}`); stale++; continue; }
-    writeFileSync(indexFile, next, 'utf-8');
-    console.log(`  ✓ ${dir}: photos/index.json written (${JSON.parse(next).length} photos)`);
+    let found = false;
+    for (const { kind, folder, extensions } of MEDIA_KINDS) {
+      const mediaDir = join(resolve(cwd, dir), folder);
+      if (!existsSync(mediaDir)) continue;
+      found = true;
+      const indexFile = join(mediaDir, 'index.json');
+      const skipped = [];
+      const next = mediaIndexText(mediaDir, extensions, skipped);
+      for (const s of skipped) console.log(`  ! ${dir}/${folder}/${s}: not a ${kind}, left out`);
+      const current = existsSync(indexFile) ? readFileSync(indexFile, 'utf-8') : '';
+      if (current === next) { console.log(`  ✓ ${dir}: ${folder}/index.json is current`); continue; }
+      if (check) { console.log(`  ✗ ${dir}: ${folder}/index.json is out of date; run brand-intent media ${dir}`); stale++; continue; }
+      writeFileSync(indexFile, next, 'utf-8');
+      console.log(`  ✓ ${dir}: ${folder}/index.json written (${JSON.parse(next).length} ${kind}s)`);
+    }
+    if (!found) console.log(`  - ${dir}: no media/photos/ or media/videos/ folder`);
   }
   process.exit(stale ? 1 : 0);
 }
@@ -166,7 +176,7 @@ if (!command || command === '--help' || command === '-h') {
   console.log('Usage:');
   console.log('  brand-intent init              Install the Brand Intent and Brief skills for your AI agent');
   console.log('  brand-intent install-skills     Same as init (alias)');
-  console.log('  brand-intent photos [folder…]   Write photos/index.json: the photo files below photos/ (--check: only compare)');
+  console.log('  brand-intent media [folder…]    Write media/photos/index.json and media/videos/index.json: the files below them (--check: only compare)');
   console.log('  brand-intent check [folder…]    Check a brand folder: every file parses, every id it names is there');
   console.log('');
   console.log('Example:');

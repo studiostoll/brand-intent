@@ -208,12 +208,12 @@ export interface ParsedAssetDef {
   /** Logos only: artwork per horizontal placement, declared via `align-left` / `align-center` / `align-right`
    *  sub-blocks. Consumers render the variant matching where the logo sits, else the base `src`. */
   alignVariants?: Partial<Record<LogoAlign, { src: string; aspectRatio?: number }>>;
-  /** Library section: the subfolder the file sits in (`photos/Tasting/x.jpg` → "Tasting"), exactly as named.
+  /** Library section: the subfolder the file sits in (`media/photos/Tasting/x.jpg` → "Tasting"), exactly as named.
    *  Absent for a file directly in its top folder. Consumers list each section after the assets without one.
-   *  Since v0.46; before, a `section:` key. Photos get it from `photoLibrary`. */
+   *  Since v0.46; before, a `section:` key. Photos and videos get it from `photoLibrary` and `videoLibrary`. */
   section?: string;
-  /** Photos only: the second folder level (`photos/Releases/Nachtfahrt/x.jpg` → section "Releases",
-   *  subsection "Nachtfahrt"). Set by `photoLibrary`. */
+  /** Photos and videos: the second folder level (`media/photos/Releases/Nachtfahrt/x.jpg` → section "Releases",
+   *  subsection "Nachtfahrt"). Set by `photoLibrary` and `videoLibrary`. */
   subsection?: string;
   /** Photos only: name of the `.time` entry the photo fits (`when:`): a window or a season.
    *  Absent → all year. `checkBrand` checks it against the `.time`. */
@@ -1805,7 +1805,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (raw.props['generator']) def.generator = raw.props['generator'];
     const folders = def.src.split('/').slice(1, -1);
     if (folders.length === 1) def.section = folders[0].normalize('NFC');
-    // A photo's file, section and subsection come from the folder (`photoLibrary`); the block holds facts only.
+    // A photo's or video's file, section and subsection come from the folder (`photoLibrary`, `videoLibrary`); the block holds facts only.
     if (raw.props['when']) def.when = raw.props['when'];
     for (const key of ['framing', 'place', 'person', 'group', 'work', 'taken'] as const) {
       if (raw.props[key]) def[key] = raw.props[key];
@@ -1841,15 +1841,18 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (a) throw new Error(`${fileName}: ${kind} "${a.id}": ${key}: is for photos only`);
     }
   }
-  // The library section is the subfolder: one level below the top folder, never deeper, never a key.
-  // A photo names no file at all: its file is photos/…/<id>.<ext>, found by `photoLibrary`.
-  for (const p of photosRaw) {
-    if (p.props['src'] !== undefined) throw new Error(`${fileName}: photo "${p.id}": src: is gone since v0.46; the file name is the id, put the file at photos/${p.id}.jpg or in a folder below photos/`);
-    if (!/^[a-z][a-z0-9-]*$/.test(p.id)) throw new Error(`${fileName}: photo "${p.id}": the id is the file name and must be lowercase kebab-case`);
+  // The library section is the subfolder, never a key.
+  // A photo or video names no file at all: its file is media/photos/…/<id>.<ext> or media/videos/…/<id>.<ext>,
+  // found by `photoLibrary` and `videoLibrary`.
+  for (const [kind, arr, since, ext] of [['photo', photosRaw, 'v0.46', 'jpg'], ['video', videosRaw, 'v0.52', 'mp4']] as const) {
+    for (const p of arr) {
+      if (p.props['src'] !== undefined) throw new Error(`${fileName}: ${kind} "${p.id}": src: is gone since ${since}; the file name is the id, put the file at media/${kind}s/${p.id}.${ext} or in a folder below media/${kind}s/`);
+      if (!/^[a-z][a-z0-9-]*$/.test(p.id)) throw new Error(`${fileName}: ${kind} "${p.id}": the id is the file name and must be lowercase kebab-case`);
+    }
   }
   for (const [kind, arr] of [['logo', logosRaw], ['photo', photosRaw], ['video', videosRaw], ['illustration', illustrationsRaw]] as const) {
     for (const a of arr) {
-      if (a.props['section'] !== undefined) throw new Error(`${fileName}: ${kind} "${a.id}": section: is gone since v0.46; the section is the subfolder, put the file in ${kind === 'illustration' ? 'its folder' : `${kind}s`}/<section>/`);
+      if (a.props['section'] !== undefined) throw new Error(`${fileName}: ${kind} "${a.id}": section: is gone since v0.46; the section is the subfolder, put the file in ${kind === 'illustration' ? 'its folder' : kind === 'logo' ? 'logos' : `media/${kind}s`}/<section>/`);
       const src = a.props['src'] ?? '';
       if (src.split('/').length > 3) throw new Error(`${fileName}: ${kind} "${a.id}": src: "${src}" is nested too deep; one subfolder (the section) is the limit`);
     }
@@ -2101,25 +2104,13 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
 // ── Cross-file checks ─────────────────────────────────────────────────────────
 
-/** Checks a brand against its fact files. Returns problems as "file: message"; empty when it fits.
- *  `time`: the brand's `.time`, or `null` when it has none (then every `when:` and `season:` is unknown);
- *  undefined = not checked. `people`, `groups`, `works`: the brand's `.person`, `.group` and `.work` files
- *  (empty = none); undefined = not checked. */
 /** Image files a photo library may hold. */
 export const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'] as const;
+/** Video files a video library may hold. */
+export const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm'] as const;
 
-/**
- * The brand's photo library: every image file below `photos/`, its id the file name without extension.
- * `files` are paths relative to `photos/` (`photos/index.json`, written by `brand-intent photos`), e.g.
- * `"Tasting/notizen.jpg"`. Up to two folder levels: the first is the `section`, the second the `subsection`,
- * both named as written. A `photo <id>` block adds facts (label, work, focus…) to the file of that name;
- * a file without one is in the library with its id as label.
- *
- * Order: declared photos in declaration order, then the rest in `files` order.
- * Throws on a declared photo without a file, a file name that is no id, two files with one name,
- * or a third folder level.
- */
-export function photoLibrary(declared: ParsedAssetDef[] | undefined, files: string[], fileName: string): ParsedAssetDef[] {
+function mediaLibrary(kind: 'photo' | 'video', extensions: readonly string[], declared: ParsedAssetDef[] | undefined, files: string[], fileName: string): ParsedAssetDef[] {
+  const folder = `media/${kind}s`;
   const byId = new Map<string, { src: string; section?: string; subsection?: string }>();
   for (const raw of files) {
     const path = raw.normalize('NFC');
@@ -2127,18 +2118,18 @@ export function photoLibrary(declared: ParsedAssetDef[] | undefined, files: stri
     const name = parts[parts.length - 1];
     const dot = name.lastIndexOf('.');
     const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
-    if (!(PHOTO_EXTENSIONS as readonly string[]).includes(ext)) throw new Error(`${fileName}: photos/${path}: not a photo (${PHOTO_EXTENSIONS.join(', ')})`);
+    if (!extensions.includes(ext)) throw new Error(`${fileName}: ${folder}/${path}: not a ${kind} (${extensions.join(', ')})`);
     const id = name.slice(0, dot);
-    if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}: photos/${path}: the file name is the photo's id and must be lowercase kebab-case (e.g. glas-am-fenster.${ext})`);
-    if (parts.length > 3) throw new Error(`${fileName}: photos/${path}: nested too deep; two folders below photos/ are the limit`);
+    if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}: ${folder}/${path}: the file name is the ${kind}'s id and must be lowercase kebab-case (e.g. ${kind === 'photo' ? 'glas-am-fenster' : 'in-the-woods'}.${ext})`);
+    if (parts.length > 3) throw new Error(`${fileName}: ${folder}/${path}: nested too deep; two folders below ${folder}/ are the limit`);
     const other = byId.get(id);
-    if (other) throw new Error(`${fileName}: photos/${path} and ${other.src} have the same name; a photo's file name is its id and must be unique`);
-    byId.set(id, { src: `photos/${path}`, ...(parts.length > 1 ? { section: parts[0] } : {}), ...(parts.length > 2 ? { subsection: parts[1] } : {}) });
+    if (other) throw new Error(`${fileName}: ${folder}/${path} and ${other.src} have the same name; a ${kind}'s file name is its id and must be unique`);
+    byId.set(id, { src: `${folder}/${path}`, ...(parts.length > 1 ? { section: parts[0] } : {}), ...(parts.length > 2 ? { subsection: parts[1] } : {}) });
   }
   const out: ParsedAssetDef[] = [];
   for (const d of declared ?? []) {
     const file = byId.get(d.id);
-    if (!file) throw new Error(`${fileName}: photo "${d.id}" has no file; put ${d.id}.jpg (or .png, .webp…) below photos/`);
+    if (!file) throw new Error(`${fileName}: ${kind} "${d.id}" has no file; put ${kind === 'photo' ? `${d.id}.jpg (or .png, .webp…)` : `${d.id}.mp4 (or .mov, .webm)`} below ${folder}/`);
     const { section: _s, subsection: _ss, ...facts } = d;
     out.push({ ...facts, ...file });
     byId.delete(d.id);
@@ -2147,6 +2138,31 @@ export function photoLibrary(declared: ParsedAssetDef[] | undefined, files: stri
   return out;
 }
 
+/**
+ * The brand's photo library: every image file below `media/photos/`, its id the file name without extension.
+ * `files` are paths relative to `media/photos/` (`media/photos/index.json`, written by `brand-intent media`),
+ * e.g. `"Tasting/notizen.jpg"`. Up to two folder levels: the first is the `section`, the second the
+ * `subsection`, both named as written. A `photo <id>` block adds facts (label, work, focus…) to the file of
+ * that name; a file without one is in the library with its id as label.
+ *
+ * Order: declared photos in declaration order, then the rest in `files` order.
+ * Throws on a declared photo without a file, a file name that is no id, two files with one name,
+ * or a third folder level.
+ */
+export function photoLibrary(declared: ParsedAssetDef[] | undefined, files: string[], fileName: string): ParsedAssetDef[] {
+  return mediaLibrary('photo', PHOTO_EXTENSIONS, declared, files, fileName);
+}
+
+/** The brand's video library: every video file below `media/videos/` (`media/videos/index.json`), by the
+ *  rules of `photoLibrary`. A `video <id>` block adds a label or `loop` to the file of that name. */
+export function videoLibrary(declared: ParsedAssetDef[] | undefined, files: string[], fileName: string): ParsedAssetDef[] {
+  return mediaLibrary('video', VIDEO_EXTENSIONS, declared, files, fileName);
+}
+
+/** Checks a brand against its fact files. Returns problems as "file: message"; empty when it fits.
+ *  `time`: the brand's `.time`, or `null` when it has none (then every `when:` and `season:` is unknown);
+ *  undefined = not checked. `people`, `groups`, `works`: the brand's `.person`, `.group` and `.work` files
+ *  (empty = none); undefined = not checked. */
 export function checkBrand(
   brand: Pick<ParsedBrand, 'colorFamilies' | 'assets'>,
   facts: { time?: ParsedTime | null; people?: ParsedPerson[]; groups?: ParsedGroup[]; works?: ParsedWork[] },

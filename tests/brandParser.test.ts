@@ -7,7 +7,7 @@
  */
 
 import { isInDateWindow } from '../parser/dateWindows';
-import { parseBrandFile, photoLibrary, checkBrand } from '../parser/brandParser';
+import { parseBrandFile, photoLibrary, videoLibrary, checkBrand } from '../parser/brandParser';
 import { parseTimeFile } from '../parser/timeParser';
 import { parsePersonFile } from '../parser/personParser';
 import { parseGroupFile } from '../parser/groupParser';
@@ -366,29 +366,31 @@ test('parses logo align variants', () => {
   assertEq(logo?.scale, 1.1, 'key after sub-block belongs to the logo');
 });
 
-test('a video\'s section is its subfolder; group: on a photo names a .group', () => {
-  const src = `${HEADER}photo old\n  group: drax-mill\n  work: rye-loaf\n\nvideo clip\n  src: videos/experimental/clip.mp4\n`;
+test('group: on a photo names a .group; a video takes none', () => {
+  const src = `${HEADER}photo old\n  group: drax-mill\n  work: rye-loaf\n\nvideo clip\n  label: Clip\n`;
   const out = parseBrandFile(src, 'test.brand');
   assertEq([out.assets?.photos?.[0]?.group, out.assets?.photos?.[0]?.work], ['drax-mill', 'rye-loaf'], 'photo group and work');
-  assertEq(out.assets?.videos?.[0]?.section, 'experimental', 'video in a section');
-  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/a/b/clip.mp4\n`, 'test.brand'), /nested too deep/, 'two subfolders');
+  assertEq(out.assets?.videos?.[0], { id: 'clip', label: 'Clip', src: '' }, 'video block: facts only');
+  assertThrows(() => parseBrandFile(`${HEADER}logo mark\n  src: logos/a/b/mark.svg\n`, 'test.brand'), /nested too deep/, 'two subfolders');
   assertThrows(() => parseBrandFile(`${HEADER}photo p\n  section: old\n`, 'test.brand'), /section: is gone since v0.46/, 'section key');
-  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/clip.mp4\n  group: experimental\n`, 'test.brand'), /a library section is the subfolder since v0.46/, 'group on a video');
+  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  group: experimental\n`, 'test.brand'), /a library section is the subfolder since v0.46/, 'group on a video');
   assertThrows(() => parseBrandFile(`${HEADER}photo p\n  group: Drax Mill\n`, 'test.brand'), /group: must be an id/, 'group id');
 });
 
-test('a photo names no file: src: is gone, the id is the file name', () => {
+test('a photo or video names no file: src: is gone, the id is the file name', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}video clip\n  src: videos/clip.mp4\n`, 'test.brand'), /video "clip": src: is gone since v0.52.*media\/videos\/clip\.mp4/, 'video src key');
+  assertThrows(() => parseBrandFile(`${HEADER}video Old_Clip\n`, 'test.brand'), /lowercase kebab-case/, 'video id is no file name');
   assertThrows(() => parseBrandFile(`${HEADER}photo p\n  src: photos/p.jpg\n`, 'test.brand'), /src: is gone since v0.46/, 'src key');
   assertThrows(() => parseBrandFile(`${HEADER}photo Old_Mill\n  label: Mill\n`, 'test.brand'), /lowercase kebab-case/, 'id is no file name');
 });
 
-test('photoLibrary: files below photos/ are the library, blocks add facts', () => {
+test('photoLibrary: files below media/photos/ are the library, blocks add facts', () => {
   const declared = parseBrandFile(`${HEADER}photo mill\n  label: The mill\n  work: rye-loaf\n\nphoto hero\n  label: Hero\n`, 'test.brand').assets?.photos;
   const lib = photoLibrary(declared, ['hero.jpg', 'Releases/Rye/mill.jpeg', 'Old days/oven.png', 'Releases/cover.webp'], 'test.brand');
   assertEq(lib.map(p => p.id), ['mill', 'hero', 'oven', 'cover'], 'declared first, in their order, then the rest in file order');
-  assertEq(lib[0], { id: 'mill', label: 'The mill', src: 'photos/Releases/Rye/mill.jpeg', work: 'rye-loaf', section: 'Releases', subsection: 'Rye' }, 'two levels');
-  assertEq(lib[1], { id: 'hero', label: 'Hero', src: 'photos/hero.jpg' }, 'top folder: no section');
-  assertEq(lib[2], { id: 'oven', label: 'oven', src: 'photos/Old days/oven.png', section: 'Old days' }, 'undeclared file: label = id, folder as written');
+  assertEq(lib[0], { id: 'mill', label: 'The mill', src: 'media/photos/Releases/Rye/mill.jpeg', work: 'rye-loaf', section: 'Releases', subsection: 'Rye' }, 'two levels');
+  assertEq(lib[1], { id: 'hero', label: 'Hero', src: 'media/photos/hero.jpg' }, 'top folder: no section');
+  assertEq(lib[2], { id: 'oven', label: 'oven', src: 'media/photos/Old days/oven.png', section: 'Old days' }, 'undeclared file: label = id, folder as written');
   assertEq(lib[3].subsection, undefined, 'file directly in a section');
   assertEq(photoLibrary(undefined, ['Caf\u0065\u0301/a.jpg'], 't')[0].section, 'Café', 'folder name NFC');
   assertThrows(() => photoLibrary(declared, ['hero.jpg'], 'test.brand'), /photo "mill" has no file/, 'declared without file');
@@ -396,6 +398,16 @@ test('photoLibrary: files below photos/ are the library, blocks add facts', () =
   assertThrows(() => photoLibrary(undefined, ['IMG_1234.jpg'], 'test.brand'), /lowercase kebab-case/, 'camera name');
   assertThrows(() => photoLibrary(undefined, ['a/b/c/x.jpg'], 'test.brand'), /nested too deep/, 'three levels');
   assertThrows(() => photoLibrary(undefined, ['notes.txt'], 'test.brand'), /not a photo/, 'not an image');
+});
+
+test('videoLibrary: files below media/videos/ are the library, by the photo rules', () => {
+  const declared = parseBrandFile(`${HEADER}video intro\n  label: Intro Clip\n  loop\n`, 'test.brand').assets?.videos;
+  const lib = videoLibrary(declared, ['Events/Summer/harbour.mov', 'intro.mp4'], 'test.brand');
+  assertEq(lib[0], { id: 'intro', label: 'Intro Clip', src: 'media/videos/intro.mp4', loop: true }, 'declared: facts plus file');
+  assertEq(lib[1], { id: 'harbour', label: 'harbour', src: 'media/videos/Events/Summer/harbour.mov', section: 'Events', subsection: 'Summer' }, 'undeclared, two levels');
+  assertThrows(() => videoLibrary(declared, [], 'test.brand'), /video "intro" has no file.*media\/videos\//, 'declared without file');
+  assertThrows(() => videoLibrary(undefined, ['in the woods.mp4'], 'test.brand'), /lowercase kebab-case/, 'spaces in the name');
+  assertThrows(() => videoLibrary(undefined, ['hero.jpg'], 'test.brand'), /not a video/, 'not a video');
 });
 
 // ── framing ──────────────────────────────────────────────────────────────────

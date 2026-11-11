@@ -55,7 +55,7 @@ Check a brand folder after every change: every file parses, and every id a file 
 
 ```bash
 npx brand-intent check path/to/brand
-npx brand-intent photos path/to/brand   # after adding or moving photos: rewrite photos/index.json
+npx brand-intent media path/to/brand    # after adding or moving photos or videos: rewrite their index.json
 ```
 
 ## Documentation

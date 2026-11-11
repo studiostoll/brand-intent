@@ -2431,13 +2431,15 @@ function parseBrandFile(content, fileName) {
       if (a) throw new Error(`${fileName}: ${kind} "${a.id}": ${key}: is for photos only`);
     }
   }
-  for (const p of photosRaw) {
-    if (p.props["src"] !== void 0) throw new Error(`${fileName}: photo "${p.id}": src: is gone since v0.46; the file name is the id, put the file at photos/${p.id}.jpg or in a folder below photos/`);
-    if (!/^[a-z][a-z0-9-]*$/.test(p.id)) throw new Error(`${fileName}: photo "${p.id}": the id is the file name and must be lowercase kebab-case`);
+  for (const [kind, arr, since, ext] of [["photo", photosRaw, "v0.46", "jpg"], ["video", videosRaw, "v0.52", "mp4"]]) {
+    for (const p of arr) {
+      if (p.props["src"] !== void 0) throw new Error(`${fileName}: ${kind} "${p.id}": src: is gone since ${since}; the file name is the id, put the file at media/${kind}s/${p.id}.${ext} or in a folder below media/${kind}s/`);
+      if (!/^[a-z][a-z0-9-]*$/.test(p.id)) throw new Error(`${fileName}: ${kind} "${p.id}": the id is the file name and must be lowercase kebab-case`);
+    }
   }
   for (const [kind, arr] of [["logo", logosRaw], ["photo", photosRaw], ["video", videosRaw], ["illustration", illustrationsRaw]]) {
     for (const a of arr) {
-      if (a.props["section"] !== void 0) throw new Error(`${fileName}: ${kind} "${a.id}": section: is gone since v0.46; the section is the subfolder, put the file in ${kind === "illustration" ? "its folder" : `${kind}s`}/<section>/`);
+      if (a.props["section"] !== void 0) throw new Error(`${fileName}: ${kind} "${a.id}": section: is gone since v0.46; the section is the subfolder, put the file in ${kind === "illustration" ? "its folder" : kind === "logo" ? "logos" : `media/${kind}s`}/<section>/`);
       const src = a.props["src"] ?? "";
       if (src.split("/").length > 3) throw new Error(`${fileName}: ${kind} "${a.id}": src: "${src}" is nested too deep; one subfolder (the section) is the limit`);
     }
@@ -2667,7 +2669,9 @@ function parseBrandFile(content, fileName) {
   return result;
 }
 var PHOTO_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif", "gif"];
-function photoLibrary(declared, files, fileName) {
+var VIDEO_EXTENSIONS = ["mp4", "mov", "webm"];
+function mediaLibrary(kind, extensions, declared, files, fileName) {
+  const folder = `media/${kind}s`;
   const byId = /* @__PURE__ */ new Map();
   for (const raw of files) {
     const path = raw.normalize("NFC");
@@ -2675,24 +2679,30 @@ function photoLibrary(declared, files, fileName) {
     const name = parts[parts.length - 1];
     const dot = name.lastIndexOf(".");
     const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
-    if (!PHOTO_EXTENSIONS.includes(ext)) throw new Error(`${fileName}: photos/${path}: not a photo (${PHOTO_EXTENSIONS.join(", ")})`);
+    if (!extensions.includes(ext)) throw new Error(`${fileName}: ${folder}/${path}: not a ${kind} (${extensions.join(", ")})`);
     const id = name.slice(0, dot);
-    if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}: photos/${path}: the file name is the photo's id and must be lowercase kebab-case (e.g. glas-am-fenster.${ext})`);
-    if (parts.length > 3) throw new Error(`${fileName}: photos/${path}: nested too deep; two folders below photos/ are the limit`);
+    if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}: ${folder}/${path}: the file name is the ${kind}'s id and must be lowercase kebab-case (e.g. ${kind === "photo" ? "glas-am-fenster" : "in-the-woods"}.${ext})`);
+    if (parts.length > 3) throw new Error(`${fileName}: ${folder}/${path}: nested too deep; two folders below ${folder}/ are the limit`);
     const other = byId.get(id);
-    if (other) throw new Error(`${fileName}: photos/${path} and ${other.src} have the same name; a photo's file name is its id and must be unique`);
-    byId.set(id, { src: `photos/${path}`, ...parts.length > 1 ? { section: parts[0] } : {}, ...parts.length > 2 ? { subsection: parts[1] } : {} });
+    if (other) throw new Error(`${fileName}: ${folder}/${path} and ${other.src} have the same name; a ${kind}'s file name is its id and must be unique`);
+    byId.set(id, { src: `${folder}/${path}`, ...parts.length > 1 ? { section: parts[0] } : {}, ...parts.length > 2 ? { subsection: parts[1] } : {} });
   }
   const out = [];
   for (const d of declared ?? []) {
     const file = byId.get(d.id);
-    if (!file) throw new Error(`${fileName}: photo "${d.id}" has no file; put ${d.id}.jpg (or .png, .webp\u2026) below photos/`);
+    if (!file) throw new Error(`${fileName}: ${kind} "${d.id}" has no file; put ${kind === "photo" ? `${d.id}.jpg (or .png, .webp\u2026)` : `${d.id}.mp4 (or .mov, .webm)`} below ${folder}/`);
     const { section: _s, subsection: _ss, ...facts } = d;
     out.push({ ...facts, ...file });
     byId.delete(d.id);
   }
   for (const [id, file] of byId) out.push({ id, label: id, ...file });
   return out;
+}
+function photoLibrary(declared, files, fileName) {
+  return mediaLibrary("photo", PHOTO_EXTENSIONS, declared, files, fileName);
+}
+function videoLibrary(declared, files, fileName) {
+  return mediaLibrary("video", VIDEO_EXTENSIONS, declared, files, fileName);
 }
 function checkBrand(brand, facts, fileName) {
   const problems = [];
@@ -5119,23 +5129,27 @@ function checkFiles(files) {
 
 // cli/check.ts
 var SKIP_DIRS = /* @__PURE__ */ new Set(["node_modules", ".git", ".github", ".claude"]);
-function listPhotos(photosDir, prefix = "", skipped = []) {
+var MEDIA_KINDS = [
+  { kind: "photo", folder: "media/photos", extensions: PHOTO_EXTENSIONS },
+  { kind: "video", folder: "media/videos", extensions: VIDEO_EXTENSIONS }
+];
+function listMedia(mediaDir, extensions, prefix = "", skipped = []) {
   const out = [];
-  for (const name of readdirSync(join(photosDir, prefix))) {
+  for (const name of readdirSync(join(mediaDir, prefix))) {
     if (name.startsWith(".") || !prefix && name === "index.json") continue;
     const rel = prefix ? `${prefix}/${name}` : name;
-    if (statSync(join(photosDir, rel)).isDirectory()) {
-      out.push(...listPhotos(photosDir, rel, skipped));
+    if (statSync(join(mediaDir, rel)).isDirectory()) {
+      out.push(...listMedia(mediaDir, extensions, rel, skipped));
       continue;
     }
     const ext = name.includes(".") ? name.slice(name.lastIndexOf(".") + 1).toLowerCase() : "";
-    if (PHOTO_EXTENSIONS.includes(ext)) out.push(rel.normalize("NFC"));
+    if (extensions.includes(ext)) out.push(rel.normalize("NFC"));
     else skipped.push(rel);
   }
   return out.sort();
 }
-function photoIndexText(photosDir, skipped) {
-  return JSON.stringify(listPhotos(photosDir, "", skipped), null, 2) + "\n";
+function mediaIndexText(mediaDir, extensions, skipped) {
+  return JSON.stringify(listMedia(mediaDir, extensions, "", skipped), null, 2) + "\n";
 }
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -5185,18 +5199,26 @@ function checkFolder(dir, label = dir) {
   const stories = collect("story", parseStoryFile);
   const purposes = collect("purpose", parsePurposeFile);
   for (const p of purposes) if (p.warnings?.length) warnings.push(...p.warnings);
-  const photosDir = join(dir, "photos");
+  for (const old of ["photos", "videos"]) {
+    if (existsSync(join(dir, old))) errors.push(`${old}/ is media/${old}/ since v0.52; move the folder, then run: npx brand-intent media ${label === "." ? "" : label}`.trimEnd());
+  }
   let photoIds = (brand?.assets?.photos ?? []).map((p) => p.id);
-  if (existsSync(photosDir)) {
+  for (const { kind, folder, extensions } of MEDIA_KINDS) {
+    const mediaDir = join(dir, folder);
+    const declared = kind === "photo" ? brand?.assets?.photos : brand?.assets?.videos;
+    if (!existsSync(mediaDir)) {
+      if (declared?.length && !existsSync(join(dir, `${kind}s`))) errors.push(`${kind} "${declared[0].id}" has no file: there is no ${folder}/ folder`);
+      continue;
+    }
     const skipped = [];
-    const expected = photoIndexText(photosDir, skipped);
-    for (const s of skipped) warnings.push(`photos/${s}: not a photo, left out of the library`);
-    const indexFile = join(photosDir, "index.json");
+    const expected = mediaIndexText(mediaDir, extensions, skipped);
+    for (const s of skipped) warnings.push(`${folder}/${s}: not a ${kind}, left out of the library`);
+    const indexFile = join(mediaDir, "index.json");
     const current = existsSync(indexFile) ? readFileSync(indexFile, "utf8") : "";
-    if (current !== expected) errors.push(`photos/index.json is out of date; run: npx brand-intent photos ${label === "." ? "" : label}`.trimEnd());
+    if (current !== expected) errors.push(`${folder}/index.json is out of date; run: npx brand-intent media ${label === "." ? "" : label}`.trimEnd());
     if (brand) {
-      const library = attempt(indexFile, () => photoLibrary(brand.assets?.photos, JSON.parse(expected), name(brandFiles[0])));
-      if (library) photoIds = library.map((p) => p.id);
+      const library = attempt(indexFile, () => (kind === "photo" ? photoLibrary : videoLibrary)(declared, JSON.parse(expected), name(brandFiles[0])));
+      if (library && kind === "photo") photoIds = library.map((p) => p.id);
     }
   }
   for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds })) {
@@ -5205,7 +5227,8 @@ function checkFolder(dir, label = dir) {
   return { errors, warnings, counts };
 }
 export {
+  MEDIA_KINDS,
   checkFolder,
-  listPhotos,
-  photoIndexText
+  listMedia,
+  mediaIndexText
 };
