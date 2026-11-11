@@ -210,6 +210,7 @@ For each composition, gloss the layout mode and decode positioning tokens:
     - `{slot} left/center/right` — slot with its text alignment
     - `panel {anchor} {width} {height}` — a constrained panel anchored to an edge or corner (e.g. `panel bottom-left 2/3 1/1` = "panel anchored to bottom-left, 2/3 canvas width × full canvas height")
     - `split {edge} {fraction}` — the canvas is split at the given edge and fraction (e.g. `split bottom 1/2` = "canvas split horizontally, content occupies bottom half")
+    - `width {fraction}` — the slots take this share of the flow's width, on the side their text is aligned to (e.g. `width 3/4` = "text set three quarters wide")
     - `divider-{name}` — references a divider style from `.brand`
     - `columns:N gap:{size}` — the slot renders as N columns with the named gap
 

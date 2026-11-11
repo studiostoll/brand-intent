@@ -17,6 +17,7 @@
     { "include": "#flow" },
     { "include": "#flow-panel" },
     { "include": "#flow-split" },
+    { "include": "#flow-width" },
     { "include": "#sticky" },
     { "include": "#flow-property" },
     { "include": "#spacer" },
@@ -151,6 +152,14 @@
         "2": { "name": "entity.name.tag.brand-intent-composition" },
         "3": { "name": "variable.parameter.brand-intent-composition" },
         "4": { "name": "constant.numeric.brand-intent-composition" }
+      }
+    },
+    "flow-width": {
+      "match": "^(flow:)\\s+(width)\\s+(\\d+/\\d+)",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "entity.name.tag.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
       }
     },
     "sticky": {

@@ -102,6 +102,8 @@ export interface ParsedFlowRegion {
     edge: 'top' | 'bottom' | 'left' | 'right';
     fraction: number;  // e.g. 0.5 = half, 0.333 = one third
   };
+  /** Width: the flow's slots take this share of the flow's width (e.g. 0.75), each on the side its text is aligned to. No surface behind them. */
+  width?: number;
   /** Flow direction (default: vertical). */
   direction: 'vertical' | 'horizontal';
   /** Number of text columns (default: 1). */
@@ -438,6 +440,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       let columnGap: string | undefined;
 
       let split: ParsedFlowRegion['split'] = undefined;
+      let width: number | undefined;
 
       if (value.startsWith('panel')) {
         // Parse: "panel <position> [<width>] [<height>] [inset]"
@@ -458,6 +461,14 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         }
         const fraction = parts[2] ? parseFraction(parts[2], `${fileName}:${lineNum}`) : 0.5;
         split = { edge, fraction };
+      } else if (value.startsWith('width')) {
+        // Parse: "width <fraction>"  — e.g. "width 3/4"
+        const parts = value.split(/\s+/);
+        if (parts.length !== 2) throw new Error(`${fileName}:${lineNum}: invalid flow width "${value}" (expected: width N/M)`);
+        width = parseFraction(parts[1], `${fileName}:${lineNum}`);
+        if (width <= 0 || width > 1) throw new Error(`${fileName}:${lineNum}: flow width "${parts[1]}" must be above 0 and at most 1/1`);
+      } else if (value) {
+        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected panel, split or width)`);
       }
 
       const flowItems: ParsedFlowItem[] = [];
@@ -533,7 +544,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         }
       }
 
-      flow = { panel, split, direction, columns, columnGap, items: flowItems };
+      flow = { panel, split, ...(width !== undefined ? { width } : {}), direction, columns, columnGap, items: flowItems };
       continue;
     }
 

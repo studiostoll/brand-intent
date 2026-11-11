@@ -136,8 +136,10 @@ export interface ParsedStoryPage {
   /** `photo: camera`: the page starts without a photo and asks for one taken now. Implementations offer the
    *  camera in its photo region. Neither the page's nor the purpose's photo list applies. */
   camera?: true;
-  /** `video:` one video id from the `.brand`: the page's ground is that video instead of a photo. Since v0.53. */
-  video?: string;
+  /** `video:` video ids from the `.brand`: the page's ground is a video instead of a photo. With several, or
+   *  beside `photo:`, they are one pool (the photos first, then the videos): implementations pick one per
+   *  story date, the same one every time for that date. Since v0.53, a list and beside photos since v0.56. */
+  videos?: string[];
   /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
   theme?: string;
   /** The page's ground: `#RRGGBB`, or `{item}` for the day's item of the page's work. Text and logo follow
@@ -385,17 +387,17 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       }
       else if (read?.key === 'illustration') currentPage.illustrations = read.value.split(',').map(id => id.trim()).filter(Boolean);
       else if (read?.key === 'photo') {
-        if (currentPage.video) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
         const ids = read.value.split(',').map(id => id.trim()).filter(Boolean);
         if (ids.includes('camera')) {
           if (ids.length > 1) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without photo ids`);
+          if (currentPage.videos) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without a video`);
           currentPage.camera = true;
         } else currentPage.photos = ids;
       }
       else if (read?.key === 'video') {
-        if (currentPage.photos || currentPage.camera) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
-        if (read.value.includes(',')) throw new Error(`${fileName}:${lineNum}: a page names one video`);
-        currentPage.video = read.value;
+        if (currentPage.camera) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without a video`);
+        const ids = read.value.split(',').map(id => id.trim()).filter(Boolean);
+        if (ids.length) currentPage.videos = ids;
       }
       else if (read?.key === 'theme') currentPage.theme = read.value;
       else if (read?.key === 'background') {
@@ -764,7 +766,7 @@ export function checkStory(
     for (const id of page.photos ?? []) {
       if (brand.photos && !brand.photos.includes(id)) say(`${where}: photo "${id}" does not exist`);
     }
-    if (page.video && brand.videos && !brand.videos.includes(page.video)) say(`${where}: video "${page.video}" does not exist`);
+    if (brand.videos) for (const id of page.videos ?? []) if (!brand.videos.includes(id)) say(`${where}: video "${id}" does not exist`);
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     if (page.background === '{item}' && workMap) {

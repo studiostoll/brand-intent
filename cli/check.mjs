@@ -3905,6 +3905,7 @@ function parseCompositionFile(content, fileName) {
       let columns;
       let columnGap;
       let split = void 0;
+      let width;
       if (value.startsWith("panel")) {
         const all = value.split(/\s+/);
         const inset = all.includes("inset");
@@ -3922,6 +3923,13 @@ function parseCompositionFile(content, fileName) {
         }
         const fraction = parts[2] ? parseFraction(parts[2], `${fileName}:${lineNum}`) : 0.5;
         split = { edge, fraction };
+      } else if (value.startsWith("width")) {
+        const parts = value.split(/\s+/);
+        if (parts.length !== 2) throw new Error(`${fileName}:${lineNum}: invalid flow width "${value}" (expected: width N/M)`);
+        width = parseFraction(parts[1], `${fileName}:${lineNum}`);
+        if (width <= 0 || width > 1) throw new Error(`${fileName}:${lineNum}: flow width "${parts[1]}" must be above 0 and at most 1/1`);
+      } else if (value) {
+        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected panel, split or width)`);
       }
       const flowItems = [];
       while (i + 1 < lines.length) {
@@ -3995,7 +4003,7 @@ function parseCompositionFile(content, fileName) {
           flowItems.push({ type: "slot", id: slotId, textAlign: align, verticalAlign: vAlign, columns: slotCols, columnGap: slotGap });
         }
       }
-      flow = { panel, split, direction, columns, columnGap, items: flowItems };
+      flow = { panel, split, ...width !== void 0 ? { width } : {}, direction, columns, columnGap, items: flowItems };
       continue;
     }
     if (line.startsWith("group:")) {
@@ -4708,16 +4716,16 @@ function parseStoryFile(content, fileName) {
         currentPage[read.key] = read.value;
       } else if (read?.key === "illustration") currentPage.illustrations = read.value.split(",").map((id2) => id2.trim()).filter(Boolean);
       else if (read?.key === "photo") {
-        if (currentPage.video) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
         const ids = read.value.split(",").map((id2) => id2.trim()).filter(Boolean);
         if (ids.includes("camera")) {
           if (ids.length > 1) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without photo ids`);
+          if (currentPage.videos) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without a video`);
           currentPage.camera = true;
         } else currentPage.photos = ids;
       } else if (read?.key === "video") {
-        if (currentPage.photos || currentPage.camera) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
-        if (read.value.includes(",")) throw new Error(`${fileName}:${lineNum}: a page names one video`);
-        currentPage.video = read.value;
+        if (currentPage.camera) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without a video`);
+        const ids = read.value.split(",").map((id2) => id2.trim()).filter(Boolean);
+        if (ids.length) currentPage.videos = ids;
       } else if (read?.key === "theme") currentPage.theme = read.value;
       else if (read?.key === "background") {
         if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== "{item}") throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
@@ -5026,7 +5034,9 @@ function checkStory(story, brand, fileName) {
     for (const id of page.photos ?? []) {
       if (brand.photos && !brand.photos.includes(id)) say(`${where}: photo "${id}" does not exist`);
     }
-    if (page.video && brand.videos && !brand.videos.includes(page.video)) say(`${where}: video "${page.video}" does not exist`);
+    if (brand.videos) {
+      for (const id of page.videos ?? []) if (!brand.videos.includes(id)) say(`${where}: video "${id}" does not exist`);
+    }
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     if (page.background === "{item}" && workMap) {

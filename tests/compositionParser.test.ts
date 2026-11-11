@@ -47,6 +47,25 @@ test('credit is a slot in a sticky bar and in the flow', () => {
   assertEq(c.flow?.items.filter(i => i.type === 'slot').map(i => i.type === 'slot' && i.id), ['primary', 'credit'], 'flow credit');
 });
 
+// ── flow width ───────────────────────────────────────────────────────────────
+
+test('flow width is a share of the flow width', () => {
+  const c = comp(`image: full\n\nflow: width 3/4\n  | primary left\n`);
+  assertEq(c.flow?.width, 3 / 4);
+  assertEq(c.flow?.panel, undefined);
+  assertEq(comp(`image: full\n\nflow:\n  | primary left\n`).flow?.width, undefined);
+});
+
+test('flow width needs a fraction above 0 and at most 1/1', () => {
+  assertThrows(() => comp(`flow: width\n  | primary left\n`), /invalid flow width/, 'none');
+  assertThrows(() => comp(`flow: width 5/4\n  | primary left\n`), /at most 1\/1/, 'too wide');
+  assertThrows(() => comp(`flow: width 0/4\n  | primary left\n`), /above 0/, 'zero');
+});
+
+test('unknown flow type throws', () => {
+  assertThrows(() => comp(`flow: narrow\n  | primary left\n`), /unknown flow type "narrow"/, 'type');
+});
+
 // ── panel inset ──────────────────────────────────────────────────────────────
 
 test('panel without inset has no inset flag', () => {
