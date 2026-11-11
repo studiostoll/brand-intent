@@ -275,6 +275,7 @@ hide_bar: true
         What one kind of post is for. Semantic slots (<code>primary</code>, <code>secondary</code>, <code>detail</code>, <code>meta</code>, <code>label</code>, <code>cta</code>, <code>credit</code>),
         each with a style, a colour and a length. A <code>scope</code> and <code>context</code> that narrow the identity for this kind of post.
         And examples: whole pages, one topic each, the shape AI writing has to match.
+        A purpose without slots is a page without text: the picture or the clip, and the logo.
       </p>
 <pre><span class="kw">context</span>
   <span class="val">primary is the bread name, 1-3 words (e.g. "Rye loaf").
@@ -574,16 +575,16 @@ hide_bar: true
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
   <span class="section-label">06 / Recent changes</span>
-  <h2>Version 0.53, November 2026.</h2>
+  <h2>Version 0.54, November 2026.</h2>
   <p>The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
 
   <dl class="changelog">
+    <div><dt>v0.54 <span>11 Nov 2026</span></dt><dd>A purpose can have no slots: a page without text, only its picture or video and the logo. For the post that is just the photo or the clip, branded.</dd></div>
     <div><dt>v0.53 <span>11 Nov 2026</span></dt><dd>A story page can name a video: <code>video:</code> takes one id from the brand&rsquo;s videos, instead of a photo. <code>brand-intent check</code> reports an id the brand doesn&rsquo;t have.</dd></div>
     <div><dt>v0.52 <span>11 Nov 2026</span></dt><dd>Photos and videos share one home: <code>media/photos/</code> and <code>media/videos/</code>. A video is now a file like a photo, its name the id, its folders the sections; a <code>video</code> block only adds a label, and its <code>src:</code> is gone. <code>brand-intent media</code> writes both file lists.</dd></div>
     <div><dt>v0.51 <span>11 Nov 2026</span></dt><dd>A format can be posted as a Reel: <code>post: reel</code>, next to <code>feed</code> and <code>story</code>. A Reel is a video, so its pages go out when something on them moves.</dd></div>
     <div><dt>v0.50 <span>10 Nov 2026</span></dt><dd><code>brand-intent check</code> looks further: a format&rsquo;s purposes, a purpose&rsquo;s compositions, audiences and slot colours, and the variables in its examples. The check is one function, <code>checkFiles</code>, so an app that has loaded a brand runs it too. The package ships built, and runs on plain Node and at the edge.</dd></div>
     <div><dt>v0.49 <span>10 Nov 2026</span></dt><dd>A date can be short: <code>{weekday short}</code>, <code>{date short}</code>, <code>{opening short}</code> and <code>{on short}</code> give <code>Wed</code> and <code>30 Oct</code>, so a line with several facts stays on one line.</dd></div>
-    <div><dt>v0.48 <span>10 Nov 2026</span></dt><dd>A story can carry a <code>prompt</code>: the brief that writes its open slots anew for every date it is posted on, with <code>model:</code> naming who writes. The identity, the purpose and the examples are given along, so the block holds only the task; what is written is shown to a person before it goes out.</dd></div>
   </dl>
 </section>
 
