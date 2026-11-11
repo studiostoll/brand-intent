@@ -221,6 +221,8 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   // Slot whose multi-line value is being read, and the indent of its lines
   let multiKey: SlotId | null = null;
   let multiIndent = 0;
+  // A blank line was read inside a multi-line slot text: the next line starts a new paragraph
+  let multiBlank = false;
   const examplePageLines = new Map<ParsedStoryExamplePage, number>();
   // The `prompt` block: its header line once seen, whether its lines are being read, and its text
   let promptLine = 0;
@@ -287,7 +289,11 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     const line = raw.trim();
     const indent = raw.length - raw.trimStart().length;
 
-    if (line === '') continue;
+    // Blank line. Inside a multi-line slot text it is a paragraph break, once more text follows
+    if (line === '') {
+      if (multiKey && (currentExamplePage ?? currentPage)?.texts[multiKey]) multiBlank = true;
+      continue;
+    }
 
     // Prompt lines are free text, kept as written (a line may start with "#")
     if (inPrompt && indent >= 2) {
@@ -310,7 +316,8 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       const target = currentExamplePage ?? currentPage!;
       checkVariables(line, lineNum, !currentExamplePage);
       const prev = target.texts[multiKey];
-      target.texts[multiKey] = prev ? `${prev}\n${line}` : line;
+      target.texts[multiKey] = prev ? `${prev}${multiBlank ? '\n\n' : '\n'}${line}` : line;
+      multiBlank = false;
       continue;
     }
     if (multiKey) {

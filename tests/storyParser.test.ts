@@ -141,6 +141,12 @@ test('scrim: none takes the brand scrim off the story', () => {
   assertThrows(() => parse('scrim: 30%\npage\n  purpose: notice\n'), 'invalid scrim "30%"');
 });
 
+test('a blank line in a multi-line slot text is a paragraph break', () => {
+  const s = parse('page\n  purpose: notice\n  primary:\n    On the house\n\n    Until {closes}.\n    Come by.\n\n  meta: Today\n');
+  assertEq(s.pages[0].texts.primary, 'On the house\n\nUntil {closes}.\nCome by.', 'page text');
+  assertEq(s.pages[0].texts.meta, 'Today', 'the break does not leak into the next key');
+});
+
 console.log('\nexamples:');
 
 const TWO_PAGES = 'page\n  purpose: notice\n  primary: Fixed\n\npage\n  purpose: notice\n';

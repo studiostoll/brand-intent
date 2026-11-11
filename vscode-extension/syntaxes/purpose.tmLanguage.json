@@ -117,7 +117,7 @@
       }
     },
     "camera-field": {
-      "match": "^(camera:|scrim:)\\s+(true|false|front|rear|none)",
+      "match": "^(camera:|scrim:)\\s+(true|false|front|rear|none|paragraph|line)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-purpose" },
         "2": { "name": "constant.language.brand-intent-purpose" }

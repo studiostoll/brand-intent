@@ -2579,7 +2579,7 @@ function parseBrandFile(content, fileName) {
   if (photoLookDeclared) {
     const keys = ["saturation", "contrast", "warmth", "fade", "mono", "duotone"];
     for (const [key, { line }] of Object.entries(photoLookRaw)) {
-      if (key !== "fixed" && key !== "scrim" && !keys.includes(key)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+      if (key !== "fixed" && key !== "scrim" && key !== "scrim-padding" && key !== "scrim-gap" && !keys.includes(key)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
     }
     const int = (key, min, max) => {
       const p = photoLookRaw[key];
@@ -2634,6 +2634,20 @@ function parseBrandFile(content, fileName) {
         throw new Error(`${fileName}:${scrim.line}: photo-look scrim must be a percentage from 1% to 100%, got "${scrim.value}"`);
       }
       look.scrim = Number(m[1]);
+    }
+    const scrimPadding = photoLookRaw["scrim-padding"];
+    if (scrimPadding) {
+      const parts = scrimPadding.value.split(/\s+/);
+      if (parts.length > 4 || !parts.every((p) => /^\d+(\.\d+)?$/.test(p))) {
+        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqh), got "${scrimPadding.value}"`);
+      }
+      const n = parts.map(Number);
+      look.scrimPadding = [n[0], n[1] ?? n[0], n[2] ?? n[0], n[3] ?? n[1] ?? n[0]];
+    }
+    const scrimGap = photoLookRaw["scrim-gap"];
+    if (scrimGap) {
+      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqh), got "${scrimGap.value}"`);
+      look.scrimGap = Number(scrimGap.value);
     }
     result.photoLook = look;
   }
@@ -3008,6 +3022,7 @@ function parsePurposeFile(content, fileName) {
   const examples = [];
   let currentExample = null;
   let exampleMultiKey = null;
+  let exampleBlank = false;
   let legacySamplesLine = 0;
   let firstHashText = "";
   let currentSlot = null;
@@ -3072,7 +3087,10 @@ function parsePurposeFile(content, fileName) {
     const raw = lines[i];
     const text = raw.trim();
     const line = text.replace(/\s+#.*$/, "");
-    if (line === "") continue;
+    if (line === "") {
+      if (currentExample && exampleMultiKey && currentExample.texts[exampleMultiKey]) exampleBlank = true;
+      continue;
+    }
     if (line.startsWith("#")) {
       const text2 = line.slice(1).trim();
       if (!firstHashText) firstHashText = text2;
@@ -3121,8 +3139,8 @@ function parsePurposeFile(content, fileName) {
       if (raw.startsWith("    ")) {
         if (!exampleMultiKey) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line)`);
         const prev = currentExample.texts[exampleMultiKey];
-        currentExample.texts[exampleMultiKey] = prev ? `${prev}
-${text}` : text;
+        currentExample.texts[exampleMultiKey] = prev ? `${prev}${exampleBlank ? "\n\n" : "\n"}${text}` : text;
+        exampleBlank = false;
         continue;
       }
       exampleMultiKey = null;
@@ -3209,8 +3227,8 @@ ${text}` : text;
     }
     if (line.startsWith("scrim:")) {
       const value = line.slice(6).trim();
-      if (value !== "none") throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none; how dark is the brand's photo-look scrim)`);
-      scrim = "none";
+      if (value !== "none" && value !== "paragraph" && value !== "line") throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none, paragraph or line; how dark the gradient gets is the brand's photo-look scrim)`);
+      scrim = value;
       continue;
     }
     if (line.startsWith("camera:")) {
@@ -3608,6 +3626,7 @@ function resolveExamples(examples, slots, legacySamplesLine, fileName, warnings)
         const slot = byId.get(slotId);
         if (!slot) throw new Error(`${at(slotId)}: example fills slot "${slotId}", which the purpose does not declare`);
         if (slot.value) throw new Error(`${at(slotId)}: slot "${slotId}" has a fixed value and takes no example text`);
+        if (slot.slotType === "list") ex.texts[slotId] = ex.texts[slotId].replace(/\n{2,}/g, "\n");
         const text = ex.texts[slotId];
         if (text.split("\n").some((l) => SAMPLE_WINDOW_MARKER.test(l))) throw new Error(`${at(slotId)}: window marker in example text \u2014 use "when:" on the example`);
         if (slot.slotType === "list") {
@@ -4549,6 +4568,7 @@ function parseStoryFile(content, fileName) {
   let currentExamplePage = null;
   let multiKey = null;
   let multiIndent = 0;
+  let multiBlank = false;
   const examplePageLines = /* @__PURE__ */ new Map();
   let promptLine = 0;
   let inPrompt = false;
@@ -4601,7 +4621,10 @@ function parseStoryFile(content, fileName) {
     const raw = lines[i];
     const line = raw.trim();
     const indent = raw.length - raw.trimStart().length;
-    if (line === "") continue;
+    if (line === "") {
+      if (multiKey && (currentExamplePage ?? currentPage)?.texts[multiKey]) multiBlank = true;
+      continue;
+    }
     if (inPrompt && indent >= 2) {
       const model = promptLines.length === 0 && promptModel === void 0 ? /^model:\s*(.*)$/.exec(line) : null;
       if (model) {
@@ -4618,8 +4641,8 @@ function parseStoryFile(content, fileName) {
       const target = currentExamplePage ?? currentPage;
       checkVariables(line, lineNum, !currentExamplePage);
       const prev = target.texts[multiKey];
-      target.texts[multiKey] = prev ? `${prev}
-${line}` : line;
+      target.texts[multiKey] = prev ? `${prev}${multiBlank ? "\n\n" : "\n"}${line}` : line;
+      multiBlank = false;
       continue;
     }
     if (multiKey) {

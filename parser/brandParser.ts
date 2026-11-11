@@ -142,6 +142,10 @@ export interface ParsedPhotoLookDef {
   fixed: PhotoLookKey[];
   /** Darkest a gradient under light text on a photo may get, 0..100 (%). Absent → no scrim. */
   scrim?: number;
+  /** Paragraph and line scrim: space between the text and the edge of its ground, top/right/bottom/left in cqh. */
+  scrimPadding?: [number, number, number, number];
+  /** Paragraph and line scrim: space between two grounds, in cqh. */
+  scrimGap?: number;
 }
 
 export interface ParsedCameraDef {
@@ -2007,7 +2011,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   if (photoLookDeclared) {
     const keys: PhotoLookKey[] = ['saturation', 'contrast', 'warmth', 'fade', 'mono', 'duotone'];
     for (const [key, { line }] of Object.entries(photoLookRaw)) {
-      if (key !== 'fixed' && key !== 'scrim' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+      if (key !== 'fixed' && key !== 'scrim' && key !== 'scrim-padding' && key !== 'scrim-gap' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
     }
     const int = (key: string, min: number, max: number): number => {
       const p = photoLookRaw[key];
@@ -2062,6 +2066,20 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         throw new Error(`${fileName}:${scrim.line}: photo-look scrim must be a percentage from 1% to 100%, got "${scrim.value}"`);
       }
       look.scrim = Number(m[1]);
+    }
+    const scrimPadding = photoLookRaw['scrim-padding'];
+    if (scrimPadding) {
+      const parts = scrimPadding.value.split(/\s+/);
+      if (parts.length > 4 || !parts.every(p => /^\d+(\.\d+)?$/.test(p))) {
+        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqh), got "${scrimPadding.value}"`);
+      }
+      const n = parts.map(Number);
+      look.scrimPadding = [n[0], n[1] ?? n[0], n[2] ?? n[0], n[3] ?? n[1] ?? n[0]];
+    }
+    const scrimGap = photoLookRaw['scrim-gap'];
+    if (scrimGap) {
+      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqh), got "${scrimGap.value}"`);
+      look.scrimGap = Number(scrimGap.value);
     }
     result.photoLook = look;
   }

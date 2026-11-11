@@ -67,6 +67,22 @@ test('scrim: none takes the brand scrim off the purpose', () => {
   assertThrows(s('scrim: 30%'), /invalid scrim "30%"/, 'a strength');
 });
 
+test('scrim: paragraph and line put a ground behind each paragraph or line', () => {
+  const s = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').scrim;
+  assertEq(s('scrim: paragraph'), 'paragraph', 'paragraph');
+  assertEq(s('scrim: line'), 'line', 'line');
+  assertThrows(() => s('scrim: box'), /invalid scrim "box" \(expected none, paragraph or line/, 'a look is no value');
+});
+
+test('a blank line in a multi-line example text is a paragraph break', () => {
+  const head = 'id: p\ncompositions: panel\n\nslot primary\n  label: Text\n  typography: headline\n  maxLength: 200\n\n';
+  const p = parsePurposeFile(`${head}example\n  primary:\n    On the house\n\n    This Saturday a glass with every purchase.\n    Until six.\n\n\n    Come by.\n\nexample\n  primary: One line\n`, 'p.purpose');
+  assertEq(p.examples[0].texts.primary, 'On the house\n\nThis Saturday a glass with every purchase.\nUntil six.\n\nCome by.', 'one empty line per break, none at the end');
+  assertEq(p.examples[1].texts.primary, 'One line', 'the next example starts clean');
+  const list = parsePurposeFile(`id: p\ncompositions: panel\n\nslot detail\n  label: List\n  typography: headline\n  maxLength: 200\n  type: list\n\nexample\n  detail:\n    One\n\n    Two\n`, 'p.purpose');
+  assertEq(list.examples[0].texts.detail, 'One\nTwo', 'a list has no paragraphs');
+});
+
 test('framing: names a brand framing module', () => {
   const f = (line: string) => parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose').framing;
   assertEq(f('framing: close'), 'close', 'id');

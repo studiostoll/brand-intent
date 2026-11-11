@@ -503,6 +503,19 @@ test('photo-look scrim', () => {
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  scrim: 45%\n  fixed: scrim\n`, 'test.brand'), /fixed lists unknown/, 'not a fixed key');
 });
 
+test('photo-look scrim-padding and scrim-gap', () => {
+  const look = (body: string) => parseBrandFile(`${HEADER}photo-look\n${body}`, 'test.brand').photoLook!;
+  assertEq(look('  scrim-padding: 1 1.6\n  scrim-gap: 0.4\n').scrimPadding, [1, 1.6, 1, 1.6], 'two values');
+  assertEq(look('  scrim-padding: 1\n').scrimPadding, [1, 1, 1, 1], 'one value');
+  assertEq(look('  scrim-padding: 1 2 3\n').scrimPadding, [1, 2, 3, 2], 'three values');
+  assertEq(look('  scrim-padding: 1 2 3 4\n').scrimPadding, [1, 2, 3, 4], 'four values');
+  assertEq(look('  scrim-gap: 0.4\n').scrimGap, 0.4, 'gap');
+  assertEq('scrimGap' in look('  scrim: 45%\n'), false, 'absent');
+  assertThrows(() => look('  scrim-padding: 1 2 3 4 5\n'), /photo-look scrim-padding/, 'five values');
+  assertThrows(() => look('  scrim-padding: 1cqh\n'), /photo-look scrim-padding/, 'a unit');
+  assertThrows(() => look('  scrim-gap: -1\n'), /photo-look scrim-gap/, 'negative');
+});
+
 test('photo-look rejects bad values and keys', () => {
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: -150\n`, 'test.brand'), /photo-look saturation/, 'out of range');
   assertThrows(() => parseBrandFile(`${HEADER}photo-look\n  saturation: 15%\n`, 'test.brand'), /photo-look saturation/, 'percent');

@@ -45,8 +45,9 @@ export interface ParsedPurpose {
   camera?: boolean;
   /** `camera: front | rear` — overrides the brand's camera facing for this purpose. */
   cameraFacing?: 'front' | 'rear';
-  /** `scrim: none`: no scrim under this purpose's text, whatever the brand declares. */
-  scrim?: 'none';
+  /** The scrim under this purpose's text. `none`: no scrim, whatever the brand declares. `paragraph`: a solid
+   *  ground behind each paragraph of a text; `line`: behind each line. Absent → the brand's gradient. */
+  scrim?: 'none' | 'paragraph' | 'line';
   /** `framing: <id>` — the brand framing module photos for this purpose are shot in. */
   framing?: string;
   /** `goal: <id>` — the identity goal this purpose serves by default. */
@@ -201,7 +202,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let illustrations: string[] | undefined;
   let camera: boolean | undefined;
   let cameraFacing: 'front' | 'rear' | undefined;
-  let scrim: 'none' | undefined;
+  let scrim: 'none' | 'paragraph' | 'line' | undefined;
   let framing: string | undefined;
   let goal: string | undefined;
   let person: 'required' | undefined;
@@ -216,6 +217,8 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   // Example block being built, and the slot key whose multi-line value is being read (4-space lines)
   let currentExample: (typeof examples)[number] | null = null;
   let exampleMultiKey: SlotId | null = null;
+  // A blank line was read inside that value: the next line starts a new paragraph
+  let exampleBlank = false;
   // First line of a deprecated slot `samples:` (0 = none)
   let legacySamplesLine = 0;
   // For backward compat: track first # line text for fallback id
@@ -297,8 +300,11 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     const text = raw.trim();
     const line = text.replace(/\s+#.*$/, '');
 
-    // Blank line
-    if (line === '') continue;
+    // Blank line. Inside a multi-line example text it is a paragraph break, once more text follows
+    if (line === '') {
+      if (currentExample && exampleMultiKey && currentExample.texts[exampleMultiKey]) exampleBlank = true;
+      continue;
+    }
 
     // Comment — ALL # lines go to description now
     if (line.startsWith('#')) {
@@ -363,7 +369,8 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       if (raw.startsWith('    ')) {
         if (!exampleMultiKey) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line)`);
         const prev = currentExample.texts[exampleMultiKey];
-        currentExample.texts[exampleMultiKey] = prev ? `${prev}\n${text}` : text;
+        currentExample.texts[exampleMultiKey] = prev ? `${prev}${exampleBlank ? '\n\n' : '\n'}${text}` : text;
+        exampleBlank = false;
         continue;
       }
       exampleMultiKey = null;
@@ -468,11 +475,11 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // No scrim for this purpose
+    // The scrim under this purpose's text: none, or a ground behind each paragraph or line
     if (line.startsWith('scrim:')) {
       const value = line.slice(6).trim();
-      if (value !== 'none') throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none; how dark is the brand's photo-look scrim)`);
-      scrim = 'none';
+      if (value !== 'none' && value !== 'paragraph' && value !== 'line') throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none, paragraph or line; how dark the gradient gets is the brand's photo-look scrim)`);
+      scrim = value;
       continue;
     }
 
@@ -904,6 +911,8 @@ function resolveExamples(
         const slot = byId.get(slotId);
         if (!slot) throw new Error(`${at(slotId)}: example fills slot "${slotId}", which the purpose does not declare`);
         if (slot.value) throw new Error(`${at(slotId)}: slot "${slotId}" has a fixed value and takes no example text`);
+        // A list has items, not paragraphs: a blank line between two items is only spacing in the file
+        if (slot.slotType === 'list') ex.texts[slotId] = ex.texts[slotId]!.replace(/\n{2,}/g, '\n');
         const text = ex.texts[slotId]!;
         if (text.split('\n').some(l => SAMPLE_WINDOW_MARKER.test(l))) throw new Error(`${at(slotId)}: window marker in example text — use "when:" on the example`);
         if (slot.slotType === 'list') {

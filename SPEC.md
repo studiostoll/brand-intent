@@ -910,6 +910,8 @@ photo-look
   # duotone:  $ink $sand   # shadows → highlights
   # fixed:    mono         # keys the person cannot change
   # scrim:    45%          # dark gradient under light text, at most this dark
+  # scrim-padding: 1 1.6   # paragraph and line scrim: space around the text
+  # scrim-gap: 0.4         # paragraph and line scrim: space between two grounds
 ```
 
 | Key | Type | Default | Description |
@@ -922,12 +924,23 @@ photo-look
 | `duotone:` | color pair | — | Maps luminance onto two colors, shadow first. Each is a `$ref` to `brand-colors` or `#HEX`. Excludes `mono` |
 | `fixed:` | key list | — | Keys the person cannot change. Each must be set in the block |
 | `scrim:` | percent | — | Under light text on a photo a dark gradient may lie, at most this dark (`1%`–`100%` black). Absent → no scrim |
+| `scrim-padding:` | 1–4 numbers | `1 1.6` | [Paragraph and line scrim](#paragraph-and-line-scrim): space between the text and the edge of its ground, in cqh, CSS order (top/right/bottom/left) |
+| `scrim-gap:` | number | `0.4` | Paragraph and line scrim: space between two grounds, in cqh |
 
 **Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a grayscale-only or duotone brand).
 
 **Scope.** Applies to photos people add (camera or library). Brand-declared `photo` assets are not affected.
 
 **Scrim.** Not an adjustment of the photo but a layer between photo and text: transparent where the photo shows freely, darkening towards the edge behind the text. The brand declares only whether and how dark; where the gradient lies is the implementation's job, derived from where the text sits. Implementations draw it only when the text on the photo is light (under dark text it would work against it), and count it when they check whether the text reads. Unlike the other keys it covers every photo under light text, brand-declared `photo` assets included, and it is not a starting value the person adjusts, so it cannot be listed in `fixed:`. A `.purpose` or a `.story` can take it off with `scrim: none`; whether a gradient helps depends on the photo and the context, how dark it gets stays the brand's.
+
+#### Paragraph and line scrim
+
+A `.purpose` can give the scrim a finer unit: instead of one gradient behind all the text, a solid ground behind each piece of it. The text of a short notice then reads on any photo or video, moving or still, whatever lies behind it.
+
+- `scrim: paragraph`: one ground behind each paragraph, as wide as the paragraph's longest line. A text without an empty line is one paragraph, so every slot gets its ground.
+- `scrim: line`: one ground behind each line, as wide as that line. The lines of a paragraph touch, so its edge steps with the line lengths.
+
+An empty line in a text starts a new paragraph, and with it a new ground, `scrim-gap` away from the one before. Two slots that follow each other without a spacer keep the same gap. The ground is the theme's `background`, opaque, with square corners; the text keeps the theme's text colour, so the pair is the one the theme already checks. `scrim-padding` and `scrim-gap` are the brand's, like the gradient's strength; they need no `scrim:` percentage, and the gradient is not drawn under a purpose with a paragraph or line scrim.
 
 **Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
 
@@ -1107,7 +1120,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `context` | block | No | Adds purpose-specific AI context |
 | `voice` | block | No | Purpose-specific writing rules (key-value pairs) |
 | `camera:` | bool \| enum | No | `false` hides Take Photo / Upload. `front` \| `rear` overrides the brand's camera `facing:` for this purpose. Default: `true` |
-| `scrim:` | `none` | No | No [scrim](#photo-look-block) under this purpose's text, even when the brand declares one. How dark it gets stays the brand's |
+| `scrim:` | `none` \| `paragraph` \| `line` | No | The [scrim](#photo-look-block) under this purpose's text. `none`: no scrim, even when the brand declares one. `paragraph` or `line`: a solid ground behind each paragraph or each line instead of the gradient ([paragraph and line scrim](#paragraph-and-line-scrim)). Absent: the brand's gradient. How dark the gradient gets, and the padding and gap of the grounds, stay the brand's |
 | `framing:` | string | No | Id of a brand `framing` block. Photos for this purpose are shot in that module: implementations open the camera on it and may hide the others. Unknown ids are ignored |
 | `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block this purpose serves by default |
 | `person:` | `required` | No | Every page of this purpose speaks about a [person](#person-person): a quote, a portrait, a regular's recommendation. A page without one, or with a person who has neither a quote nor a photo, is not posted; `checkStory` reports it |
@@ -1273,7 +1286,7 @@ example
 | `goal:` | string | No | Id of an identity [`goal`](#goal-name-block) block. Overrides the purpose `goal:` for this page |
 | `when:` | string | No | Name of a [`.time`](#time-time) entry: a window or a season. The example is only picked [in season](#when-in-season) |
 | `work:` | string | No | Id of a [`.work`](#work-work) the example is about. The example is only picked while the work is [in season](#in-season), and the page gets the work's variables |
-| `SLOTID:` | string | Yes (1+) | Text for a declared slot. A bare `SLOTID:` takes the following 4-space lines: list items, or line breaks in a text slot |
+| `SLOTID:` | string | Yes (1+) | Text for a declared slot. A bare `SLOTID:` takes the following 4-space lines: list items, or line breaks in a text slot. An empty line between two of them is a paragraph break in a text slot (several count as one); between list items it is only spacing |
 
 **Rules:**
 - Slot keys must be slots the purpose declares. A slot with `value:` takes no example text.
@@ -1552,7 +1565,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `group:` | string | No | [Group](#group-group) id this page speaks about, instead of the story's |
 | `work:` | string | No | [Work](#work-work) id this page is about, instead of the story's. One page names one work; the breads of the week are a page list with one work per copy |
 | `repeat:` | `MIN-MAX` | No | The page is a [page list](#page-lists): between MIN and MAX copies of it in a row, e.g. `2-6`. 1 ≤ MIN ≤ MAX. At most one page per story |
-| `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples |
+| `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples: an empty line between two of them is a paragraph break |
 
 Every slot of the purpose is one of three kinds on a page:
 
