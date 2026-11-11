@@ -40,6 +40,15 @@ test('hyphenate: bare, true, false, fit', () => {
   assertEq(h('hyphenate: fit'), 'fit', 'fit');
 });
 
+test('a purpose without slots is a page without text', () => {
+  const p = parsePurposeFile('id: plain\ncompositions: panel\n', 'plain.purpose');
+  assertEq(p.slots.length, 0, 'slots');
+  assertEq(p.examples.length, 0, 'examples');
+  let said = '';
+  try { parsePurposeFile('id: plain\ncompositions: panel\n\nexample\n  primary: A line\n', 'plain.purpose'); } catch (e) { said = (e as Error).message; }
+  assertEq(/which the purpose does not declare/.test(said), true, 'an example has no slot to fill');
+});
+
 test('camera: false hides, front | rear override facing', () => {
   const c = (line: string) => {
     const p = parsePurposeFile(`id: p\ncompositions: panel\n${line}\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n`, 'p.purpose');

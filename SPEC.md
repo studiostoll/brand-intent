@@ -1115,10 +1115,10 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `work:` | `required` | No | Every page of this purpose speaks about a [work](#work-work): the bread of the day, the release. A page without one is not posted; `checkStory` reports it |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
-| `slot SLOTID` | block | Yes (1+) | Semantic slot definition (repeatable): the form of a slot |
+| `slot SLOTID` | block | No | Semantic slot definition (repeatable): the form of a slot. A purpose without slots is a page without text: its picture or video, and what the composition places besides (the logo) |
 | `example` | block | Yes (1+)* | One example page (repeatable): the content of all slots together |
 
-\* Not needed when every slot has a fixed `value:`.
+\* Not needed when every slot has a fixed `value:`, or when the purpose has no slots.
 
 ### Semantic Slots
 

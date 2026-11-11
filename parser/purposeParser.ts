@@ -863,7 +863,8 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
   // Validate required fields
   if (!compositions) throw new Error(`${fileName}: missing "compositions:" line`);
-  if (slots.length === 0) throw new Error(`${fileName}: no slots defined`);
+  // No slots: a page that carries no text, only its picture or video and what the composition places besides
+  // (the logo). It needs no example, and takes none: an example fills slots.
 
   // Derive display name from id if not provided: capitalize first letter of each word
   if (!name) {

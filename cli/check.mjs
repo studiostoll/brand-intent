@@ -3586,7 +3586,6 @@ ${text}` : text;
     }
   }
   if (!compositions) throw new Error(`${fileName}: missing "compositions:" line`);
-  if (slots.length === 0) throw new Error(`${fileName}: no slots defined`);
   if (!name) {
     name = id.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   }
