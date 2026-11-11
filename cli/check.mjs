@@ -2835,8 +2835,8 @@ function parseFormatFile(content, fileName) {
         category = value;
         break;
       case "post":
-        if (value !== "feed" && value !== "story")
-          throw new Error(`${fileName}:${lineNum}: post must be feed or story, got "${value}"`);
+        if (value !== "feed" && value !== "story" && value !== "reel")
+          throw new Error(`${fileName}:${lineNum}: post must be feed, story or reel, got "${value}"`);
         post = value;
         break;
       case "size": {

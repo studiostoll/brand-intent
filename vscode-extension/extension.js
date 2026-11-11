@@ -434,6 +434,7 @@ function activate(context) {
           for (const [v, detail] of [
             ['feed', 'Posted to the feed'],
             ['story', 'Posted as a story'],
+            ['reel', 'Posted as a Reel (a video: the page has to move)'],
           ]) {
             const item = new vscode.CompletionItem(v, vscode.CompletionItemKind.EnumMember);
             item.detail = detail;
@@ -528,7 +529,7 @@ function activate(context) {
             ['label:', 'Short display label (e.g. 6:1)'],
             ['sublabel:', 'Format type label (e.g. Sign)'],
             ['category:', 'Format category -- instagram|facebook|linkedin|print|signage'],
-            ['post:', 'How a page is posted -- feed|story (absent = not posted)'],
+            ['post:', 'How a page is posted -- feed|story|reel (absent = not posted)'],
             ['size:', 'Canvas dimensions -- px (e.g. 1080 1080) or mm (e.g. 594mm 297mm)'],
             ['dpi:', 'Resolution -- print/signage only (default: 300)'],
             ['bleed:', 'Bleed margin -- mm (e.g. 3mm)'],
@@ -841,7 +842,7 @@ function activate(context) {
   /** @type {Record<string, string>} */
   const FORMAT_HOVER_DOCS = {
     'category:': '**`category:`** -- Output category.\n\n`instagram` -- Square/portrait social\n`facebook` -- Facebook Page posts and stories\n`linkedin` -- Landscape social\n`print` -- Physical print (uses mm + dpi)\n`signage` -- Large-format display (uses mm + dpi)',
-    'post:': '**`post:`** -- How a page in this format is posted.\n\n`feed` -- Feed post\n`story` -- Story\n\nAbsent = the format is not posted.',
+    'post:': '**`post:`** -- How a page in this format is posted.\n\n`feed` -- Feed post\n`story` -- Story\n`reel` -- Reel (a video: the page has to move)\n\nAbsent = the format is not posted.',
     'size:': '**`size:`** -- Canvas dimensions.\n\n`size: width height` in px (social) or mm (print/signage).\n\nExample: `size: 1080 1350` or `size: 594mm 841mm`',
     'dpi:': '**`dpi:`** -- Resolution for print/signage formats.\n\nCommon values: `72` (screen), `150` (large-format), `300` (standard print).',
     'bleed:': '**`bleed:`** -- Bleed margin in mm.\n\nExtra area beyond the trim edge for print. Typically `3` or `5` mm.',

@@ -42,7 +42,7 @@
       }
     },
     "post": {
-      "match": "^(post:)\\s+(feed|story)",
+      "match": "^(post:)\\s+(feed|story|reel)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-format" },
         "2": { "name": "entity.name.tag.brand-intent-format" }
