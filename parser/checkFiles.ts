@@ -40,6 +40,8 @@ export interface BrandFiles {
   works: ParsedWork[];
   /** The photo library's ids (`photoLibrary`); default: the ids of the brand's `photo` blocks. */
   photos?: string[];
+  /** The video library's ids (`videoLibrary`); default: the ids of the brand's `video` blocks. */
+  videos?: string[];
 }
 
 export interface FileIssue {
@@ -150,6 +152,7 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
         formats: formats.map(f => f.id),
         themes: Object.keys(brand.themes ?? {}),
         photos: files.photos ?? (brand.assets?.photos ?? []).map(p => p.id),
+        videos: files.videos ?? (brand.assets?.videos ?? []).map(v => v.id),
         illustrations: (brand.assets?.illustrations ?? []).map(i => i.id),
         name: brand.name,
         location: !!brand.location,

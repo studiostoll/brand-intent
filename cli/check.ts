@@ -104,6 +104,7 @@ export function checkFolder(dir: string, label = dir): CheckResult {
     if (existsSync(join(dir, old))) errors.push(`${old}/ is media/${old}/ since v0.52; move the folder, then run: npx brand-intent media ${label === '.' ? '' : label}`.trimEnd());
   }
   let photoIds = (brand?.assets?.photos ?? []).map(p => p.id);
+  let videoIds = (brand?.assets?.videos ?? []).map(v => v.id);
   for (const { kind, folder, extensions } of MEDIA_KINDS) {
     const mediaDir = join(dir, folder);
     const declared = kind === 'photo' ? brand?.assets?.photos : brand?.assets?.videos;
@@ -120,10 +121,11 @@ export function checkFolder(dir: string, label = dir): CheckResult {
     if (brand) {
       const library = attempt(indexFile, () => (kind === 'photo' ? photoLibrary : videoLibrary)(declared, JSON.parse(expected), name(brandFiles[0])));
       if (library && kind === 'photo') photoIds = library.map(p => p.id);
+      if (library && kind === 'video') videoIds = library.map(v => v.id);
     }
   }
 
-  for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds })) {
+  for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds, videos: videoIds })) {
     (issue.severity === 'error' ? errors : warnings).push(`${issue.file}: ${issue.message}`);
   }
 

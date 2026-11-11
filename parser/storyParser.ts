@@ -136,6 +136,8 @@ export interface ParsedStoryPage {
   /** `photo: camera`: the page starts without a photo and asks for one taken now. Implementations offer the
    *  camera in its photo region. Neither the page's nor the purpose's photo list applies. */
   camera?: true;
+  /** `video:` one video id from the `.brand`: the page's ground is that video instead of a photo. Since v0.53. */
+  video?: string;
   /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
   theme?: string;
   /** The page's ground: `#RRGGBB`, or `{item}` for the day's item of the page's work. Text and logo follow
@@ -367,7 +369,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
       if (/^when\s*:/.test(line)) throw new Error(`${fileName}:${lineNum}: when: is not a page key: a page about an occasion names its work with "work:" (an event is a work since v0.44); a window or season goes on the story`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'theme', 'background', 'person', 'group', 'work', 'repeat'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'video', 'theme', 'background', 'person', 'group', 'work', 'repeat'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'person' || read?.key === 'group' || read?.key === 'work') {
@@ -376,11 +378,17 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       }
       else if (read?.key === 'illustration') currentPage.illustrations = read.value.split(',').map(id => id.trim()).filter(Boolean);
       else if (read?.key === 'photo') {
+        if (currentPage.video) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
         const ids = read.value.split(',').map(id => id.trim()).filter(Boolean);
         if (ids.includes('camera')) {
           if (ids.length > 1) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without photo ids`);
           currentPage.camera = true;
         } else currentPage.photos = ids;
+      }
+      else if (read?.key === 'video') {
+        if (currentPage.photos || currentPage.camera) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
+        if (read.value.includes(',')) throw new Error(`${fileName}:${lineNum}: a page names one video`);
+        currentPage.video = read.value;
       }
       else if (read?.key === 'theme') currentPage.theme = read.value;
       else if (read?.key === 'background') {
@@ -636,7 +644,7 @@ function longestText(text: string, { place, time, person, group, work, byNames }
  *  `works` the same for `group:` and `work:`. `name` is the brand's name, what `{by}` shows without `by:`. */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[]; time?: ParsedTime | null; people?: ParsedPerson[]; groups?: ParsedGroup[]; works?: ParsedWork[]; name?: string },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; videos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[]; time?: ParsedTime | null; people?: ParsedPerson[]; groups?: ParsedGroup[]; works?: ParsedWork[]; name?: string },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -749,6 +757,7 @@ export function checkStory(
     for (const id of page.photos ?? []) {
       if (brand.photos && !brand.photos.includes(id)) say(`${where}: photo "${id}" does not exist`);
     }
+    if (page.video && brand.videos && !brand.videos.includes(page.video)) say(`${where}: video "${page.video}" does not exist`);
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     if (page.background === '{item}' && workMap) {

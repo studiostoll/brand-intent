@@ -213,6 +213,17 @@ test('photo names one or more ids per page', () => {
   assertEq(s.pages[2].photos, undefined, 'none');
 });
 
+test('video names one video, instead of a photo', () => {
+  const s = parse('page\n  purpose: notice\n  video: waves\n\npage\n  purpose: notice\n');
+  assertEq([s.pages[0].video, s.pages[1].video], ['waves', undefined], 'video');
+  assertThrows(() => parse('page\n  purpose: notice\n  video: one, two\n'), 'names one video');
+  assertThrows(() => parse('page\n  purpose: notice\n  photo: one\n  video: waves\n'), 'a photo or a video');
+  assertThrows(() => parse('page\n  purpose: notice\n  video: waves\n  photo: camera\n'), 'a photo or a video');
+  assertEq(checkStory(s, { ...BRAND, videos: ['intro'] }, 's.story'), ['s.story: page 1: video "waves" does not exist'], 'unknown video');
+  assertEq(checkStory(s, { ...BRAND, videos: ['waves'] }, 's.story'), [], 'known video');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'no library given');
+});
+
 test('photo: camera asks for a photo taken now', () => {
   const s = parse('page\n  purpose: notice\n  photo: camera\n');
   assertEq([s.pages[0].camera, s.pages[0].photos], [true, undefined], 'camera');

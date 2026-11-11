@@ -4676,7 +4676,7 @@ ${line}` : line;
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
       if (/^when\s*:/.test(line)) throw new Error(`${fileName}:${lineNum}: when: is not a page key: a page about an occasion names its work with "work:" (an event is a work since v0.44); a window or season goes on the story`);
-      const read = readKey(line, lineNum, currentPage, ["purpose", "composition", "illustration", "photo", "theme", "background", "person", "group", "work", "repeat"], true);
+      const read = readKey(line, lineNum, currentPage, ["purpose", "composition", "illustration", "photo", "video", "theme", "background", "person", "group", "work", "repeat"], true);
       if (read && "multi" in read) {
         multiKey = read.multi;
         multiIndent = 4;
@@ -4686,11 +4686,16 @@ ${line}` : line;
         currentPage[read.key] = read.value;
       } else if (read?.key === "illustration") currentPage.illustrations = read.value.split(",").map((id2) => id2.trim()).filter(Boolean);
       else if (read?.key === "photo") {
+        if (currentPage.video) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
         const ids = read.value.split(",").map((id2) => id2.trim()).filter(Boolean);
         if (ids.includes("camera")) {
           if (ids.length > 1) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without photo ids`);
           currentPage.camera = true;
         } else currentPage.photos = ids;
+      } else if (read?.key === "video") {
+        if (currentPage.photos || currentPage.camera) throw new Error(`${fileName}:${lineNum}: a page has a photo or a video, not both`);
+        if (read.value.includes(",")) throw new Error(`${fileName}:${lineNum}: a page names one video`);
+        currentPage.video = read.value;
       } else if (read?.key === "theme") currentPage.theme = read.value;
       else if (read?.key === "background") {
         if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== "{item}") throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
@@ -4999,6 +5004,7 @@ function checkStory(story, brand, fileName) {
     for (const id of page.photos ?? []) {
       if (brand.photos && !brand.photos.includes(id)) say(`${where}: photo "${id}" does not exist`);
     }
+    if (page.video && brand.videos && !brand.videos.includes(page.video)) say(`${where}: video "${page.video}" does not exist`);
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     if (page.background === "{item}" && workMap) {
@@ -5118,6 +5124,7 @@ function checkFiles(files) {
         formats: formats.map((f) => f.id),
         themes: Object.keys(brand.themes ?? {}),
         photos: files.photos ?? (brand.assets?.photos ?? []).map((p) => p.id),
+        videos: files.videos ?? (brand.assets?.videos ?? []).map((v) => v.id),
         illustrations: (brand.assets?.illustrations ?? []).map((i) => i.id),
         name: brand.name,
         location: !!brand.location
@@ -5203,6 +5210,7 @@ function checkFolder(dir, label = dir) {
     if (existsSync(join(dir, old))) errors.push(`${old}/ is media/${old}/ since v0.52; move the folder, then run: npx brand-intent media ${label === "." ? "" : label}`.trimEnd());
   }
   let photoIds = (brand?.assets?.photos ?? []).map((p) => p.id);
+  let videoIds = (brand?.assets?.videos ?? []).map((v) => v.id);
   for (const { kind, folder, extensions } of MEDIA_KINDS) {
     const mediaDir = join(dir, folder);
     const declared = kind === "photo" ? brand?.assets?.photos : brand?.assets?.videos;
@@ -5219,9 +5227,10 @@ function checkFolder(dir, label = dir) {
     if (brand) {
       const library = attempt(indexFile, () => (kind === "photo" ? photoLibrary : videoLibrary)(declared, JSON.parse(expected), name(brandFiles[0])));
       if (library && kind === "photo") photoIds = library.map((p) => p.id);
+      if (library && kind === "video") videoIds = library.map((v) => v.id);
     }
   }
-  for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds })) {
+  for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds, videos: videoIds })) {
     (issue.severity === "error" ? errors : warnings).push(`${issue.file}: ${issue.message}`);
   }
   return { errors, warnings, counts };
