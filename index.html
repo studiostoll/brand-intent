@@ -574,16 +574,16 @@ hide_bar: true
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
   <span class="section-label">06 / Recent changes</span>
-  <h2>Version 0.52, November 2026.</h2>
+  <h2>Version 0.53, November 2026.</h2>
   <p>The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
 
   <dl class="changelog">
+    <div><dt>v0.53 <span>11 Nov 2026</span></dt><dd>A story page can name a video: <code>video:</code> takes one id from the brand&rsquo;s videos, instead of a photo. <code>brand-intent check</code> reports an id the brand doesn&rsquo;t have.</dd></div>
     <div><dt>v0.52 <span>11 Nov 2026</span></dt><dd>Photos and videos share one home: <code>media/photos/</code> and <code>media/videos/</code>. A video is now a file like a photo, its name the id, its folders the sections; a <code>video</code> block only adds a label, and its <code>src:</code> is gone. <code>brand-intent media</code> writes both file lists.</dd></div>
     <div><dt>v0.51 <span>11 Nov 2026</span></dt><dd>A format can be posted as a Reel: <code>post: reel</code>, next to <code>feed</code> and <code>story</code>. A Reel is a video, so its pages go out when something on them moves.</dd></div>
     <div><dt>v0.50 <span>10 Nov 2026</span></dt><dd><code>brand-intent check</code> looks further: a format&rsquo;s purposes, a purpose&rsquo;s compositions, audiences and slot colours, and the variables in its examples. The check is one function, <code>checkFiles</code>, so an app that has loaded a brand runs it too. The package ships built, and runs on plain Node and at the edge.</dd></div>
     <div><dt>v0.49 <span>10 Nov 2026</span></dt><dd>A date can be short: <code>{weekday short}</code>, <code>{date short}</code>, <code>{opening short}</code> and <code>{on short}</code> give <code>Wed</code> and <code>30 Oct</code>, so a line with several facts stays on one line.</dd></div>
     <div><dt>v0.48 <span>10 Nov 2026</span></dt><dd>A story can carry a <code>prompt</code>: the brief that writes its open slots anew for every date it is posted on, with <code>model:</code> naming who writes. The identity, the purpose and the examples are given along, so the block holds only the task; what is written is shown to a person before it goes out.</dd></div>
-    <div><dt>v0.47 <span>9 Nov 2026</span></dt><dd>A work keeps what critics wrote: a <code>review</code> block holds their words verbatim, credited with <code>by:</code>. <code>brand-intent check</code> parses a brand folder and checks its files against each other, the same command for an agent, a repo&rsquo;s CI and an app.</dd></div>
   </dl>
 </section>
 
