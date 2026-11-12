@@ -332,6 +332,7 @@ hide_bar: true
         <code>{weekday}</code>, <code>{sunrise}</code>, <code>{weather}</code>, <code>{closes}</code>, <code>{days-until}</code>, <code>{person}</code>.
         A variable without a value is not guessed: no forecast, or a closed day, and the post doesn&rsquo;t go out.
         Page lists repeat a page as often as the week needs.
+        A page with <code>placeholder: true</code> waits for a person&rsquo;s photo or video before it goes out.
         A <code>prompt</code> block is the brief that writes the open slots anew for every date, and a person sees the text before it goes out.
       </p>
 <pre><span class="kw">id:</span>     <span class="val">today</span>
@@ -575,16 +576,16 @@ hide_bar: true
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
   <span class="section-label">06 / Recent changes</span>
-  <h2>Version 0.57, November 2026.</h2>
+  <h2>Version 0.58, November 2026.</h2>
   <p>The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
 
   <dl class="changelog">
+    <div><dt>v0.58 <span>12 Nov 2026</span></dt><dd>A story page can hold a placeholder: <code>placeholder: true</code> says its photo or video only holds the place, and a person replaces it, by camera or upload, before the page goes out. A recurring post can wait for today&rsquo;s photo this way.</dd></div>
     <div><dt>v0.57 <span>12 Nov 2026</span></dt><dd>A place&rsquo;s hours carry dates. <code>hours from 2027-03-02</code> is a new regular week from that day on, <code>hours christmas</code> a set of special days with their dates. A story announces them ahead with <code>{hours christmas}</code>, <code>{new-week-hours}</code> and <code>{new-hours-from}</code>, and the day&rsquo;s hours follow them by themselves.</dd></div>
     <div><dt>v0.56 <span>11 Nov 2026</span></dt><dd>A story page can name photos and videos together: they take turns by date, so a recurring post shows a photo on one day and a video on another. A composition can set its text narrower with <code>flow: width 3/4</code>, without a panel behind it.</dd></div>
     <div><dt>v0.55 <span>11 Nov 2026</span></dt><dd>A purpose can set its text on solid grounds over a photo or a video: <code>scrim: paragraph</code> gives each paragraph its own, <code>scrim: line</code> each line. An empty line in a text starts a new paragraph. The brand sets the measures, <code>scrim-padding</code> and <code>scrim-gap</code> in its <code>photo-look</code>.</dd></div>
     <div><dt>v0.54<span>11 Nov 2026</span></dt><dd>A purpose can have no slots: a page without text, only its picture or video and the logo. For the post that is just the photo or the clip, branded.</dd></div>
     <div><dt>v0.53 <span>11 Nov 2026</span></dt><dd>A story page can name a video: <code>video:</code> takes one id from the brand&rsquo;s videos, instead of a photo. <code>brand-intent check</code> reports an id the brand doesn&rsquo;t have.</dd></div>
-    <div><dt>v0.52 <span>11 Nov 2026</span></dt><dd>Photos and videos share one home: <code>media/photos/</code> and <code>media/videos/</code>. A video is now a file like a photo, its name the id, its folders the sections; a <code>video</code> block only adds a label, and its <code>src:</code> is gone. <code>brand-intent media</code> writes both file lists.</dd></div>
   </dl>
 </section>
 
