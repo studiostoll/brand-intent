@@ -4760,7 +4760,7 @@ function parseStoryFile(content, fileName) {
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
       if (/^when\s*:/.test(line)) throw new Error(`${fileName}:${lineNum}: when: is not a page key: a page about an occasion names its work with "work:" (an event is a work since v0.44); a window or season goes on the story`);
-      const read = readKey(line, lineNum, currentPage, ["purpose", "composition", "illustration", "photo", "video", "theme", "background", "person", "group", "work", "repeat"], true);
+      const read = readKey(line, lineNum, currentPage, ["purpose", "composition", "illustration", "photo", "video", "placeholder", "theme", "background", "person", "group", "work", "repeat"], true);
       if (read && "multi" in read) {
         multiKey = read.multi;
         multiIndent = 4;
@@ -4780,6 +4780,9 @@ function parseStoryFile(content, fileName) {
         if (currentPage.camera) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without a video`);
         const ids = read.value.split(",").map((id2) => id2.trim()).filter(Boolean);
         if (ids.length) currentPage.videos = ids;
+      } else if (read?.key === "placeholder") {
+        if (read.value !== "true" && read.value !== "false") throw new Error(`${fileName}:${lineNum}: invalid placeholder "${read.value}" (expected true or false)`);
+        if (read.value === "true") currentPage.placeholder = true;
       } else if (read?.key === "theme") currentPage.theme = read.value;
       else if (read?.key === "background") {
         if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== "{item}") throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
@@ -4838,6 +4841,11 @@ function parseStoryFile(content, fileName) {
   if (pages.length === 0) throw new Error(`${fileName}: no pages defined`);
   for (const p of pages) {
     if (!p.purpose) throw new Error(`${fileName}:${p.line}: page without "purpose:"`);
+  }
+  for (const p of pages) {
+    if (!p.placeholder) continue;
+    if (p.camera) throw new Error(`${fileName}:${p.line}: placeholder: true needs photo or video ids to hold the place; photo: camera has none and asks for a photo by itself`);
+    if (!p.photos?.length && !p.videos?.length) throw new Error(`${fileName}:${p.line}: placeholder: true needs a "photo:" or "video:" on the page: its ids hold the place until a person replaces them`);
   }
   const lists = pages.filter((p) => p.repeat);
   if (lists.length > 1) throw new Error(`${fileName}:${lists[1].line}: a story has at most one page with "repeat:"`);
@@ -5115,6 +5123,7 @@ function checkStory(story, brand, fileName) {
       for (const id of page.videos ?? []) if (!brand.videos.includes(id)) say(`${where}: video "${id}" does not exist`);
     }
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
+    if (page.placeholder && purpose.camera === false) say(`${where}: placeholder: true, but purpose "${purpose.id}" has camera: false, so nobody can replace it`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     if (page.background === "{item}" && workMap) {
       if (!named.work) say(`${where}: background {item} needs a work: on the page or the story`);

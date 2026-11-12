@@ -148,6 +148,10 @@ export interface ParsedStoryPage {
    *  beside `photo:`, they are one pool (the photos first, then the videos): implementations pick one per
    *  story date, the same one every time for that date. Since v0.53, a list and beside photos since v0.56. */
   videos?: string[];
+  /** `placeholder: true`: the page's `photo:` or `video:` ids only hold the place. A person replaces them,
+   *  by camera or upload, with a photo or a video, before the page goes out; implementations refuse to
+   *  publish the page until then. Since v0.58. */
+  placeholder?: true;
   /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
   theme?: string;
   /** The page's ground: `#RRGGBB`, or `{item}` for the day's item of the page's work. Text and logo follow
@@ -393,7 +397,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
       if (/^when\s*:/.test(line)) throw new Error(`${fileName}:${lineNum}: when: is not a page key: a page about an occasion names its work with "work:" (an event is a work since v0.44); a window or season goes on the story`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'video', 'theme', 'background', 'person', 'group', 'work', 'repeat'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'video', 'placeholder', 'theme', 'background', 'person', 'group', 'work', 'repeat'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'person' || read?.key === 'group' || read?.key === 'work') {
@@ -413,6 +417,10 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         if (currentPage.camera) throw new Error(`${fileName}:${lineNum}: photo: camera stands alone, without a video`);
         const ids = read.value.split(',').map(id => id.trim()).filter(Boolean);
         if (ids.length) currentPage.videos = ids;
+      }
+      else if (read?.key === 'placeholder') {
+        if (read.value !== 'true' && read.value !== 'false') throw new Error(`${fileName}:${lineNum}: invalid placeholder "${read.value}" (expected true or false)`);
+        if (read.value === 'true') currentPage.placeholder = true;
       }
       else if (read?.key === 'theme') currentPage.theme = read.value;
       else if (read?.key === 'background') {
@@ -477,6 +485,11 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   if (pages.length === 0) throw new Error(`${fileName}: no pages defined`);
   for (const p of pages) {
     if (!p.purpose) throw new Error(`${fileName}:${p.line}: page without "purpose:"`);
+  }
+  for (const p of pages) {
+    if (!p.placeholder) continue;
+    if (p.camera) throw new Error(`${fileName}:${p.line}: placeholder: true needs photo or video ids to hold the place; photo: camera has none and asks for a photo by itself`);
+    if (!p.photos?.length && !p.videos?.length) throw new Error(`${fileName}:${p.line}: placeholder: true needs a "photo:" or "video:" on the page: its ids hold the place until a person replaces them`);
   }
   const lists = pages.filter(p => p.repeat);
   if (lists.length > 1) throw new Error(`${fileName}:${lists[1].line}: a story has at most one page with "repeat:"`);
@@ -812,6 +825,7 @@ export function checkStory(
     }
     if (brand.videos) for (const id of page.videos ?? []) if (!brand.videos.includes(id)) say(`${where}: video "${id}" does not exist`);
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
+    if (page.placeholder && purpose.camera === false) say(`${where}: placeholder: true, but purpose "${purpose.id}" has camera: false, so nobody can replace it`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
     if (page.background === '{item}' && workMap) {
       if (!named.work) say(`${where}: background {item} needs a work: on the page or the story`);

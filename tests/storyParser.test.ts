@@ -232,6 +232,21 @@ test('video names videos, alone or in one pool with the photos', () => {
   assertEq(checkStory(s, BRAND, 's.story'), [], 'no library given');
 });
 
+test('placeholder: true marks the page\'s photo or video as one a person replaces', () => {
+  const s = parse('page\n  purpose: notice\n  photo: one\n  placeholder: true\n\npage\n  purpose: notice\n  photo: one\n');
+  assertEq([s.pages[0].placeholder, s.pages[0].photos], [true, ['one']], 'placeholder keeps its photo ids');
+  assertEq('placeholder' in s.pages[1], false, 'absent');
+  // Key order doesn't matter, a video holds the place too, and false is the default written out
+  assertEq(parse('page\n  purpose: notice\n  placeholder: true\n  video: waves\n').pages[0].placeholder, true, 'before its video');
+  assertEq('placeholder' in parse('page\n  purpose: notice\n  photo: one\n  placeholder: false\n').pages[0], false, 'false');
+  assertThrows(() => parse('page\n  purpose: notice\n  photo: one\n  placeholder: yes\n'), 'invalid placeholder "yes"');
+  assertThrows(() => parse('page\n  purpose: notice\n  placeholder: true\n'), 'needs a "photo:" or "video:" on the page');
+  assertThrows(() => parse('page\n  purpose: notice\n  photo: camera\n  placeholder: true\n'), 'photo: camera has none');
+  assertEq(checkStory(s, BRAND, 's.story'), [], 'clean');
+  const noCamera = { ...BRAND, purposes: BRAND.purposes.map(p => ({ ...p, camera: false })) };
+  assertEq(checkStory(s, noCamera, 's.story'), ['s.story: page 1: placeholder: true, but purpose "notice" has camera: false, so nobody can replace it'], 'purpose without camera');
+});
+
 test('photo: camera asks for a photo taken now', () => {
   const s = parse('page\n  purpose: notice\n  photo: camera\n');
   assertEq([s.pages[0].camera, s.pages[0].photos], [true, undefined], 'camera');
