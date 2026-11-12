@@ -903,6 +903,7 @@ function activate(context) {
     'illustration:': '**`illustration:`** -- Illustration ids from the `.brand`, comma-separated.\n\nWith several, one is picked per story date.',
     'photo:': '**`photo:`** -- Photo ids from the `.brand`, or `camera`.\n\nWith several, one is picked per story date.',
     'video:': '**`video:`** -- Video ids from the `.brand`.\n\nThe page\'s ground is a video instead of a photo. With several, or beside `photo:`, one is picked per story date.',
+    'placeholder:': '**`placeholder:`** -- `true`: the page\'s `photo:` or `video:` ids only hold the place.\n\nA person replaces them before the page goes out, by camera or upload, with a photo or a video. Needs a `photo:` or `video:` on the page, and not `photo: camera`. Default: `false`.',
     'theme:': '**`theme:`** -- Theme name from the `.brand` for this page.',
     'background:': '**`background:`** -- The page\'s ground: `#RRGGBB`, or `{item}` for the day\'s item of the page\'s work.',
     'repeat:': '**`repeat:`** -- `MIN-MAX`: the page is a page list, between MIN and MAX copies in a row. At most one per story.',
@@ -1067,7 +1068,7 @@ function activate(context) {
             if (document.lineAt(position.line - 1).text.trim() === 'prompt') add([['model: ', 'Name of the model that writes (optional, first line only)']], vscode.CompletionItemKind.Property);
             return items;
           }
-          add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['illustration: ', 'Illustration ids from the .brand'], ['photo: ', 'Photo ids from the .brand, or camera'], ['video: ', 'One video id from the .brand, instead of a photo'], ['theme: ', 'Theme name from the .brand'], ['background: ', '#RRGGBB or {item}'], ['repeat: ', 'MIN-MAX: a page list'], ['topic: ', 'Topic'], ['person: ', 'Person this page speaks about'], ['group: ', 'Group this page speaks about'], ['work: ', 'Work this page is about'], ['page ', 'Example page N'],
+          add([['purpose: ', 'Purpose id'], ['composition: ', 'Composition id'], ['illustration: ', 'Illustration ids from the .brand'], ['photo: ', 'Photo ids from the .brand, or camera'], ['video: ', 'One video id from the .brand, instead of a photo'], ['placeholder: true', 'A person replaces the page\'s photo or video before it goes out'], ['theme: ', 'Theme name from the .brand'], ['background: ', '#RRGGBB or {item}'], ['repeat: ', 'MIN-MAX: a page list'], ['topic: ', 'Topic'], ['person: ', 'Person this page speaks about'], ['group: ', 'Group this page speaks about'], ['work: ', 'Work this page is about'], ['page ', 'Example page N'],
             ['primary: ', 'Slot text'], ['secondary: ', 'Slot text'], ['detail: ', 'Slot text'], ['meta: ', 'Slot text'], ['cta: ', 'Slot text'], ['label: ', 'Slot text']], vscode.CompletionItemKind.Property);
         } else if (/\{[\w-]*$/.test(prefix)) {
           add([['weekday}', 'Full weekday name'], ['weekday short}', 'Abbreviated weekday name, no period'], ['date}', 'Day and month, no year'], ['date short}', 'Day and abbreviated month, no year'],
