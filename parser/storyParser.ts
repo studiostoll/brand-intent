@@ -9,7 +9,7 @@
 
 import { SLOT_IDS, type SlotId } from './types';
 import type { ParsedPurpose } from './purposeParser';
-import { addressStreet, weekOpeningDays, type ParsedPlace } from './placeParser';
+import { addressStreet, weekOpeningDays, type ParsedPlace, type WeekHours } from './placeParser';
 import { timeEntry, type ParsedTime, type TimeEntry } from './timeParser';
 import { personLabel, hasSomethingToShow, type ParsedPerson } from './personParser';
 import { groupHasSomethingToShow, type ParsedGroup } from './groupParser';
@@ -23,6 +23,7 @@ export type StoryVariable =
   | 'sunrise' | 'sunset' | 'day-length' | 'moon'
   | 'temperature' | 'wind' | 'weather'
   | 'place' | 'address' | 'street' | 'hours' | 'week-hours' | 'opens' | 'closes' | 'opening'
+  | 'new-week-hours' | 'new-hours-from'
   | 'season' | 'founded' | 'years' | 'daily'
   | 'person' | 'role' | 'since' | 'since-years' | 'reason'
   | 'group' | 'where' | 'group-since' | 'group-years'
@@ -37,9 +38,10 @@ export type StoryVariable =
  *  `person`: it needs the page's person; `personNeeds`: and that key in the person's file. `group` and
  *  `work` likewise, with `groupNeeds` and `workNeeds`.
  *  A `maxLength` of 0 means the variable counts at the length of the fact it shows (see `checkStory`).
- *  `{daily NAME}` is written with its moment's name; the table lists it as `daily`.
+ *  `{daily NAME}` is written with its moment's name; the table lists it as `daily`. `{hours NAME}` is a
+ *  place's set of special days and is listed with `hours`.
  *  `shortMaxLength`: the variable has a short form, written `{NAME short}`, and this is its longest. */
-export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; shortMaxLength?: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening'; time?: 'seasons' | 'founded' | 'daily'; person?: true; personNeeds?: 'since' | 'reason'; group?: true; groupNeeds?: 'where' | 'since'; work?: true; workNeeds?: 'price' | 'on' | 'time' | 'items'; list?: true }> = {
+export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; shortMaxLength?: number; location?: true; place?: true; needs?: 'address' | 'hours' | 'opening' | 'hoursFrom'; time?: 'seasons' | 'founded' | 'daily'; person?: true; personNeeds?: 'since' | 'reason'; group?: true; groupNeeds?: 'where' | 'since'; work?: true; workNeeds?: 'price' | 'on' | 'time' | 'items'; list?: true }> = {
   weekday: { maxLength: 10, shortMaxLength: 3 },    // "Donnerstag", short "Thu"
   date: { maxLength: 13, shortMaxLength: 7 },       // "30. September", short "30. Sep"
   sunrise: { maxLength: 8, location: true },        // "12:59 PM"
@@ -57,6 +59,8 @@ export const STORY_VARIABLES: Record<StoryVariable, { maxLength: number; shortMa
   opens: { maxLength: 8, place: true, needs: 'hours' },   // "10:30 AM"
   closes: { maxLength: 8, place: true, needs: 'hours' },
   opening: { maxLength: 13, shortMaxLength: 7, place: true, needs: 'opening' }, // "30. September"
+  'new-week-hours': { maxLength: 0, place: true, needs: 'hoursFrom' },           // the week of the next "hours from" block
+  'new-hours-from': { maxLength: 13, shortMaxLength: 7, place: true, needs: 'hoursFrom' }, // the day it starts
   season: { maxLength: 0, time: 'seasons' },         // the season's label
   founded: { maxLength: 4, time: 'founded' },        // "2019"
   years: { maxLength: 3, time: 'founded' },          // "7"
@@ -90,6 +94,10 @@ const HOURS_RANGE_LENGTH = 17;
 const WEEK_DAYS_LENGTH = 8;
 /** `{hours}` on a closed day: "geschlossen". */
 const HOURS_CLOSED_LENGTH = 11;
+/** Longest day part of a `{hours NAME}` line, with its space: "Thu 30. Sep ". */
+const SPECIAL_DAY_LENGTH = 12;
+/** Longest part of a `{hours NAME}` line for a run of days, with its space: "Thu 30. Sep – Sat 30. Sep ". */
+const SPECIAL_RUN_LENGTH = 26;
 /** The word between two names in `{by}`, with its spaces: " and " / " und ". */
 const BY_AND_LENGTH = 5;
 
@@ -192,9 +200,16 @@ function variableKey(name: string): StoryVariable | undefined {
   return key in STORY_VARIABLES ? (key as StoryVariable) : undefined;
 }
 
-/** Whether a variable name asks for the short form: "date short". `{daily short}` is the moment named "short". */
+/** Whether a variable name carries a name of the brand's own as its second word: `{daily oven}`, a moment
+ *  of the .time, and `{hours christmas}`, a place's set of special days. */
+function isNamed(name: string): boolean {
+  return name.startsWith('daily ') || name.startsWith('hours ');
+}
+
+/** Whether a variable name asks for the short form: "date short". `{daily short}` is the moment named
+ *  "short", `{hours short}` the set of special days. */
 function isShort(name: string): boolean {
-  return name.endsWith(' short') && !name.startsWith('daily ');
+  return name.endsWith(' short') && !isNamed(name);
 }
 
 // ── Main parser ───────────────────────────────────────────────────────────────
@@ -268,8 +283,8 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       if (!allowed) throw new Error(`${fileName}:${lineNum}: variable "{${v}}" in an example — examples are sample texts, variables belong in page texts`);
       if (v === 'daily') throw new Error(`${fileName}:${lineNum}: "{daily}" needs the moment's name, e.g. {daily oven}`);
       const key = variableKey(v);
-      if (!key) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map(k => (k === 'daily' ? '{daily NAME}' : `{${k}}`)).join(', ')})`);
-      if (key !== 'daily' && v !== key) {
+      if (!key) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map(k => (k === 'daily' ? '{daily NAME}' : k === 'hours' ? '{hours}, {hours NAME}' : `{${k}}`)).join(', ')})`);
+      if (!isNamed(v) && v !== key) {
         const short = Object.entries(STORY_VARIABLES).filter(([, d]) => d.shortMaxLength).map(([k]) => `{${k} short}`).join(', ');
         if (!isShort(v)) throw new Error(`${fileName}:${lineNum}: "{${v}}": the only word after a variable's name is "short" (${short})`);
         if (!STORY_VARIABLES[key].shortMaxLength) throw new Error(`${fileName}:${lineNum}: "{${v}}": {${key}} has no short form (${short})`);
@@ -559,7 +574,11 @@ export function variableProblem(v: string, src: VariableSources): string | undef
   if (variable.location && src.location === false && place?.latitude === undefined) return needs('a location block in the .brand');
   if (variable.place && src.places && !src.placeUnknown) {
     if (!place) return needs(`a place: ${src.places.length > 1 ? 'name it with "place:"' : 'add a .place file'}`);
-    if (variable.needs && !place[variable.needs]) return needs(`${{ hours: 'an hours block', address: 'an address:', opening: 'an opening:' }[variable.needs]} in place "${place.id}"`);
+    if (v.startsWith('hours ')) {
+      const name = v.slice('hours '.length);
+      return place.specialHours?.some(s => s.name === name) ? undefined : needs(`an "hours ${name}" block in place "${place.id}"`);
+    }
+    if (variable.needs && !place[variable.needs]) return needs(`${{ hours: 'an hours block', address: 'an address:', opening: 'an opening:', hoursFrom: 'an "hours from" block' }[variable.needs]} in place "${place.id}"`);
   }
   if (variable.time && time !== undefined) {
     const noTime = time ? '' : ' (the brand has no .time)';
@@ -601,6 +620,18 @@ interface PageFacts {
   byNames?: string[];
 }
 
+/** A week's `{week-hours}` at its longest form: one line per run of days. */
+function longestWeek(hours: WeekHours): string {
+  const lines = weekOpeningDays(hours);
+  if (!lines.length) return 'x'.repeat(HOURS_CLOSED_LENGTH);
+  return lines.map(l => 'x'.repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join('\n');
+}
+
+/** The longest of several texts. */
+function longestOf(texts: string[]): string {
+  return texts.reduce((a, b) => (b.length > a.length ? b : a), '');
+}
+
 /** A text with each variable at its longest form, `{hours}` as its longest lines for the place, a label
  *  or a name at its length. */
 function longestText(text: string, { place, time, person, group, work, byNames }: PageFacts): string {
@@ -626,15 +657,23 @@ function longestText(text: string, { place, time, person, group, work, byNames }
     if (v === 'address') return 'x'.repeat(place?.address?.length ?? 0);
     if (v === 'street') return 'x'.repeat(place?.address ? addressStreet(place.address).length : 0);
     if (v === 'hours') {
-      const days = Object.values(place?.hours ?? {});
+      // Every day the place can have: of its regular weeks and of its special days
+      const days = [
+        ...[place?.hours, ...(place?.hoursFrom ?? []).map(h => h.hours)].flatMap(week => Object.values(week ?? {})),
+        ...(place?.specialHours ?? []).flatMap(s => s.days.map(d => d.ranges)),
+      ];
       const lines = Math.max(1, ...days.map(r => r.length));
       const line = Math.max(HOURS_CLOSED_LENGTH, ...days.flat().map(r => (r.label ? r.label.length + 2 : 0) + HOURS_RANGE_LENGTH));
       return Array.from({ length: lines }, () => 'x'.repeat(line)).join('\n');
     }
-    if (v === 'week-hours') {
-      const lines = weekOpeningDays(place?.hours ?? {});
-      if (!lines.length) return 'x'.repeat(HOURS_CLOSED_LENGTH);
-      return lines.map(l => 'x'.repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join('\n');
+    if (v === 'week-hours') return longestOf([place?.hours ?? {}, ...(place?.hoursFrom ?? []).map(h => h.hours)].map(longestWeek));
+    if (v === 'new-week-hours') return longestOf((place?.hoursFrom ?? []).map(h => longestWeek(h.hours)));
+    if (v.startsWith('hours ')) {
+      const set = place?.specialHours?.find(s => s.name === v.slice('hours '.length));
+      return (set?.days ?? []).map(d => {
+        const times = d.ranges.length ? d.ranges.length * HOURS_RANGE_LENGTH + (d.ranges.length - 1) * 2 : HOURS_CLOSED_LENGTH;
+        return 'x'.repeat((d.from === d.to ? SPECIAL_DAY_LENGTH : SPECIAL_RUN_LENGTH) + times);
+      }).join('\n');
     }
     const variable = STORY_VARIABLES[variableKey(v)!];
     return 'x'.repeat((isShort(v) ? variable?.shortMaxLength : variable?.maxLength) ?? 0);

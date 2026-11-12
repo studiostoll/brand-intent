@@ -1,6 +1,7 @@
 /**
  * Parser for .place files: a site the brand's posts speak about (a shop, a bar, an office),
- * with its address, coordinates, capacity and regular opening hours. The area the brand is in is the
+ * with its address, coordinates, capacity and opening hours: the regular week, a new week from a day on,
+ * and named sets of special days. The area the brand is in is the
  * `.brand`'s `location` block; sky and weather use a place's coordinates when it has them.
  *
  * Strict, line-based format. Every line must match a known pattern or be blank.
@@ -24,6 +25,33 @@ export interface OpeningRange {
   to: string;
 }
 
+/** A week's opening hours per weekday, ranges in order. A weekday that isn't there is closed. */
+export type WeekHours = Partial<Record<Weekday, OpeningRange[]>>;
+
+/** A regular week that replaces the one before it from a day on (`hours from DATE`). */
+export interface HoursFrom {
+  /** `YYYY-MM-DD`: the first day the week holds. */
+  from: string;
+  hours: WeekHours;
+}
+
+/** One line of a set of special days: a date or a run of dates with their times. */
+export interface SpecialDays {
+  /** `YYYY-MM-DD`: the first day. */
+  from: string;
+  /** `YYYY-MM-DD`: the last day; the same as `from` for a single date. */
+  to: string;
+  /** The times of each of these days, in order. Empty = closed. */
+  ranges: OpeningRange[];
+}
+
+/** A named set of special days (`hours NAME`): the days around a holiday, with their dates. */
+export interface SpecialHours {
+  name: string;
+  /** The set's lines in date order. */
+  days: SpecialDays[];
+}
+
 export interface ParsedPlace {
   id: string;
   /** Name, as people say it. */
@@ -44,7 +72,11 @@ export interface ParsedPlace {
   opening?: string;
   /** Regular opening hours per weekday, ranges in order. Undefined = the place has no opening hours.
    *  A weekday the block doesn't name is closed. */
-  hours?: Partial<Record<Weekday, OpeningRange[]>>;
+  hours?: WeekHours;
+  /** Regular weeks that replace `hours` from a day on, in date order. */
+  hoursFrom?: HoursFrom[];
+  /** Named sets of special days, as declared. On their dates they come before the regular week. */
+  specialHours?: SpecialHours[];
   /** How many people the place holds, inside and outside. Undefined = not stated. */
   capacity?: PlaceCapacity;
 }
@@ -67,6 +99,7 @@ const KEYS = new Set(['id', 'name', 'address', 'latitude', 'longitude', 'maps', 
 const CAPACITY_KEYS = new Set(['indoor', 'outdoor']);
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
 const RANGE = /^(?:(.+?)\s+)?(\d{2}:\d{2})-(\d{2}:\d{2})$/;
+const SET_NAME = /^[a-z][a-z0-9-]*$/;
 
 /** `mon`, `mon-fri` or `fri-mon` (wraps over the week end) → the weekdays, Monday first. */
 export function parseDays(spec: string): Weekday[] | null {
@@ -94,9 +127,25 @@ function isDate(value: string): boolean {
 export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
   const raw: Record<string, { value: string; line: number }> = {};
   let description = '';
-  let hours: Partial<Record<Weekday, OpeningRange[]>> | undefined;
+  let hours: WeekHours | undefined;
+  const hoursFrom: HoursFrom[] = [];
+  const specialHours: SpecialHours[] = [];
   let capacity: PlaceCapacity | undefined;
-  let block: 'hours' | 'capacity' | null = null;
+  /** The open block: a week (`hours`, `hours from DATE`), a set of special days (`hours NAME`) or `capacity`. */
+  let block: { week: WeekHours } | { set: SpecialHours } | 'capacity' | null = null;
+
+  /** `08:00-18:00`, `Lunch 12:00-14:00, Evening 17:00-22:00` or `closed` (no ranges). */
+  const parseRanges = (value: string, lineNum: number): OpeningRange[] => {
+    if (value === 'closed') return [];
+    return value.split(',').map(part => {
+      const m = RANGE.exec(part.trim());
+      if (!m || !TIME.test(m[2]) || !TIME.test(m[3]) || m[2] === '24:00') {
+        throw new Error(`${fileName}:${lineNum}: invalid opening range "${part.trim()}" (expected "HH:MM-HH:MM", optionally after a label, or closed)`);
+      }
+      if (m[2] === m[3]) throw new Error(`${fileName}:${lineNum}: opening range "${part.trim()}" starts and ends at the same time`);
+      return { ...(m[1] ? { label: m[1] } : {}), from: m[2], to: m[3] };
+    });
+  };
 
   content.split('\n').forEach((rawLine, i) => {
     const lineNum = i + 1;
@@ -113,7 +162,27 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
       if (line === 'hours') {
         if (hours) throw new Error(`${fileName}:${lineNum}: duplicate hours block`);
         hours = {};
-        block = 'hours';
+        block = { week: hours };
+        return;
+      }
+      const head = /^hours\s+(.+)$/.exec(line.replace(/\s+#.*$/, ''));
+      if (head) {
+        const from = /^from\s+(.+)$/.exec(head[1]);
+        if (from) {
+          if (!isDate(from[1])) throw new Error(`${fileName}:${lineNum}: "hours from" needs a date YYYY-MM-DD, got "${from[1]}"`);
+          if (hoursFrom.some(h => h.from === from[1])) throw new Error(`${fileName}:${lineNum}: duplicate "hours from ${from[1]}"`);
+          const week: WeekHours = {};
+          hoursFrom.push({ from: from[1], hours: week });
+          block = { week };
+          return;
+        }
+        if (head[1] === 'from' || !SET_NAME.test(head[1])) {
+          throw new Error(`${fileName}:${lineNum}: expected "hours", "hours from YYYY-MM-DD" or "hours NAME" (lowercase, e.g. hours christmas), got "${line}"`);
+        }
+        if (specialHours.some(s => s.name === head[1])) throw new Error(`${fileName}:${lineNum}: duplicate "hours ${head[1]}"`);
+        const set: SpecialHours = { name: head[1], days: [] };
+        specialHours.push(set);
+        block = { set };
         return;
       }
       if (line === 'capacity') {
@@ -147,25 +216,30 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
       return;
     }
     const colonIdx = entry.indexOf(':');
+    if ('set' in block) {
+      // A date or a run of dates: `2026-12-24: …`, `2026-12-25..2026-12-26: …`
+      const m = colonIdx === -1 ? null : /^(\S+?)(?:\.\.(\S+))?$/.exec(entry.slice(0, colonIdx).trim());
+      if (!m) throw new Error(`${fileName}:${lineNum}: entry of "hours ${block.set.name}" must be "DATE: RANGES" or "DATE..DATE: RANGES", got "${line}"`);
+      const [from, to] = [m[1], m[2] ?? m[1]];
+      for (const date of [from, to]) {
+        if (!isDate(date)) throw new Error(`${fileName}:${lineNum}: "hours ${block.set.name}" lists dates YYYY-MM-DD, got "${date}"`);
+      }
+      if (to < from) throw new Error(`${fileName}:${lineNum}: ${from}..${to} ends before it starts`);
+      for (const set of specialHours) {
+        const taken = set.days.find(d => from <= d.to && d.from <= to);
+        if (taken) throw new Error(`${fileName}:${lineNum}: ${taken.from > from ? taken.from : from} already has hours${set === block.set ? '' : ` in "hours ${set.name}"`}`);
+      }
+      block.set.days.push({ from, to, ranges: parseRanges(entry.slice(colonIdx + 1).trim(), lineNum) });
+      return;
+    }
     if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: hours entry must be "DAYS: RANGES", got "${line}"`);
     const daySpec = entry.slice(0, colonIdx).trim();
     const days = parseDays(daySpec);
     if (!days) throw new Error(`${fileName}:${lineNum}: invalid days "${daySpec}" (expected a day like mon or a range like mon-fri)`);
-    const value = entry.slice(colonIdx + 1).trim();
-    let ranges: OpeningRange[] = [];
-    if (value !== 'closed') {
-      ranges = value.split(',').map(part => {
-        const m = RANGE.exec(part.trim());
-        if (!m || !TIME.test(m[2]) || !TIME.test(m[3]) || m[2] === '24:00') {
-          throw new Error(`${fileName}:${lineNum}: invalid opening range "${part.trim()}" (expected "HH:MM-HH:MM", optionally after a label, or closed)`);
-        }
-        if (m[2] === m[3]) throw new Error(`${fileName}:${lineNum}: opening range "${part.trim()}" starts and ends at the same time`);
-        return { ...(m[1] ? { label: m[1] } : {}), from: m[2], to: m[3] };
-      });
-    }
+    const ranges = parseRanges(entry.slice(colonIdx + 1).trim(), lineNum);
     for (const day of days) {
-      if (hours![day]) throw new Error(`${fileName}:${lineNum}: ${day} already has hours`);
-      hours![day] = ranges;
+      if (block.week[day]) throw new Error(`${fileName}:${lineNum}: ${day} already has hours`);
+      block.week[day] = ranges;
     }
   });
 
@@ -183,8 +257,13 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
   };
   if (raw['maps'] && !/^https:\/\/\S+$/.test(raw['maps'].value)) throw new Error(`${fileName}:${raw['maps'].line}: maps must be an https link`);
   if (raw['opening'] && !isDate(raw['opening'].value)) throw new Error(`${fileName}:${raw['opening'].line}: opening must be a date YYYY-MM-DD, got "${raw['opening'].value}"`);
+  if (hoursFrom.length && !hours) throw new Error(`${fileName}: "hours from ${hoursFrom[0].from}" needs the regular hours block it replaces`);
+  const empty = specialHours.find(s => !s.days.length);
+  if (empty) throw new Error(`${fileName}: empty "hours ${empty.name}" block (add a line "YYYY-MM-DD: RANGES")`);
   // Monday first; closed days stay out: a day that isn't named is closed
-  const days = hours && Object.fromEntries(WEEKDAYS.filter(d => hours![d]?.length).map(d => [d, hours![d]!])) as Partial<Record<Weekday, OpeningRange[]>>;
+  const week = (w: WeekHours) => Object.fromEntries(WEEKDAYS.filter(d => w[d]?.length).map(d => [d, w[d]!])) as WeekHours;
+  const days = hours && week(hours);
+  const byDate = <T extends { from: string }>(list: T[]) => [...list].sort((a, b) => a.from.localeCompare(b.from));
 
   return {
     id: raw['id'].value,
@@ -196,13 +275,15 @@ export function parsePlaceFile(content: string, fileName: string): ParsedPlace {
     ...(raw['context'] ? { context: raw['context'].value } : {}),
     ...(raw['opening'] ? { opening: raw['opening'].value } : {}),
     ...(days ? { hours: days } : {}),
+    ...(hoursFrom.length ? { hoursFrom: byDate(hoursFrom).map(h => ({ from: h.from, hours: week(h.hours) })) } : {}),
+    ...(specialHours.length ? { specialHours: specialHours.map(s => ({ name: s.name, days: byDate(s.days) })) } : {}),
     ...(capacity ? { capacity } : {}),
   };
 }
 
 /** The week's opening hours as lines: consecutive days (Monday first) with the same times share
  *  a line, closed days are left out. Labels don't count: `Lunch 12:00-14:00` and `12:00-14:00` match. */
-export function weekOpeningDays(hours: Partial<Record<Weekday, OpeningRange[]>>): OpeningDays[] {
+export function weekOpeningDays(hours: WeekHours): OpeningDays[] {
   const times = (ranges: OpeningRange[]) => ranges.map(r => `${r.from}-${r.to}`).join(',');
   const lines: OpeningDays[] = [];
   let prev: Weekday | undefined;
@@ -220,6 +301,35 @@ export function weekOpeningDays(hours: Partial<Record<Weekday, OpeningRange[]>>)
 /** Whether the place is open on a YYYY-MM-DD date by its `opening:`: false before the day it opens. */
 export function isOpenYet(place: Pick<ParsedPlace, 'opening'>, date: string): boolean {
   return !place.opening || date >= place.opening;
+}
+
+/** The regular week that holds on a YYYY-MM-DD date: the latest `hours from` block that has started,
+ *  else the `hours` block. Undefined = the place has no opening hours. */
+export function weekHoursOn(place: Pick<ParsedPlace, 'hours' | 'hoursFrom'>, date: string): WeekHours | undefined {
+  return [...(place.hoursFrom ?? [])].reverse().find(h => h.from <= date)?.hours ?? place.hours;
+}
+
+/** The next regular week that has not started on a YYYY-MM-DD date: what a page announces. */
+export function upcomingHours(place: Pick<ParsedPlace, 'hoursFrom'>, date: string): HoursFrom | undefined {
+  return place.hoursFrom?.find(h => h.from > date);
+}
+
+/** A place's set of special days by name, while it still has a day on or after a YYYY-MM-DD date.
+ *  After its last day there is nothing left to announce. */
+export function specialHoursOn(place: Pick<ParsedPlace, 'specialHours'>, name: string, date: string): SpecialHours | undefined {
+  const set = place.specialHours?.find(s => s.name === name);
+  return set && set.days[set.days.length - 1].to >= date ? set : undefined;
+}
+
+/** The opening ranges of a YYYY-MM-DD date, empty when closed: a special day first, else the weekday of
+ *  the regular week that holds; before `opening:` the place is closed. */
+export function hoursOn(place: Pick<ParsedPlace, 'hours' | 'hoursFrom' | 'specialHours' | 'opening'>, date: string): OpeningRange[] {
+  if (!isOpenYet(place, date)) return [];
+  for (const set of place.specialHours ?? []) {
+    const special = set.days.find(d => d.from <= date && date <= d.to);
+    if (special) return special.ranges;
+  }
+  return weekHoursOn(place, date)?.[weekdayOf(date)] ?? [];
 }
 
 /** The street part of an address, up to its first comma: "Quay 3" of "Quay 3, Harbour Town". */

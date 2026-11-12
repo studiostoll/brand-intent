@@ -1618,6 +1618,9 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 | `{opens}` | When the place opens that day | `08:00`, `8:00 AM` | 8 |
 | `{closes}` | When it closes that day | `18:00`, `6:00 PM` | 8 |
 | `{opening}` | The day the place opens: its `opening:`, day and month | `28. November`, `28 November` | 13 |
+| `{hours NAME}` | A set of special days of the place, one line per date or run of dates (below) | `Thu 24 Dec 8 AM–12 PM` | per line, below |
+| `{new-week-hours}` | The place's next regular week, like `{week-hours}` (below) | `Tue–Fri 2–10 PM` | per line, below |
+| `{new-hours-from}` | The day that week starts, day and month | `2. März`, `2 March` | 13 |
 | `{season}` | The current season's `label:` | `Frühling`, `Spring` | its length |
 | `{founded}` | The year the brand started | `2019` | 4 |
 | `{years}` | Whole years since the brand started | `7` | 3 |
@@ -1646,7 +1649,7 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 
 **Calendar** variables (`{weekday}`, `{date}`) and **list** variables (`{n}`, `{count}`) need nothing. **Sky** variables (`{sunrise}`, `{sunset}`, `{day-length}`, `{moon}`) are computed from coordinates: the story's [place](#place-place)'s when it has them, else the brand's [`location`](#location-block). **Weather** variables (`{temperature}`, `{wind}`, `{weather}`) come from a forecast for the same coordinates. `checkStory` reports a sky or weather variable without either.
 
-**Place** variables (`{place}`, `{address}`, `{street}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`, `{opening}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` and `{street}` need the place's `address:`, the hours variables its `hours` block, `{opening}` its `opening:`.
+**Place** variables (`{place}`, `{address}`, `{street}`, `{hours}`, `{week-hours}`, `{opens}`, `{closes}`, `{opening}`, `{hours NAME}`, `{new-week-hours}`, `{new-hours-from}`) come from the story's place: the one its `place:` names, else the brand's only place. `{address}` and `{street}` need the place's `address:`, the hours variables its `hours` block, `{opening}` its `opening:`, `{hours NAME}` that [set of special days](#special-days-hours-name), `{new-week-hours}` and `{new-hours-from}` an [`hours from`](#a-new-week-hours-from-date) block.
 
 **Time** variables come from the brand's [`.time`](#time-time): `{season}` needs `season` blocks, `{founded}` and `{years}` need `founded:`, `{daily NAME}` needs that `daily` entry.
 
@@ -1658,26 +1661,34 @@ A page text may contain `{name}` placeholders. Implementations resolve them for 
 
 **Work** variables (`{work}`, `{kind}`, `{by}`, `{price}`, `{on}`, `{time}`, `{days-until}`) come from the page's work: the one its `work:` names, else the story's. `{price}` needs `price:`, `{time}` needs `time:`, `{on}` and `{days-until}` need `on:`. `{days-until}` counts to the work's next `on:` day on or after the story's date; after a one-off date it has no value. `{by}` joins several names with the brand's language's "and"; without `by:` it is the brand's name. `{item}`, `{item-name}` and `{item-note}` need `items:` and show the day's [item](#items); on a day without one (before the start, after `until:`, the list used up) the page is not posted. `checkStory` reports `{item-name}` or `{item-note}` when an item has no name or note.
 
-**`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges.
+**`{hours}`** writes each range of the day on its own line, the label first when it has one: `Lunch, 12–2 PM`. Times drop `:00` on the hour (`17–22 Uhr`, `17:30–22 Uhr`; `5–10 PM`, `5:30–10 PM`). A closed day gives `geschlossen` / `closed`. On a special day it writes that day's times, else the weekday's of the week that holds. For `maxLength`, every line counts as its label plus 17 characters, and the text as many lines as the place's longest day has ranges, special days included.
 
-**`{week-hours}`** writes the place's whole week, Monday first, one line per run of consecutive days with the same times: `Mo–Fr 8–18 Uhr`, `Sa 9–14 Uhr` / `Mon–Fri 8 AM–6 PM`, `Sat 9 AM–2 PM`. A run of one day names that day; several ranges on a line are comma-separated (`Do–Fr 12–14 Uhr, 17–22 Uhr`). Range labels are left out. Closed days are left out, so a page doesn't state them by hand and can't contradict the `hours` block. For `maxLength`, every line counts as 8 characters for its days plus 17 per range and 2 per comma.
+**`{week-hours}`** writes the place's whole week, the one that holds on the story's date, Monday first, one line per run of consecutive days with the same times: `Mo–Fr 8–18 Uhr`, `Sa 9–14 Uhr` / `Mon–Fri 8 AM–6 PM`, `Sat 9 AM–2 PM`. A run of one day names that day; several ranges on a line are comma-separated (`Do–Fr 12–14 Uhr, 17–22 Uhr`). Range labels are left out. Closed days are left out, so a page doesn't state them by hand and can't contradict the `hours` block. For `maxLength`, every line counts as 8 characters for its days plus 17 per range and 2 per comma; a place with an `hours from` block counts at the longest of its weeks.
 
 **Closed is not guessed either.** On a day the place is closed, `{opens}` and `{closes}` have no value: a preview shows the placeholder, a scheduled post doesn't go out. Before a place's `opening:` it is closed every day: `{hours}` gives `geschlossen` / `closed`, `{opens}` and `{closes}` have no value. `{week-hours}` still shows the regular week, so a page can announce the hours it will have.
+
+**Announcing hours.** Three variables say what is coming, on any day before it comes: a week ahead or a month ahead is the story's schedule, not the file's.
+
+- **`{hours NAME}`** writes the place's set of special days of that name, one line per line of the block: the weekday and the date in their [short forms](#variables), then the times as `{week-hours}` writes them, range labels left out. A run of dates names its first and last day. Closed days are written, because that is what the page announces: `Do 24. Dez 8–12 Uhr`, `Fr 25. Dez – Sa 26. Dez geschlossen` / `Thu 24 Dec 8 AM–12 PM`, `Fri 25 Dec – Sat 26 Dec closed`. For `maxLength`, a line counts as 12 characters for a date or 26 for a run, plus 17 per range and 2 per comma, or 11 when closed.
+- **`{new-week-hours}`** writes the week of the next `hours from` block that has not started on the story's date, as `{week-hours}` writes a week. **`{new-hours-from}`** is the day it starts, with a short form.
+
+**What is over is not announced.** After the last day of a set, `{hours NAME}` has no value; from the day an `hours from` block starts, `{new-week-hours}` and `{new-hours-from}` have none, unless a later block follows. A preview shows the placeholder, a scheduled post doesn't go out.
 
 Times are local time in the time zone the story is posted in. Moon phases: new moon, waxing crescent, first quarter, waxing gibbous, full moon, waning gibbous, last quarter, waning crescent. Conditions: clear, partly cloudy, cloudy, fog, rain, sleet, snow, hail, thunderstorm. Implementations translate both into the brand's language.
 
 **Weather is not guessed.** When no forecast exists for the date (too far ahead, or the service doesn't answer), implementations don't fill in a value: a preview shows a placeholder, a scheduled post doesn't go out. A page that shows a weather value credits its source; implementations add the credit themselves, as the source's terms require it.
 
-**Short forms.** Four variables have a short form, written with the word `short` after the name. It is for lines that hold several facts and must not break:
+**Short forms.** Five variables have a short form, written with the word `short` after the name. It is for lines that hold several facts and must not break:
 
 | Variable | Resolves to | Example | Longest |
 |----------|-------------|---------|---------|
 | `{weekday short}` | Abbreviated weekday name, no period | `Mi`, `Wed` | 3 |
 | `{date short}` | Day and abbreviated month, no year | `30. Okt`, `30 Oct` | 7 |
 | `{opening short}` | The place's `opening:`, likewise | `28. Nov`, `28 Nov` | 7 |
+| `{new-hours-from short}` | The day the place's next regular week starts, likewise | `2. Mär`, `2 Mar` | 7 |
 | `{on short}` | The work's day, likewise | `28. Nov`, `28 Nov` | 7 |
 
-Month abbreviations are the first three letters of the month's name in the brand's language and never end in a period, so a comma can follow (`Mi, 30. Okt, 14 °C`). German weekdays are two letters, English three. A short form needs what its variable needs. `short` after any other variable is an error, and so is any other word; `{daily NAME}` is the only variable whose second word is a name.
+Month abbreviations are the first three letters of the month's name in the brand's language and never end in a period, so a comma can follow (`Mi, 30. Okt, 14 °C`). German weekdays are two letters, English three. A short form needs what its variable needs. `short` after any other variable is an error, and so is any other word; `{daily NAME}` and `{hours NAME}` are the only variables whose second word is a name.
 
 An unknown name is an error. Braces that don't form a lowercase `{name}` or `{name word}` stay plain text. Variables appear in page texts and in a purpose's example texts, never in topics or a story's examples. For `maxLength`, a variable counts at its longest form (column "Longest").
 
@@ -1766,7 +1777,7 @@ A `.story` file must NOT contain: color values, typography values, slot definiti
 
 The five layers describe; a story orchestrates. To orchestrate it needs to know when, where, who and what, and each answer has a file of the same kind: [`.time`](#time-time) says when, [`.place`](#place-place) says where, [`.person`](#person-person) and [`.group`](#group-group) say who (one human, or more than one), [`.work`](#work-work) says what the brand puts out or puts on. They hold facts, never voice or colour; a story pulls them in with `when:`, `place:`, `person:`, `group:` and `work:`, and their facts reach the page as [variables](#variables). What a fact file doesn't say is not guessed: a closed day has no closing time, a date that passed has no countdown, a person without a name in the file has no name.
 
-A fact file exists only if posts speak about its subject. Each thing carries its own dates: a place its `opening:`, a person their `since:` and `until:`, a work its `on:` or its `days:`. The `.time` holds only what belongs to the brand as a whole.
+A fact file exists only if posts speak about its subject. Each thing carries its own dates: a place its `opening:` and the dates of its hours, a person their `since:` and `until:`, a work its `on:` or its `days:`. The `.time` holds only what belongs to the brand as a whole.
 
 ## Time (`.time`)
 
@@ -1872,7 +1883,7 @@ A `.time` never contains: voice or tone (→ `.identity`), visual parameters (�
 **File extension:** `.place`
 **Filename convention:** the place id (e.g., `harbour.place`), in `places/`
 
-A place is a site the brand's posts speak about: a café, a shop, a bar, an information office. It holds facts, not voice or design: where it is, how many people it holds and when it's open. The area the brand is in as a whole stays the `.brand`'s [`location`](#location-block).
+A place is a site the brand's posts speak about: a café, a shop, a bar, an information office. It holds facts, not voice or design: where it is, how many people it holds and when it's open, in a regular week and on the days that differ. The area the brand is in as a whole stays the `.brand`'s [`location`](#location-block).
 
 A site matters only if posts speak about it. A place without `hours` is one people don't walk in at set times: an office, a storage whose occasional events give their date and time on the event page.
 
@@ -1907,6 +1918,8 @@ capacity
 | `context:` | string | No | Facts for AI writing: what the place is like, who comes, what it offers. Not voice, which belongs to `.identity` |
 | `opening:` | date | No | `YYYY-MM-DD`: the day a new place opens. Before it the place is closed every day (see [Variables](#variables)), and AI writing treats it as not open yet. `{opening}` shows it |
 | `hours` | block | No | Regular opening hours (below) |
+| `hours from DATE` | block | No | A new regular week from a day on (repeatable, below) |
+| `hours NAME` | block | No | A named set of special days (repeatable, below) |
 | `capacity` | block | No | How many people the place holds (below) |
 
 ### `hours` Block
@@ -1917,7 +1930,44 @@ One line per day or range of days: `DAYS: RANGES`.
 - **Ranges:** `HH:MM-HH:MM`, 24-hour, comma-separated, optionally after a label (`Lunch 12:00-14:00`). An end before the start runs past midnight and belongs to the day it starts; `24:00` is midnight.
 - **`closed`**, or a day not named: the place is closed that day.
 
-Only regular weekly hours. Holidays and one-off closures are not part of the file.
+The `hours` block is the regular week. A week that changes and the days that differ from it have blocks of their own, each with its dates.
+
+### A new week: `hours from DATE`
+
+The regular week changes on a day: the shop also opens on Tuesdays from March on. The block is a whole week, written like `hours`, and replaces the week before it from `DATE` (`YYYY-MM-DD`) on.
+
+```yaml
+hours
+  wed-fri: 14:00-22:00
+  sat:     12:00-22:00
+
+hours from 2027-03-02
+  tue-fri: 14:00-22:00
+  sat:     12:00-22:00
+```
+
+- The file can say it as soon as it is decided: until the day, `{hours}`, `{week-hours}`, `{opens}` and `{closes}` keep the old week, and `{new-week-hours}` and `{new-hours-from}` announce the new one.
+- From the day on the new week holds. Once it does, the file is tidied: the new week becomes the `hours` block and the dated one goes.
+- Several blocks follow each other by date, each date once. An `hours from` block needs the `hours` block it replaces.
+
+### Special days: `hours NAME`
+
+The days around a holiday, a fair, the company holidays: days whose hours differ from the regular week, known by their dates. `NAME` is a lowercase identifier, unique in the file, and never `from`.
+
+```yaml
+hours christmas
+  2026-12-24:             08:00-12:00
+  2026-12-25..2026-12-26: closed
+  2026-12-31:             Morning 08:00-14:00
+```
+
+- One line per date or run of dates: `DATE: RANGES` or `DATE..DATE: RANGES`, dates `YYYY-MM-DD`, the end inclusive. Ranges as in `hours`, or `closed`. At least one line.
+- A date has special hours once, across all sets of the place.
+- On its dates a set comes before the regular week. A day it doesn't list keeps the regular hours.
+- The dates carry their year. Christmas hours are decided each year, so a set is written each year, not repeated: nothing in the file recurs by itself and turns wrong.
+- `{hours NAME}` announces the set (see [Variables](#variables)). After its last day there is nothing to announce, and the block goes.
+
+Public holidays are not known to the language: a holiday on which the place is closed is a date in a set.
 
 ### `capacity` Block
 
@@ -2285,7 +2335,7 @@ A parser should warn when:
 - A `purposes` entry in `.format` references a non-existent `.purpose` file
 - A `.story` references a format, purpose or composition that doesn't exist, a composition its purpose doesn't list, or a slot its purpose doesn't declare or fixes with `value:`
 - A fixed or example text in a `.story` exceeds the slot's limits
-- A `.story` names a place that doesn't exist, or uses a place variable without a place (several places and no `place:`), `{address}` without `address:` or an hours variable without `hours`
+- A `.story` names a place that doesn't exist, or uses a place variable without a place (several places and no `place:`), `{address}` without `address:` or an hours variable without `hours`, `{hours NAME}` without that set, `{new-week-hours}` or `{new-hours-from}` without an `hours from` block
 - A `.story` uses a time variable the `.time` can't give (no `founded:`, no `season`, no such `daily` entry), a person variable without a person, a group variable without a group, or a work variable without a work or one the work can't give (`{price}` without `price:`, `{on}` or `{days-until}` without `on:`, `{time}` without `time:`)
 
 ---

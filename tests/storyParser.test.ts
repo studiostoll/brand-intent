@@ -114,15 +114,16 @@ test('{weekday} and {date} in page texts', () => {
   assertEq(storyTextVariables('{weekday}, {date}'), ['weekday', 'date'], 'names');
 });
 
-test('{NAME short}: the short form of the weekday and the three dates', () => {
+test('{NAME short}: the short form of the weekday and the dates', () => {
   const s = parse('page\n  purpose: notice\n  primary: {weekday short}, {date short}, {opening short}, {on short}\n');
   assertEq(s.pages[0].texts.primary, '{weekday short}, {date short}, {opening short}, {on short}', 'texts');
   assertEq(storyTextVariables('{weekday short}, {date}'), ['weekday short', 'date'], 'names with their second word');
-  assertThrows(() => parse('page\n  purpose: notice\n  primary: {weather short}\n'), '"{weather short}": {weather} has no short form ({weekday short}, {date short}, {opening short}, {on short})');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {weather short}\n'), '"{weather short}": {weather} has no short form ({weekday short}, {date short}, {opening short}, {new-hours-from short}, {on short})');
   assertThrows(() => parse('page\n  purpose: notice\n  primary: {date long}\n'), '"{date long}": the only word after a variable\'s name is "short"');
   assertThrows(() => parse('page\n  purpose: notice\n  primary: {clock short}\n'), 'unknown variable "{clock short}"');
   assertEq(parse('page\n  purpose: notice\n  primary: {date:short}\n').pages[0].texts.primary, '{date:short}', 'a colon: plain text');
   assertEq(storyTextVariables('{daily short}'), ['daily short'], 'a daily moment named short');
+  assertEq(parse('page\n  purpose: notice\n  primary: {hours short}\n').pages[0].texts.primary, '{hours short}', 'a set of special days named short');
 });
 
 test('unknown variable is an error, plain braces stay text', () => {
@@ -415,6 +416,29 @@ test('{hours} counts as its lines for the place', () => {
   assertEq(checkStory(s, { ...BRAND, places: [QUAY] }, 's.story'), ['s.story: page 1: slot "detail" is 24 characters long, maxLength is 12', 's.story: page 1: slot "detail" is 24 characters long, maxLength is 12'], 'two lines, each too long');
   const p = parse('page\n  purpose: notice\n  primary: {place}\n');
   assertEq(checkStory(p, { ...BRAND, places: [{ ...HARBOUR, name: 'The Harbour Café on the Quay' }] }, 's.story'), ['s.story: page 1: slot "primary" is 28 characters long, maxLength is 20'], 'name length');
+});
+
+test('{hours NAME} shows a set of special days', () => {
+  const xmas = { ...QUAY, specialHours: [{ name: 'christmas', days: [
+    { from: '2026-12-24', to: '2026-12-24', ranges: [{ from: '08:00', to: '12:00' }] },
+    { from: '2026-12-25', to: '2026-12-26', ranges: [] },
+  ] }] };
+  const s = parse('page\n  purpose: notice\n  detail: {hours christmas}\n');
+  // "Thu 30. Sep " + 17, and "Thu 30. Sep – Sat 30. Sep " + "geschlossen"
+  assertEq(checkStory(s, { ...BRAND, places: [xmas] }, 's.story'), ['s.story: page 1: slot "detail" is 29 characters long, maxLength is 12', 's.story: page 1: slot "detail" is 37 characters long, maxLength is 12'], 'one line per line of the set');
+  assertEq(checkStory(s, { ...BRAND, places: [QUAY] }, 's.story'), ['s.story: page 1: variable "{hours christmas}" needs an "hours christmas" block in place "quay"'], 'needs the set');
+  // A special day with more ranges than any weekday makes {hours} longer
+  const long = { ...HARBOUR, hours: { mon: [{ from: '08:00', to: '18:00' }] }, specialHours: [{ name: 'fair', days: [{ from: '2026-09-05', to: '2026-09-05', ranges: [{ from: '08:00', to: '12:00' }, { from: '14:00', to: '18:00' }, { from: '20:00', to: '23:00' }] }] }] };
+  assertEq(checkStory(parse('page\n  purpose: notice\n  detail: {hours}\n'), { ...BRAND, places: [long] }, 's.story').slice(0, 1), ['s.story: page 1: slot "detail" has 3 items, maxItems is 2'], '{hours} counts the special days');
+});
+
+test('{new-week-hours} and {new-hours-from} announce the next regular week', () => {
+  const s = parse('page\n  purpose: notice\n  primary: From {new-hours-from short}\n  detail: {new-week-hours}\n');
+  assertEq(checkStory(s, { ...BRAND, places: [QUAY] }, 's.story'), ['s.story: page 1: variable "{new-hours-from short}" needs an "hours from" block in place "quay"', 's.story: page 1: variable "{new-week-hours}" needs an "hours from" block in place "quay"'], 'need the block');
+  const next = { ...QUAY, hoursFrom: [{ from: '2027-03-02', hours: { tue: [{ from: '10:00', to: '12:00' }], thu: [{ from: '10:00', to: '12:00' }] } }] };
+  // Two lines, each "Mon–Fri " + 17
+  assertEq(checkStory(s, { ...BRAND, places: [next] }, 's.story'), ['s.story: page 1: slot "detail" is 25 characters long, maxLength is 12', 's.story: page 1: slot "detail" is 25 characters long, maxLength is 12'], 'counts the new week');
+  assertThrows(() => parse('page\n  purpose: notice\n  primary: {new-week-hours short}\n'), '{new-week-hours} has no short form');
 });
 
 test('{week-hours} counts as one line per group of days', () => {

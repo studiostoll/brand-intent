@@ -518,6 +518,7 @@ var KEYS = /* @__PURE__ */ new Set(["id", "name", "address", "latitude", "longit
 var CAPACITY_KEYS = /* @__PURE__ */ new Set(["indoor", "outdoor"]);
 var TIME = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
 var RANGE = /^(?:(.+?)\s+)?(\d{2}:\d{2})-(\d{2}:\d{2})$/;
+var SET_NAME = /^[a-z][a-z0-9-]*$/;
 function parseDays(spec) {
   const m = /^([a-z]{3})(?:-([a-z]{3}))?$/.exec(spec);
   if (!m) return null;
@@ -539,8 +540,21 @@ function parsePlaceFile(content, fileName) {
   const raw = {};
   let description = "";
   let hours;
+  const hoursFrom = [];
+  const specialHours = [];
   let capacity;
   let block = null;
+  const parseRanges = (value, lineNum) => {
+    if (value === "closed") return [];
+    return value.split(",").map((part) => {
+      const m = RANGE.exec(part.trim());
+      if (!m || !TIME.test(m[2]) || !TIME.test(m[3]) || m[2] === "24:00") {
+        throw new Error(`${fileName}:${lineNum}: invalid opening range "${part.trim()}" (expected "HH:MM-HH:MM", optionally after a label, or closed)`);
+      }
+      if (m[2] === m[3]) throw new Error(`${fileName}:${lineNum}: opening range "${part.trim()}" starts and ends at the same time`);
+      return { ...m[1] ? { label: m[1] } : {}, from: m[2], to: m[3] };
+    });
+  };
   content.split("\n").forEach((rawLine, i) => {
     const lineNum = i + 1;
     const indent = rawLine.length - rawLine.trimStart().length;
@@ -555,7 +569,27 @@ function parsePlaceFile(content, fileName) {
       if (line === "hours") {
         if (hours) throw new Error(`${fileName}:${lineNum}: duplicate hours block`);
         hours = {};
-        block = "hours";
+        block = { week: hours };
+        return;
+      }
+      const head = /^hours\s+(.+)$/.exec(line.replace(/\s+#.*$/, ""));
+      if (head) {
+        const from = /^from\s+(.+)$/.exec(head[1]);
+        if (from) {
+          if (!isDate(from[1])) throw new Error(`${fileName}:${lineNum}: "hours from" needs a date YYYY-MM-DD, got "${from[1]}"`);
+          if (hoursFrom.some((h) => h.from === from[1])) throw new Error(`${fileName}:${lineNum}: duplicate "hours from ${from[1]}"`);
+          const week2 = {};
+          hoursFrom.push({ from: from[1], hours: week2 });
+          block = { week: week2 };
+          return;
+        }
+        if (head[1] === "from" || !SET_NAME.test(head[1])) {
+          throw new Error(`${fileName}:${lineNum}: expected "hours", "hours from YYYY-MM-DD" or "hours NAME" (lowercase, e.g. hours christmas), got "${line}"`);
+        }
+        if (specialHours.some((s) => s.name === head[1])) throw new Error(`${fileName}:${lineNum}: duplicate "hours ${head[1]}"`);
+        const set = { name: head[1], days: [] };
+        specialHours.push(set);
+        block = { set };
         return;
       }
       if (line === "capacity") {
@@ -568,11 +602,11 @@ function parsePlaceFile(content, fileName) {
       if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value", got "${line}"`);
       const key = line.slice(0, colonIdx2).trim();
       const rest = line.slice(colonIdx2 + 1).trim();
-      const value2 = key === "maps" ? rest : rest.replace(/\s+#.*$/, "");
+      const value = key === "maps" ? rest : rest.replace(/\s+#.*$/, "");
       if (!KEYS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...KEYS].join(", ")}, an hours or a capacity block)`);
       if (raw[key]) throw new Error(`${fileName}:${lineNum}: duplicate "${key}"`);
-      if (!value2) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
-      raw[key] = { value: value2, line: lineNum };
+      if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
+      raw[key] = { value, line: lineNum };
       return;
     }
     if (!block || indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent (entries use 2 spaces under "hours" or "capacity")`);
@@ -587,25 +621,29 @@ function parsePlaceFile(content, fileName) {
       return;
     }
     const colonIdx = entry.indexOf(":");
+    if ("set" in block) {
+      const m = colonIdx === -1 ? null : /^(\S+?)(?:\.\.(\S+))?$/.exec(entry.slice(0, colonIdx).trim());
+      if (!m) throw new Error(`${fileName}:${lineNum}: entry of "hours ${block.set.name}" must be "DATE: RANGES" or "DATE..DATE: RANGES", got "${line}"`);
+      const [from, to] = [m[1], m[2] ?? m[1]];
+      for (const date of [from, to]) {
+        if (!isDate(date)) throw new Error(`${fileName}:${lineNum}: "hours ${block.set.name}" lists dates YYYY-MM-DD, got "${date}"`);
+      }
+      if (to < from) throw new Error(`${fileName}:${lineNum}: ${from}..${to} ends before it starts`);
+      for (const set of specialHours) {
+        const taken = set.days.find((d) => from <= d.to && d.from <= to);
+        if (taken) throw new Error(`${fileName}:${lineNum}: ${taken.from > from ? taken.from : from} already has hours${set === block.set ? "" : ` in "hours ${set.name}"`}`);
+      }
+      block.set.days.push({ from, to, ranges: parseRanges(entry.slice(colonIdx + 1).trim(), lineNum) });
+      return;
+    }
     if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: hours entry must be "DAYS: RANGES", got "${line}"`);
     const daySpec = entry.slice(0, colonIdx).trim();
     const days2 = parseDays(daySpec);
     if (!days2) throw new Error(`${fileName}:${lineNum}: invalid days "${daySpec}" (expected a day like mon or a range like mon-fri)`);
-    const value = entry.slice(colonIdx + 1).trim();
-    let ranges = [];
-    if (value !== "closed") {
-      ranges = value.split(",").map((part) => {
-        const m = RANGE.exec(part.trim());
-        if (!m || !TIME.test(m[2]) || !TIME.test(m[3]) || m[2] === "24:00") {
-          throw new Error(`${fileName}:${lineNum}: invalid opening range "${part.trim()}" (expected "HH:MM-HH:MM", optionally after a label, or closed)`);
-        }
-        if (m[2] === m[3]) throw new Error(`${fileName}:${lineNum}: opening range "${part.trim()}" starts and ends at the same time`);
-        return { ...m[1] ? { label: m[1] } : {}, from: m[2], to: m[3] };
-      });
-    }
+    const ranges = parseRanges(entry.slice(colonIdx + 1).trim(), lineNum);
     for (const day of days2) {
-      if (hours[day]) throw new Error(`${fileName}:${lineNum}: ${day} already has hours`);
-      hours[day] = ranges;
+      if (block.week[day]) throw new Error(`${fileName}:${lineNum}: ${day} already has hours`);
+      block.week[day] = ranges;
     }
   });
   if (capacity && capacity.indoor === void 0 && capacity.outdoor === void 0) throw new Error(`${fileName}: empty capacity block (add "indoor:" or "outdoor:")`);
@@ -622,7 +660,12 @@ function parsePlaceFile(content, fileName) {
   };
   if (raw["maps"] && !/^https:\/\/\S+$/.test(raw["maps"].value)) throw new Error(`${fileName}:${raw["maps"].line}: maps must be an https link`);
   if (raw["opening"] && !isDate(raw["opening"].value)) throw new Error(`${fileName}:${raw["opening"].line}: opening must be a date YYYY-MM-DD, got "${raw["opening"].value}"`);
-  const days = hours && Object.fromEntries(WEEKDAYS.filter((d) => hours[d]?.length).map((d) => [d, hours[d]]));
+  if (hoursFrom.length && !hours) throw new Error(`${fileName}: "hours from ${hoursFrom[0].from}" needs the regular hours block it replaces`);
+  const empty = specialHours.find((s) => !s.days.length);
+  if (empty) throw new Error(`${fileName}: empty "hours ${empty.name}" block (add a line "YYYY-MM-DD: RANGES")`);
+  const week = (w) => Object.fromEntries(WEEKDAYS.filter((d) => w[d]?.length).map((d) => [d, w[d]]));
+  const days = hours && week(hours);
+  const byDate = (list) => [...list].sort((a, b) => a.from.localeCompare(b.from));
   return {
     id: raw["id"].value,
     name: raw["name"].value,
@@ -633,6 +676,8 @@ function parsePlaceFile(content, fileName) {
     ...raw["context"] ? { context: raw["context"].value } : {},
     ...raw["opening"] ? { opening: raw["opening"].value } : {},
     ...days ? { hours: days } : {},
+    ...hoursFrom.length ? { hoursFrom: byDate(hoursFrom).map((h) => ({ from: h.from, hours: week(h.hours) })) } : {},
+    ...specialHours.length ? { specialHours: specialHours.map((s) => ({ name: s.name, days: byDate(s.days) })) } : {},
     ...capacity ? { capacity } : {}
   };
 }
@@ -4488,6 +4533,10 @@ var STORY_VARIABLES = {
   closes: { maxLength: 8, place: true, needs: "hours" },
   opening: { maxLength: 13, shortMaxLength: 7, place: true, needs: "opening" },
   // "30. September"
+  "new-week-hours": { maxLength: 0, place: true, needs: "hoursFrom" },
+  // the week of the next "hours from" block
+  "new-hours-from": { maxLength: 13, shortMaxLength: 7, place: true, needs: "hoursFrom" },
+  // the day it starts
   season: { maxLength: 0, time: "seasons" },
   // the season's label
   founded: { maxLength: 4, time: "founded" },
@@ -4542,6 +4591,8 @@ var STORY_VARIABLES = {
 var HOURS_RANGE_LENGTH = 17;
 var WEEK_DAYS_LENGTH = 8;
 var HOURS_CLOSED_LENGTH = 11;
+var SPECIAL_DAY_LENGTH = 12;
+var SPECIAL_RUN_LENGTH = 26;
 var BY_AND_LENGTH = 5;
 var VALID_SLOTS3 = new Set(SLOT_IDS);
 var ID = /^[a-z][a-z0-9-]*$/;
@@ -4553,8 +4604,11 @@ function variableKey(name) {
   const key = name.split(" ")[0];
   return key in STORY_VARIABLES ? key : void 0;
 }
+function isNamed(name) {
+  return name.startsWith("daily ") || name.startsWith("hours ");
+}
 function isShort(name) {
-  return name.endsWith(" short") && !name.startsWith("daily ");
+  return name.endsWith(" short") && !isNamed(name);
 }
 function parseStoryFile(content, fileName) {
   const lines = content.split("\n");
@@ -4609,8 +4663,8 @@ function parseStoryFile(content, fileName) {
       if (!allowed) throw new Error(`${fileName}:${lineNum}: variable "{${v}}" in an example \u2014 examples are sample texts, variables belong in page texts`);
       if (v === "daily") throw new Error(`${fileName}:${lineNum}: "{daily}" needs the moment's name, e.g. {daily oven}`);
       const key = variableKey(v);
-      if (!key) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map((k) => k === "daily" ? "{daily NAME}" : `{${k}}`).join(", ")})`);
-      if (key !== "daily" && v !== key) {
+      if (!key) throw new Error(`${fileName}:${lineNum}: unknown variable "{${v}}" (expected ${Object.keys(STORY_VARIABLES).map((k) => k === "daily" ? "{daily NAME}" : k === "hours" ? "{hours}, {hours NAME}" : `{${k}}`).join(", ")})`);
+      if (!isNamed(v) && v !== key) {
         const short = Object.entries(STORY_VARIABLES).filter(([, d]) => d.shortMaxLength).map(([k]) => `{${k} short}`).join(", ");
         if (!isShort(v)) throw new Error(`${fileName}:${lineNum}: "{${v}}": the only word after a variable's name is "short" (${short})`);
         if (!STORY_VARIABLES[key].shortMaxLength) throw new Error(`${fileName}:${lineNum}: "{${v}}": {${key}} has no short form (${short})`);
@@ -4851,7 +4905,11 @@ function variableProblem(v, src) {
   if (variable.location && src.location === false && place?.latitude === void 0) return needs("a location block in the .brand");
   if (variable.place && src.places && !src.placeUnknown) {
     if (!place) return needs(`a place: ${src.places.length > 1 ? 'name it with "place:"' : "add a .place file"}`);
-    if (variable.needs && !place[variable.needs]) return needs(`${{ hours: "an hours block", address: "an address:", opening: "an opening:" }[variable.needs]} in place "${place.id}"`);
+    if (v.startsWith("hours ")) {
+      const name = v.slice("hours ".length);
+      return place.specialHours?.some((s) => s.name === name) ? void 0 : needs(`an "hours ${name}" block in place "${place.id}"`);
+    }
+    if (variable.needs && !place[variable.needs]) return needs(`${{ hours: "an hours block", address: "an address:", opening: "an opening:", hoursFrom: 'an "hours from" block' }[variable.needs]} in place "${place.id}"`);
   }
   if (variable.time && time !== void 0) {
     const noTime = time ? "" : " (the brand has no .time)";
@@ -4881,6 +4939,14 @@ function variableProblem(v, src) {
   }
   return void 0;
 }
+function longestWeek(hours) {
+  const lines = weekOpeningDays(hours);
+  if (!lines.length) return "x".repeat(HOURS_CLOSED_LENGTH);
+  return lines.map((l) => "x".repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join("\n");
+}
+function longestOf(texts) {
+  return texts.reduce((a, b) => b.length > a.length ? b : a, "");
+}
 function longestText(text, { place, time, person, group, work, byNames }) {
   return text.replace(VARIABLE, (_, v) => {
     if (v === "season") return "x".repeat(Math.max(0, ...(time?.seasons ?? []).map((s) => s.label.length)));
@@ -4904,15 +4970,22 @@ function longestText(text, { place, time, person, group, work, byNames }) {
     if (v === "address") return "x".repeat(place?.address?.length ?? 0);
     if (v === "street") return "x".repeat(place?.address ? addressStreet(place.address).length : 0);
     if (v === "hours") {
-      const days = Object.values(place?.hours ?? {});
+      const days = [
+        ...[place?.hours, ...(place?.hoursFrom ?? []).map((h) => h.hours)].flatMap((week) => Object.values(week ?? {})),
+        ...(place?.specialHours ?? []).flatMap((s) => s.days.map((d) => d.ranges))
+      ];
       const lines = Math.max(1, ...days.map((r) => r.length));
       const line = Math.max(HOURS_CLOSED_LENGTH, ...days.flat().map((r) => (r.label ? r.label.length + 2 : 0) + HOURS_RANGE_LENGTH));
       return Array.from({ length: lines }, () => "x".repeat(line)).join("\n");
     }
-    if (v === "week-hours") {
-      const lines = weekOpeningDays(place?.hours ?? {});
-      if (!lines.length) return "x".repeat(HOURS_CLOSED_LENGTH);
-      return lines.map((l) => "x".repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join("\n");
+    if (v === "week-hours") return longestOf([place?.hours ?? {}, ...(place?.hoursFrom ?? []).map((h) => h.hours)].map(longestWeek));
+    if (v === "new-week-hours") return longestOf((place?.hoursFrom ?? []).map((h) => longestWeek(h.hours)));
+    if (v.startsWith("hours ")) {
+      const set = place?.specialHours?.find((s) => s.name === v.slice("hours ".length));
+      return (set?.days ?? []).map((d) => {
+        const times = d.ranges.length ? d.ranges.length * HOURS_RANGE_LENGTH + (d.ranges.length - 1) * 2 : HOURS_CLOSED_LENGTH;
+        return "x".repeat((d.from === d.to ? SPECIAL_DAY_LENGTH : SPECIAL_RUN_LENGTH) + times);
+      }).join("\n");
     }
     const variable = STORY_VARIABLES[variableKey(v)];
     return "x".repeat((isShort(v) ? variable?.shortMaxLength : variable?.maxLength) ?? 0);

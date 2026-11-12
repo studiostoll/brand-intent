@@ -919,7 +919,7 @@ function activate(context) {
     'maps:': '**`maps:`** -- Link to the place on a map.',
     'context:': '**`context:`** -- Facts for AI writing.',
     'opening:': '**`opening:`** -- `YYYY-MM-DD`: the day the place opens. `{opening}` shows it.',
-    'hours': '**`hours`** -- Regular opening hours.\n\nOne line per day or range of days: `mon-fri: 07:00-18:00`, with optional labelled ranges.',
+    'hours': '**`hours`** -- Regular opening hours.\n\nOne line per day or range of days: `mon-fri: 07:00-18:00`, with optional labelled ranges.\n\n`hours from YYYY-MM-DD` is a new regular week from that day on. `hours NAME` is a set of special days, one line per date: `2026-12-24: 08:00-12:00`, `2026-12-25..2026-12-26: closed`. `{hours NAME}` shows it.',
     'capacity': '**`capacity`** -- People the place holds: `indoor:` and `outdoor:`.',
     'indoor:': '**`indoor:`** -- People inside.',
     'outdoor:': '**`outdoor:`** -- People outside.',
@@ -1077,6 +1077,8 @@ function activate(context) {
             ['weather}', 'The day\'s condition (needs location)'],
             ['place}', 'The place\'s name'], ['address}', 'The place\'s address'], ['street}', 'Street and number: the address up to its first comma'], ['hours}', 'The day\'s opening hours, one range per line'],
             ['week-hours}', 'The week\'s opening hours, one line per group of days'],
+            ['hours ', 'A set of special days of the place, one line per date: {hours christmas}'],
+            ['new-week-hours}', 'The place\'s next regular week (needs an hours from block)'], ['new-hours-from}', 'The day that week starts (needs an hours from block)'], ['new-hours-from short}', 'That day with the abbreviated month (needs an hours from block)'],
             ['opens}', 'When the place opens that day'], ['closes}', 'When the place closes that day'], ['opening}', 'The day the place opens (needs opening:)'], ['opening short}', 'That day with the abbreviated month (needs opening:)'],
             ['season}', 'The current season\'s label (needs season blocks in .time)'], ['founded}', 'The year the brand started (needs founded:)'], ['years}', 'Whole years since the brand started (needs founded:)'],
             ['daily ', 'The time of a daily moment: {daily oven}'],
@@ -1108,7 +1110,7 @@ function activate(context) {
         if (/^\w*$/.test(prefix)) {
           add([['id: ', 'Place identifier'], ['name: ', 'Name, as people say it'], ['address: ', 'Postal address'],
             ['latitude: ', 'Decimal degrees, north positive'], ['longitude: ', 'Decimal degrees, east positive'],
-            ['maps: ', 'Link to the place on a map'], ['context: ', 'Facts for AI writing'], ['opening: ', 'YYYY-MM-DD: the day the place opens'], ['hours', 'Regular opening hours'], ['capacity', 'People the place holds']], vscode.CompletionItemKind.Keyword);
+            ['maps: ', 'Link to the place on a map'], ['context: ', 'Facts for AI writing'], ['opening: ', 'YYYY-MM-DD: the day the place opens'], ['hours', 'Regular opening hours'], ['hours from ', 'A new regular week from YYYY-MM-DD on'], ['hours ', 'A named set of special days: hours christmas'], ['capacity', 'People the place holds']], vscode.CompletionItemKind.Keyword);
         } else if (/^ {2}\w*$/.test(prefix)) {
           const block = [...Array(position.line).keys()].reverse().map(i => document.lineAt(i).text).find(l => /^\S/.test(l));
           if (block?.trim() === 'capacity') {

@@ -84,8 +84,8 @@ export type {
 } from './compositionParser';
 
 export { parseStoryFile, checkStory, storyPlace, storyTextVariables, STORY_VARIABLES } from './storyParser';
-export { parsePlaceFile, addressStreet, isOpenYet, weekdayOf, weekOpeningDays, parseDays, WEEKDAYS } from './placeParser';
-export type { ParsedPlace, OpeningRange, OpeningDays, PlaceCapacity, Weekday } from './placeParser';
+export { parsePlaceFile, addressStreet, isOpenYet, weekdayOf, weekOpeningDays, weekHoursOn, upcomingHours, specialHoursOn, hoursOn, parseDays, WEEKDAYS } from './placeParser';
+export type { ParsedPlace, OpeningRange, OpeningDays, PlaceCapacity, Weekday, WeekHours, HoursFrom, SpecialDays, SpecialHours } from './placeParser';
 export { parseTimeFile, timeEntry, timeEntryNames, seasonForDate, isInSeason, yearsSince, isMonthDay, isDate, isDateOrYear, parseTimeSpan, parseDayList, daysBetween, localDate } from './timeParser';
 export type { ParsedTime, ParsedSeason, ParsedDailyMoment, TimeSpan, TimeEntry } from './timeParser';
 export { parsePersonFile, checkPerson, personLabel, isWithdrawn, hasSomethingToShow } from './personParser';

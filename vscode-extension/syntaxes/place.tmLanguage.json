@@ -5,7 +5,9 @@
     { "include": "#comment" },
     { "include": "#top-field" },
     { "include": "#block-header" },
+    { "include": "#hours-header" },
     { "include": "#hours-entry" },
+    { "include": "#special-entry" },
     { "include": "#capacity-entry" },
     { "include": "#keyword-partial" }
   ],
@@ -26,6 +28,31 @@
       "match": "^(hours|capacity)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-place" }
+      }
+    },
+    "hours-header": {
+      "comment": "hours from 2027-03-02 (a new week) and hours christmas (a set of special days)",
+      "match": "^(hours)\\s+(?:(from)\\s+(\\d{4}-\\d{2}-\\d{2})|([a-z][a-z0-9-]*))\\s*(#.*)?$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-place" },
+        "2": { "name": "keyword.other.brand-intent-place" },
+        "3": { "name": "constant.numeric.brand-intent-place" },
+        "4": { "name": "entity.name.section.brand-intent-place" },
+        "5": { "name": "comment.line.number-sign.brand-intent-place" }
+      }
+    },
+    "special-entry": {
+      "comment": "2026-12-24: 08:00-12:00 and 2026-12-25..2026-12-26: closed",
+      "match": "^\\s{2}(\\d{4}-\\d{2}-\\d{2}(?:\\.\\.\\d{4}-\\d{2}-\\d{2})?)(:)\\s*(.*)$",
+      "captures": {
+        "1": { "name": "support.type.property-name.brand-intent-place" },
+        "2": { "name": "punctuation.separator.brand-intent-place" },
+        "3": {
+          "patterns": [
+            { "match": "\\bclosed\\b", "name": "constant.language.brand-intent-place" },
+            { "match": "\\d{2}:\\d{2}-\\d{2}:\\d{2}", "name": "constant.numeric.brand-intent-place" }
+          ]
+        }
       }
     },
     "hours-entry": {
