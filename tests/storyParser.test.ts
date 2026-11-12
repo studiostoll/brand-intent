@@ -446,6 +446,9 @@ test('{week-hours} counts as one line per group of days', () => {
   const s = parse('page\n  purpose: notice\n  detail: {week-hours}\n');
   assertEq(checkStory(s, { ...BRAND, places: [QUAY] }, 's.story'), ['s.story: page 1: slot "detail" is 44 characters long, maxLength is 12'], 'one line');
   assertEq(checkStory(s, { ...BRAND, places: [HARBOUR] }, 's.story'), ['s.story: page 1: variable "{week-hours}" needs an hours block in place "harbour"'], 'needs hours');
+  // A later week of three short lines does not hide the one long line of the week before it
+  const weeks = { ...QUAY, hoursFrom: [{ from: '2027-03-02', hours: { tue: [{ from: '10:00', to: '12:00' }], thu: [{ from: '11:00', to: '12:00' }], sat: [{ from: '12:00', to: '13:00' }] } }] };
+  assertEq(checkStory(s, { ...BRAND, places: [weeks] }, 's.story'), ['s.story: page 1: slot "detail" has 3 items, maxItems is 2', ...Array(3).fill('s.story: page 1: slot "detail" is 44 characters long, maxLength is 12')], 'most lines and longest line of any week');
 });
 
 const FENSTER = parseGroupFile('id: fenster\nname: Fenster\nrole: Band on the label\nsince: 2021\nwhere: Leipzig\nmembers: lena\n\nquote\n  No festivals that don\'t pay the opening act.\n', 'fenster.group');

@@ -4944,10 +4944,14 @@ function longestWeek(hours) {
   if (!lines.length) return "x".repeat(HOURS_CLOSED_LENGTH);
   return lines.map((l) => "x".repeat(WEEK_DAYS_LENGTH + l.ranges.length * HOURS_RANGE_LENGTH + (l.ranges.length - 1) * 2)).join("\n");
 }
-function longestOf(texts) {
-  return texts.reduce((a, b) => b.length > a.length ? b : a, "");
+function longestOf(texts, perLine) {
+  if (!perLine) return texts.reduce((a, b) => b.length > a.length ? b : a, "");
+  const weeks = texts.map((t) => t.split("\n"));
+  const lines = Math.max(0, ...weeks.map((w) => w.length));
+  const line = Math.max(0, ...weeks.flat().map((l) => l.length));
+  return Array.from({ length: lines }, () => "x".repeat(line)).join("\n");
 }
-function longestText(text, { place, time, person, group, work, byNames }) {
+function longestText(text, { place, time, person, group, work, byNames }, perLine = false) {
   return text.replace(VARIABLE, (_, v) => {
     if (v === "season") return "x".repeat(Math.max(0, ...(time?.seasons ?? []).map((s) => s.label.length)));
     if (v === "person") return "x".repeat(person ? personLabel(person).length : 0);
@@ -4978,8 +4982,8 @@ function longestText(text, { place, time, person, group, work, byNames }) {
       const line = Math.max(HOURS_CLOSED_LENGTH, ...days.flat().map((r) => (r.label ? r.label.length + 2 : 0) + HOURS_RANGE_LENGTH));
       return Array.from({ length: lines }, () => "x".repeat(line)).join("\n");
     }
-    if (v === "week-hours") return longestOf([place?.hours ?? {}, ...(place?.hoursFrom ?? []).map((h) => h.hours)].map(longestWeek));
-    if (v === "new-week-hours") return longestOf((place?.hoursFrom ?? []).map((h) => longestWeek(h.hours)));
+    if (v === "week-hours") return longestOf([place?.hours ?? {}, ...(place?.hoursFrom ?? []).map((h) => h.hours)].map(longestWeek), perLine);
+    if (v === "new-week-hours") return longestOf((place?.hoursFrom ?? []).map((h) => longestWeek(h.hours)), perLine);
     if (v.startsWith("hours ")) {
       const set = place?.specialHours?.find((s) => s.name === v.slice("hours ".length));
       return (set?.days ?? []).map((d) => {
@@ -5063,7 +5067,7 @@ function checkStory(story, brand, fileName) {
         });
         if (problem) say(`${where}: ${problem}`);
       }
-      const longest = longestText(text, facts);
+      const longest = longestText(text, facts, slot.slotType === "list");
       const parts = slot.slotType === "list" ? longest.split("\n") : [longest];
       if (slot.slotType === "list" && slot.maxItems && parts.length > slot.maxItems) say(`${where}: slot "${slotId}" has ${parts.length} items, maxItems is ${slot.maxItems}`);
       for (const part of parts) {
