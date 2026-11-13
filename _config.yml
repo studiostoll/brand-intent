@@ -30,6 +30,7 @@ exclude:
   - docs/
   - vscode-extension/
   - ROADMAP.md
+  - CHANGELOG.md
   - .git
   - .gitignore
   - .gitmodules

@@ -451,3 +451,30 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .hero { padding: var(--space-xl) calc(50vw - 50%) 0; }
   .landing-section { padding: var(--space-xl) 0; }
 }
+
+/* ── Framework cards open their file ── */
+button.question-card {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-right: 1px solid var(--color-border);
+  border-radius: 0;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+}
+button.question-card span { display: block; }
+button.question-card:hover { background: var(--color-surface-secondary); }
+button.question-card[aria-expanded="true"] { background: var(--color-surface-emphasized); }
+button.question-card:focus-visible { outline: 2px solid var(--color-link); outline-offset: -2px; }
+.file-panel.is-tabbed { margin: var(--space-md) 0 var(--space-lg); }
+.file-panel.is-tabbed .layer-detail { margin: 0; border-top: none; padding-top: 0; }
+.file-panel-links { margin-top: var(--space-lg); }
+.file-panel.is-tabbed .file-panel-links { margin-top: var(--space-md); }
+button.question-card:last-child { border-right: none; }
+@media (max-width: 768px) {
+  button.question-card { border-right: none; border-bottom: 1px solid var(--color-border); }
+  button.question-card:last-child { border-bottom: none; }
+}

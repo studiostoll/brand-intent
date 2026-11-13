@@ -93,93 +93,83 @@ hide_bar: true
     Each file type answers one question.
     No file repeats what an earlier one settled: a purpose narrows the identity, it doesn&rsquo;t restate it.
     So the reasoning holds while the expression changes.
+    Pick a file to read a few lines of it, from Krume, the commented example bakery that ships with the package.
   </p>
 
   <h3 class="q-group">The five layers describe the brand</h3>
   <p class="q-group-note">Written once, changed rarely, each derived from the one before it.</p>
   <div class="questions-row">
-    <div class="question-card">
-      <div class="q-question">Who is this brand?</div>
-      <div class="q-answer">Identity</div>
-      <div class="q-file">.identity</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">How is it expressed?</div>
-      <div class="q-answer">Brand</div>
-      <div class="q-file">.brand</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">Where does it appear?</div>
-      <div class="q-answer">Format</div>
-      <div class="q-file">.format</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">What is this content for?</div>
-      <div class="q-answer">Purpose</div>
-      <div class="q-file">.purpose</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">How are elements composed?</div>
-      <div class="q-answer">Composition</div>
-      <div class="q-file">.composition</div>
-    </div>
+    <button type="button" class="question-card" data-file="identity" aria-controls="file-identity" aria-expanded="false">
+      <span class="q-question">Who is this brand?</span>
+      <span class="q-answer">Identity</span>
+      <span class="q-file">.identity</span>
+    </button>
+    <button type="button" class="question-card" data-file="brand" aria-controls="file-brand" aria-expanded="false">
+      <span class="q-question">How is it expressed?</span>
+      <span class="q-answer">Brand</span>
+      <span class="q-file">.brand</span>
+    </button>
+    <button type="button" class="question-card" data-file="format" aria-controls="file-format" aria-expanded="false">
+      <span class="q-question">Where does it appear?</span>
+      <span class="q-answer">Format</span>
+      <span class="q-file">.format</span>
+    </button>
+    <button type="button" class="question-card" data-file="purpose" aria-controls="file-purpose" aria-expanded="false">
+      <span class="q-question">What is this content for?</span>
+      <span class="q-answer">Purpose</span>
+      <span class="q-file">.purpose</span>
+    </button>
+    <button type="button" class="question-card" data-file="composition" aria-controls="file-composition" aria-expanded="false">
+      <span class="q-question">How are elements composed?</span>
+      <span class="q-answer">Composition</span>
+      <span class="q-file">.composition</span>
+    </button>
   </div>
 
   <h3 class="q-group">A story orchestrates</h3>
   <p class="q-group-note">Pages in order, each a purpose placed by a composition. A carousel, a daily post, a series.</p>
   <div class="questions-row questions-row-1">
-    <div class="question-card">
-      <div class="q-question">What does the brand post, page by page?</div>
-      <div class="q-answer">Story</div>
-      <div class="q-file">.story</div>
-    </div>
+    <button type="button" class="question-card" data-file="story" aria-controls="file-story" aria-expanded="false">
+      <span class="q-question">What does the brand post, page by page?</span>
+      <span class="q-answer">Story</span>
+      <span class="q-file">.story</span>
+    </button>
   </div>
 
   <h3 class="q-group">Five fact files say what is true</h3>
   <p class="q-group-note">When, where, who, what. Facts a story pulls in, never guesses. A file exists only if posts speak about it.</p>
   <div class="questions-row questions-row-5">
-    <div class="question-card">
-      <div class="q-question">What is the brand&rsquo;s rhythm: founding, seasons, day?</div>
-      <div class="q-answer">Time</div>
-      <div class="q-file">.time</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">Which site do the posts speak about?</div>
-      <div class="q-answer">Place</div>
-      <div class="q-file">.place</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">Which person do the posts name, quote or show?</div>
-      <div class="q-answer">Person</div>
-      <div class="q-file">.person</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">Which group of people do the posts speak about?</div>
-      <div class="q-answer">Group</div>
-      <div class="q-file">.group</div>
-    </div>
-    <div class="question-card">
-      <div class="q-question">What does the brand put out or put on?</div>
-      <div class="q-answer">Work</div>
-      <div class="q-file">.work</div>
-    </div>
+    <button type="button" class="question-card" data-file="time" aria-controls="file-time" aria-expanded="false">
+      <span class="q-question">What is the brand&rsquo;s rhythm: founding, seasons, day?</span>
+      <span class="q-answer">Time</span>
+      <span class="q-file">.time</span>
+    </button>
+    <button type="button" class="question-card" data-file="place" aria-controls="file-place" aria-expanded="false">
+      <span class="q-question">Which site do the posts speak about?</span>
+      <span class="q-answer">Place</span>
+      <span class="q-file">.place</span>
+    </button>
+    <button type="button" class="question-card" data-file="person" aria-controls="file-person" aria-expanded="false">
+      <span class="q-question">Which person do the posts name, quote or show?</span>
+      <span class="q-answer">Person</span>
+      <span class="q-file">.person</span>
+    </button>
+    <button type="button" class="question-card" data-file="group" aria-controls="file-group" aria-expanded="false">
+      <span class="q-question">Which group of people do the posts speak about?</span>
+      <span class="q-answer">Group</span>
+      <span class="q-file">.group</span>
+    </button>
+    <button type="button" class="question-card" data-file="work" aria-controls="file-work" aria-expanded="false">
+      <span class="q-question">What does the brand put out or put on?</span>
+      <span class="q-answer">Work</span>
+      <span class="q-file">.work</span>
+    </button>
   </div>
-</section>
 
-
-<!-- ═══ LAYERS ═══ -->
-<section id="layers" class="landing-section">
-  <span class="section-label">03 / The files</span>
-  <h2>Eleven file types. A few lines from each.</h2>
-  <p>
-    All excerpts come from Krume, the commented example bakery that ships with the package.
-    Each heading opens the whole file.
-  </p>
-
+  <div class="file-panel" id="file-panel">
   <!-- IDENTITY -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-identity" data-file="identity" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">01</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/krume.identity">Identity</a> <small>krume.identity</small></h3>
     </div>
     <div class="layer-body">
@@ -211,9 +201,8 @@ hide_bar: true
   </div>
 
   <!-- BRAND -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-brand" data-file="brand" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">02</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/krume.brand">Brand</a> <small>krume.brand</small></h3>
     </div>
     <div class="layer-body">
@@ -246,9 +235,8 @@ hide_bar: true
   </div>
 
   <!-- FORMAT -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-format" data-file="format" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">03</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/formats/instagram-4-5-feed-portrait.format">Format</a> <small>instagram-4-5-feed-portrait.format</small></h3>
     </div>
     <div class="layer-body">
@@ -265,9 +253,8 @@ hide_bar: true
   </div>
 
   <!-- PURPOSE -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-purpose" data-file="purpose" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">04</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/purposes/daily-bread.purpose">Purpose</a> <small>daily-bread.purpose</small></h3>
     </div>
     <div class="layer-body">
@@ -295,9 +282,8 @@ hide_bar: true
   </div>
 
   <!-- COMPOSITION -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-composition" data-file="composition" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">05</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/compositions/simple-stack.composition">Composition</a> <small>simple-stack.composition</small></h3>
     </div>
     <div class="layer-body">
@@ -321,9 +307,8 @@ hide_bar: true
   </div>
 
   <!-- STORY -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-story" data-file="story" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">06</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/stories/today.story">Story</a> <small>today.story</small></h3>
     </div>
     <div class="layer-body">
@@ -348,9 +333,8 @@ hide_bar: true
   </div>
 
   <!-- TIME -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-time" data-file="time" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">07</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/krume.time">Time</a> <small>krume.time</small></h3>
     </div>
     <div class="layer-body">
@@ -375,9 +359,8 @@ hide_bar: true
   </div>
 
   <!-- PLACE -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-place" data-file="place" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">08</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/places/weserstrasse.place">Place</a> <small>weserstrasse.place</small></h3>
     </div>
     <div class="layer-body">
@@ -401,9 +384,8 @@ hide_bar: true
   </div>
 
   <!-- PERSON -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-person" data-file="person" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">09</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/people/baker.person">Person</a> <small>baker.person</small></h3>
     </div>
     <div class="layer-body">
@@ -424,9 +406,8 @@ hide_bar: true
   </div>
 
   <!-- GROUP -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-group" data-file="group" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">10</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/groups/drax-mill.group">Group</a> <small>drax-mill.group</small></h3>
     </div>
     <div class="layer-body">
@@ -446,9 +427,8 @@ hide_bar: true
   </div>
 
   <!-- WORK -->
-  <div class="layer-detail">
+  <div class="layer-detail" id="file-work" data-file="work" role="tabpanel">
     <div class="layer-header">
-      <span class="layer-index">11</span>
       <h3 class="layer-name"><a href="https://github.com/studiostoll/brand-intent/blob/main/examples/krume/works/wheat-blend.work">Work</a> <small>wheat-blend.work</small></h3>
     </div>
     <div class="layer-body">
@@ -466,17 +446,17 @@ hide_bar: true
   <span class="val">Tipo 1 from the Drax mill, 72 % hydration. Sold out by ten.</span></pre>
     </div>
   </div>
-
-  <p style="margin-top:1.5rem;">
-    <a href="https://github.com/studiostoll/brand-intent/blob/main/SPEC.md" class="btn-ghost">Full specification on GitHub</a>
-    <a href="https://github.com/studiostoll/brand-intent/tree/main/examples/krume" class="btn-ghost">All Krume files</a>
-  </p>
+    <p class="file-panel-links">
+      <a href="https://github.com/studiostoll/brand-intent/blob/main/SPEC.md" class="btn-ghost">Full specification</a>
+      <a href="https://github.com/studiostoll/brand-intent/tree/main/examples/krume" class="btn-ghost">All Krume files</a>
+    </p>
+  </div>
 </section>
 
 
 <!-- ═══ HOW IT IS USED ═══ -->
 <section id="use" class="landing-section">
-  <span class="section-label">04 / How it is used</span>
+  <span class="section-label">03 / How it is used</span>
   <h2>With me, or without me.</h2>
 
   <div class="columns columns-2" style="margin-top:1.5rem;">
@@ -485,24 +465,19 @@ hide_bar: true
       <p>
         <a href="https://atelier.stoll.studio">Brand Atelier</a> is the tool I run with clients. We author the files together;
         Atelier renders posts from them, writes text inside the rules, and follows the brand&rsquo;s own review, scheduling and publishing.
-        It is in live testing with a few brands.
       </p>
       <p>
-        The files are the easy part. The work is keeping them true over years, extending the language when a brand
-        needs to say something new, and fitting it into how a team decides.
-        I do that with each brand myself, so <a href="https://atelier.stoll.studio">Brand Atelier</a> is invite only for now.
+        The files are the easy part. The work is keeping them true over years and extending the language when a brand
+        needs to say something new. I do that with each brand myself, so Atelier is in live testing and invite only.
       </p>
       <p><a href="mailto:christophe@stoll.studio?subject=Brand%20Atelier" class="btn-primary">Write to me</a></p>
     </div>
     <div>
-      <h3 style="margin-top:0;">The format, without me</h3>
+      <h3 style="margin-top:0;">The language, without me</h3>
       <p>
-        The language is open and MIT licensed, with spec, parser, examples and VS Code extension.
+        Open and MIT licensed: spec, parser, examples and VS Code extension.
         Write your own brand, point your agent at it, build a renderer, or take only the vocabulary.
-      </p>
-      <p>
-        What I want back is feedback: what you couldn&rsquo;t say with it, what a parser should have refused, which rule is wrong for your brand.
-        Open an issue, or write.
+        What I want back: what you couldn&rsquo;t say with it, and which rule is wrong for your brand.
       </p>
       <p>
         <a href="https://github.com/studiostoll/brand-intent/issues" class="btn-ghost">Open an issue</a>
@@ -515,7 +490,7 @@ hide_bar: true
 
 <!-- ═══ TRY IT ═══ -->
 <section id="start" class="landing-section">
-  <span class="section-label">05 / Try it</span>
+  <span class="section-label">04 / Try it</span>
   <h2>Ten minutes with the example brand.</h2>
 
   <div class="columns columns-2" style="margin-top:1.5rem;">
@@ -550,23 +525,14 @@ hide_bar: true
     <div>
       <h3 style="margin-top:0;">3. Explore, then write your own</h3>
       <p>
-        <strong>Explore</strong> (<code>/brand-intent example</code>). Your agent walks you through the Krume files:
-        why the identity says what it says, how the brand derives from it, what a purpose adds and what it may not.
+        <code>/brand-intent example</code> walks you through the Krume files: why the identity says what it says,
+        and what each later file may add.
+        <code>/brand-intent onboard</code> drafts your own identity, brand and first purpose in an interview.
+        <code>npx brand-intent check</code> validates a folder, each file and the references between them.
       </p>
       <p>
-        <strong>Generate and validate</strong> (<code>/brand-intent daily-bread</code>). Content for a purpose, checked against
-        the voice rules, the pillars, the anti-audiences and the review questions.
-      </p>
-      <p>
-        <strong>Check</strong> (<code>npx brand-intent check</code>). Every file in the folder parsed, and the files
-        checked against each other: each person, work, place and photo a file names exists, and both sides agree.
-      </p>
-      <p>
-        <strong>Onboard</strong> (<code>/brand-intent onboard</code>). A guided interview drafts your identity, brand and a first purpose:
-        a draft to argue with.
-      </p>
-      <p>
-        <strong>Parse</strong>. The package exports the TypeScript parser for all eleven types, so your own tooling can read the files.
+        The package also exports the TypeScript parser for all eleven types.
+        Every command is in the <a href="https://github.com/studiostoll/brand-intent#readme">README</a>.
       </p>
     </div>
   </div>
@@ -575,33 +541,28 @@ hide_bar: true
 
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
-  <span class="section-label">06 / Recent changes</span>
+  <span class="section-label">05 / Recent changes</span>
   <h2>Version 0.58, November 2026.</h2>
-  <p>The last releases, from the <a href="https://github.com/studiostoll/brand-intent/commits/main">commit log</a>:</p>
+  <p>What the language gained in the last releases. Every release is in the <a href="https://github.com/studiostoll/brand-intent/blob/main/CHANGELOG.md">changelog</a>.</p>
 
   <dl class="changelog">
-    <div><dt>v0.58 <span>12 Nov 2026</span></dt><dd>A story page can hold a placeholder: <code>placeholder: true</code> says its photo or video only holds the place, and a person replaces it, by camera or upload, before the page goes out. A recurring post can wait for today&rsquo;s photo this way.</dd></div>
-    <div><dt>v0.57 <span>12 Nov 2026</span></dt><dd>A place&rsquo;s hours carry dates. <code>hours from 2027-03-02</code> is a new regular week from that day on, <code>hours christmas</code> a set of special days with their dates. A story announces them ahead with <code>{hours christmas}</code>, <code>{new-week-hours}</code> and <code>{new-hours-from}</code>, and the day&rsquo;s hours follow them by themselves.</dd></div>
-    <div><dt>v0.56 <span>11 Nov 2026</span></dt><dd>A story page can name photos and videos together: they take turns by date, so a recurring post shows a photo on one day and a video on another. A composition can set its text narrower with <code>flow: width 3/4</code>, without a panel behind it.</dd></div>
-    <div><dt>v0.55 <span>11 Nov 2026</span></dt><dd>A purpose can set its text on solid grounds over a photo or a video: <code>scrim: paragraph</code> gives each paragraph its own, <code>scrim: line</code> each line. An empty line in a text starts a new paragraph. The brand sets the measures, <code>scrim-padding</code> and <code>scrim-gap</code> in its <code>photo-look</code>.</dd></div>
-    <div><dt>v0.54<span>11 Nov 2026</span></dt><dd>A purpose can have no slots: a page without text, only its picture or video and the logo. For the post that is just the photo or the clip, branded.</dd></div>
-    <div><dt>v0.53 <span>11 Nov 2026</span></dt><dd>A story page can name a video: <code>video:</code> takes one id from the brand&rsquo;s videos, instead of a photo. <code>brand-intent check</code> reports an id the brand doesn&rsquo;t have.</dd></div>
+    <div><dt>v0.58 <span>12 Nov 2026</span></dt><dd><strong>Story.</strong> <code>placeholder: true</code> marks a page&rsquo;s photo or video as a stand-in. The page is not published until a person replaces it.</dd></div>
+    <div><dt>v0.57 <span>12 Nov 2026</span></dt><dd><strong>Place.</strong> Opening hours can carry dates: <code>hours from DATE</code> starts a new regular week, <code>hours NAME</code> holds a set of special days. <strong>Story.</strong> <code>{hours NAME}</code>, <code>{new-week-hours}</code> and <code>{new-hours-from}</code> announce them ahead.</dd></div>
+    <div><dt>v0.56 <span>11 Nov 2026</span></dt><dd><strong>Story.</strong> A page can list photos and videos together; they alternate by date. <strong>Composition.</strong> <code>flow: width 3/4</code> sets a flow&rsquo;s text narrower, without a panel behind it.</dd></div>
   </dl>
 </section>
 
 
 <!-- ═══ AUTHOR ═══ -->
 <section id="author" class="landing-section author-section">
-  <span class="section-label">07 / Who writes this</span>
+  <span class="section-label">06 / Who writes this</span>
   <div class="author">
     <img src="{{ '/assets/ch.webp' | relative_url }}" alt="Christophe Stoll" width="96" height="96" class="author-portrait">
     <div>
       <p>
-        I&rsquo;m Christophe Stoll. I run <a href="https://www.stoll.studio">Studio Stoll</a> in Hamburg, a practice for interaction design and visual language.
-        I have designed digital products and the design systems behind them for more than twenty-five years, co-founded precious design studio, and teach
-        interaction design at HAWK Hildesheim.
-        Brand Intent is how that practice works on brands now that AI agents are part of the team.
-        The language, the parser, the extension and <a href="https://atelier.stoll.studio">Brand Atelier</a> are mine; the rules in them came out of client work.
+        I&rsquo;m Christophe Stoll. I run <a href="https://www.stoll.studio">Studio Stoll</a> in Hamburg, a practice for interaction design and visual language,
+        and teach interaction design at HAWK Hildesheim. For more than twenty-five years I have designed digital products and the design systems behind them, and co-founded precious design studio.
+        Brand Intent is how that practice works on brands now that AI agents are part of the team; its rules came out of client work.
       </p>
       <p class="author-links">
         <a href="mailto:christophe@stoll.studio">christophe@stoll.studio</a>
@@ -612,6 +573,25 @@ hide_bar: true
 </section>
 
 <script>
+  // The framework cards open their file: one panel, placed under the row of the picked card.
+  // Without script every file shows, one under the other.
+  (function () {
+    var panel = document.getElementById('file-panel');
+    if (!panel) return;
+    var cards = document.querySelectorAll('.question-card[data-file]');
+    var files = panel.querySelectorAll('.layer-detail');
+    function open(name, card) {
+      files.forEach(function (f) { f.hidden = f.getAttribute('data-file') !== name; });
+      cards.forEach(function (c) { c.setAttribute('aria-expanded', c === card ? 'true' : 'false'); });
+      card.closest('.questions-row').after(panel);
+    }
+    cards.forEach(function (c) {
+      c.addEventListener('click', function () { open(c.getAttribute('data-file'), c); });
+    });
+    panel.classList.add('is-tabbed');
+    open('identity', cards[0]);
+  })();
+
   // Two posts of Krume's template story, rendered by Brand Atelier (the sign-in demo's posts).
   (function () {
     var examples = [
