@@ -341,17 +341,18 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 .changelog { margin: var(--space-lg) 0 0; }
 .changelog > div {
   display: grid;
-  grid-template-columns: 9rem 1fr;
+  grid-template-columns: 7rem 1fr;
   gap: var(--space-md);
   padding: var(--space-sm) 0;
   border-top: 1px solid var(--color-divider);
 }
 .changelog dt {
   font-family: var(--font-monospace);
-  font-size: var(--font-size-small);
+  font-size: calc(var(--font-size-small) * 0.85);
+  line-height: 1.9;
   color: var(--color-primary);
 }
-.changelog dt span { display: block; color: var(--color-light); }
+.changelog dt span { display: block; line-height: 1.5; color: var(--color-tertiary); }
 .changelog dd {
   margin: 0;
   font-size: var(--font-size-small);
