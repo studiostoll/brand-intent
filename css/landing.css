@@ -452,19 +452,28 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 .file-editor.is-tabbed .layer-body p { max-width: 62ch; }
 
 @media (max-width: 768px) {
-  /* The list becomes a row of names; the viewer follows at its own height */
-  .file-editor.is-tabbed { grid-template-columns: 1fr; }
-  .file-editor.is-tabbed .file-list {
+  /* One column: each name a row, the open file right under its name */
+  .file-editor.is-tabbed { grid-template-columns: minmax(0, 1fr); }
+  .file-editor.is-tabbed .file-list { border-right: none; padding: 0; min-width: 0; }
+  .file-editor.is-tabbed .file-list-group { margin: 0; padding: var(--space-sm) var(--space-md) 0.25rem; }
+  .file-editor.is-tabbed .file-tab {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-    padding: var(--space-sm) var(--space-sm) var(--space-md);
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.6rem var(--space-md);
+    border-top: 1px solid var(--color-border);
   }
-  .file-editor.is-tabbed .file-list-group { flex-basis: 100%; padding: 0 0.25rem; margin-top: var(--space-sm); }
-  .file-editor.is-tabbed .file-tab { width: auto; padding: 0.3rem 0.6rem; border-radius: var(--radius-sm, 4px); }
-  .file-editor.is-tabbed .file-tab-q, .file-editor.is-tabbed .file-tab-ext { display: none; }
-  .file-editor.is-tabbed .file-tab[aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--color-link); }
-  .file-editor.is-tabbed .file-panel { contain: none; padding: var(--space-md); }
+  .file-editor.is-tabbed .file-tab-name { display: contents; }
+  .file-editor.is-tabbed .file-tab-q { display: none; }
+  .file-editor.is-tabbed .file-tab[aria-selected="true"] { box-shadow: none; }
+  .file-editor.is-tabbed .file-list > .file-panel {
+    contain: none;
+    overflow: visible;
+    padding: var(--space-sm) var(--space-md) var(--space-md);
+    background: var(--color-surface);
+  }
+  .file-editor.is-tabbed .file-list > .file-panel pre { overflow-x: auto; }
+  /* The row above already names the file: keep only the file name */
+  .file-editor.is-tabbed .file-list > .file-panel .layer-name a { display: none; }
+  .file-editor.is-tabbed .file-list > .file-panel .layer-header { margin-bottom: var(--space-sm); }
 }

@@ -522,22 +522,32 @@ hide_bar: true
 </section>
 
 <script>
-  // The framework list opens one file at a time in the viewer beside it.
+  // The framework list opens one file at a time: beside the list, or on a phone right under its name.
   // Without script every file shows, one under the other.
   (function () {
     var editor = document.getElementById('file-editor');
     if (!editor) return;
+    var list = editor.querySelector('.file-list');
     var tabs = editor.querySelectorAll('.file-tab');
     var files = editor.querySelectorAll('.layer-detail');
     var panel = document.getElementById('file-panel');
+    var phone = window.matchMedia('(max-width: 768px)');
+    var current = 'identity';
+    function place() {
+      var tab = list.querySelector('.file-tab[data-file="' + current + '"]');
+      if (phone.matches) tab.after(panel); else list.after(panel);
+    }
     function open(name) {
+      current = name;
       files.forEach(function (f) { f.hidden = f.getAttribute('data-file') !== name; });
       tabs.forEach(function (t) { t.setAttribute('aria-selected', t.getAttribute('data-file') === name ? 'true' : 'false'); });
       panel.scrollTop = 0;
+      place();
     }
     tabs.forEach(function (t) {
       t.addEventListener('click', function () { open(t.getAttribute('data-file')); });
     });
+    phone.addEventListener('change', place);
     editor.classList.add('is-tabbed');
     open('identity');
   })();
