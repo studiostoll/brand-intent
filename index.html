@@ -96,76 +96,23 @@ hide_bar: true
     Pick a file to read a few lines of it, from Krume, the commented example bakery that ships with the package.
   </p>
 
-  <h3 class="q-group">The five layers describe the brand</h3>
-  <p class="q-group-note">Written once, changed rarely, each derived from the one before it.</p>
-  <div class="questions-row">
-    <button type="button" class="question-card" data-file="identity" aria-controls="file-identity" aria-expanded="false">
-      <span class="q-question">Who is this brand?</span>
-      <span class="q-answer">Identity</span>
-      <span class="q-file">.identity</span>
-    </button>
-    <button type="button" class="question-card" data-file="brand" aria-controls="file-brand" aria-expanded="false">
-      <span class="q-question">How is it expressed?</span>
-      <span class="q-answer">Brand</span>
-      <span class="q-file">.brand</span>
-    </button>
-    <button type="button" class="question-card" data-file="format" aria-controls="file-format" aria-expanded="false">
-      <span class="q-question">Where does it appear?</span>
-      <span class="q-answer">Format</span>
-      <span class="q-file">.format</span>
-    </button>
-    <button type="button" class="question-card" data-file="purpose" aria-controls="file-purpose" aria-expanded="false">
-      <span class="q-question">What is this content for?</span>
-      <span class="q-answer">Purpose</span>
-      <span class="q-file">.purpose</span>
-    </button>
-    <button type="button" class="question-card" data-file="composition" aria-controls="file-composition" aria-expanded="false">
-      <span class="q-question">How are elements composed?</span>
-      <span class="q-answer">Composition</span>
-      <span class="q-file">.composition</span>
-    </button>
+  <div class="file-editor" id="file-editor">
+  <div class="file-list" role="tablist" aria-label="File types">
+    <p class="file-list-group">The five layers describe the brand</p>
+    <button type="button" role="tab" class="file-tab" data-file="identity" aria-controls="file-identity" aria-selected="false"><span class="file-tab-name">Identity <span class="file-tab-ext">.identity</span></span><span class="file-tab-q">Who is this brand?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="brand" aria-controls="file-brand" aria-selected="false"><span class="file-tab-name">Brand <span class="file-tab-ext">.brand</span></span><span class="file-tab-q">How is it expressed?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="format" aria-controls="file-format" aria-selected="false"><span class="file-tab-name">Format <span class="file-tab-ext">.format</span></span><span class="file-tab-q">Where does it appear?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="purpose" aria-controls="file-purpose" aria-selected="false"><span class="file-tab-name">Purpose <span class="file-tab-ext">.purpose</span></span><span class="file-tab-q">What is this content for?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="composition" aria-controls="file-composition" aria-selected="false"><span class="file-tab-name">Composition <span class="file-tab-ext">.composition</span></span><span class="file-tab-q">How are elements composed?</span></button>
+    <p class="file-list-group">A story orchestrates</p>
+    <button type="button" role="tab" class="file-tab" data-file="story" aria-controls="file-story" aria-selected="false"><span class="file-tab-name">Story <span class="file-tab-ext">.story</span></span><span class="file-tab-q">What does the brand post, page by page?</span></button>
+    <p class="file-list-group">Five fact files say what is true</p>
+    <button type="button" role="tab" class="file-tab" data-file="time" aria-controls="file-time" aria-selected="false"><span class="file-tab-name">Time <span class="file-tab-ext">.time</span></span><span class="file-tab-q">What is the brand&rsquo;s rhythm: founding, seasons, day?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="place" aria-controls="file-place" aria-selected="false"><span class="file-tab-name">Place <span class="file-tab-ext">.place</span></span><span class="file-tab-q">Which site do the posts speak about?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="person" aria-controls="file-person" aria-selected="false"><span class="file-tab-name">Person <span class="file-tab-ext">.person</span></span><span class="file-tab-q">Which person do the posts name, quote or show?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="group" aria-controls="file-group" aria-selected="false"><span class="file-tab-name">Group <span class="file-tab-ext">.group</span></span><span class="file-tab-q">Which group of people do the posts speak about?</span></button>
+    <button type="button" role="tab" class="file-tab" data-file="work" aria-controls="file-work" aria-selected="false"><span class="file-tab-name">Work <span class="file-tab-ext">.work</span></span><span class="file-tab-q">What does the brand put out or put on?</span></button>
   </div>
-
-  <h3 class="q-group">A story orchestrates</h3>
-  <p class="q-group-note">Pages in order, each a purpose placed by a composition. A carousel, a daily post, a series.</p>
-  <div class="questions-row questions-row-1">
-    <button type="button" class="question-card" data-file="story" aria-controls="file-story" aria-expanded="false">
-      <span class="q-question">What does the brand post, page by page?</span>
-      <span class="q-answer">Story</span>
-      <span class="q-file">.story</span>
-    </button>
-  </div>
-
-  <h3 class="q-group">Five fact files say what is true</h3>
-  <p class="q-group-note">When, where, who, what. Facts a story pulls in, never guesses. A file exists only if posts speak about it.</p>
-  <div class="questions-row questions-row-5">
-    <button type="button" class="question-card" data-file="time" aria-controls="file-time" aria-expanded="false">
-      <span class="q-question">What is the brand&rsquo;s rhythm: founding, seasons, day?</span>
-      <span class="q-answer">Time</span>
-      <span class="q-file">.time</span>
-    </button>
-    <button type="button" class="question-card" data-file="place" aria-controls="file-place" aria-expanded="false">
-      <span class="q-question">Which site do the posts speak about?</span>
-      <span class="q-answer">Place</span>
-      <span class="q-file">.place</span>
-    </button>
-    <button type="button" class="question-card" data-file="person" aria-controls="file-person" aria-expanded="false">
-      <span class="q-question">Which person do the posts name, quote or show?</span>
-      <span class="q-answer">Person</span>
-      <span class="q-file">.person</span>
-    </button>
-    <button type="button" class="question-card" data-file="group" aria-controls="file-group" aria-expanded="false">
-      <span class="q-question">Which group of people do the posts speak about?</span>
-      <span class="q-answer">Group</span>
-      <span class="q-file">.group</span>
-    </button>
-    <button type="button" class="question-card" data-file="work" aria-controls="file-work" aria-expanded="false">
-      <span class="q-question">What does the brand put out or put on?</span>
-      <span class="q-answer">Work</span>
-      <span class="q-file">.work</span>
-    </button>
-  </div>
-
   <div class="file-panel" id="file-panel">
   <!-- IDENTITY -->
   <div class="layer-detail" id="file-identity" data-file="identity" role="tabpanel">
@@ -446,11 +393,13 @@ hide_bar: true
   <span class="val">Tipo 1 from the Drax mill, 72 % hydration. Sold out by ten.</span></pre>
     </div>
   </div>
-    <p class="file-panel-links">
+
+  </div>
+  </div>
+  <p class="file-panel-links">
       <a href="https://github.com/studiostoll/brand-intent/blob/main/SPEC.md" class="btn-ghost">Full specification</a>
       <a href="https://github.com/studiostoll/brand-intent/tree/main/examples/krume" class="btn-ghost">All Krume files</a>
     </p>
-  </div>
 </section>
 
 
@@ -573,23 +522,24 @@ hide_bar: true
 </section>
 
 <script>
-  // The framework cards open their file: one panel, placed under the row of the picked card.
+  // The framework list opens one file at a time in the viewer beside it.
   // Without script every file shows, one under the other.
   (function () {
+    var editor = document.getElementById('file-editor');
+    if (!editor) return;
+    var tabs = editor.querySelectorAll('.file-tab');
+    var files = editor.querySelectorAll('.layer-detail');
     var panel = document.getElementById('file-panel');
-    if (!panel) return;
-    var cards = document.querySelectorAll('.question-card[data-file]');
-    var files = panel.querySelectorAll('.layer-detail');
-    function open(name, card) {
+    function open(name) {
       files.forEach(function (f) { f.hidden = f.getAttribute('data-file') !== name; });
-      cards.forEach(function (c) { c.setAttribute('aria-expanded', c === card ? 'true' : 'false'); });
-      card.closest('.questions-row').after(panel);
+      tabs.forEach(function (t) { t.setAttribute('aria-selected', t.getAttribute('data-file') === name ? 'true' : 'false'); });
+      panel.scrollTop = 0;
     }
-    cards.forEach(function (c) {
-      c.addEventListener('click', function () { open(c.getAttribute('data-file'), c); });
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () { open(t.getAttribute('data-file')); });
     });
-    panel.classList.add('is-tabbed');
-    open('identity', cards[0]);
+    editor.classList.add('is-tabbed');
+    open('identity');
   })();
 
   // Two posts of Krume's template story, rendered by Brand Atelier (the sign-in demo's posts).
