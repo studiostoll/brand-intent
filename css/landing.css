@@ -452,23 +452,27 @@ pre .flag{ color: var(--color-info); font-style: italic; }
 .file-editor.is-tabbed .layer-body p { max-width: 62ch; }
 
 @media (max-width: 768px) {
-  /* One column: each name a row, the open file right under its name */
-  .file-editor.is-tabbed { grid-template-columns: minmax(0, 1fr); }
-  .file-editor.is-tabbed .file-list { border-right: none; padding: 0; min-width: 0; }
-  .file-editor.is-tabbed .file-list-group { margin: 0; padding: var(--space-sm) var(--space-md) 0.25rem; }
+  /* One column, no box: each name a row across the full width, the open file right under its name */
+  .file-editor.is-tabbed { grid-template-columns: minmax(0, 1fr); border: none; border-radius: 0; overflow: visible; }
+  .file-editor.is-tabbed .file-list { border-right: none; padding: 0; min-width: 0; background: none; border-bottom: 1px solid var(--color-border); }
+  .file-editor.is-tabbed .file-list-group { margin: 0; padding: var(--space-md) 0 0.25rem; }
   .file-editor.is-tabbed .file-tab {
     scroll-margin-top: var(--space-sm);
-    padding: 0.5rem var(--space-md);
+    padding: 0.5rem 0;
     border-top: 1px solid var(--color-border);
+  }
+  /* The picked row's ground runs to both edges of the screen */
+  .file-editor.is-tabbed .file-tab:hover,
+  .file-editor.is-tabbed .file-tab[aria-selected="true"] {
+    box-shadow: 0 0 0 100vmax var(--color-surface-emphasized);
+    clip-path: inset(0 -100vmax);
   }
   .file-editor.is-tabbed .file-tab-name { display: flex; justify-content: space-between; align-items: baseline; }
   .file-editor.is-tabbed .file-tab-q { font-size: 0.8rem; margin-top: 0.1rem; }
-  .file-editor.is-tabbed .file-tab[aria-selected="true"] { box-shadow: none; }
   .file-editor.is-tabbed .file-list > .file-panel {
     contain: none;
     overflow: visible;
-    padding: var(--space-sm) var(--space-sm) var(--space-md);
-    background: var(--color-surface);
+    padding: var(--space-sm) 0 var(--space-lg);
   }
   .file-editor.is-tabbed .file-list > .file-panel pre { overflow-x: auto; padding: var(--space-sm) var(--space-sm); }
   /* The row above already names the file: keep only the file name */
