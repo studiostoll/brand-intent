@@ -13,7 +13,7 @@ What the Brand Intent language gained in each release, by file type. The [specif
 
 ## v0.56 · 11 Nov 2026
 
-- **Story.** A page can list photos and videos together; they alternate by date.
+- **Story.** A page can list photos and videos together, and they take turns by date.
 - **Composition.** `flow: width 3/4` sets a flow's text narrower, on the side its first slot is aligned to, without a panel behind it.
 
 ## v0.55 · 11 Nov 2026
