@@ -545,7 +545,11 @@ hide_bar: true
       place();
     }
     tabs.forEach(function (t) {
-      t.addEventListener('click', function () { open(t.getAttribute('data-file')); });
+      t.addEventListener('click', function () {
+        open(t.getAttribute('data-file'));
+        // On a phone the file opens under its name: bring that name to the top of the screen
+        if (phone.matches) t.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
     });
     phone.addEventListener('change', place);
     editor.classList.add('is-tabbed');

@@ -457,6 +457,7 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .file-editor.is-tabbed .file-list { border-right: none; padding: 0; min-width: 0; }
   .file-editor.is-tabbed .file-list-group { margin: 0; padding: var(--space-sm) var(--space-md) 0.25rem; }
   .file-editor.is-tabbed .file-tab {
+    scroll-margin-top: var(--space-sm);
     padding: 0.5rem var(--space-md);
     border-top: 1px solid var(--color-border);
   }
@@ -466,10 +467,10 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .file-editor.is-tabbed .file-list > .file-panel {
     contain: none;
     overflow: visible;
-    padding: var(--space-sm) var(--space-md) var(--space-md);
+    padding: var(--space-sm) var(--space-sm) var(--space-md);
     background: var(--color-surface);
   }
-  .file-editor.is-tabbed .file-list > .file-panel pre { overflow-x: auto; }
+  .file-editor.is-tabbed .file-list > .file-panel pre { overflow-x: auto; padding: var(--space-sm) var(--space-sm); }
   /* The row above already names the file: keep only the file name */
   .file-editor.is-tabbed .file-list > .file-panel .layer-name a { display: none; }
   .file-editor.is-tabbed .file-list > .file-panel .layer-header { margin-bottom: var(--space-sm); }
