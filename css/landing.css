@@ -457,14 +457,11 @@ pre .flag{ color: var(--color-info); font-style: italic; }
   .file-editor.is-tabbed .file-list { border-right: none; padding: 0; min-width: 0; }
   .file-editor.is-tabbed .file-list-group { margin: 0; padding: var(--space-sm) var(--space-md) 0.25rem; }
   .file-editor.is-tabbed .file-tab {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 0.6rem var(--space-md);
+    padding: 0.5rem var(--space-md);
     border-top: 1px solid var(--color-border);
   }
-  .file-editor.is-tabbed .file-tab-name { display: contents; }
-  .file-editor.is-tabbed .file-tab-q { display: none; }
+  .file-editor.is-tabbed .file-tab-name { display: flex; justify-content: space-between; align-items: baseline; }
+  .file-editor.is-tabbed .file-tab-q { font-size: 0.8rem; margin-top: 0.1rem; }
   .file-editor.is-tabbed .file-tab[aria-selected="true"] { box-shadow: none; }
   .file-editor.is-tabbed .file-list > .file-panel {
     contain: none;
