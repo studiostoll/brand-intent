@@ -2,6 +2,12 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.59 · 18 Nov 2026
+
+- **Brand.** A `print` block holds the brand's measures for print. They are counted in x, a share of the sheet's short side (`x: short/30`): `margin`, `gutter`, `logo`, `logo-height`, `clear-space` and `spacers`, the distances between lines of type.
+- **Brand.** `cap:` on a typography style is the height of its capitals in print, in x. A style is the one source for type on screen and in print.
+- **Brand, Purpose.** `lineHeight` reads a multiplier or a percentage: `1.1` and `110%` are the same value.
+
 ## v0.58 · 12 Nov 2026
 
 - **Story.** `placeholder: true` marks a page's photo or video as a stand-in. The page is not published until a person replaces it.
