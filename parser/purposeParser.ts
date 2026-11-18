@@ -146,9 +146,10 @@ export interface ParsedPurposeSlot {
   listDirection?: 'vertical' | 'horizontal';
   /** Grid columns for a vertical list, filled row by row (list slots only). Default: 1 */
   listColumns?: number;
-  /** 'above': each item is `Label: value`, the label set small above the value (list slots only). */
-  listLabels?: 'none' | 'above';
-  /** Label size relative to the item text, with `labels: above`. Default: 0.7 */
+  /** 'above': each item is `Label: value`, the label set small above the value; 'below': the value first, the label
+   *  under it, as an event's name over its date (list slots only). */
+  listLabels?: 'none' | 'above' | 'below';
+  /** Label size relative to the item text, with `labels: above` or `below`. Default: 0.7 */
   labelSize?: number;
   /** Line between grid columns (list slots with `columns:` 2 or more). */
   listDivider?: 'none' | 'hairline';
@@ -268,7 +269,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       s.marker = 'icon';
     }
     if (s.listColumns && s.listColumns > 1 && s.listDirection === 'horizontal') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": columns needs a vertical list`);
-    if (s.labelSize !== undefined && s.listLabels !== 'above') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": labelSize needs "labels: above"`);
+    if (s.labelSize !== undefined && s.listLabels !== 'above' && s.listLabels !== 'below') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": labelSize needs "labels: above" or "below"`);
     if (s.listDivider === 'hairline' && !(s.listColumns && s.listColumns > 1)) throw new Error(`${fileName}:${lineNum}: slot "${s.id}": divider needs "columns:" 2 or more`);
     if (s.defaultIcon && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": defaultIcon needs "marker: icon"`);
     if (!s.value && s.samples) {
@@ -788,7 +789,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         }
         if (prop.startsWith('labels:')) {
           const l = prop.slice(7).trim();
-          if (l !== 'none' && l !== 'above') throw new Error(`${fileName}:${lineNum}: invalid labels "${l}" — must be "none" or "above"`);
+          if (l !== 'none' && l !== 'above' && l !== 'below') throw new Error(`${fileName}:${lineNum}: invalid labels "${l}" — must be "none", "above" or "below"`);
           currentSlot.listLabels = l;
           continue;
         }
@@ -1017,7 +1018,7 @@ function resolveExamples(
             if (icon && slot.marker !== 'icon') throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" names an icon, but the list has no "marker: icon"`);
             // In one column, a line without a label continues the item above; the first needs one
             const continues = i > 0 && !(slot.listColumns && slot.listColumns > 1);
-            if (slot.listLabels === 'above' && !continues && !splitLabelledItem(item).label) throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" needs a label ("Label: value") for "labels: above"`);
+            if ((slot.listLabels === 'above' || slot.listLabels === 'below') && !continues && !splitLabelledItem(item).label) throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" needs a label ("Label: value") for "labels: ${slot.listLabels}"`);
           });
         }
       }

@@ -1247,8 +1247,8 @@ A slot block describes form only: limits, typography, colour. Its content comes 
 | `direction:` | enum | `vertical` | `vertical` \| `horizontal` |
 | `itemGap:` | float | `0.5` | Gap between items (em) |
 | `columns:` | int | `1` | Grid columns (1–6) for a vertical list, filled row by row; `itemGap` is the gap between rows and columns |
-| `labels:` | enum | `none` | `none` \| `above`: each item is `Label: value`, the label set small above the value |
-| `labelSize:` | float | `0.7` | Label size relative to the item text (`labels: above` only) |
+| `labels:` | enum | `none` | `none` \| `above`: each item is `Label: value`, the label set small above the value \| `below`: the value first, the label under it (an event's name over its date and place) |
+| `labelSize:` | float | `0.7` | Label size relative to the item text (`labels: above` or `below`); `1` sets both the same size |
 | `divider:` | enum | `none` | `none` \| `hairline`: a line between grid columns (`columns:` 2 or more) |
 
 **Markers:** `counter` numbers the items with the brand's [`counter`](#counter-block) component. `icon` puts an icon from the brand set before each item; an item in an example can name its icon with an `[ID]` prefix, otherwise `defaultIcon:` applies.

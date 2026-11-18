@@ -201,9 +201,11 @@ test('list grid: columns, labels above, labelSize, divider', () => {
   assertEq(facts('').listColumns, undefined, 'absent');
   assertThrows(() => facts('    columns: 7\n'), /must be 1 to 6/, 'columns range');
   assertThrows(() => facts('    columns: 2\n    direction: horizontal\n'), /columns needs a vertical list/, 'horizontal');
-  assertThrows(() => facts('    labelSize: 0.6\n'), /labelSize needs "labels: above"/, 'labelSize alone');
+  assertThrows(() => facts('    labelSize: 0.6\n'), /labelSize needs "labels: above" or "below"/, 'labelSize alone');
   assertThrows(() => facts('    divider: hairline\n'), /divider needs "columns:"/, 'divider without columns');
   assertThrows(() => facts('    labels: above\n', 'just a value'), /needs a label/, 'item without label');
+  assertEq([facts('    labels: below\n    labelSize: 1\n', '12 June, Harbour: **Summer Fair**').listLabels], ['below'], 'below');
+  assertThrows(() => facts('    labels: below\n', 'just a value'), /needs a label/, 'below needs a label');
   assertEq(facts('    labels: above\n', 'Sonne: 07:21').listLabels, 'above', 'time after the label');
   assertEq(facts('    labels: above\n', 'Hours: Mon–Fri 8–18\n    Sat 9–14').listLabels, 'above', 'a line without a label continues the item above');
   assertThrows(() => facts('    columns: 2\n    labels: above\n', 'Hours: Mon–Fri 8–18\n    Sat 9–14'), /needs a label/, 'not in a grid');
