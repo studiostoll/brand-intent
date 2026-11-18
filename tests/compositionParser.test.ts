@@ -240,6 +240,8 @@ test('regions mode: a line without fields, a box', () => {
   assertThrows(() => sign(t => t.replace('fields: 1-4', 'line: 2x').replace('fields: 5-6', 'line: 2x')), /at least one region needs "fields:"/, 'only lines');
   assertThrows(() => sign(t => t.replace('fields: 1-4', 'line: 2x').replace('fields: 5-6', 'fields: rest')), /is a line, its stack has no field/, 'line with a stack field');
   assertThrows(() => sign(t => t.replace('fields: 5-6', 'fields: 5-6\n  box: 7-12 0.5 0.75x')), /invalid box/, 'box shape');
+  assertEq(sign(t => t.replace('fit: word', 'fit: word\n  photo: 9-12')).regions?.[0].photo, [9, 12], 'photo');
+  assertThrows(() => sign(t => t.replace('fit: word', 'fit: word\n  photo: right')), /invalid photo columns/, 'photo shape');
 });
 
 test('regions mode: mode conflicts', () => {

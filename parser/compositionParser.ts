@@ -59,6 +59,9 @@ export interface ParsedRegion {
   /** The region's slots in an outlined box (`box: 7-12 0.5mm 0.75x`): the columns it spans, its line, the space
    *  between line and text. As tall as what it holds, on the region's bottom edge. */
   box?: { cols: [number, number]; lineMm: number; padX: number };
+  /** The page's photo across columns A to B and the region's height (`photo: 9-12`), on one side of the region: the
+   *  slots stand on the other columns. */
+  photo?: [number, number];
   logo?: { v: 'top' | 'bottom'; h: 'left' | 'right' };
   places: ParsedRegionPlace[];
   group?: SlotId[];
@@ -332,7 +335,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ['fields', 'line', 'box', 'logo', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
+      const REGION_KEYS = ['fields', 'line', 'box', 'photo', 'logo', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
       if (key && !['id', 'name', 'mode', 'image', 'illustration', 'grid', 'icon', 'sticky', 'flow'].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(', ')})`);
       }
@@ -384,6 +387,13 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
             const mm = words[1]?.match(/^(\d+(?:\.\d+)?)mm$/);
             if (words.length !== 3 || !mm || parseFloat(mm[1]) <= 0) throw new Error(`${at}: invalid box "${value}" (expected its columns, its line and its padding, e.g. "7-12 0.5mm 0.75x")`);
             region.box = { cols: rangeOf(words[0], 'box columns'), lineMm: parseFloat(mm[1]), padX: xOf(words[2], 'box padding') };
+            break;
+          }
+          case 'photo': {
+            once(region.photo);
+            if (words.length !== 1) throw new Error(`${at}: invalid photo "${value}" (expected its columns, e.g. "9-12")`);
+            region.photo = rangeOf(words[0], 'photo columns');
+            if (region.photo[0] !== 1 && region.photo[0] === region.photo[1]) throw new Error(`${at}: invalid photo "${value}" (expected at least two columns)`);
             break;
           }
           case 'logo': {

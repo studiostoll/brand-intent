@@ -1530,6 +1530,7 @@ region foot
 | `fields: A-B` | The format's fields the region spans (or `A`), 1-based. Ascending, contiguous, from 1, no overlap; the last region ends on the format's last field. Binds the composition to formats with that many fields; numbers and `content`/`rest` don't mix |
 | `line: Nx` | Instead of `fields:`: a line without fields of its own, N x tall (a sender, a foot line). It stands on the edge of the fields of the region above it (the first region: below it), the last line on the bottom margin, and takes its height from that region, a gutter apart. Not with `stack: field` |
 | `box: A-B Nmm Nx` | The region's slots in an outlined box across columns A to B: its line in mm, the space between line and text in x. As tall as what it holds, on the region's bottom edge |
+| `photo: A-B` | The page's photo across columns A to B and the region's full height, inside the margins, on one side of the region (from column 1 or to the last). The slots stand on the other columns |
 | `logo: top\|bottom left\|right` | The brand's print logo in that corner of the region. At most one region per composition |
 | `place: SLOT top\|bottom [left\|right] A-B` | The slot stands on the region's top or bottom edge, aligned left (default) or right, across columns A to B (1-based). Repeatable; a slot is placed once |
 | `group: SLOT ...` | Lines that belong together; the distances between them follow the brand's spacers. A grouped slot no `place:` names stands across the region's columns. Needs `stack:` |
