@@ -283,6 +283,9 @@ test('regions mode: items flowing down a region\'s columns, a rule above each', 
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr bottom 5-8\n'), /inside one of its columns or covers whole ones/, 'not half a column');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  group: qr\n  stack: neighbour\n'), /groups nothing/, 'no group');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  rule: 0.8mm\n'), /invalid rule/, 'rule needs its space');
+  assertEq(two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  break: entries\n').regions?.[1].breakEntries, true, 'break between entries');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  break: lines\n'), /invalid break/, 'break: entries only');
+  assertThrows(() => two('  fields: rest\n  break: entries\n'), /it has none/, 'break needs columns');
   assertThrows(() => two('  fields: rest\n  repeat: month\n'), /or they flow down its "columns:"/, 'repeat without columns needs content');
 });
 

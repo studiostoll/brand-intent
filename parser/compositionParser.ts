@@ -81,6 +81,9 @@ export interface ParsedRegion {
   /** A line above the region's content (`rule: 0.8mm 0.5x`): its thickness and the space between it and the text
    *  in x. In a repeated region a line above each item. */
   rule?: { mm: number; spaceX: number };
+  /** With `columns:`: an item breaks between the entries of its list where a column is full (`break: entries`), two
+   *  at least on either side, instead of moving on whole. */
+  breakEntries?: true;
 }
 
 export interface ParsedComposition {
@@ -346,7 +349,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ['fields', 'line', 'box', 'photo', 'logo', 'repeat', 'columns', 'rule', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
+      const REGION_KEYS = ['fields', 'line', 'box', 'photo', 'logo', 'repeat', 'columns', 'break', 'rule', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
       if (key && !['id', 'name', 'mode', 'image', 'illustration', 'grid', 'icon', 'sticky', 'flow'].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(', ')})`);
       }
@@ -478,6 +481,12 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
             const cols = words.map(w => rangeOf(w, 'columns'));
             for (let i = 1; i < cols.length; i++) if (cols[i][0] <= cols[i - 1][1]) throw new Error(`${at}: columns "${value}" overlap or run backwards (each starts after the one before ends)`);
             region.columns = cols;
+            break;
+          }
+          case 'break': {
+            once(region.breakEntries);
+            if (value !== 'entries') throw new Error(`${at}: invalid break "${value}" (expected "entries": an item breaks between its list's entries)`);
+            region.breakEntries = true;
             break;
           }
           case 'rule': {
@@ -847,6 +856,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       // A repeated region stands once per item, each as tall as what it holds; the logo stands once
       // Its items flow down its columns and fill its fields; without columns each item takes the fields it needs
       if (r.columns && !r.repeat) throw new Error(`${at}: region "${r.id}" has columns, what flows down them are the items of a "repeat:"`);
+      if (r.breakEntries && !r.columns) throw new Error(`${at}: region "${r.id}": "break:" is how its items break between its columns, it has none`);
       if (r.columns && (r.fields === 'content' || r.fields === 'line')) throw new Error(`${at}: region "${r.id}": its items flow down its columns and fill its fields ("fields: rest" or "A-B")`);
       if (r.columns && (r.group || r.stack || r.baseline || r.fit || r.box || r.photo)) throw new Error(`${at}: region "${r.id}": its items flow down its columns, it groups nothing (no group, stack, baseline, fit, box or photo)`);
       // A slot it places stands at the foot of one of its columns, whose items end above it
