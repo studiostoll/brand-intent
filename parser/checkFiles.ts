@@ -29,8 +29,8 @@ export interface BrandFiles {
   brand?: ParsedBrand;
   /** Without an identity, `scope.audience` is not checked. */
   identity?: Pick<ParsedIdentity, 'audiences'>;
-  formats: Pick<ParsedFormat, 'id' | 'purposes'>[];
-  compositions: Pick<ParsedComposition, 'id' | 'mode' | 'sticky'>[];
+  formats: Pick<ParsedFormat, 'id' | 'purposes' | 'grid' | 'widthMm' | 'heightMm'>[];
+  compositions: Pick<ParsedComposition, 'id' | 'mode' | 'sticky' | 'regions'>[];
   purposes: ParsedPurpose[];
   stories: ParsedStory[];
   places: ParsedPlace[];
@@ -160,6 +160,50 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
         name: brand.name,
         location: !!brand.location,
       }, file));
+    }
+  }
+
+  // ── Printed pieces: regions against the format, the brand and the purpose ──
+  if (brand) {
+    for (const story of stories) {
+      const file = `${story.id}.story`;
+      const format = formats.find(f => f.id === story.format);
+      if (!format) continue;
+      const seen = new Set<string>();
+      for (const page of story.pages) {
+        const purpose = purposes.find(p => p.id === page.purpose);
+        if (!purpose) continue;
+        for (const cid of page.composition ? [page.composition] : purpose.preferredCompositions) {
+          const composition = compositions.find(c => c.id === cid);
+          if (!composition || composition.mode !== 'regions' || !composition.regions || seen.has(cid)) continue;
+          seen.add(cid);
+          const told = new Set<string>();
+          const say = (m: string) => { if (!told.has(m)) { told.add(m); error(file, `composition "${cid}": ${m}`); } };
+          const print = brand.print;
+          if (format.widthMm === undefined || format.heightMm === undefined) say(`regions mode needs a format with a size in mm, "${format.id}" has none`);
+          if (print?.unit === undefined) say('regions mode needs a print block with "x:" in the .brand');
+          const rows = format.grid?.rows;
+          const cols = format.grid?.cols;
+          if (!format.grid) say(`regions mode needs a "grid: R C" in format "${format.id}"`);
+          const slotIds = new Set<string>(purpose.slots.map(s => s.id));
+          const slot = (id: string, where: string) => { if (!slotIds.has(id)) say(`${where}: slot "${id}" is not a slot of purpose "${purpose.id}"`); };
+          const last = composition.regions[composition.regions.length - 1];
+          if (rows !== undefined && last && last.fields[1] !== rows) say(`the last region ends on field ${last.fields[1]}, format "${format.id}" has ${rows} fields`);
+          for (const r of composition.regions) {
+            const where = `region "${r.id}"`;
+            if (rows !== undefined && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
+            if (rows !== undefined && r.stack && 'field' in r.stack && r.stack.field > rows) say(`${where}: stack field ${r.stack.field} is outside the format's ${rows} fields`);
+            for (const pl of r.places) {
+              if (cols !== undefined && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
+              slot(pl.slot, where);
+            }
+            if (r.stack && 'neighbour' in r.stack && r.stack.gapX !== undefined && print?.unit !== undefined && !print.spacers?.includes(r.stack.gapX)) {
+              say(`${where}: stack distance ${r.stack.gapX}x is not one of the brand's print spacers`);
+            }
+            for (const id of [...(r.group ?? []), ...(r.baseline ?? []), ...(r.fit ?? []), ...Object.keys(r.sizes ?? {})]) slot(id, where);
+          }
+        }
+      }
     }
   }
 

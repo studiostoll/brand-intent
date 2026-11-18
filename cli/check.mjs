@@ -3937,6 +3937,17 @@ function parseCompositionFile(content, fileName) {
   let name = "";
   let description = "";
   let mode = null;
+  const regions = [];
+  let region = null;
+  const regionLines = /* @__PURE__ */ new Map();
+  const stackLines = /* @__PURE__ */ new Map();
+  const groupLines = /* @__PURE__ */ new Map();
+  const placed = /* @__PURE__ */ new Set();
+  let logoRegionLine = 0;
+  let foreign = null;
+  const noteForeign = (lineNum, what) => {
+    if (!foreign) foreign = { line: lineNum, what };
+  };
   let image = null;
   let imageExplicit = false;
   let logo = null;
@@ -3978,11 +3989,128 @@ function parseCompositionFile(content, fileName) {
     if (line.startsWith("mode:")) {
       const raw2 = line.slice(5).trim();
       const value = raw2 === "compose" ? "grid" : raw2;
-      if (value !== "flow" && value !== "grid") {
-        throw new Error(`${fileName}:${lineNum}: invalid mode "${value}" (expected "flow" or "grid")`);
+      if (value !== "flow" && value !== "grid" && value !== "regions") {
+        throw new Error(`${fileName}:${lineNum}: invalid mode "${value}" (expected "flow", "grid" or "regions")`);
       }
       mode = value;
       continue;
+    }
+    const regionHead = line.match(/^region(?:\s+(.*))?$/);
+    if (regionHead) {
+      const at = `${fileName}:${lineNum}`;
+      const rid = (regionHead[1] ?? "").trim();
+      if (!/^[a-z][a-z0-9-]*$/.test(rid)) throw new Error(`${at}: invalid region id "${rid}" (expected lowercase letters, digits and hyphens)`);
+      if (regions.some((r) => r.id === rid)) throw new Error(`${at}: more than one region "${rid}"`);
+      if (mode !== null && mode !== "regions") throw new Error(`${at}: "region" needs "mode: regions" (this composition is in ${mode} mode)`);
+      region = { id: rid, fields: [0, 0], places: [] };
+      regionLines.set(region, lineNum);
+      regions.push(region);
+      continue;
+    }
+    if (region) {
+      const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
+      const REGION_KEYS = ["fields", "logo", "place", "group", "stack", "baseline", "fit", "size"];
+      if (key && !["id", "name", "mode", "image", "illustration", "grid", "icon", "sticky", "flow"].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
+        throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(", ")})`);
+      }
+      if (key && REGION_KEYS.includes(key[1])) {
+        const at = `${fileName}:${lineNum}`;
+        const value = key[2].trim();
+        const words = value ? value.split(/\s+/) : [];
+        const slotName = (w) => {
+          if (!checkSlotName(w, at)) throw new Error(`${at}: "${w}" is no slot name (expected lowercase letters, digits and hyphens)`);
+          return w;
+        };
+        const slotList = () => {
+          if (!words.length) throw new Error(`${at}: ${key[1]}: needs at least one slot`);
+          return words.map(slotName);
+        };
+        const rangeOf = (v, what) => {
+          const m = v.match(/^(\d+)(?:-(\d+))?$/);
+          if (!m) throw new Error(`${at}: invalid ${what} "${v}" (expected "A-B" or "A")`);
+          const a = parseInt(m[1], 10);
+          const b = m[2] === void 0 ? a : parseInt(m[2], 10);
+          if (a < 1 || b < a) throw new Error(`${at}: invalid ${what} "${v}" (counted from 1, ascending)`);
+          return [a, b];
+        };
+        const xOf = (v, what) => {
+          const m = v.match(/^(\d+(?:\.\d+)?)x$/);
+          if (!m || parseFloat(m[1]) <= 0) throw new Error(`${at}: invalid ${what} "${v}" (expected a number of x, e.g. "4x" or "1.5x")`);
+          return parseFloat(m[1]);
+        };
+        const once = (have) => {
+          if (have) throw new Error(`${at}: "${key[1]}:" twice in region "${region.id}"`);
+        };
+        switch (key[1]) {
+          case "fields": {
+            once(region.fields[0]);
+            if (words.length !== 1) throw new Error(`${at}: invalid fields "${value}" (expected "A-B" or "A")`);
+            region.fields = rangeOf(words[0], "fields");
+            break;
+          }
+          case "logo": {
+            once(region.logo);
+            if (words.length !== 2 || !["top", "bottom"].includes(words[0]) || !["left", "right"].includes(words[1])) {
+              throw new Error(`${at}: invalid region logo "${value}" (expected "top|bottom left|right")`);
+            }
+            if (logoRegionLine) throw new Error(`${at}: only one region may have a logo (see line ${logoRegionLine})`);
+            logoRegionLine = lineNum;
+            region.logo = { v: words[0], h: words[1] };
+            break;
+          }
+          case "place": {
+            const edgeAt = words.findIndex((w) => w === "top" || w === "bottom");
+            const bad = `${at}: invalid place "${value}" (expected "SLOT top|bottom [left|right] A-B")`;
+            if (edgeAt !== 1 || words.length < 3 || words.length > 4) throw new Error(bad);
+            const side = words.length === 4 ? words[2] : "left";
+            if (side !== "left" && side !== "right") throw new Error(bad);
+            const slot = slotName(words[0]);
+            if (placed.has(slot)) throw new Error(`${at}: slot "${slot}" is placed twice in this composition`);
+            placed.add(slot);
+            region.places.push({ slot, edge: words[1], side, cols: rangeOf(words[words.length - 1], "columns") });
+            break;
+          }
+          case "group": {
+            once(region.group);
+            region.group = slotList();
+            groupLines.set(region, lineNum);
+            break;
+          }
+          case "stack": {
+            once(region.stack);
+            stackLines.set(region, lineNum);
+            if (words[0] === "field" && words.length === 2 && /^\d+$/.test(words[1]) && parseInt(words[1], 10) >= 1) {
+              region.stack = { field: parseInt(words[1], 10) };
+            } else if (words[0] === "neighbour" && words.length === 1) {
+              region.stack = { neighbour: true };
+            } else if (words[0] === "neighbour" && words.length === 2) {
+              region.stack = { neighbour: true, gapX: xOf(words[1], "stack distance") };
+            } else {
+              throw new Error(`${at}: invalid stack "${value}" (expected "field N" or "neighbour [Nx]")`);
+            }
+            break;
+          }
+          case "baseline": {
+            once(region.baseline);
+            region.baseline = slotList();
+            break;
+          }
+          case "fit": {
+            once(region.fit);
+            region.fit = slotList();
+            break;
+          }
+          case "size": {
+            if (words.length !== 2) throw new Error(`${at}: invalid size "${value}" (expected "SLOT Nx")`);
+            const slot = slotName(words[0]);
+            region.sizes ??= {};
+            if (slot in region.sizes) throw new Error(`${at}: size of "${slot}" twice in region "${region.id}"`);
+            region.sizes[slot] = xOf(words[1], "size");
+            break;
+          }
+        }
+        continue;
+      }
     }
     if (line.startsWith("image:")) {
       const value = line.slice(6).trim();
@@ -4036,6 +4164,7 @@ function parseCompositionFile(content, fileName) {
       continue;
     }
     if (line.startsWith("logo:")) {
+      noteForeign(lineNum, "logo:");
       const logoValue = line.slice(5).trim();
       if (logoValue === "none") {
         logo = null;
@@ -4057,6 +4186,7 @@ function parseCompositionFile(content, fileName) {
       throw new Error(`${fileName}:${lineNum}: invalid logo line "${line}" (expected "logo: row N left|center|right" or "logo: top/center/bottom left|center|right")`);
     }
     if (line.startsWith("icon:")) {
+      noteForeign(lineNum, "icon:");
       const kwMatch = line.match(/^icon:\s+(top|center|bottom)\s+(?:col\s+)?(left|center|right)(?:\s+(s|m|l))?\s*$/);
       if (kwMatch) {
         const col = resolveColKeyword(kwMatch[2], fileName, lineNum);
@@ -4072,6 +4202,7 @@ function parseCompositionFile(content, fileName) {
       throw new Error(`${fileName}:${lineNum}: invalid icon line "${line}"`);
     }
     if (line.startsWith("sticky:")) {
+      noteForeign(lineNum, "sticky:");
       const stickyParts = line.slice(7).trim().split(/\s+/);
       const position = stickyParts[0];
       if (!["top", "bottom", "left", "right"].includes(position)) {
@@ -4124,6 +4255,7 @@ function parseCompositionFile(content, fileName) {
       continue;
     }
     if (line.startsWith("flow:")) {
+      noteForeign(lineNum, "flow:");
       const value = line.slice(5).trim();
       let panel = void 0;
       let direction = "vertical";
@@ -4238,6 +4370,7 @@ function parseCompositionFile(content, fileName) {
     if (rowSlotMatch) {
       const [, slotId, rowStr, colRange, hAlign, vAlign] = rowSlotMatch;
       checkSlotName(slotId, `${fileName}:${lineNum}`);
+      noteForeign(lineNum, `slot line "${slotId}"`);
       const rowNum = rowStr === "top" ? -1 : rowStr === "center" ? -2 : rowStr === "bottom" ? -3 : parseInt(rowStr, 10) - 1;
       const cols = parseColRange(colRange, fileName, lineNum, 12);
       slots.push({
@@ -4263,13 +4396,32 @@ function parseCompositionFile(content, fileName) {
   if (!name) {
     name = id;
   }
+  if (regions.length && mode === null) mode = "regions";
+  if (mode === "regions") {
+    if (!regions.length) throw new Error(`${fileName}: "mode: regions" needs at least one "region" block`);
+    if (foreign) throw new Error(`${fileName}:${foreign.line}: ${foreign.what} is not allowed in regions mode (a region places its slots itself)`);
+    let next = 1;
+    for (const r of regions) {
+      const at = `${fileName}:${regionLines.get(r)}`;
+      if (!r.fields[0]) throw new Error(`${at}: region "${r.id}" needs "fields:"`);
+      if (r.fields[0] !== next) throw new Error(`${at}: region "${r.id}" starts at field ${r.fields[0]}, expected ${next} (regions run top to bottom without gaps or overlap, from field 1)`);
+      next = r.fields[1] + 1;
+      if (r.group && !r.stack) throw new Error(`${fileName}:${groupLines.get(r)}: region "${r.id}": "group:" needs "stack:"`);
+      if (r.stack && !r.group) throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": "stack:" needs "group:"`);
+      if (r.stack && "field" in r.stack && (r.stack.field < r.fields[0] || r.stack.field > r.fields[1])) {
+        throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field} is outside its fields ${r.fields[0]}-${r.fields[1]}`);
+      }
+    }
+  } else if (regions.length) {
+    throw new Error(`${fileName}:${regionLines.get(regions[0])}: "region" needs "mode: regions"`);
+  }
   if (flow?.items.some((it) => it.type === "photo")) {
     if (imageExplicit) throw new Error(`${fileName}: "image:" and a "| photo" flow item can't be combined (the flow photo is the page's image)`);
     if (flow.panel || flow.split) throw new Error(`${fileName}: "| photo" is only allowed in a plain "flow:" (not in a panel or split)`);
   }
   if (!image) image = "full";
-  if (!logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
-  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || void 0, icon, slots, sticky, flow, illustration };
+  if (mode !== "regions" && !logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
+  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || void 0, icon, slots, sticky, flow, illustration, ...mode === "regions" ? { regions } : {} };
 }
 
 // parser/personParser.ts
@@ -5429,6 +5581,55 @@ function checkFiles(files) {
         name: brand.name,
         location: !!brand.location
       }, file));
+    }
+  }
+  if (brand) {
+    for (const story of stories) {
+      const file = `${story.id}.story`;
+      const format = formats.find((f) => f.id === story.format);
+      if (!format) continue;
+      const seen = /* @__PURE__ */ new Set();
+      for (const page of story.pages) {
+        const purpose = purposes.find((p) => p.id === page.purpose);
+        if (!purpose) continue;
+        for (const cid of page.composition ? [page.composition] : purpose.preferredCompositions) {
+          const composition = compositions.find((c) => c.id === cid);
+          if (!composition || composition.mode !== "regions" || !composition.regions || seen.has(cid)) continue;
+          seen.add(cid);
+          const told = /* @__PURE__ */ new Set();
+          const say = (m) => {
+            if (!told.has(m)) {
+              told.add(m);
+              error(file, `composition "${cid}": ${m}`);
+            }
+          };
+          const print = brand.print;
+          if (format.widthMm === void 0 || format.heightMm === void 0) say(`regions mode needs a format with a size in mm, "${format.id}" has none`);
+          if (print?.unit === void 0) say('regions mode needs a print block with "x:" in the .brand');
+          const rows = format.grid?.rows;
+          const cols = format.grid?.cols;
+          if (!format.grid) say(`regions mode needs a "grid: R C" in format "${format.id}"`);
+          const slotIds = new Set(purpose.slots.map((s) => s.id));
+          const slot = (id, where) => {
+            if (!slotIds.has(id)) say(`${where}: slot "${id}" is not a slot of purpose "${purpose.id}"`);
+          };
+          const last = composition.regions[composition.regions.length - 1];
+          if (rows !== void 0 && last && last.fields[1] !== rows) say(`the last region ends on field ${last.fields[1]}, format "${format.id}" has ${rows} fields`);
+          for (const r of composition.regions) {
+            const where = `region "${r.id}"`;
+            if (rows !== void 0 && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
+            if (rows !== void 0 && r.stack && "field" in r.stack && r.stack.field > rows) say(`${where}: stack field ${r.stack.field} is outside the format's ${rows} fields`);
+            for (const pl of r.places) {
+              if (cols !== void 0 && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
+              slot(pl.slot, where);
+            }
+            if (r.stack && "neighbour" in r.stack && r.stack.gapX !== void 0 && print?.unit !== void 0 && !print.spacers?.includes(r.stack.gapX)) {
+              say(`${where}: stack distance ${r.stack.gapX}x is not one of the brand's print spacers`);
+            }
+            for (const id of [...r.group ?? [], ...r.baseline ?? [], ...r.fit ?? [], ...Object.keys(r.sizes ?? {})]) slot(id, where);
+          }
+        }
+      }
     }
   }
   return issues;

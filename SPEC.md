@@ -1122,7 +1122,7 @@ The format file describes a canvas: platform, dimensions, safe zones. It knows n
 | `category:` | enum | Yes | `instagram` \| `facebook` \| `linkedin` \| `print` \| `signage` |
 | `post:` | enum | No | `feed` \| `story` \| `reel`: how a page in this format is posted. A `reel` is a video: its pages are posted when something on them moves. Absent = the format is not posted |
 | `size:` | string | Yes | Dimensions in pixels (e.g., `1080 1350`) or mm (e.g., `210mm 297mm`) |
-| `grid:` | string | Yes | Row × column grid (e.g., `5 4`) |
+| `grid:` | string | Yes | Row × column grid (e.g., `5 4`). For a print format used by a composition in regions mode, the rows are the page's fields: equal heights between the brand's print margins, a print gutter apart |
 | `danger:` | insets | No | Pixels/mm always cropped by platform (default: `0`) |
 | `crop:` | insets or `none` | No | Pixels/mm that may be cropped by UI (default: `none`) |
 | `comfort:` | float | No | Safe reading margin (default: `0`) |
@@ -1455,7 +1455,7 @@ The composition file describes how slots are arranged on the canvas. It knows sl
 |-----|------|----------|-------------|
 | `id:` | string | Yes | Composition identifier |
 | `name:` | string | No | Display name (derived from id if omitted) |
-| `mode:` | enum | No | `grid` \| `flow` (inferred from structure if omitted) |
+| `mode:` | enum | No | `grid` \| `flow` \| `regions` (inferred from structure if omitted) |
 | `image:` | string | No | Background image placement (default: `full`) |
 | `logo:` | string | No | Logo placement |
 | `icon:` | string | No | Icon placement |
@@ -1491,6 +1491,51 @@ primary    row 3  cols 1--4  left
 meta       row 6  cols 1--2  left center
 cta        row 6  cols 3--4  right bottom
 ```
+
+### Regions Mode
+
+A printed piece: regions on the format's grid. The format's `grid: R C` gives R fields (equal heights) and C columns; the brand's `print` block gives the margin, the gutter (between fields and between columns) and the unit x. The format must be in mm and the brand must name `x:`.
+
+```
+id: direction-sign
+name: Direction sign
+mode: regions
+image: none
+
+region head
+  fields: 1-4
+  logo: top left
+  place: sender top 7-12
+  group: kicker word
+  stack: field 2
+  fit: word
+
+region foot
+  fields: 5-6
+  place: note top 1-5
+  place: code bottom 1-5
+  place: arrow bottom right 6-12
+  group: note
+  stack: neighbour 1.5x
+  baseline: arrow
+  size: code 4x
+  size: arrow 19.6x
+```
+
+| Key | Description |
+|-----|-------------|
+| `region ID` | Opens a block (lowercase-hyphen id). Regions stand top to bottom in the order written |
+| `fields: A-B` | The format's fields the region spans (or `A`), 1-based. Ascending, contiguous, from 1, no overlap; the last region ends on the format's last field |
+| `logo: top\|bottom left\|right` | The brand's print logo in that corner of the region. At most one region per composition |
+| `place: SLOT top\|bottom [left\|right] A-B` | The slot stands on the region's top or bottom edge, aligned left (default) or right, across columns A to B (1-based). Repeatable; a slot is placed once |
+| `group: SLOT ...` | Lines that belong together; the distances between them follow the brand's spacers. A grouped slot no `place:` names stands across the region's columns. Needs `stack:` |
+| `stack: field N` | The group's first capitals stand on the top edge of field N (counted from the top of the page, inside the region's fields) |
+| `stack: neighbour [Nx]` | The group's last baseline stands above what stands below it in its columns, at the distance the spacers rule gives, or at the named print spacer N x |
+| `baseline: SLOT ...` | The slot's last baseline stands on the region's bottom edge |
+| `fit: SLOT ...` | The slot's type as large as its longest line fills its columns |
+| `size: SLOT Nx` | The slot's type size (the em) in x, whatever its role says |
+
+In regions mode the top-level `logo:`, `icon:`, `sticky:`, `flow:` and grid slot lines are errors, and `region` is an error in any other mode. `mode: regions` is inferred when a file has `region` blocks and no `mode:` line. Every slot a composition names is a slot of the page's purpose.
 
 ### Flow Mode
 

@@ -107,6 +107,48 @@ test('use: the slots name roles of that kind, not styles', () => {
   assertEq(added(f => { purpose(f).slots[0].typographyRef = 'nope'; }), [`error ${file}: typography "nope" is not in the .brand`], 'without use: a style');
 });
 
+
+// ── Regions mode: a printed piece against its format, the brand and the purpose ──
+{
+  const regionsBase = (f: BrandFiles, text?: string) => {
+    const story = f.stories[0];
+    const p = purpose(f);
+    const [a, b] = p.slots.map(sl => sl.id);
+    const comp = parseCompositionFile(text ?? `id: printed\nimage: none\n\nregion head\n  fields: 1-2\n  logo: top left\n  place: ${a} top 1-3\n  group: ${a}\n  stack: field 1\n\nregion foot\n  fields: 3-4\n  place: ${b} bottom right 2-4\n  group: ${b}\n  stack: neighbour 1.5x\n  size: ${b} 4x\n`, 'printed.composition');
+    f.compositions.push(comp);
+    p.preferredCompositions.push('printed');
+    story.pages[0].composition = 'printed';
+    const format = f.formats.find(fm => fm.id === story.format)!;
+    format.widthMm = 210; format.heightMm = 297; format.grid = { rows: 4, cols: 4 };
+  };
+  const fileOf = (f: BrandFiles) => `${f.stories[0].id}.story`;
+  const at = (m: string) => `error ${fileOf(base())}: composition "printed": ${m}`;
+
+  test('regions: a printed piece that fits has no finding', () => {
+    assertEq(added(f => regionsBase(f)), []);
+  });
+
+  test('regions: the format needs mm and the brand a print x', () => {
+    assertEq(added(f => { regionsBase(f); const fm = f.formats.find(x => x.id === f.stories[0].format)!; fm.widthMm = undefined; }), [at(`regions mode needs a format with a size in mm, "${base().stories[0].format}" has none`)]);
+    assertEq(added(f => { regionsBase(f); f.brand!.print = undefined; }), [at('regions mode needs a print block with "x:" in the .brand')]);
+  });
+
+  test('regions: the last region ends on the last field, fields and columns stay inside', () => {
+    assertEq(added(f => { regionsBase(f); f.formats.find(x => x.id === f.stories[0].format)!.grid = { rows: 5, cols: 4 }; }), [at(`the last region ends on field 4, format "${base().stories[0].format}" has 5 fields`)], 'short');
+    assertEq(added(f => { regionsBase(f); f.formats.find(x => x.id === f.stories[0].format)!.grid = { rows: 3, cols: 4 }; }).some(m => m.includes('are outside the format\'s 3 fields')), true, 'too many');
+    assertEq(added(f => { regionsBase(f); f.formats.find(x => x.id === f.stories[0].format)!.grid = { rows: 4, cols: 3 }; }).some(m => m.includes('columns 2-4 are outside the format\'s 3 columns')), true, 'columns');
+  });
+
+  test('regions: a stack distance is one of the print spacers', () => {
+    assertEq(added(f => { regionsBase(f); f.brand!.print!.spacers = [0.5, 1]; }), [at('region "foot": stack distance 1.5x is not one of the brand\'s print spacers')]);
+  });
+
+  test('regions: every slot is a slot of the purpose', () => {
+    const msgs = added(f => { regionsBase(f, `id: printed\nimage: none\n\nregion all\n  fields: 1-4\n  place: ghost top 1-2\n  group: ghost\n  stack: field 1\n`); });
+    assertEq(msgs, [at('region "all": slot "ghost" is not a slot of purpose "' + purpose(base()).id + '"')]);
+  });
+}
+
 test('a slot colour is a slot of the themes', () => {
   const p = purpose(base());
   const key = Object.keys(Object.values(base().brand!.themes!)[0])[0];

@@ -75,6 +75,8 @@ export { parseCompositionFile } from './compositionParser';
 export type {
   ParsedComposition,
   ParsedFlowRegion,
+  ParsedRegion,
+  ParsedRegionPlace,
   ParsedStickyRegion,
   ParsedFlowItem,
   ParsedImageRegion,
