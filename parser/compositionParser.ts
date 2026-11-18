@@ -58,7 +58,7 @@ export interface ParsedRegion {
   stack?: { field: number } | { neighbour: true; gapX?: number };
   baseline?: SlotId[];
   fit?: SlotId[];
-  /** Slot → type size in x. */
+  /** Slot → the height of its capitals in x, as a role counts. */
   sizes?: Record<string, number>;
 }
 

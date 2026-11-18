@@ -1518,8 +1518,8 @@ region foot
   group: note
   stack: neighbour 1.5x
   baseline: arrow
-  size: code 4x
-  size: arrow 19.6x
+  size: code 2.8x
+  size: arrow 13.7x
 ```
 
 | Key | Description |
@@ -1533,7 +1533,7 @@ region foot
 | `stack: neighbour [Nx]` | The group's last baseline stands above what stands below it in its columns, at the distance the spacers rule gives, or at the named print spacer N x |
 | `baseline: SLOT ...` | The slot's last baseline stands on the region's bottom edge |
 | `fit: SLOT ...` | The slot's type as large as its longest line fills its columns |
-| `size: SLOT Nx` | The slot's type size (the em) in x, whatever its role says |
+| `size: SLOT Nx` | The height of the slot's capitals in x, whatever its role says. Like a role, it counts capitals, not the em |
 
 In regions mode the top-level `logo:`, `icon:`, `sticky:`, `flow:` and grid slot lines are errors, and `region` is an error in any other mode. `mode: regions` is inferred when a file has `region` blocks and no `mode:` line. Every slot a composition names is a slot of the page's purpose.
 
