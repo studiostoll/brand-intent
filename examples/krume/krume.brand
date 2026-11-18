@@ -81,6 +81,7 @@ typography headline
   strong:      800
   size:        6
   lineHeight:  1.15
+  cap:         2x
   autofit-min: 4
   autofit-max: 10
 
@@ -103,11 +104,13 @@ typography body
   weight:      400
   size:        2.8
   lineHeight:  1.5
+  cap:         0.75x
 
 typography caption
   weight:      400
   size:        2.2
   lineHeight:  1.4
+  cap:         0.5x
 
 typography attribution
   weight:         300
@@ -136,6 +139,17 @@ spacing:
   m: 3
   l: 5
   xl: 6.5
+
+# ── Print ──
+# Measures in x, a thirtieth of the sheet's short side: the same numbers on a price tag and on a poster.
+# A style's size in print is its "cap:" above, the height of its capitals.
+
+print
+  x: short/30
+  margin: 2x
+  gutter: 0.75x
+  clear-space: 1x
+  spacers: 0.25x, 0.5x, 0.75x, 1x, 1.5x, 2x, 3x
 
 # ── Dividers ──
 

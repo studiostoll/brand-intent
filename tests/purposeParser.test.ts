@@ -40,6 +40,15 @@ test('hyphenate: bare, true, false, fit', () => {
   assertEq(h('hyphenate: fit'), 'fit', 'fit');
 });
 
+test('override lineHeight: a multiplier or a percentage', () => {
+  const lh = (v: string) => parsePurposeFile(PURPOSE(`    lineHeight: ${v}\n`), 'p.purpose').slots[0].typographyOverrides?.lineHeight;
+  assertEq(lh('1.1'), 1.1, 'multiplier');
+  assertEq(lh('110%'), 1.1, 'percent');
+  let said = '';
+  try { lh('tight'); } catch (e) { said = (e as Error).message; }
+  assertEq(/invalid lineHeight "tight"/.test(said), true, 'neither');
+});
+
 test('a purpose without slots is a page without text', () => {
   const p = parsePurposeFile('id: plain\ncompositions: panel\n', 'plain.purpose');
   assertEq(p.slots.length, 0, 'slots');

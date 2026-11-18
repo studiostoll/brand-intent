@@ -1166,6 +1166,10 @@ function splitLabelledItem(text) {
 }
 
 // parser/brandParser.ts
+function parseLineHeight(value) {
+  const m = value.trim().match(/^(\d+(?:\.\d+)?)(%?)$/);
+  return m ? m[2] ? parseFloat(m[1]) / 100 : parseFloat(m[1]) : NaN;
+}
 var GROUP_KEYWORDS = /* @__PURE__ */ new Set(["primary", "secondary", "accent", "neutral"]);
 var NEUTRAL_ROLES = /* @__PURE__ */ new Set(["light", "subtle", "mid", "muted", "dark"]);
 var STATE_KEYS = /* @__PURE__ */ new Set(["problem", "warning", "success", "info", "inactive"]);
@@ -1318,6 +1322,8 @@ function parseBrandFile(content, fileName) {
   let cameraDeclared = false;
   const locationRaw = {};
   let locationDeclared = false;
+  const printRaw = {};
+  let printDeclared = false;
   const photoLookRaw = {};
   let photoLookDeclared = false;
   const warnings = [];
@@ -1649,7 +1655,7 @@ function parseBrandFile(content, fileName) {
         const colonIdx2 = trimmed.indexOf(":");
         if (colonIdx2 !== -1) {
           const key2 = trimmed.slice(0, colonIdx2).trim();
-          const value2 = trimmed.slice(colonIdx2 + 1).trim();
+          const value2 = trimmed.slice(colonIdx2 + 1).replace(/\s+#.*$/, "").trim();
           typographiesRaw[currentTypographyName][key2] = value2;
         } else if (trimmed === "italic" || trimmed === "uppercase") {
           typographiesRaw[currentTypographyName][trimmed] = "true";
@@ -1747,6 +1753,17 @@ function parseBrandFile(content, fileName) {
         locationRaw[entry.slice(0, colonIdx2).trim()] = { value: entry.slice(colonIdx2 + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === "print") {
+        const trimmed = raw.trim();
+        if (trimmed === "" || trimmed.startsWith("#")) continue;
+        const entry = trimmed.replace(/\s+#.*$/, "");
+        const colonIdx2 = entry.indexOf(":");
+        if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: print property must be "KEY: VALUE", got "${trimmed}"`);
+        const key2 = entry.slice(0, colonIdx2).trim();
+        if (printRaw[key2]) throw new Error(`${fileName}:${lineNum}: print names ${key2}: twice`);
+        printRaw[key2] = { value: entry.slice(colonIdx2 + 1).trim(), line: lineNum };
+        continue;
+      }
       if (activeBlock === "photo-look") {
         const trimmed = raw.trim();
         if (trimmed.startsWith("#")) continue;
@@ -1832,6 +1849,12 @@ function parseBrandFile(content, fileName) {
       if (locationDeclared) throw new Error(`${fileName}:${lineNum}: duplicate location block`);
       locationDeclared = true;
       activeBlock = "location";
+      continue;
+    }
+    if (raw.trim() === "print") {
+      if (printDeclared) throw new Error(`${fileName}:${lineNum}: duplicate print block`);
+      printDeclared = true;
+      activeBlock = "print";
       continue;
     }
     if (raw.trim() === "photo-look") {
@@ -2410,7 +2433,7 @@ function parseBrandFile(content, fileName) {
     for (const [name, raw] of Object.entries(typographiesRaw)) {
       const weight = parseInt(raw["weight"] ?? "400", 10);
       const size = parseFloat(raw["size"] ?? "3");
-      const lineHeight = parseFloat(raw["lineHeight"] ?? "1.4");
+      const lineHeight = parseLineHeight(raw["lineHeight"] ?? "1.4");
       if (isNaN(weight) || isNaN(size) || isNaN(lineHeight)) {
         console.warn(`${fileName}: typography "${name}" has invalid numeric values \u2014 skipping`);
         continue;
@@ -2424,6 +2447,11 @@ function parseBrandFile(content, fileName) {
       if (raw["strong"] !== void 0) def.strong = parseInt(raw["strong"], 10);
       if (raw["autofit-min"] !== void 0) def.autofitMin = parseFloat(raw["autofit-min"]);
       if (raw["autofit-max"] !== void 0) def.autofitMax = parseFloat(raw["autofit-max"]);
+      if (raw["cap"] !== void 0) {
+        const m = raw["cap"].match(/^(\d+(?:\.\d+)?)x$/);
+        if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}: typography "${name}": cap is the height of the capitals in x (e.g. "2x"), got "${raw["cap"]}"`);
+        def.cap = parseFloat(m[1]);
+      }
       typographies[name] = def;
     }
     result.typographies = typographies;
@@ -2582,6 +2610,47 @@ function parseBrandFile(content, fileName) {
     }
     result.counter = counter;
   }
+  if (printDeclared) {
+    const measures = { margin: "margin", gutter: "gutter", "logo-height": "logoHeight", "clear-space": "clearSpace" };
+    const known = /* @__PURE__ */ new Set(["x", "logo", "spacers", ...Object.keys(measures)]);
+    for (const [key, { line }] of Object.entries(printRaw)) {
+      if (key === "roles" || key === "steps") throw new Error(`${fileName}:${line}: print takes no ${key}: a type size for print is "cap:" on a typography style`);
+      if (!known.has(key)) throw new Error(`${fileName}:${line}: unknown print property "${key}"`);
+    }
+    const inX = (key, value, line) => {
+      const m = value.match(/^(\d+(?:\.\d+)?)x$/);
+      if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}:${line}: print ${key} is a count of x (e.g. "1.5x"), got "${value}"`);
+      return parseFloat(m[1]);
+    };
+    const print = {};
+    const x = printRaw["x"];
+    if (x) {
+      const m = x.value.match(/^short\s*\/\s*(\d+(?:\.\d+)?)$/);
+      if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}:${x.line}: print x is a share of the sheet's short side (e.g. "short/30"), got "${x.value}"`);
+      print.unit = parseFloat(m[1]);
+    }
+    for (const [key, field] of Object.entries(measures)) {
+      const entry = printRaw[key];
+      if (entry) print[field] = inX(key, entry.value, entry.line);
+    }
+    const spacers = printRaw["spacers"];
+    if (spacers) {
+      print.spacers = spacers.value.split(",").map((v) => inX("spacers", v.trim(), spacers.line));
+      if (print.spacers.some((v, n, all) => n > 0 && v <= all[n - 1])) throw new Error(`${fileName}:${spacers.line}: print spacers must be ascending, got "${spacers.value}"`);
+    }
+    const logo = printRaw["logo"];
+    if (logo) {
+      if (!result.assets?.logos?.some((l) => l.id === logo.value)) throw new Error(`${fileName}:${logo.line}: print logo "${logo.value}" is not a declared logo`);
+      print.logo = logo.value;
+    }
+    if (print.unit === void 0) {
+      const first = Object.entries(printRaw).find(([key]) => key in measures || key === "spacers");
+      if (first) throw new Error(`${fileName}:${first[1].line}: print ${first[0]} is in x, the block names no x (e.g. "x: short/30")`);
+    }
+    result.print = print;
+  }
+  const capped = Object.entries(result.typographies ?? {}).find(([, t]) => t.cap !== void 0);
+  if (capped && result.print?.unit === void 0) throw new Error(`${fileName}: typography "${capped[0]}": cap is in x, the brand has no print block with an x (e.g. "x: short/30")`);
   if (cameraDeclared) {
     const known = /* @__PURE__ */ new Set(["facing", "grid"]);
     for (const [key, { line }] of Object.entries(cameraRaw)) {
@@ -3360,7 +3429,7 @@ function parsePurposeFile(content, fileName) {
           continue;
         }
         if (prop.startsWith("lineHeight:")) {
-          const n = parseFloat(prop.slice(11).trim());
+          const n = parseLineHeight(prop.slice(11).replace(/\s+#.*$/, ""));
           if (isNaN(n) || n <= 0) throw new Error(`${fileName}:${lineNum}: invalid lineHeight "${prop.slice(11).trim()}"`);
           currentSlot.typographyOverrides.lineHeight = n;
           continue;
@@ -3618,7 +3687,7 @@ function parsePurposeFile(content, fileName) {
         continue;
       }
       if (prop.startsWith("lineHeight:")) {
-        const n = parseFloat(prop.slice(11).trim());
+        const n = parseLineHeight(prop.slice(11).replace(/\s+#.*$/, ""));
         if (isNaN(n) || n <= 0) throw new Error(`${fileName}:${lineNum}: invalid lineHeight "${prop.slice(11).trim()}"`);
         currentSlot.typography.lineHeight = n;
         continue;

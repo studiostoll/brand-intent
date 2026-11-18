@@ -11,6 +11,7 @@ import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
 import { timeEntryNames, type ParsedTime } from './timeParser';
 import type { ParsedWork } from './workParser';
+import { parseLineHeight } from './brandParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -592,7 +593,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
           continue;
         }
         if (prop.startsWith('lineHeight:')) {
-          const n = parseFloat(prop.slice(11).trim());
+          const n = parseLineHeight(prop.slice(11).replace(/\s+#.*$/, ''));
           if (isNaN(n) || n <= 0) throw new Error(`${fileName}:${lineNum}: invalid lineHeight "${prop.slice(11).trim()}"`);
           currentSlot.typographyOverrides.lineHeight = n;
           continue;
@@ -830,7 +831,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         continue;
       }
       if (prop.startsWith('lineHeight:')) {
-        const n = parseFloat(prop.slice(11).trim());
+        const n = parseLineHeight(prop.slice(11).replace(/\s+#.*$/, ''));
         if (isNaN(n) || n <= 0) throw new Error(`${fileName}:${lineNum}: invalid lineHeight "${prop.slice(11).trim()}"`);
         currentSlot.typography!.lineHeight = n;
         continue;

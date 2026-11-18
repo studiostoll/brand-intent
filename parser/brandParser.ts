@@ -121,6 +121,26 @@ export interface ParsedBrand {
   photoLook?: ParsedPhotoLookDef;
   /** Where the brand is (`location` block). Sky and weather story variables need it. */
   location?: ParsedLocationDef;
+  /** The brand's measures for print (`print` block). Absent → the brand sets no print measures. */
+  print?: ParsedPrintDef;
+}
+
+/** The `print` block. Every measure is a count of x, the unit: the sheet's short side divided by `unit`. */
+export interface ParsedPrintDef {
+  /** The divisor of the unit (`x: short/30` → 30). Absent → the block names no unit and no measure. */
+  unit?: number;
+  /** The margin on all four sides, in x. */
+  margin?: number;
+  /** The distance between two columns, in x. */
+  gutter?: number;
+  /** Id of the logo printed matter carries (a `logo NAME` block). */
+  logo?: string;
+  /** The logo's height, in x. */
+  logoHeight?: number;
+  /** The room every mark keeps free around it, in x. */
+  clearSpace?: number;
+  /** The distances a layout may use, in x, ascending. */
+  spacers?: number[];
 }
 
 export type PhotoLookKey = 'saturation' | 'contrast' | 'warmth' | 'fade' | 'mono' | 'duotone';
@@ -296,6 +316,14 @@ export interface ParsedTypographyDef {
   autofitMin?: number;
   /** Autofit maximum font size in cqh. If absent, autofit is disabled (fixed size). */
   autofitMax?: number;
+  /** Height of the capitals in print, in x (`cap: 2x`), the unit of the `print` block. Absent → the style has no print size. */
+  cap?: number;
+}
+
+/** A line height: a multiplier (`1.1`) or a percentage (`110%`), the same value. NaN when it is neither. */
+export function parseLineHeight(value: string): number {
+  const m = value.trim().match(/^(\d+(?:\.\d+)?)(%?)$/);
+  return m ? (m[2] ? parseFloat(m[1]) / 100 : parseFloat(m[1])) : NaN;
 }
 
 export interface ParsedDividerDef {
@@ -466,7 +494,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   const result: Partial<ParsedBrand> = {};
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'print';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -528,6 +556,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let cameraDeclared = false;
   const locationRaw: Record<string, { value: string; line: number }> = {};
   let locationDeclared = false;
+  const printRaw: Record<string, { value: string; line: number }> = {};
+  let printDeclared = false;
   const photoLookRaw: Record<string, { value: string; line: number }> = {};
   let photoLookDeclared = false;
   const warnings: string[] = [];
@@ -890,7 +920,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         const colonIdx = trimmed.indexOf(':');
         if (colonIdx !== -1) {
           const key = trimmed.slice(0, colonIdx).trim();
-          const value = trimmed.slice(colonIdx + 1).trim();
+          const value = trimmed.slice(colonIdx + 1).replace(/\s+#.*$/, '').trim();
           typographiesRaw[currentTypographyName][key] = value;
         } else if (trimmed === 'italic' || trimmed === 'uppercase') {
           // Bare flag — presence means true
@@ -990,6 +1020,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         const colonIdx = entry.indexOf(':');
         if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: location property must be "KEY: VALUE", got "${trimmed}"`);
         locationRaw[entry.slice(0, colonIdx).trim()] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
+        continue;
+      }
+      if (activeBlock === 'print') {
+        const trimmed = raw.trim();
+        if (trimmed === '' || trimmed.startsWith('#')) continue;
+        const entry = trimmed.replace(/\s+#.*$/, '');
+        const colonIdx = entry.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: print property must be "KEY: VALUE", got "${trimmed}"`);
+        const key = entry.slice(0, colonIdx).trim();
+        if (printRaw[key]) throw new Error(`${fileName}:${lineNum}: print names ${key}: twice`);
+        printRaw[key] = { value: entry.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
       if (activeBlock === 'photo-look') {
@@ -1108,6 +1149,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (locationDeclared) throw new Error(`${fileName}:${lineNum}: duplicate location block`);
       locationDeclared = true;
       activeBlock = 'location';
+      continue;
+    }
+
+    // print — the brand's measures for print, in x
+    if (raw.trim() === 'print') {
+      if (printDeclared) throw new Error(`${fileName}:${lineNum}: duplicate print block`);
+      printDeclared = true;
+      activeBlock = 'print';
       continue;
     }
 
@@ -1777,7 +1826,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     for (const [name, raw] of Object.entries(typographiesRaw)) {
       const weight = parseInt(raw['weight'] ?? '400', 10);
       const size = parseFloat(raw['size'] ?? '3');
-      const lineHeight = parseFloat(raw['lineHeight'] ?? '1.4');
+      const lineHeight = parseLineHeight(raw['lineHeight'] ?? '1.4');
       if (isNaN(weight) || isNaN(size) || isNaN(lineHeight)) {
         console.warn(`${fileName}: typography "${name}" has invalid numeric values — skipping`);
         continue;
@@ -1791,6 +1840,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (raw['strong'] !== undefined) def.strong = parseInt(raw['strong'], 10);
       if (raw['autofit-min'] !== undefined) def.autofitMin = parseFloat(raw['autofit-min']);
       if (raw['autofit-max'] !== undefined) def.autofitMax = parseFloat(raw['autofit-max']);
+      if (raw['cap'] !== undefined) {
+        const m = raw['cap'].match(/^(\d+(?:\.\d+)?)x$/);
+        if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}: typography "${name}": cap is the height of the capitals in x (e.g. "2x"), got "${raw['cap']}"`);
+        def.cap = parseFloat(m[1]);
+      }
       typographies[name] = def;
     }
     result.typographies = typographies;
@@ -1962,6 +2016,49 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     }
     result.counter = counter;
   }
+
+  // Finalise print measures
+  if (printDeclared) {
+    const measures = { margin: 'margin', gutter: 'gutter', 'logo-height': 'logoHeight', 'clear-space': 'clearSpace' } as const;
+    const known = new Set(['x', 'logo', 'spacers', ...Object.keys(measures)]);
+    for (const [key, { line }] of Object.entries(printRaw)) {
+      if (key === 'roles' || key === 'steps') throw new Error(`${fileName}:${line}: print takes no ${key}: a type size for print is "cap:" on a typography style`);
+      if (!known.has(key)) throw new Error(`${fileName}:${line}: unknown print property "${key}"`);
+    }
+    const inX = (key: string, value: string, line: number): number => {
+      const m = value.match(/^(\d+(?:\.\d+)?)x$/);
+      if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}:${line}: print ${key} is a count of x (e.g. "1.5x"), got "${value}"`);
+      return parseFloat(m[1]);
+    };
+    const print: ParsedPrintDef = {};
+    const x = printRaw['x'];
+    if (x) {
+      const m = x.value.match(/^short\s*\/\s*(\d+(?:\.\d+)?)$/);
+      if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}:${x.line}: print x is a share of the sheet's short side (e.g. "short/30"), got "${x.value}"`);
+      print.unit = parseFloat(m[1]);
+    }
+    for (const [key, field] of Object.entries(measures) as [keyof typeof measures, (typeof measures)[keyof typeof measures]][]) {
+      const entry = printRaw[key];
+      if (entry) print[field] = inX(key, entry.value, entry.line);
+    }
+    const spacers = printRaw['spacers'];
+    if (spacers) {
+      print.spacers = spacers.value.split(',').map(v => inX('spacers', v.trim(), spacers.line));
+      if (print.spacers.some((v, n, all) => n > 0 && v <= all[n - 1])) throw new Error(`${fileName}:${spacers.line}: print spacers must be ascending, got "${spacers.value}"`);
+    }
+    const logo = printRaw['logo'];
+    if (logo) {
+      if (!result.assets?.logos?.some(l => l.id === logo.value)) throw new Error(`${fileName}:${logo.line}: print logo "${logo.value}" is not a declared logo`);
+      print.logo = logo.value;
+    }
+    if (print.unit === undefined) {
+      const first = Object.entries(printRaw).find(([key]) => key in measures || key === 'spacers');
+      if (first) throw new Error(`${fileName}:${first[1].line}: print ${first[0]} is in x, the block names no x (e.g. "x: short/30")`);
+    }
+    result.print = print;
+  }
+  const capped = Object.entries(result.typographies ?? {}).find(([, t]) => t.cap !== undefined);
+  if (capped && result.print?.unit === undefined) throw new Error(`${fileName}: typography "${capped[0]}": cap is in x, the brand has no print block with an x (e.g. "x: short/30")`);
 
   // Finalise camera defaults
   if (cameraDeclared) {

@@ -37,6 +37,7 @@
     { "include": "#color-group-entry-property" },
     { "include": "#icons-counter-header" },
     { "include": "#icon-entry" },
+    { "include": "#print-value" },
     { "include": "#counter-value" },
     { "include": "#framing-horizon" },
     { "include": "#theme-header" },
@@ -423,7 +424,7 @@
     },
     "typography-value": {
       "comment": "Indented typography block properties; font ref colored teal as a cross-reference",
-      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing|autofit-min|autofit-max)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$",
+      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing|autofit-min|autofit-max|cap)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -457,8 +458,8 @@
       }
     },
     "icons-counter-header": {
-      "comment": "Bare `icons` / `counter` / `camera` / `photo-look` / `location` block headers.",
-      "match": "^(icons|counter|camera|photo-look|location)\\s*$",
+      "comment": "Bare `icons` / `counter` / `camera` / `photo-look` / `location` / `print` block headers.",
+      "match": "^(icons|counter|camera|photo-look|location|print)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }
@@ -487,6 +488,25 @@
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
         "4": { "name": "constant.numeric.brand-intent-brand" },
         "5": { "name": "comment.line.number-sign.brand-intent-brand" }
+      }
+    },
+    "print-value": {
+      "comment": "print block: the unit, measures in x, columns, logo and the spacers",
+      "match": "^(\\s{2,})(?:(x)(:\\s*)(short\\s*/\\s*\\d+(?:\\.\\d+)?)|(margin|gutter|logo-height|clear-space)(:\\s*)(\\d+(?:\\.\\d+)?x)|(spacers)(:\\s*)((?:\\d+(?:\\.\\d+)?x\\s*,?\\s*)+)|(logo)(:\\s*)([\\w-]+))\\s*(#.*)?$",
+      "captures": {
+        "2": { "name": "support.type.property-name.brand-intent-brand" },
+        "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "4": { "name": "constant.numeric.brand-intent-brand" },
+        "5": { "name": "support.type.property-name.brand-intent-brand" },
+        "6": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "7": { "name": "constant.numeric.brand-intent-brand" },
+        "8": { "name": "support.type.property-name.brand-intent-brand" },
+        "9": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "10": { "name": "constant.numeric.brand-intent-brand" },
+        "11": { "name": "support.type.property-name.brand-intent-brand" },
+        "12": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "13": { "name": "entity.name.tag.brand-intent-brand" },
+        "14": { "name": "comment.line.number-sign.brand-intent-brand" }
       }
     },
     "counter-value": {
@@ -524,7 +544,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|location)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|location|print)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

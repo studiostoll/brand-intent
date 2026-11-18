@@ -684,6 +684,56 @@ test('flat brand color keeps its hex when a comment follows', () => {
   assertEq(out.themes?.Laden?.background, '#FAF6F0', 'theme resolves the commented colour');
 });
 
+// ── Print measures and type sizes for print ──────────────────────────────────
+
+console.log('\nPrint:');
+
+const PRINT_BRAND = (print: string, typography = '') => `${HEADER}brand-colors\n  primary: #2C1810\n\nlogo wordmark\n  src: logos/wordmark.svg\n\ntypography headline\n  weight: 700\n  size: 6\n  lineHeight: 1.1\n${typography}\n${print}`;
+
+test('print block: the unit, the measures in x, logo and spacers', () => {
+  const out = parseBrandFile(PRINT_BRAND(`print\n  x: short/30          # a thirtieth of the short side\n  margin: 2x\n  gutter: 0.75x\n  logo: wordmark\n  logo-height: 2x\n  clear-space: 1x\n  spacers: 0.25x, 0.5x, 1x, 2x\n`), 'test.brand');
+  assertEq(out.print, { unit: 30, margin: 2, gutter: 0.75, logoHeight: 2, clearSpace: 1, spacers: [0.25, 0.5, 1, 2], logo: 'wordmark' }, 'print');
+});
+
+test('a brand without a print block has no print', () => {
+  assertEq(parseBrandFile(PRINT_BRAND(''), 'test.brand').print, undefined, 'print');
+});
+
+test('print block rejects what it cannot read', () => {
+  const p = (body: string) => () => parseBrandFile(PRINT_BRAND(`print\n${body}`), 'test.brand');
+  assertThrows(p('  margin: 2x\n'), /print margin is in x, the block names no x/, 'measure without x');
+  assertThrows(p('  x: 7mm\n'), /print x is a share of the sheet's short side/, 'x');
+  assertThrows(p('  x: short/30\n  margin: 14mm\n'), /print margin is a count of x/, 'mm');
+  assertThrows(p('  x: short/30\n  spacers: 1x, 0.5x\n'), /spacers must be ascending/, 'order');
+  assertThrows(p('  x: short/30\n  columns: 12\n'), /unknown print property "columns"/, 'columns stay with the sheet');
+  assertThrows(p('  x: short/30\n  row: 1x\n'), /unknown print property "row"/, 'rows stay with the sheet');
+  assertThrows(p('  x: short/30\n  logo: mark\n'), /print logo "mark" is not a declared logo/, 'logo');
+  assertThrows(p('  x: short/30\n  bleed: 1x\n'), /unknown print property "bleed"/, 'unknown');
+  assertThrows(p('  x: short/30\n  roles: headline 2x 700\n'), /print takes no roles/, 'roles');
+  assertThrows(p('  x: short/30\n  margin: 2x\n  margin: 3x\n'), /names margin: twice/, 'twice');
+  assertThrows(() => parseBrandFile(PRINT_BRAND('print\n  x: short/30\n\nprint\n  x: short/20\n'), 'test.brand'), /duplicate print block/, 'duplicate');
+});
+
+test('typography cap: the height of the capitals in x', () => {
+  const out = parseBrandFile(PRINT_BRAND('print\n  x: short/30\n', 'typography lead\n  weight: 400\n  lineHeight: 1.3\n  cap: 1.5x   # print only\n'), 'test.brand');
+  assertEq(out.typographies?.lead?.cap, 1.5, 'cap');
+  assertEq(out.typographies?.headline?.cap, undefined, 'no cap');
+});
+
+test('typography cap needs the unit and a count of x', () => {
+  assertThrows(() => parseBrandFile(PRINT_BRAND('', '  cap: 2x\n'), 'test.brand'), /typography "headline": cap is in x, the brand has no print block with an x/, 'no print');
+  assertThrows(() => parseBrandFile(PRINT_BRAND('print\n  logo: wordmark\n', '  cap: 2x\n'), 'test.brand'), /no print block with an x/, 'print without x');
+  assertThrows(() => parseBrandFile(PRINT_BRAND('print\n  x: short/30\n', '  cap: 8mm\n'), 'test.brand'), /cap is the height of the capitals in x/, 'mm');
+});
+
+test('lineHeight reads a multiplier or a percentage', () => {
+  const lh = (v: string) => parseBrandFile(PRINT_BRAND('', `typography body\n  weight: 400\n  size: 3\n  lineHeight: ${v}\n`), 'test.brand').typographies?.body?.lineHeight;
+  assertEq(lh('1.3'), 1.3, 'multiplier');
+  assertEq(lh('130%'), 1.3, 'percent');
+  assertEq(lh('110%   # headlines'), 1.1, 'percent with comment');
+  assertEq(lh('100%'), 1, 'hundred');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -28,6 +28,7 @@ All Brand Intent files share these rules:
 | `list` | `a, b, c` | Comma-separated or space-separated |
 | `insets` | `40`, `40 80`, `40 80 50 60` | 1, 2, or 4 values (CSS shorthand) |
 | `ref` | `$primary`, `$white` | Reference to a named value in the same file |
+| `x` | `2x`, `0.75x` | A count of x, the unit of the brand's [`print`](#print-block) block |
 | `flag` | `italic`, `uppercase` | Bare word = true; absence = false |
 
 ---
@@ -344,6 +345,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
 | `spacing:` | block | No | Spacing token scale |
+| `print` | block | No | The brand's measures for print: the unit x, margin, gutter, logo height, distances |
 | `divider NAME` | block | No | Named divider style (repeatable) |
 | `label:` | block | No | Label badge style (padding + radius) |
 | `cta:` | block | No | CTA pill style (padding + radius) |
@@ -742,8 +744,9 @@ font primary
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `weight:` | int | Yes | Font weight (100-900) |
-| `size:` | float | Yes | Font size in cqh |
-| `lineHeight:` | float | Yes | Line height multiplier |
+| `size:` | float | Yes, unless `cap:` is set | Font size in cqh |
+| `lineHeight:` | float or percent | Yes | Line height as a multiplier or a percentage: `1.1` and `110%` are the same value |
+| `cap:` | x | No | Height of the capitals in print, in x (`cap: 2x`). Needs a [`print`](#print-block) block with `x:` |
 | `font:` | string | No | Named font key; defaults to brand primary |
 | `strong:` | int | No | Weight for `**strong**` markup (100-900) |
 | `opsz:` | float | No | Optical size axis value |
@@ -752,6 +755,8 @@ font primary
 | `autofit-max:` | float | No | Maximum autofit size (cqh) |
 | `italic` | flag | No | Enable italic |
 | `uppercase` | flag | No | Enable uppercase transform |
+
+A style is the one source for type, on screen and in print. `size:` is its size on a screen format, `cap:` its size in print; font, weight and line height are the same in both. A style with `cap:` and no `size:` is a style for print only.
 
 ### `spacing:` Block
 
@@ -769,6 +774,49 @@ spacing:
 |-----|------|---------|-------------|
 | `unit:` | string | `cqmin` | Unit for all spacing values |
 | `xs`, `s`, `m`, `l`, `xl` | float | - | Spacing scale values |
+
+### `print` Block
+
+The brand's measures for print. They are counted in x, a unit that grows with the sheet, so one set of numbers holds for every size of paper. At most one per brand.
+
+```yaml
+print
+  x: short/30          # the unit: a thirtieth of the sheet's short side
+  margin: 2x
+  gutter: 0.75x
+  logo: wordmark
+  logo-height: 2x
+  clear-space: 1x
+  spacers: 0.25x, 0.5x, 0.75x, 1x, 1.5x, 2x, 3x
+
+typography headline
+  font: $display
+  weight: 400
+  size: 6
+  lineHeight: 110%
+  cap: 2x              # in print its capitals are 2 x high
+```
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `x:` | `short/N` | Yes, when the brand uses x | The unit: the sheet's short side divided by `N`. On an A4 sheet, `short/30` is 7 mm, upright or landscape |
+| `margin:` | x | No | The margin on all four sides |
+| `gutter:` | x | No | The distance between two columns |
+| `logo:` | string | No | Id of the [`logo`](#logo-name-photo-name-video-name-blocks) printed matter carries |
+| `logo-height:` | x | No | The logo's height |
+| `clear-space:` | x | No | The room every mark keeps free around it |
+| `spacers:` | list of x | No | The distances a layout may use, ascending |
+
+The block holds measures, not type and not colour. A type size for print is `cap:` on a [`typography`](#typography-name-block) style; colours come from the brand's themes, families and levels. A measure in x without `x:`, a `cap:` in a brand without `x:`, an unknown key, a `logo:` that is no declared logo and spacers out of order are parser errors.
+
+**What `spacers` means.** Every vertical distance between two lines of type is one of the spacers, measured from the baseline of the upper line to the top of the capitals of the lower one:
+
+- The distance above a line is the largest spacer that is not larger than the line's `cap:`. Where every spacer is larger, it is the smallest.
+- A style with a line height over 1.2 takes the next larger spacer. Text carries air between its own lines; without the step, the distance would read as one more line of the text.
+- A group is a headline with the lines that belong to it. Within a group every distance is the same: the one its smallest style asks for.
+- Between two groups stands the next larger spacer after the `cap:` of the group's headline.
+
+With the spacers above, text with `cap: 0.75x` and a line height of 1.3 stands 1 x below its headline, and a group under a `cap: 2x` headline starts 3 x below the group before it.
 
 ### `divider NAME` Block
 
@@ -1038,7 +1086,7 @@ video intro                # media/videos/intro.mp4
 
 ### Exclusion Rule
 
-A `.brand` file must NOT contain: identity reasoning, audience definitions, content pillar descriptions, strategic prose, composition rules, or platform specifications.
+A `.brand` file must NOT contain: identity reasoning, audience definitions, content pillar descriptions, strategic prose, composition rules, or platform specifications. The `print` block holds the measures every sheet shares; a sheet's size, its columns and rows, its regions and which style stands where are not the brand's.
 
 ---
 
@@ -1244,7 +1292,7 @@ On a `.story` page the same slot can take the place's facts: `Hours: {week-hours
 
 #### `override:` Sub-Block (4-space indent)
 
-Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`, `hyphenate`.
+Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`, `hyphenate`. `lineHeight` reads a multiplier or a percentage (`1.1` or `110%`), as in the brand's styles.
 
 `hyphenate` sets how a slot may hyphenate (German syllables):
 
