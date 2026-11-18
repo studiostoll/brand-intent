@@ -188,11 +188,16 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
           const slotIds = new Set<string>(purpose.slots.map(s => s.id));
           const slot = (id: string, where: string) => { if (!slotIds.has(id)) say(`${where}: slot "${id}" is not a slot of purpose "${purpose.id}"`); };
           const last = composition.regions[composition.regions.length - 1];
-          if (rows !== undefined && last && last.fields[1] !== rows) say(`the last region ends on field ${last.fields[1]}, format "${format.id}" has ${rows} fields`);
+          if (rows !== undefined && last && Array.isArray(last.fields) && last.fields[1] !== rows) say(`the last region ends on field ${last.fields[1]}, format "${format.id}" has ${rows} fields`);
+          // By content: each "content" region takes at least one field, "rest" what they leave
+          const contents = composition.regions.filter(r => r.fields === 'content').length;
           for (const r of composition.regions) {
             const where = `region "${r.id}"`;
-            if (rows !== undefined && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
-            if (rows !== undefined && r.stack && 'field' in r.stack && r.stack.field > rows) say(`${where}: stack field ${r.stack.field} is outside the format's ${rows} fields`);
+            if (rows !== undefined && Array.isArray(r.fields) && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
+            if (rows !== undefined && r.fields === 'rest') {
+              const most = rows - contents, need = r.stack && 'field' in r.stack ? r.stack.field : 1;
+              if (most < need) say(`${where}: it needs ${need} field${need > 1 ? 's' : ''}, format "${format.id}" leaves it at most ${most}`);
+            }
             for (const pl of r.places) {
               if (cols !== undefined && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
               slot(pl.slot, where);

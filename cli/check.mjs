@@ -3940,6 +3940,7 @@ function parseCompositionFile(content, fileName) {
   const regions = [];
   let region = null;
   const regionLines = /* @__PURE__ */ new Map();
+  const fieldsSet = /* @__PURE__ */ new Set();
   const stackLines = /* @__PURE__ */ new Map();
   const groupLines = /* @__PURE__ */ new Map();
   const placed = /* @__PURE__ */ new Set();
@@ -4043,9 +4044,10 @@ function parseCompositionFile(content, fileName) {
         };
         switch (key[1]) {
           case "fields": {
-            once(region.fields[0]);
-            if (words.length !== 1) throw new Error(`${at}: invalid fields "${value}" (expected "A-B" or "A")`);
-            region.fields = rangeOf(words[0], "fields");
+            once(fieldsSet.has(region));
+            fieldsSet.add(region);
+            if (words.length !== 1) throw new Error(`${at}: invalid fields "${value}" (expected "A-B", "A", "content" or "rest")`);
+            region.fields = words[0] === "content" || words[0] === "rest" ? words[0] : rangeOf(words[0], "fields");
             break;
           }
           case "logo": {
@@ -4401,16 +4403,22 @@ function parseCompositionFile(content, fileName) {
     if (!regions.length) throw new Error(`${fileName}: "mode: regions" needs at least one "region" block`);
     if (foreign) throw new Error(`${fileName}:${foreign.line}: ${foreign.what} is not allowed in regions mode (a region places its slots itself)`);
     let next = 1;
+    const numbered = regions.filter((r) => Array.isArray(r.fields)), rests = regions.filter((r) => r.fields === "rest");
+    for (const r of regions) if (!fieldsSet.has(r)) throw new Error(`${fileName}:${regionLines.get(r)}: region "${r.id}" needs "fields:"`);
+    if (numbered.length && numbered.length < regions.length) throw new Error(`${fileName}:${regionLines.get(regions.find((r) => !Array.isArray(r.fields)))}: fields by number and "content"/"rest" don't mix in one composition`);
+    if (!numbered.length && rests.length !== 1) throw new Error(`${fileName}:${regionLines.get(rests[1] ?? regions[0])}: a composition with "content" regions has one "rest" region, ${rests.length ? "not two" : "none here"}`);
     for (const r of regions) {
       const at = `${fileName}:${regionLines.get(r)}`;
-      if (!r.fields[0]) throw new Error(`${at}: region "${r.id}" needs "fields:"`);
-      if (r.fields[0] !== next) throw new Error(`${at}: region "${r.id}" starts at field ${r.fields[0]}, expected ${next} (regions run top to bottom without gaps or overlap, from field 1)`);
-      next = r.fields[1] + 1;
+      if (Array.isArray(r.fields)) {
+        if (r.fields[0] !== next) throw new Error(`${at}: region "${r.id}" starts at field ${r.fields[0]}, expected ${next} (regions run top to bottom without gaps or overlap, from field 1)`);
+        next = r.fields[1] + 1;
+      }
       if (r.group && !r.stack) throw new Error(`${fileName}:${groupLines.get(r)}: region "${r.id}": "group:" needs "stack:"`);
       if (r.stack && !r.group) throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": "stack:" needs "group:"`);
-      if (r.stack && "field" in r.stack && (r.stack.field < r.fields[0] || r.stack.field > r.fields[1])) {
-        throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field} is outside its fields ${r.fields[0]}-${r.fields[1]}`);
+      if (r.stack && "field" in r.stack && Array.isArray(r.fields) && r.stack.field > r.fields[1] - r.fields[0] + 1) {
+        throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field}, the region has ${r.fields[1] - r.fields[0] + 1} fields`);
       }
+      if (r.stack && "field" in r.stack && r.fields === "content") throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": a "content" region is as tall as what it holds, its stack stands on its neighbour ("stack: neighbour")`);
     }
   } else if (regions.length) {
     throw new Error(`${fileName}:${regionLines.get(regions[0])}: "region" needs "mode: regions"`);
@@ -5614,11 +5622,15 @@ function checkFiles(files) {
             if (!slotIds.has(id)) say(`${where}: slot "${id}" is not a slot of purpose "${purpose.id}"`);
           };
           const last = composition.regions[composition.regions.length - 1];
-          if (rows !== void 0 && last && last.fields[1] !== rows) say(`the last region ends on field ${last.fields[1]}, format "${format.id}" has ${rows} fields`);
+          if (rows !== void 0 && last && Array.isArray(last.fields) && last.fields[1] !== rows) say(`the last region ends on field ${last.fields[1]}, format "${format.id}" has ${rows} fields`);
+          const contents = composition.regions.filter((r) => r.fields === "content").length;
           for (const r of composition.regions) {
             const where = `region "${r.id}"`;
-            if (rows !== void 0 && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
-            if (rows !== void 0 && r.stack && "field" in r.stack && r.stack.field > rows) say(`${where}: stack field ${r.stack.field} is outside the format's ${rows} fields`);
+            if (rows !== void 0 && Array.isArray(r.fields) && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
+            if (rows !== void 0 && r.fields === "rest") {
+              const most = rows - contents, need = r.stack && "field" in r.stack ? r.stack.field : 1;
+              if (most < need) say(`${where}: it needs ${need} field${need > 1 ? "s" : ""}, format "${format.id}" leaves it at most ${most}`);
+            }
             for (const pl of r.places) {
               if (cols !== void 0 && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
               slot(pl.slot, where);

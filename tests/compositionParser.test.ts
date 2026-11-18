@@ -208,7 +208,7 @@ test('regions mode: errors', () => {
   assertThrows(() => sign(t => t.replace('place: note top 1-5', 'place: logo top 1-5')), /"logo" can't name a slot/, 'reserved slot');
   assertThrows(() => sign(t => t.replace('  group: note\n', '')), /"stack:" needs "group:"/, 'stack without group');
   assertThrows(() => sign(t => t.replace('  stack: field 2\n', '')), /"group:" needs "stack:"/, 'group without stack');
-  assertThrows(() => sign(t => t.replace('stack: field 2', 'stack: field 5')), /stack field 5 is outside its fields 1-4/, 'stack field range');
+  assertThrows(() => sign(t => t.replace('stack: field 2', 'stack: field 5')), /stack field 5, the region has 4 fields/, 'stack field range');
   assertThrows(() => sign(t => t.replace('stack: field 2', 'stack: below')), /invalid stack/, 'stack shape');
   assertThrows(() => sign(t => t.replace('1.5x', '1.5')), /invalid stack distance/, 'stack distance');
   assertThrows(() => sign(t => t.replace('size: code 4x', 'size: code 4')), /invalid size|invalid size/, 'size shape');
@@ -216,6 +216,16 @@ test('regions mode: errors', () => {
   assertThrows(() => sign(t => t.replace('fit: word', 'colour: word')), /unknown region key "colour"/, 'unknown key');
   assertThrows(() => sign(t => t.replace('region foot', 'region head')), /more than one region "head"/, 'duplicate id');
   assertThrows(() => sign(t => t.replace('region foot', 'region Foot')), /invalid region id "Foot"/, 'id shape');
+});
+
+test('regions mode: fields by content and the rest', () => {
+  const c = sign(t => t.replace('fields: 1-4', 'fields: rest').replace('fields: 5-6', 'fields: content'));
+  assertEq(c.regions?.map(r => r.fields), ['rest', 'content']);
+  assertThrows(() => sign(t => t.replace('fields: 5-6', 'fields: content')), /fields by number and "content"\/"rest" don't mix/, 'mixed');
+  assertThrows(() => sign(t => t.replace('fields: 1-4', 'fields: content').replace('fields: 5-6', 'fields: content')), /one "rest" region, none here/, 'no rest');
+  assertThrows(() => sign(t => t.replace('fields: 1-4', 'fields: rest').replace('fields: 5-6', 'fields: rest')), /one "rest" region, not two/, 'two rests');
+  assertThrows(() => sign(t => t.replace('fields: 1-4', 'fields: content').replace('fields: 5-6', 'fields: rest')), /a "content" region is as tall as what it holds/, 'content with a stack field');
+  assertThrows(() => sign(t => t.replace('fields: 5-6', 'fields: some')), /invalid fields "some"/, 'shape');
 });
 
 test('regions mode: mode conflicts', () => {

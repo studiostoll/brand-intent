@@ -139,6 +139,14 @@ test('use: the slots name roles of that kind, not styles', () => {
     assertEq(added(f => { regionsBase(f); f.formats.find(x => x.id === f.stories[0].format)!.grid = { rows: 4, cols: 3 }; }).some(m => m.includes('columns 2-4 are outside the format\'s 3 columns')), true, 'columns');
   });
 
+  test('regions: by content, the rest keeps enough fields for its stack', () => {
+    const relative = (t: string) => t.replace('fields: 1-2', 'fields: rest').replace('fields: 3-4', 'fields: content');
+    const text = (f: BrandFiles) => { const [a, b] = purpose(f).slots.map(sl => sl.id); return `id: printed\nimage: none\n\nregion head\n  fields: 1-2\n  logo: top left\n  place: ${a} top 1-3\n  group: ${a}\n  stack: field 3\n\nregion foot\n  fields: 3-4\n  place: ${b} bottom right 2-4\n  group: ${b}\n  stack: neighbour 1.5x\n  size: ${b} 4x\n`; };
+    assertEq(added(f => regionsBase(f, relative(text(f)).replace('stack: field 3', 'stack: field 2'))), [], 'fits: 4 fields, one for the foot');
+    assertEq(added(f => regionsBase(f, relative(text(f)))), [], 'three fit');
+    assertEq(added(f => regionsBase(f, relative(text(f)).replace('stack: field 3', 'stack: field 4'))), [at('region "head": it needs 4 fields, format "' + base().stories[0].format + '" leaves it at most 3')], 'too few');
+  });
+
   test('regions: a stack distance is one of the print spacers', () => {
     assertEq(added(f => { regionsBase(f); f.brand!.print!.spacers = [0.5, 1]; }), [at('region "foot": stack distance 1.5x is not one of the brand\'s print spacers')]);
   });

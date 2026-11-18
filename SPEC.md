@@ -1503,7 +1503,7 @@ mode: regions
 image: none
 
 region head
-  fields: 1-4
+  fields: rest
   logo: top left
   place: sender top 7-12
   group: kicker word
@@ -1511,7 +1511,7 @@ region head
   fit: word
 
 region foot
-  fields: 5-6
+  fields: content
   place: note top 1-5
   place: code bottom 1-5
   place: arrow bottom right 6-12
@@ -1525,15 +1525,19 @@ region foot
 | Key | Description |
 |-----|-------------|
 | `region ID` | Opens a block (lowercase-hyphen id). Regions stand top to bottom in the order written |
-| `fields: A-B` | The format's fields the region spans (or `A`), 1-based. Ascending, contiguous, from 1, no overlap; the last region ends on the format's last field |
+| `fields: content` | As many whole fields as what the region holds needs, at least one. Decided when the piece is laid out: its slots in the sizes they are given, nothing reaching past the region |
+| `fields: rest` | The fields the other regions leave. A composition with `content` regions has exactly one `rest` region |
+| `fields: A-B` | The format's fields the region spans (or `A`), 1-based. Ascending, contiguous, from 1, no overlap; the last region ends on the format's last field. Binds the composition to formats with that many fields; numbers and `content`/`rest` don't mix |
 | `logo: top\|bottom left\|right` | The brand's print logo in that corner of the region. At most one region per composition |
 | `place: SLOT top\|bottom [left\|right] A-B` | The slot stands on the region's top or bottom edge, aligned left (default) or right, across columns A to B (1-based). Repeatable; a slot is placed once |
 | `group: SLOT ...` | Lines that belong together; the distances between them follow the brand's spacers. A grouped slot no `place:` names stands across the region's columns. Needs `stack:` |
-| `stack: field N` | The group's first capitals stand on the top edge of field N (counted from the top of the page, inside the region's fields) |
+| `stack: field N` | The group's first capitals stand on the top edge of the region's field N, counted from its first. Not in a `content` region |
 | `stack: neighbour [Nx]` | The group's last baseline stands above what stands below it in its columns, at the distance the spacers rule gives, or at the named print spacer N x |
 | `baseline: SLOT ...` | The slot's last baseline stands on the region's bottom edge |
 | `fit: SLOT ...` | The slot's type as large as its longest line fills its columns |
 | `size: SLOT Nx` | The height of the slot's capitals in x, whatever its role says. Like a role, it counts capitals, not the em |
+
+A composition in `content` and `rest` travels: it holds on every format where the content regions find their fields and the `rest` region keeps enough for its stack. Where it doesn't, laying it out fails with the reason; nothing is squeezed or overlaps.
 
 In regions mode the top-level `logo:`, `icon:`, `sticky:`, `flow:` and grid slot lines are errors, and `region` is an error in any other mode. `mode: regions` is inferred when a file has `region` blocks and no `mode:` line. Every slot a composition names is a slot of the page's purpose.
 

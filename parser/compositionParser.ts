@@ -50,8 +50,9 @@ export interface ParsedRegionPlace { slot: SlotId; edge: 'top' | 'bottom'; side:
 /** A region of a printed piece: a run of the format's fields, top to bottom (`mode: regions`). */
 export interface ParsedRegion {
   id: string;
-  /** The fields the region spans, 1-based, inclusive. */
-  fields: [number, number];
+  /** The fields the region spans, 1-based, inclusive; or `content`: as many whole fields as what it holds needs, at
+   *  least one, decided when the piece is laid out; or `rest`: the fields the other regions leave. */
+  fields: [number, number] | 'content' | 'rest';
   logo?: { v: 'top' | 'bottom'; h: 'left' | 'right' };
   places: ParsedRegionPlace[];
   group?: SlotId[];
@@ -237,6 +238,8 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   const regions: ParsedRegion[] = [];
   let region: ParsedRegion | null = null;
   const regionLines = new Map<ParsedRegion, number>();
+  /** Regions whose "fields:" line was read. */
+  const fieldsSet = new Set<ParsedRegion>();
   const stackLines = new Map<ParsedRegion, number>();
   const groupLines = new Map<ParsedRegion, number>();
   const placed = new Set<string>();
@@ -355,9 +358,10 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         const once = (have: unknown) => { if (have) throw new Error(`${at}: "${key[1]}:" twice in region "${region!.id}"`); };
         switch (key[1]) {
           case 'fields': {
-            once(region.fields[0]);
-            if (words.length !== 1) throw new Error(`${at}: invalid fields "${value}" (expected "A-B" or "A")`);
-            region.fields = rangeOf(words[0], 'fields');
+            once(fieldsSet.has(region));
+            fieldsSet.add(region);
+            if (words.length !== 1) throw new Error(`${at}: invalid fields "${value}" (expected "A-B", "A", "content" or "rest")`);
+            region.fields = words[0] === 'content' || words[0] === 'rest' ? words[0] : rangeOf(words[0], 'fields');
             break;
           }
           case 'logo': {
@@ -751,16 +755,23 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     if (!regions.length) throw new Error(`${fileName}: "mode: regions" needs at least one "region" block`);
     if (foreign) throw new Error(`${fileName}:${(foreign as { line: number }).line}: ${(foreign as { what: string }).what} is not allowed in regions mode (a region places its slots itself)`);
     let next = 1;
+    const numbered = regions.filter(r => Array.isArray(r.fields)), rests = regions.filter(r => r.fields === 'rest');
+    for (const r of regions) if (!fieldsSet.has(r)) throw new Error(`${fileName}:${regionLines.get(r)}: region "${r.id}" needs "fields:"`);
+    if (numbered.length && numbered.length < regions.length) throw new Error(`${fileName}:${regionLines.get(regions.find(r => !Array.isArray(r.fields))!)}: fields by number and "content"/"rest" don't mix in one composition`);
+    if (!numbered.length && rests.length !== 1) throw new Error(`${fileName}:${regionLines.get(rests[1] ?? regions[0])}: a composition with "content" regions has one "rest" region, ${rests.length ? 'not two' : 'none here'}`);
     for (const r of regions) {
       const at = `${fileName}:${regionLines.get(r)}`;
-      if (!r.fields[0]) throw new Error(`${at}: region "${r.id}" needs "fields:"`);
-      if (r.fields[0] !== next) throw new Error(`${at}: region "${r.id}" starts at field ${r.fields[0]}, expected ${next} (regions run top to bottom without gaps or overlap, from field 1)`);
-      next = r.fields[1] + 1;
+      if (Array.isArray(r.fields)) {
+        if (r.fields[0] !== next) throw new Error(`${at}: region "${r.id}" starts at field ${r.fields[0]}, expected ${next} (regions run top to bottom without gaps or overlap, from field 1)`);
+        next = r.fields[1] + 1;
+      }
       if (r.group && !r.stack) throw new Error(`${fileName}:${groupLines.get(r)}: region "${r.id}": "group:" needs "stack:"`);
       if (r.stack && !r.group) throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": "stack:" needs "group:"`);
-      if (r.stack && 'field' in r.stack && (r.stack.field < r.fields[0] || r.stack.field > r.fields[1])) {
-        throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field} is outside its fields ${r.fields[0]}-${r.fields[1]}`);
+      // A stack's field counts from the region's first
+      if (r.stack && 'field' in r.stack && Array.isArray(r.fields) && r.stack.field > r.fields[1] - r.fields[0] + 1) {
+        throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field}, the region has ${r.fields[1] - r.fields[0] + 1} fields`);
       }
+      if (r.stack && 'field' in r.stack && r.fields === 'content') throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": a "content" region is as tall as what it holds, its stack stands on its neighbour ("stack: neighbour")`);
     }
   } else if (regions.length) {
     throw new Error(`${fileName}:${regionLines.get(regions[0])}: "region" needs "mode: regions"`);
