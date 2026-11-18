@@ -393,7 +393,6 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
             once(region.photo);
             if (words.length !== 1) throw new Error(`${at}: invalid photo "${value}" (expected its columns, e.g. "9-12")`);
             region.photo = rangeOf(words[0], 'photo columns');
-            if (region.photo[0] !== 1 && region.photo[0] === region.photo[1]) throw new Error(`${at}: invalid photo "${value}" (expected at least two columns)`);
             break;
           }
           case 'logo': {
