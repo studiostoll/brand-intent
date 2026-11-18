@@ -5,7 +5,7 @@
  * Throws on parse errors with file name and line number.
  */
 
-import { isSlotIdShape, type SlotId } from './types';
+import { isSlotIdShape, isReservedSlotName, type SlotId } from './types';
 import { parseIconRef, parseListItem, splitLabelledItem } from './icons';
 import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
@@ -23,6 +23,8 @@ export interface ParsedPurpose {
   name: string;
   description: string;
   preferredCompositions: string[];
+  /** The kind of use the purpose serves (`use:`). Its slots' `typography:` then names a role of this kind in the brand. */
+  use?: string;
   slots: ParsedPurposeSlot[];
   /** Content density — how much content this purpose typically carries. */
   density?: Density;
@@ -187,6 +189,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let name = '';
   let description = '';
   let compositions: string[] | null = null;
+  let use: string | undefined;
   let scope: { audience?: string[]; pillars?: string } | undefined;
   let context: string | undefined;
   let inScopeBlock = false;
@@ -429,6 +432,14 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       inContextBlock = false;
     }
 
+    if (line.startsWith('use:')) {
+      const value = line.slice(4).trim();
+      if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid use "${value}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (use !== undefined) throw new Error(`${fileName}:${lineNum}: duplicate "use:"`);
+      use = value;
+      continue;
+    }
+
     if (line.startsWith('compositions:')) {
       const colonIdx = line.indexOf(':');
       const value = line.slice(colonIdx + 1).trim();
@@ -549,6 +560,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       closeBlocks(lineNum);
       const slotId = line.slice(5).trim();
       if (!isSlotIdShape(slotId)) throw new Error(`${fileName}:${lineNum}: invalid slot id "${slotId}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (isReservedSlotName(slotId)) throw new Error(`${fileName}:${lineNum}: "${slotId}" can't name a slot, the composition language reads it as a keyword`);
       currentSlot = { id: slotId as SlotId, samples: [], typography: {} as ParsedPurposeSlot['typography'] };
       continue;
     }
@@ -890,7 +902,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
   const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
 
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, ...(person ? { person } : {}), ...(group ? { group } : {}), ...(work ? { work } : {}), analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, ...(use ? { use } : {}), slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, ...(person ? { person } : {}), ...(group ? { group } : {}), ...(work ? { work } : {}), analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 
 /** Validate `example` blocks against the declared slots, or build examples from deprecated slot

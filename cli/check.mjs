@@ -1275,6 +1275,8 @@ function parseBrandFile(content, fileName) {
   let currentDividerName = "";
   let currentTypographyName = "";
   let currentFontName = "";
+  let currentRolesKind = "";
+  const rolesRaw = [];
   const brandColors = {};
   const brandColorPrint = {};
   let currentBrandColorName = "";
@@ -1662,6 +1664,14 @@ function parseBrandFile(content, fileName) {
         }
         continue;
       }
+      if (activeBlock === "roles" && currentRolesKind) {
+        const trimmed = raw.trim();
+        if (trimmed === "") continue;
+        const colonIdx2 = trimmed.indexOf(":");
+        if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: roles ${currentRolesKind}: expected "role: style", got "${trimmed}"`);
+        rolesRaw[rolesRaw.length - 1].roles.push({ name: trimmed.slice(0, colonIdx2).trim(), value: trimmed.slice(colonIdx2 + 1).replace(/\s+#.*$/, "").trim(), line: lineNum });
+        continue;
+      }
       if (activeBlock === "font" && currentFontName) {
         const colonIdx2 = raw.indexOf(":");
         if (colonIdx2 !== -1) {
@@ -1892,6 +1902,15 @@ function parseBrandFile(content, fileName) {
     if (typographyMatch) {
       currentTypographyName = typographyMatch[1];
       activeBlock = "typography";
+      continue;
+    }
+    const rolesMatch = raw.match(/^roles\s+(\S+)\s*$/);
+    if (rolesMatch) {
+      if (!/^[a-z][a-z0-9-]*$/.test(rolesMatch[1])) throw new Error(`${fileName}:${lineNum}: invalid kind "${rolesMatch[1]}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (rolesRaw.some((r) => r.kind === rolesMatch[1])) throw new Error(`${fileName}:${lineNum}: duplicate "roles ${rolesMatch[1]}"`);
+      currentRolesKind = rolesMatch[1];
+      rolesRaw.push({ kind: currentRolesKind, line: lineNum, roles: [] });
+      activeBlock = "roles";
       continue;
     }
     const fontBlockMatch = raw.match(/^font(?:\s+(\S+))?$/);
@@ -2455,6 +2474,49 @@ function parseBrandFile(content, fileName) {
       typographies[name] = def;
     }
     result.typographies = typographies;
+  }
+  if (rolesRaw.length > 0) {
+    const ID2 = /^[a-z][a-z0-9-]*$/;
+    const num = (v, what, kind, name, line) => {
+      const n = v === void 0 ? NaN : Number(v);
+      if (!Number.isFinite(n)) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": ${what} is a number, got "${v ?? ""}"`);
+      return n;
+    };
+    const roles = {};
+    for (const { kind, roles: list, line: kindLine } of rolesRaw) {
+      if (list.length === 0) throw new Error(`${fileName}:${kindLine}: roles ${kind} names no role`);
+      roles[kind] = {};
+      for (const { name, value, line } of list) {
+        if (!ID2.test(name)) throw new Error(`${fileName}:${line}: roles ${kind}: invalid role name "${name}" (lowercase letters, digits and hyphens, starting with a letter)`);
+        if (roles[kind][name]) throw new Error(`${fileName}:${line}: roles ${kind}: duplicate role "${name}"`);
+        const words = value.split(/\s+/).filter(Boolean);
+        const style = words.shift();
+        if (!style) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}" names no style`);
+        if (!result.typographies?.[style]) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": style "${style}" is no typography of the brand`);
+        const role = { style };
+        while (words.length) {
+          const word = words.shift();
+          if (word === "font") {
+            const key = words.shift();
+            if (!key || !(key in (result.fonts ?? {}))) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": font "${key ?? ""}" is not a font of the brand`);
+            role.font = key.replace(/^\$/, "");
+          } else if (word === "weight") {
+            role.weight = num(words.shift(), "weight", kind, name, line);
+          } else if (word === "spacing") {
+            role.letterSpacing = num(words.shift(), "spacing", kind, name, line);
+          } else if (word === "autofit") {
+            const a = words.shift()?.match(/^(\d+(?:\.\d+)?)x$/);
+            const b = words.shift()?.match(/^(\d+(?:\.\d+)?)x$/);
+            if (!a || !b || parseFloat(a[1]) <= 0 || parseFloat(b[1]) < parseFloat(a[1])) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": autofit is two heights in x, the smaller first (e.g. "autofit 1.5x 3x")`);
+            role.autofit = [parseFloat(a[1]), parseFloat(b[1])];
+          } else {
+            throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": unknown word "${word}" (expected font, weight, spacing or autofit)`);
+          }
+        }
+        roles[kind][name] = role;
+      }
+    }
+    result.roles = roles;
   }
   const parsePercent = (v) => parseFloat(v);
   const toAssetDef = (raw) => {
@@ -3098,6 +3160,34 @@ var SLOT_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 function isSlotIdShape(id) {
   return SLOT_ID_PATTERN.test(id);
 }
+var RESERVED_SLOT_WORDS = /* @__PURE__ */ new Set([
+  "id",
+  "name",
+  "mode",
+  "image",
+  "illustration",
+  "sticker",
+  "grid",
+  "logo",
+  "icon",
+  "sticky",
+  "flow",
+  "group",
+  "photo",
+  "spacer",
+  "divider",
+  "direction",
+  "columns",
+  "column-gap",
+  "panel",
+  "split",
+  "width",
+  "row",
+  "cols"
+]);
+function isReservedSlotName(id) {
+  return RESERVED_SLOT_WORDS.has(id) || /^(spacer|divider)-/.test(id);
+}
 
 // parser/purposeParser.ts
 function resolveFontFamily(name) {
@@ -3109,6 +3199,7 @@ function parsePurposeFile(content, fileName) {
   let name = "";
   let description = "";
   let compositions = null;
+  let use;
   let scope;
   let context;
   let inScopeBlock = false;
@@ -3308,6 +3399,13 @@ function parsePurposeFile(content, fileName) {
     } else if (inContextBlock && !raw.startsWith(" ")) {
       inContextBlock = false;
     }
+    if (line.startsWith("use:")) {
+      const value = line.slice(4).trim();
+      if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid use "${value}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (use !== void 0) throw new Error(`${fileName}:${lineNum}: duplicate "use:"`);
+      use = value;
+      continue;
+    }
     if (line.startsWith("compositions:")) {
       const colonIdx = line.indexOf(":");
       const value = line.slice(colonIdx + 1).trim();
@@ -3395,6 +3493,7 @@ function parsePurposeFile(content, fileName) {
       closeBlocks(lineNum);
       const slotId = line.slice(5).trim();
       if (!isSlotIdShape(slotId)) throw new Error(`${fileName}:${lineNum}: invalid slot id "${slotId}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (isReservedSlotName(slotId)) throw new Error(`${fileName}:${lineNum}: "${slotId}" can't name a slot, the composition language reads it as a keyword`);
       currentSlot = { id: slotId, samples: [], typography: {} };
       continue;
     }
@@ -3731,7 +3830,7 @@ function parsePurposeFile(content, fileName) {
     context = contextLines.join("\n").trim();
   }
   const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
-  return { id, name, description, preferredCompositions: compositions, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...scrim ? { scrim } : {}, framing, goal, ...person ? { person } : {}, ...group ? { group } : {}, ...work ? { work } : {}, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, ...use ? { use } : {}, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...scrim ? { scrim } : {}, framing, goal, ...person ? { person } : {}, ...group ? { group } : {}, ...work ? { work } : {}, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 function resolveExamples(examples, slots, legacySamplesLine, fileName, warnings) {
   const byId = new Map(slots.map((s) => [s.id, s]));
@@ -3805,34 +3904,9 @@ var ILLUSTRATION_ANCHORS = /* @__PURE__ */ new Set([
   "bottom-right"
 ]);
 var GRID_Y_KEYWORDS = /* @__PURE__ */ new Set(["top", "center", "bottom"]);
-var RESERVED_SLOT_WORDS = /* @__PURE__ */ new Set([
-  "id",
-  "name",
-  "mode",
-  "image",
-  "illustration",
-  "sticker",
-  "grid",
-  "logo",
-  "icon",
-  "sticky",
-  "flow",
-  "group",
-  "photo",
-  "spacer",
-  "divider",
-  "direction",
-  "columns",
-  "column-gap",
-  "panel",
-  "split",
-  "width",
-  "row",
-  "cols"
-]);
 function checkSlotName(id, where) {
   if (!isSlotIdShape(id)) return false;
-  if (RESERVED_SLOT_WORDS.has(id) || /^(spacer|divider)-/.test(id)) {
+  if (isReservedSlotName(id)) {
     throw new Error(`${where}: "${id}" can't name a slot, the composition language reads it as a keyword`);
   }
   return true;
@@ -5302,8 +5376,12 @@ function checkFiles(files) {
     }
     errorsOf(file, checkPurpose(purpose, { time, works }, file));
     if (brand) {
+      const roles = purpose.use ? brand.roles?.[purpose.use] : void 0;
+      if (purpose.use && !roles) error(file, `use: the .brand has no roles "${purpose.use}"`);
       for (const slot of purpose.slots) {
-        if (slot.typographyRef && !brand.typographies?.[slot.typographyRef]) error(file, `typography "${slot.typographyRef}" is not in the .brand`);
+        if (purpose.use) {
+          if (roles && slot.typographyRef && !roles[slot.typographyRef]) error(file, `typography "${slot.typographyRef}" is no role of "${purpose.use}" in the .brand`);
+        } else if (slot.typographyRef && !brand.typographies?.[slot.typographyRef]) error(file, `typography "${slot.typographyRef}" is not in the .brand`);
         if (slot.colorRef && themeKeys && !themeKeys.has(slot.colorRef)) error(file, `slot "${slot.id}": color "${slot.colorRef}" is not a slot of the .brand's themes`);
       }
       if (purpose.framing && !brand.framings?.some((fr) => fr.id === purpose.framing)) error(file, `framing "${purpose.framing}" is not in the .brand`);

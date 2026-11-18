@@ -110,8 +110,12 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
     }
     errorsOf(file, checkPurpose(purpose, { time, works }, file));
     if (brand) {
+      const roles = purpose.use ? brand.roles?.[purpose.use] : undefined;
+      if (purpose.use && !roles) error(file, `use: the .brand has no roles "${purpose.use}"`);
       for (const slot of purpose.slots) {
-        if (slot.typographyRef && !brand.typographies?.[slot.typographyRef]) error(file, `typography "${slot.typographyRef}" is not in the .brand`);
+        if (purpose.use) {
+          if (roles && slot.typographyRef && !roles[slot.typographyRef]) error(file, `typography "${slot.typographyRef}" is no role of "${purpose.use}" in the .brand`);
+        } else if (slot.typographyRef && !brand.typographies?.[slot.typographyRef]) error(file, `typography "${slot.typographyRef}" is not in the .brand`);
         if (slot.colorRef && themeKeys && !themeKeys.has(slot.colorRef)) error(file, `slot "${slot.id}": color "${slot.colorRef}" is not a slot of the .brand's themes`);
       }
       if (purpose.framing && !brand.framings?.some(fr => fr.id === purpose.framing)) error(file, `framing "${purpose.framing}" is not in the .brand`);

@@ -53,6 +53,41 @@ function assertThrows(fn: () => unknown, matcher: RegExp, label: string) {
 
 const HEADER = `id: test\nname: Test\nlanguage: en\nlocale: en-US\n`;
 
+// ── roles ────────────────────────────────────────────────────────────────────
+
+console.log('\nRoles:');
+
+const TYPE = `font display\n  name: Fraunces\n\nfont\n  name: Inter\n\ntypography title\n  weight: 700\n  size: 8\n  lineHeight: 1.1\n\ntypography text-3\n  weight: 400\n  size: 3\n  lineHeight: 1.4\n\n`;
+const withRoles = (roles: string) => parseBrandFile(`${HEADER}${TYPE}${roles}`, 'test.brand');
+
+test('roles: every word, in any order', () => {
+  const out = withRoles(`roles sign\n  statement: title\n  heading: text-3 font display weight 400\n  display: title autofit 1.5x 3x\n  label: text-3 spacing 0.08   # small\n  mixed: title spacing -0.02 autofit 2x 4x weight 600 font display\n`);
+  assertEq(out.roles?.sign.statement, { style: 'title' }, 'plain');
+  assertEq(out.roles?.sign.heading, { style: 'text-3', font: 'display', weight: 400 }, 'font weight');
+  assertEq(out.roles?.sign.display, { style: 'title', autofit: [1.5, 3] }, 'autofit');
+  assertEq(out.roles?.sign.label, { style: 'text-3', letterSpacing: 0.08 }, 'spacing');
+  assertEq(out.roles?.sign.mixed, { style: 'title', letterSpacing: -0.02, autofit: [2, 4], weight: 600, font: 'display' }, 'any order');
+});
+
+test('roles: two kinds, none without a block', () => {
+  const out = withRoles(`roles sign\n  a: title\n\nroles campaign\n  a: text-3\n`);
+  assertEq(Object.keys(out.roles ?? {}), ['sign', 'campaign'], 'kinds');
+  assertEq(parseBrandFile(`${HEADER}${TYPE}`, 'test.brand').roles, undefined, 'none');
+});
+
+test('roles: errors', () => {
+  assertThrows(() => withRoles(`roles sign\n  a: nope\n`), /style "nope" is no typography of the brand/, 'style');
+  assertThrows(() => withRoles(`roles sign\n  a: title colour red\n`), /unknown word "colour"/, 'word');
+  assertThrows(() => withRoles(`roles sign\n  a: title autofit 2 3x\n`), /autofit is two heights in x/, 'autofit unit');
+  assertThrows(() => withRoles(`roles sign\n  a: title autofit 3x 2x\n`), /autofit is two heights in x/, 'autofit order');
+  assertThrows(() => withRoles(`roles sign\n  a: title autofit 2x\n`), /autofit is two heights in x/, 'autofit one');
+  assertThrows(() => withRoles(`roles sign\n  a: title font ghost\n`), /font "ghost" is not a font of the brand/, 'font');
+  assertThrows(() => withRoles(`roles sign\n  a: title weight bold\n`), /weight is a number/, 'weight');
+  assertThrows(() => withRoles(`roles sign\n  Big_Title: title\n`), /invalid role name "Big_Title"/, 'role name');
+  assertThrows(() => withRoles(`roles Sign\n  a: title\n`), /invalid kind "Sign"/, 'kind name');
+  assertThrows(() => withRoles(`roles sign\n  a: title\n  a: text-3\n`), /duplicate role "a"/, 'duplicate');
+});
+
 // ── Flat syntax still works (regression) ─────────────────────────────────────
 
 console.log('\nFlat brand-colors (regression):');

@@ -8,7 +8,7 @@
  * Column names: 1=0, 2=1, 3=2, 4=3, 5=4, 6=5 (1-based in files, 0-based in output)
  */
 
-import { isSlotIdShape, type SlotId } from './types';
+import { isSlotIdShape, isReservedSlotName, type SlotId } from './types';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -166,17 +166,10 @@ export interface ParsedDivider {
 
 const GRID_Y_KEYWORDS = new Set<string>(['top', 'center', 'bottom']);
 
-// Words the composition grammar reads at the start of a line or a flow/sticky item. A slot may not
-// be named like one of them (and not "spacer-*" / "divider-*", which a flow reads by prefix).
-const RESERVED_SLOT_WORDS = new Set<string>([
-  'id', 'name', 'mode', 'image', 'illustration', 'sticker', 'grid', 'logo', 'icon', 'sticky', 'flow', 'group',
-  'photo', 'spacer', 'divider', 'direction', 'columns', 'column-gap', 'panel', 'split', 'width', 'row', 'cols',
-]);
-
 /** Throws when `id` can't name a slot in a composition; returns whether it is a slot id at all. */
 function checkSlotName(id: string, where: string): boolean {
   if (!isSlotIdShape(id)) return false;
-  if (RESERVED_SLOT_WORDS.has(id) || /^(spacer|divider)-/.test(id)) {
+  if (isReservedSlotName(id)) {
     throw new Error(`${where}: "${id}" can't name a slot, the composition language reads it as a keyword`);
   }
   return true;

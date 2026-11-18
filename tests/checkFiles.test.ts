@@ -95,6 +95,18 @@ test('scope names an audience the identity does not have', () => {
   assertEq(added(f => { purpose(f).scope = { audience: ['nobody'] }; f.identity = undefined; }), [], 'unchecked without an identity');
 });
 
+test('use: the slots name roles of that kind, not styles', () => {
+  const p = purpose(base());
+  const file = `${p.id}.purpose`;
+  const style = Object.keys(base().brand!.typographies!)[0];
+  assertEq(added(f => { purpose(f).use = 'sign'; }), [`error ${file}: use: the .brand has no roles "sign"`], 'no roles');
+  const withRoles = (f: BrandFiles) => { f.brand!.roles = { sign: { statement: { style }, ...Object.fromEntries(purpose(f).slots.map(sl => [sl.typographyRef, { style }])) } }; purpose(f).use = 'sign'; };
+  const roleIssues = added(f => { withRoles(f); purpose(f).slots[0].typographyRef = 'statement'; });
+  assertEq(roleIssues, [], 'a role of the kind');
+  assertEq(added(f => { withRoles(f); purpose(f).slots[0].typographyRef = 'nope'; }), [`error ${file}: typography "nope" is no role of "sign" in the .brand`], 'not a role');
+  assertEq(added(f => { purpose(f).slots[0].typographyRef = 'nope'; }), [`error ${file}: typography "nope" is not in the .brand`], 'without use: a style');
+});
+
 test('a slot colour is a slot of the themes', () => {
   const p = purpose(base());
   const key = Object.keys(Object.values(base().brand!.themes!)[0])[0];

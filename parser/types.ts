@@ -20,6 +20,18 @@ export function isSlotIdShape(id: string): boolean {
   return SLOT_ID_PATTERN.test(id);
 }
 
+// Words the composition grammar reads at the start of a line or a flow/sticky item. A slot may not
+// be named like one of them (and not "spacer-*" / "divider-*", which a flow reads by prefix).
+const RESERVED_SLOT_WORDS = new Set<string>([
+  'id', 'name', 'mode', 'image', 'illustration', 'sticker', 'grid', 'logo', 'icon', 'sticky', 'flow', 'group',
+  'photo', 'spacer', 'divider', 'direction', 'columns', 'column-gap', 'panel', 'split', 'width', 'row', 'cols',
+]);
+
+/** Whether `id` is a word of the composition language (a keyword, or `spacer-*` / `divider-*`), so no slot can carry it. */
+export function isReservedSlotName(id: string): boolean {
+  return RESERVED_SLOT_WORDS.has(id) || /^(spacer|divider)-/.test(id);
+}
+
 /** Inset distances in px (screen) or mm (print). */
 export interface ZoneInsets {
   top: number;

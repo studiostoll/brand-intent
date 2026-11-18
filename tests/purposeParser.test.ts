@@ -56,6 +56,18 @@ test('compositions: none is a purpose only a sheet places', () => {
   assertEq(/"none" or a list of compositions, not both/.test(said('id: sign\ncompositions: none, panel\n')), true, 'none with a list');
 });
 
+test('use: names the kind of use a purpose serves', () => {
+  assertEq(parsePurposeFile('id: sign\nuse: sign\ncompositions: none\n', 'sign.purpose').use, 'sign', 'use');
+  assertEq(parsePurposeFile('id: sign\ncompositions: none\n', 'sign.purpose').use, undefined, 'without');
+  const said = (src: string) => { try { parsePurposeFile(src, 'sign.purpose'); return ''; } catch (e) { return (e as Error).message; } };
+  assertEq(/invalid use "Sign Board"/.test(said('id: sign\nuse: Sign Board\ncompositions: none\n')), true, 'shape');
+  assertEq(/duplicate "use:"/.test(said('id: sign\nuse: a\nuse: b\ncompositions: none\n')), true, 'twice');
+});
+test('a slot named like a composition keyword is refused', () => {
+  const said = (id: string) => { try { parsePurposeFile(`id: p\ncompositions: panel\n\nslot ${id}\n  label: X\n  typography: body\n  maxLength: 5\n  value: x\n`, 'p.purpose'); return ''; } catch (e) { return (e as Error).message; } };
+  for (const id of ['logo', 'flow', 'photo', 'spacer-wide', 'divider-thin']) assertEq(said(id).includes(`"${id}" can't name a slot`), true, id);
+  assertEq(said('opening-hours'), '', 'a plain name');
+});
 test('a purpose without slots is a page without text', () => {
   const p = parsePurposeFile('id: plain\ncompositions: panel\n', 'plain.purpose');
   assertEq(p.slots.length, 0, 'slots');

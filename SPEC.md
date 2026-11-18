@@ -758,6 +758,20 @@ font primary
 
 A style is the one source for type, on screen and in print. `size:` is its size on a screen format, `cap:` its size in print; font, weight and line height are the same in both. A style with `cap:` and no `size:` is a style for print only.
 
+### `roles KIND` Block
+
+A kind of use (`sign`, `campaign`) names its roles. A role is a name of the use, a style is a size of the brand's scale: the role says what the text is for, the style says how large and in which face it is set. A purpose that declares [`use:`](#top-level-keys-1) names roles of that kind in its slots' `typography:`.
+
+```
+roles sign
+  statement: title-plain
+  heading: headline-4 font display weight 400
+  display: title autofit 1.5x 3x
+  label: text-3 spacing 0.08
+```
+
+A line is `ROLE: STYLE`, then in any order `font KEY`, `weight N`, `spacing N` (letter spacing in em) and `autofit A B` (two heights in x, the smaller first). `KIND` and `ROLE` are lowercase letters, digits and hyphens. A style that is no `typography` of the brand, a `font` that is no font of the brand, an unknown word and a malformed `autofit` are parser errors.
+
 ### `spacing:` Block
 
 ```yaml
@@ -1160,6 +1174,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `id:` | string | Yes | Unique purpose identifier |
 | `name:` | string | No | Display name (derived from id if omitted) |
 | `compositions:` | list or `none` | Yes | Valid composition IDs for this purpose. `none`: the purpose has no composition of its own; only a sheet places it (print). A missing line stays an error, and `none` stands alone |
+| `use:` | string | No | The kind of use the purpose serves (`use: sign`). The `.brand` must have [`roles`](#roles-kind-block) for it, and each slot's `typography:` names a role of that kind instead of a style. Without `use:`, `typography:` names a style |
 | `density:` | enum | No | `light` \| `medium` \| `full` |
 | `palette:` | string | No | Color palette strategy (see below) |
 | `illustration:` | string list | No | Illustration ids from the `.brand`, comma-separated. A new page shows one of them. A `.story` page's `illustration:` overrides this list |
@@ -1197,7 +1212,7 @@ The following slot IDs are valid:
 
 These seven names carry a meaning in the language. They travel through the entire stack: a composition places `primary` without knowing what it contains; a purpose defines what `primary` means without knowing where it sits.
 
-A purpose may also name slots of its own. A slot ID is any name of lowercase letters, digits and hyphens that starts with a letter, like `opening-hours`. The seven keep their meaning (`label` is a badge, `cta` an action, `credit` is filled by the implementation or by `value:`); any other name is a plain text or list slot. A purpose's `example` blocks may fill only slots the purpose declares, and a composition places a new name like any other slot. A slot cannot be named like a keyword of the composition language (`logo`, `icon`, `photo`, `flow`, `spacer-*`, `divider-*` and the like); the parser says so.
+A purpose may also name slots of its own. A slot ID is any name of lowercase letters, digits and hyphens that starts with a letter, like `opening-hours`. The seven keep their meaning (`label` is a badge, `cta` an action, `credit` is filled by the implementation or by `value:`); any other name is a plain text or list slot. A purpose's `example` blocks may fill only slots the purpose declares, and a composition places a new name like any other slot. A slot cannot be named like a keyword of the composition language (`logo`, `icon`, `photo`, `flow`, `spacer-*`, `divider-*` and the like): the purpose parser refuses `slot logo`, and a composition refuses to place one.
 
 `credit` is not editorial. It carries what a licence or a source asks to be named: a fixed `value:` (a photographer), or a text the implementation fills (the data source of a value on the page). No example has to fill it, and AI never writes it. It usually gets the brand's smallest style and its own place, apart from `meta`.
 
@@ -1206,7 +1221,7 @@ A purpose may also name slots of its own. A slot ID is any name of lowercase let
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `label:` | string | Yes | Human-readable slot name |
-| `typography:` | string | Yes | Named typography style from `.brand` |
+| `typography:` | string | Yes | Named typography style from `.brand`; a role of the purpose's `use:` kind when the purpose has one |
 | `color:` | string | No | Theme slot name (e.g., `text-primary`, `cta`) |
 | `maxLength:` | int | Yes | Character limit. The hard limit: layouts are built for it |
 | `words:` | range | No | Editorial word range, `N` or `MIN..MAX` (e.g. `3..8`). Guidance for writing and review on top of `maxLength` |

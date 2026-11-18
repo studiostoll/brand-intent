@@ -29,7 +29,7 @@ export {
   DEFAULT_COLOR_RULES,
 } from './colorSystem';
 export type { ReachConfig, ToneAnchors } from './colorSystem';
-export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedCameraDef, ParsedLocationDef, ParsedPrintDef, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
+export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedRole, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedCameraDef, ParsedLocationDef, ParsedPrintDef, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
 
 export { parseDateWindowRanges, isInDateWindow, SAMPLE_WINDOW_MARKER } from './dateWindows';
 export type { DateWindowRange } from './dateWindows';
@@ -100,4 +100,4 @@ export { checkFiles } from './checkFiles';
 export type { BrandFiles, FileIssue } from './checkFiles';
 
 export type { SlotId, CoreSlotId, ZoneInsets, TextAlign } from './types';
-export { SLOT_IDS, SLOT_ID_PATTERN } from './types';
+export { SLOT_IDS, SLOT_ID_PATTERN, isReservedSlotName } from './types';

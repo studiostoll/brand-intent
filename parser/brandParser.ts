@@ -52,6 +52,16 @@ import type { ParsedIconDef } from './icons';
 
 // ── Parsed type ────────────────────────────────────────────────────────────────
 
+/** What a role of a kind of use stands for: one of the brand's typography styles, with what the role changes. */
+export interface ParsedRole {
+  style: string;
+  font?: string;
+  weight?: number;
+  letterSpacing?: number;
+  /** Fits the text between two heights, in x: [min, max]. */
+  autofit?: [number, number];
+}
+
 export interface ParsedBrand {
   id: string;
   name: string;
@@ -101,6 +111,8 @@ export interface ParsedBrand {
   spacing?: { unit: string; xs: number; s: number; m: number; l: number; xl: number };
   /** Divider style definitions: name → divider config */
   dividers?: Record<string, ParsedDividerDef>;
+  /** Roles by kind of use (`roles <kind>`): kind → role → the style it stands for, with overrides */
+  roles?: Record<string, Record<string, ParsedRole>>;
   /** Named typography styles: name → style definition */
   typographies?: Record<string, ParsedTypographyDef>;
   /** Brand-declared assets: curated logos, photos, videos, illustrations with labels and metadata */
@@ -494,12 +506,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   const result: Partial<ParsedBrand> = {};
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'print';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'print' | 'roles';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
   let currentTypographyName = '';
   let currentFontName = '';
+  let currentRolesKind = '';
+  const rolesRaw: Array<{ kind: string; line: number; roles: Array<{ name: string; value: string; line: number }> }> = [];
   const brandColors: Record<string, string> = {};
   const brandColorPrint: Record<string, BrandColorPrintSpec> = {};
   let currentBrandColorName = '';
@@ -928,6 +942,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         }
         continue;
       }
+      if (activeBlock === 'roles' && currentRolesKind) {
+        const trimmed = raw.trim();
+        if (trimmed === '') continue;
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: roles ${currentRolesKind}: expected "role: style", got "${trimmed}"`);
+        rolesRaw[rolesRaw.length - 1].roles.push({ name: trimmed.slice(0, colonIdx).trim(), value: trimmed.slice(colonIdx + 1).replace(/\s+#.*$/, '').trim(), line: lineNum });
+        continue;
+      }
       if (activeBlock === 'font' && currentFontName) {
         const colonIdx = raw.indexOf(':');
         if (colonIdx !== -1) {
@@ -1206,6 +1228,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (typographyMatch) {
       currentTypographyName = typographyMatch[1];
       activeBlock = 'typography';
+      continue;
+    }
+
+    // roles <kind> — starts a block of roles for one kind of use
+    const rolesMatch = raw.match(/^roles\s+(\S+)\s*$/);
+    if (rolesMatch) {
+      if (!/^[a-z][a-z0-9-]*$/.test(rolesMatch[1])) throw new Error(`${fileName}:${lineNum}: invalid kind "${rolesMatch[1]}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (rolesRaw.some(r => r.kind === rolesMatch[1])) throw new Error(`${fileName}:${lineNum}: duplicate "roles ${rolesMatch[1]}"`);
+      currentRolesKind = rolesMatch[1];
+      rolesRaw.push({ kind: currentRolesKind, line: lineNum, roles: [] });
+      activeBlock = 'roles';
       continue;
     }
 
@@ -1848,6 +1881,51 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       typographies[name] = def;
     }
     result.typographies = typographies;
+  }
+
+  // Finalise roles: a role is a name of the use, a style is a size of the brand's scale
+  if (rolesRaw.length > 0) {
+    const ID = /^[a-z][a-z0-9-]*$/;
+    const num = (v: string | undefined, what: string, kind: string, name: string, line: number): number => {
+      const n = v === undefined ? NaN : Number(v);
+      if (!Number.isFinite(n)) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": ${what} is a number, got "${v ?? ''}"`);
+      return n;
+    };
+    const roles: Record<string, Record<string, ParsedRole>> = {};
+    for (const { kind, roles: list, line: kindLine } of rolesRaw) {
+      if (list.length === 0) throw new Error(`${fileName}:${kindLine}: roles ${kind} names no role`);
+      roles[kind] = {};
+      for (const { name, value, line } of list) {
+        if (!ID.test(name)) throw new Error(`${fileName}:${line}: roles ${kind}: invalid role name "${name}" (lowercase letters, digits and hyphens, starting with a letter)`);
+        if (roles[kind][name]) throw new Error(`${fileName}:${line}: roles ${kind}: duplicate role "${name}"`);
+        const words = value.split(/\s+/).filter(Boolean);
+        const style = words.shift();
+        if (!style) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}" names no style`);
+        if (!result.typographies?.[style]) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": style "${style}" is no typography of the brand`);
+        const role: ParsedRole = { style };
+        while (words.length) {
+          const word = words.shift()!;
+          if (word === 'font') {
+            const key = words.shift();
+            if (!key || !(key in (result.fonts ?? {}))) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": font "${key ?? ''}" is not a font of the brand`);
+            role.font = key.replace(/^\$/, '');
+          } else if (word === 'weight') {
+            role.weight = num(words.shift(), 'weight', kind, name, line);
+          } else if (word === 'spacing') {
+            role.letterSpacing = num(words.shift(), 'spacing', kind, name, line);
+          } else if (word === 'autofit') {
+            const a = words.shift()?.match(/^(\d+(?:\.\d+)?)x$/);
+            const b = words.shift()?.match(/^(\d+(?:\.\d+)?)x$/);
+            if (!a || !b || parseFloat(a[1]) <= 0 || parseFloat(b[1]) < parseFloat(a[1])) throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": autofit is two heights in x, the smaller first (e.g. "autofit 1.5x 3x")`);
+            role.autofit = [parseFloat(a[1]), parseFloat(b[1])];
+          } else {
+            throw new Error(`${fileName}:${line}: roles ${kind}: "${name}": unknown word "${word}" (expected font, weight, spacing or autofit)`);
+          }
+        }
+        roles[kind][name] = role;
+      }
+    }
+    result.roles = roles;
   }
 
   // Finalise brand-declared assets
