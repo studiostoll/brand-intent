@@ -1579,7 +1579,7 @@ region months
 
 A region with `columns:` sets the page's items one below the other down its first column, and when the column is full, on down the next: a column is filled before the next starts. Inside an item its slots stand in the order the purpose's `item` line names them, a line apart by the brand's spacers; two items stand the distance between groups apart.
 
-An item breaks where its list does: a list slot between two of its entries, never inside one (with `labels: above`, a line without a label belongs to the entry above). What stands before the list, a month's name, stays with at least the list's first entry and is not repeated where the list goes on: the next column starts with the next entry. An item without a list, or one whose first entry doesn't fit what is left of a column, starts the next column whole.
+An item breaks where its list does: a list slot between two of its entries, never inside one (with `labels: above` or `below`, a line without a label belongs to the entry above), and with two entries at least on either side of the break, so no entry stands alone in a column; a list of three entries or fewer moves on whole. What stands before the list, a month's name, stays with the list's first entries and is not repeated where the list goes on: the next column starts with the next entry. An item without a list, or one whose first entry doesn't fit what is left of a column, starts the next column whole.
 
 What doesn't fit the last column goes on to the next page of the story when that page says [`continues: true`](#page-block-1); there it flows down the same columns. Without such a page, laying the page out fails with the reason: nothing is cut, made smaller or left out.
 
