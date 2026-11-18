@@ -268,5 +268,19 @@ test('regions mode: a region repeated per item, a size like another slot\'s', ()
   assertThrows(() => two('  fields: content\n  size: arrow 2x\n  size: arrow like time\n'), /size of "arrow" twice/, 'twice');
 });
 
+test('regions mode: items flowing down a region\'s columns, a rule above each', () => {
+  const c = parseCompositionFile(`id: cal\nimage: none\n\nregion head\n  fields: 1\n  place: title top 1-12\n\nregion months\n  fields: 2-6\n  repeat: month\n  columns: 1-4 5-8 9-12\n  rule: 0.8mm 0.5x\n`, 'cal.composition');
+  assertEq(c.regions?.[1].columns, [[1, 4], [5, 8], [9, 12]], 'columns');
+  assertEq(c.regions?.[1].rule, { mm: 0.8, spaceX: 0.5 }, 'rule');
+  const two = (region: string) => parseCompositionFile(`id: b\nimage: none\n\nregion head\n  fields: content\n  place: title top 1-4\n\nregion months\n${region}`, 'b.composition');
+  assertThrows(() => two('  fields: rest\n  columns: 1-6 7-12\n'), /what flows down them are the items/, 'columns need a repeat');
+  assertThrows(() => parseCompositionFile(`id: b\nimage: none\n\nregion head\n  fields: rest\n  place: title top 1-4\n\nregion months\n  fields: content\n  repeat: month\n  columns: 1-6 7-12\n`, 'b.composition'), /fill its fields/, 'columns fill their fields');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6\n'), /two or more/, 'one column');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 5-12\n'), /overlap/, 'overlap');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: month top 1-6\n'), /places nothing itself/, 'no place');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  rule: 0.8mm\n'), /invalid rule/, 'rule needs its space');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n'), /or they flow down its "columns:"/, 'repeat without columns needs content');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

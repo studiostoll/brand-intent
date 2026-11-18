@@ -4067,7 +4067,7 @@ function parseCompositionFile(content, fileName) {
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ["fields", "line", "box", "photo", "logo", "repeat", "place", "group", "stack", "baseline", "fit", "size"];
+      const REGION_KEYS = ["fields", "line", "box", "photo", "logo", "repeat", "columns", "rule", "place", "group", "stack", "baseline", "fit", "size"];
       if (key && !["id", "name", "mode", "image", "illustration", "grid", "icon", "sticky", "flow"].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(", ")})`);
       }
@@ -4200,6 +4200,21 @@ function parseCompositionFile(content, fileName) {
             once(region.repeat);
             if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${at}: invalid repeat "${value}" (expected the name of an item of the purpose, e.g. "repeat: way")`);
             region.repeat = value;
+            break;
+          }
+          case "columns": {
+            once(region.columns);
+            if (words.length < 2) throw new Error(`${at}: invalid columns "${value}" (expected two or more, side by side, e.g. "1-4 5-8 9-12")`);
+            const cols = words.map((w) => rangeOf(w, "columns"));
+            for (let i2 = 1; i2 < cols.length; i2++) if (cols[i2][0] <= cols[i2 - 1][1]) throw new Error(`${at}: columns "${value}" overlap or run backwards (each starts after the one before ends)`);
+            region.columns = cols;
+            break;
+          }
+          case "rule": {
+            once(region.rule);
+            const mm = words[0]?.match(/^(\d+(?:\.\d+)?)mm$/);
+            if (words.length !== 2 || !mm || parseFloat(mm[1]) <= 0) throw new Error(`${at}: invalid rule "${value}" (expected its thickness and the space below it, e.g. "0.8mm 0.5x")`);
+            region.rule = { mm: parseFloat(mm[1]), spaceX: xOf(words[1], "rule space") };
             break;
           }
         }
@@ -4512,7 +4527,10 @@ function parseCompositionFile(content, fileName) {
       if (r.stack && "field" in r.stack && Array.isArray(r.fields) && r.stack.field > r.fields[1] - r.fields[0] + 1) {
         throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field}, the region has ${r.fields[1] - r.fields[0] + 1} fields`);
       }
-      if (r.repeat && r.fields !== "content") throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content")`);
+      if (r.columns && !r.repeat) throw new Error(`${at}: region "${r.id}" has columns, what flows down them are the items of a "repeat:"`);
+      if (r.columns && (r.fields === "content" || r.fields === "line")) throw new Error(`${at}: region "${r.id}": its items flow down its columns and fill its fields ("fields: rest" or "A-B")`);
+      if (r.columns && (r.places.length || r.group || r.stack || r.baseline || r.fit || r.box || r.photo)) throw new Error(`${at}: region "${r.id}": its items flow down its columns, it places nothing itself (no place, group, stack, baseline, fit, box or photo)`);
+      if (r.repeat && !r.columns && r.fields !== "content") throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content"), or they flow down its "columns:"`);
       if (r.repeat && r.logo) throw new Error(`${at}: region "${r.id}" repeats, the logo stands once (give it to another region)`);
       for (const [slot, other] of Object.entries(r.sizesLike ?? {})) {
         if (r.sizesLike?.[other]) throw new Error(`${at}: region "${r.id}": "${slot}" takes the size of "${other}", which takes another's itself`);
@@ -5200,7 +5218,7 @@ function parseStoryFile(content, fileName) {
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
       if (/^when\s*:/.test(line)) throw new Error(`${fileName}:${lineNum}: when: is not a page key: a page about an occasion names its work with "work:" (an event is a work since v0.44); a window or season goes on the story`);
-      const read = readKey(line, lineNum, currentPage, ["purpose", "composition", "illustration", "photo", "video", "placeholder", "theme", "background", "person", "group", "work", "repeat"], true);
+      const read = readKey(line, lineNum, currentPage, ["purpose", "composition", "illustration", "photo", "video", "placeholder", "theme", "background", "person", "group", "work", "repeat", "continues"], true);
       if (read && "multi" in read) {
         multiKey = read.multi;
         multiIndent = 4;
@@ -5227,6 +5245,9 @@ function parseStoryFile(content, fileName) {
       else if (read?.key === "background") {
         if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== "{item}") throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
         currentPage.background = read.value;
+      } else if (read?.key === "continues") {
+        if (read.value !== "true" && read.value !== "false") throw new Error(`${fileName}:${lineNum}: invalid continues "${read.value}" (expected true or false)`);
+        if (read.value === "true") currentPage.continues = true;
       } else if (read?.key === "repeat") {
         const m = /^(\d+)\s*-\s*(\d+)$/.exec(read.value);
         const min = m ? parseInt(m[1], 10) : 0;
@@ -5294,6 +5315,16 @@ function parseStoryFile(content, fileName) {
   if (!id) throw new Error(`${fileName}: missing story id (add "id:" line)`);
   if (!format) throw new Error(`${fileName}: missing "format:" line`);
   if (pages.length === 0) throw new Error(`${fileName}: no pages defined`);
+  for (const [i, p] of pages.entries()) {
+    if (!p.continues) continue;
+    const before = pages[i - 1];
+    if (!before) throw new Error(`${fileName}:${p.line}: the first page continues none ("continues: true" takes what didn't fit on the page before)`);
+    if (p.repeat || before.repeat) throw new Error(`${fileName}:${p.line}: a page list's page neither continues nor is continued`);
+    if (p.purpose && p.purpose !== before.purpose) throw new Error(`${fileName}:${p.line}: the page continues page ${i} in purpose "${before.purpose}", not "${p.purpose}"`);
+    if (p.composition && p.composition !== before.composition) throw new Error(`${fileName}:${p.line}: the page continues page ${i} in composition "${before.composition ?? "(the purpose's)"}", not "${p.composition}"`);
+    p.purpose = before.purpose;
+    if (before.composition) p.composition = before.composition;
+  }
   for (const p of pages) {
     if (!p.purpose) throw new Error(`${fileName}:${p.line}: page without "purpose:"`);
   }
@@ -5325,6 +5356,7 @@ function parseStoryFile(content, fileName) {
       const page = pages[ep.page - 1];
       if (!page) throw new Error(`${at}: example fills page ${ep.page}, the story has ${pages.length}`);
       if (Object.keys(ep.texts).length === 0 && !ep.items?.length && !ep.topic && !ep.photo) throw new Error(`${at}: example page ${ep.page} is empty`);
+      if (page.continues && ep.items?.length) throw new Error(`${at}: page ${ep.page} continues the page before, its items are those that didn't fit there`);
       for (const slot of Object.keys(ep.texts)) {
         if (page.texts[slot] !== void 0) throw new Error(`${at}: slot "${slot}" is fixed on page ${ep.page} and takes no example text`);
       }

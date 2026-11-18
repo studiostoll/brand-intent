@@ -301,6 +301,18 @@ test('place variables need a place', () => {
   assertEq(checkStory(s, { ...BRAND, places: [HARBOUR, QUAY] }, 's.story'), ['s.story: page 1: variable "{place}" needs a place: name it with "place:"'], 'several places');
 });
 
+test('continues: a page takes what didn\'t fit on the page before', () => {
+  const s = parse('page\n  purpose: calendar\n  composition: cal\n\npage\n  continues: true\n\nexample\n  page 1\n    month\n      month: Mai\n  page 2\n    title: Events\n');
+  assertEq(s.pages[1].continues, true, 'parsed');
+  assertEq(s.pages[1].purpose, 'calendar', 'takes the purpose');
+  assertEq(s.pages[1].composition, 'cal', 'takes the composition');
+  assertEq('continues' in s.pages[0], false, 'absent');
+  assertThrows(() => parse('page\n  continues: true\n'), 'the first page continues none');
+  assertThrows(() => parse('page\n  purpose: calendar\n\npage\n  purpose: notice\n  continues: true\n'), 'not "notice"');
+  assertThrows(() => parse('page\n  purpose: calendar\n\npage\n  continues: yes\n'), 'invalid continues "yes"');
+  assertThrows(() => parse('page\n  purpose: calendar\n\npage\n  continues: true\n\nexample\n  page 2\n    month\n      month: Juni\n'), 'its items are those that didn\'t fit there');
+});
+
 test('repeat: makes a page list, {n} and {count} count it', () => {
   const s = parse('page\n  purpose: notice\n  primary: {count} spots\n\npage\n  purpose: notice\n  repeat: 2-6\n  primary: {n}\n');
   assertEq(s.pages[1].repeat, { min: 2, max: 6 }, 'parsed');

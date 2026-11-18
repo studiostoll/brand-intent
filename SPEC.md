@@ -1564,6 +1564,24 @@ region foot
 | `size: SLOT Nx` | The height of the slot's capitals in x, whatever its role says. Like a role, it counts capitals, not the em |
 | `size: SLOT like OTHER` | The slot's type as large as OTHER's, a slot of the same region (an arrow as large as the word beside it, which `fit:` sizes). OTHER takes no size from a third slot this way |
 | `repeat: ITEM` | The region stands once per item of the page's list (an [`item`](#top-level-keys-2) of the purpose), in order, each time with that item's texts and in its own fields: `fields: content`, no `logo:`. Its slots are that item's; no other region places them. A `fit:` slot is one size in every item, the smallest any of them needs |
+| `columns: A-B C-D ...` | With `repeat:`: the region's columns, side by side, two or more. The items flow down them instead of each taking fields of its own: see [items down columns](#items-down-columns). The region fills its fields (`rest` or `A-B`) and places nothing itself |
+| `rule: Nmm Nx` | A line across the region above what it holds: its thickness in mm, and the space between the line and the capitals below in x. In a region with columns a line above each item, across its column |
+
+#### Items down columns
+
+```
+region months
+  fields: rest
+  repeat: month
+  columns: 1-4 5-8 9-12
+  rule: 0.8mm 0.5x
+```
+
+A region with `columns:` sets the page's items one below the other down its first column, and when the column is full, on down the next: a column is filled before the next starts. Inside an item its slots stand in the order the purpose's `item` line names them, a line apart by the brand's spacers; two items stand the distance between groups apart.
+
+An item breaks where its list does: a list slot between two of its entries, never inside one (with `labels: above`, a line without a label belongs to the entry above). What stands before the list, a month's name, stays with at least the list's first entry and is not repeated where the list goes on: the next column starts with the next entry. An item without a list, or one whose first entry doesn't fit what is left of a column, starts the next column whole.
+
+What doesn't fit the last column goes on to the next page of the story when that page says [`continues: true`](#page-block-1); there it flows down the same columns. Without such a page, laying the page out fails with the reason: nothing is cut, made smaller or left out.
 
 A line counts in no field. A composition in `content` and `rest` travels: it holds on every format where the content regions find their fields and the `rest` region keeps enough for its stack. Where it doesn't, laying it out fails with the reason; nothing is squeezed or overlaps.
 
@@ -1709,6 +1727,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `group:` | string | No | [Group](#group-group) id this page speaks about, instead of the story's |
 | `work:` | string | No | [Work](#work-work) id this page is about, instead of the story's. One page names one work; the breads of the week are a page list with one work per copy |
 | `repeat:` | `MIN-MAX` | No | The page is a [page list](#page-lists): between MIN and MAX copies of it in a row, e.g. `2-6`. 1 ≤ MIN ≤ MAX. At most one page per story |
+| `continues:` | bool | No | `true`: the page takes the items that didn't fit on the page before it (a region with [`columns:`](#items-down-columns)), in that page's purpose and composition. It may leave out `purpose:` and `composition:`; if it names them, they are those of the page before. Its example lists no items, its other slots are its own (a back page's title). Not on the first page, nor on or after a page list |
 | `SLOTID:` | string | No | Fixed text for a slot the purpose declares. A bare `SLOTID:` takes the following 4-space lines, as in purpose examples: an empty line between two of them is a paragraph break |
 
 Every slot of the purpose is one of three kinds on a page:

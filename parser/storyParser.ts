@@ -168,6 +168,9 @@ export interface ParsedStoryPage {
   work?: string;
   /** `repeat: MIN-MAX`: the page is a page list, between `min` and `max` copies of it in a row. At most one per story. */
   repeat?: { min: number; max: number };
+  /** `continues: true`: the page takes the items that didn't fit on the page before it, in that page's purpose and
+   *  composition. It lists no items of its own. */
+  continues?: true;
   /** Fixed slot texts, may contain `{variable}`s. A slot the page doesn't name is open. */
   texts: Partial<Record<SlotId, string>>;
 }
@@ -402,7 +405,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     if (currentPage) {
       if (indent !== 2) throw new Error(`${fileName}:${lineNum}: unexpected indent in page (page keys use 2 spaces)`);
       if (/^when\s*:/.test(line)) throw new Error(`${fileName}:${lineNum}: when: is not a page key: a page about an occasion names its work with "work:" (an event is a work since v0.44); a window or season goes on the story`);
-      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'video', 'placeholder', 'theme', 'background', 'person', 'group', 'work', 'repeat'], true);
+      const read = readKey(line, lineNum, currentPage, ['purpose', 'composition', 'illustration', 'photo', 'video', 'placeholder', 'theme', 'background', 'person', 'group', 'work', 'repeat', 'continues'], true);
       if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 4; }
       else if (read?.key === 'purpose') currentPage.purpose = read.value;
       else if (read?.key === 'person' || read?.key === 'group' || read?.key === 'work') {
@@ -431,6 +434,10 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       else if (read?.key === 'background') {
         if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== '{item}') throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
         currentPage.background = read.value;
+      }
+      else if (read?.key === 'continues') {
+        if (read.value !== 'true' && read.value !== 'false') throw new Error(`${fileName}:${lineNum}: invalid continues "${read.value}" (expected true or false)`);
+        if (read.value === 'true') currentPage.continues = true;
       }
       else if (read?.key === 'repeat') {
         const m = /^(\d+)\s*-\s*(\d+)$/.exec(read.value);
@@ -501,6 +508,17 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   if (!id) throw new Error(`${fileName}: missing story id (add "id:" line)`);
   if (!format) throw new Error(`${fileName}: missing "format:" line`);
   if (pages.length === 0) throw new Error(`${fileName}: no pages defined`);
+  // A page that continues the one before takes its purpose and composition; it may name them, the same
+  for (const [i, p] of pages.entries()) {
+    if (!p.continues) continue;
+    const before = pages[i - 1];
+    if (!before) throw new Error(`${fileName}:${p.line}: the first page continues none ("continues: true" takes what didn't fit on the page before)`);
+    if (p.repeat || before.repeat) throw new Error(`${fileName}:${p.line}: a page list's page neither continues nor is continued`);
+    if (p.purpose && p.purpose !== before.purpose) throw new Error(`${fileName}:${p.line}: the page continues page ${i} in purpose "${before.purpose}", not "${p.purpose}"`);
+    if (p.composition && p.composition !== before.composition) throw new Error(`${fileName}:${p.line}: the page continues page ${i} in composition "${before.composition ?? '(the purpose\'s)'}", not "${p.composition}"`);
+    p.purpose = before.purpose;
+    if (before.composition) p.composition = before.composition;
+  }
   for (const p of pages) {
     if (!p.purpose) throw new Error(`${fileName}:${p.line}: page without "purpose:"`);
   }
@@ -533,6 +551,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       const page = pages[ep.page - 1];
       if (!page) throw new Error(`${at}: example fills page ${ep.page}, the story has ${pages.length}`);
       if (Object.keys(ep.texts).length === 0 && !ep.items?.length && !ep.topic && !ep.photo) throw new Error(`${at}: example page ${ep.page} is empty`);
+      if (page.continues && ep.items?.length) throw new Error(`${at}: page ${ep.page} continues the page before, its items are those that didn't fit there`);
       for (const slot of Object.keys(ep.texts)) {
         if (page.texts[slot as SlotId] !== undefined) throw new Error(`${at}: slot "${slot}" is fixed on page ${ep.page} and takes no example text`);
       }

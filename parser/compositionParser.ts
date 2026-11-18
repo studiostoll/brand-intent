@@ -74,6 +74,12 @@ export interface ParsedRegion {
   sizesLike?: Record<string, SlotId>;
   /** The region stands once per item of the page's list (`repeat: way`), each time with that item's texts. */
   repeat?: string;
+  /** The region's columns, side by side (`columns: 1-4 5-8 9-12`): its items flow down them in order, a column filled
+   *  before the next. Only in a region that repeats. */
+  columns?: [number, number][];
+  /** A line above the region's content (`rule: 0.8mm 0.5x`): its thickness and the space between it and the text
+   *  in x. In a repeated region a line above each item. */
+  rule?: { mm: number; spaceX: number };
 }
 
 export interface ParsedComposition {
@@ -339,7 +345,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ['fields', 'line', 'box', 'photo', 'logo', 'repeat', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
+      const REGION_KEYS = ['fields', 'line', 'box', 'photo', 'logo', 'repeat', 'columns', 'rule', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
       if (key && !['id', 'name', 'mode', 'image', 'illustration', 'grid', 'icon', 'sticky', 'flow'].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(', ')})`);
       }
@@ -463,6 +469,21 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
             once(region.repeat);
             if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${at}: invalid repeat "${value}" (expected the name of an item of the purpose, e.g. "repeat: way")`);
             region.repeat = value;
+            break;
+          }
+          case 'columns': {
+            once(region.columns);
+            if (words.length < 2) throw new Error(`${at}: invalid columns "${value}" (expected two or more, side by side, e.g. "1-4 5-8 9-12")`);
+            const cols = words.map(w => rangeOf(w, 'columns'));
+            for (let i = 1; i < cols.length; i++) if (cols[i][0] <= cols[i - 1][1]) throw new Error(`${at}: columns "${value}" overlap or run backwards (each starts after the one before ends)`);
+            region.columns = cols;
+            break;
+          }
+          case 'rule': {
+            once(region.rule);
+            const mm = words[0]?.match(/^(\d+(?:\.\d+)?)mm$/);
+            if (words.length !== 2 || !mm || parseFloat(mm[1]) <= 0) throw new Error(`${at}: invalid rule "${value}" (expected its thickness and the space below it, e.g. "0.8mm 0.5x")`);
+            region.rule = { mm: parseFloat(mm[1]), spaceX: xOf(words[1], 'rule space') };
             break;
           }
         }
@@ -823,7 +844,11 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field}, the region has ${r.fields[1] - r.fields[0] + 1} fields`);
       }
       // A repeated region stands once per item, each as tall as what it holds; the logo stands once
-      if (r.repeat && r.fields !== 'content') throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content")`);
+      // Its items flow down its columns and fill its fields; without columns each item takes the fields it needs
+      if (r.columns && !r.repeat) throw new Error(`${at}: region "${r.id}" has columns, what flows down them are the items of a "repeat:"`);
+      if (r.columns && (r.fields === 'content' || r.fields === 'line')) throw new Error(`${at}: region "${r.id}": its items flow down its columns and fill its fields ("fields: rest" or "A-B")`);
+      if (r.columns && (r.places.length || r.group || r.stack || r.baseline || r.fit || r.box || r.photo)) throw new Error(`${at}: region "${r.id}": its items flow down its columns, it places nothing itself (no place, group, stack, baseline, fit, box or photo)`);
+      if (r.repeat && !r.columns && r.fields !== 'content') throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content"), or they flow down its "columns:"`);
       if (r.repeat && r.logo) throw new Error(`${at}: region "${r.id}" repeats, the logo stands once (give it to another region)`);
       for (const [slot, other] of Object.entries(r.sizesLike ?? {})) {
         if (r.sizesLike?.[other]) throw new Error(`${at}: region "${r.id}": "${slot}" takes the size of "${other}", which takes another's itself`);
