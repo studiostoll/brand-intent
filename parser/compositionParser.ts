@@ -75,8 +75,8 @@ export interface ParsedRegion {
   /** The region stands once per item of the page's list (`repeat: way`), each time with that item's texts. */
   repeat?: string;
   /** The region's columns, side by side (`columns: 1-4 5-8 9-12`): its items flow down them in order, a column filled
-   *  before the next. Only in a region that repeats. A slot it places stands at the foot of one of them (`place: qr
-   *  bottom right 11-12`): that column's items end above it. */
+   *  before the next. Only in a region that repeats. A slot it places stands at the foot of the columns it covers
+   *  (`place: qr bottom right 11-12`), inside one or across whole ones; those columns' items end above it. */
   columns?: [number, number][];
   /** A line above the region's content (`rule: 0.8mm 0.5x`): its thickness and the space between it and the text
    *  in x. In a repeated region a line above each item. */
@@ -853,7 +853,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       for (const pl of r.columns ? r.places : []) {
         const cols = r.columns!;
         if (pl.edge !== 'bottom') throw new Error(`${at}: region "${r.id}": its items flow down its columns from the top, "${pl.slot}" stands at their foot ("bottom")`);
-        if (!cols.some(c => pl.cols[0] >= c[0] && pl.cols[1] <= c[1])) throw new Error(`${at}: region "${r.id}": "${pl.slot}" on columns ${pl.cols[0]}-${pl.cols[1]} lies in none of its columns`);
+        if (!cols.some(c => pl.cols[0] >= c[0] && pl.cols[1] <= c[1]) && !(cols.some(c => c[0] === pl.cols[0]) && cols.some(c => c[1] === pl.cols[1]))) throw new Error(`${at}: region "${r.id}": "${pl.slot}" on columns ${pl.cols[0]}-${pl.cols[1]} lies inside one of its columns or covers whole ones`);
       }
       if (r.repeat && !r.columns && r.fields !== 'content') throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content"), or they flow down its "columns:"`);
       if (r.repeat && r.logo) throw new Error(`${at}: region "${r.id}" repeats, the logo stands once (give it to another region)`);

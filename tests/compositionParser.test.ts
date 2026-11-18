@@ -279,7 +279,8 @@ test('regions mode: items flowing down a region\'s columns, a rule above each', 
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 5-12\n'), /overlap/, 'overlap');
   assertEq(two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr bottom right 11-12\n').regions?.[1].places[0]?.cols, [11, 12], 'a slot at a column\'s foot');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr top 11-12\n'), /stands at their foot/, 'not on top');
-  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr bottom 5-8\n'), /lies in none of its columns/, 'within one column');
+  assertEq(two('  fields: rest\n  repeat: month\n  columns: 1-4 5-8 9-12\n  place: note bottom 1-8\n').regions?.[1].places[0]?.cols, [1, 8], 'across whole columns');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr bottom 5-8\n'), /inside one of its columns or covers whole ones/, 'not half a column');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  group: qr\n  stack: neighbour\n'), /groups nothing/, 'no group');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  rule: 0.8mm\n'), /invalid rule/, 'rule needs its space');
   assertThrows(() => two('  fields: rest\n  repeat: month\n'), /or they flow down its "columns:"/, 'repeat without columns needs content');
