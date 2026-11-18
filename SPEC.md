@@ -1565,7 +1565,7 @@ region foot
 | `size: SLOT like OTHER` | The slot's type as large as OTHER's, a slot of the same region (an arrow as large as the word beside it, which `fit:` sizes). OTHER takes no size from a third slot this way |
 | `repeat: ITEM` | The region stands once per item of the page's list (an [`item`](#top-level-keys-2) of the purpose), in order, each time with that item's texts and in its own fields: `fields: content`, no `logo:`. Its slots are that item's; no other region places them. A `fit:` slot is one size in every item, the smallest any of them needs |
 | `columns: A-B C-D ...` | With `repeat:`: the region's columns, side by side, two or more. The items flow down them instead of each taking fields of its own: see [items down columns](#items-down-columns). The region fills its fields (`rest` or `A-B`) and places nothing itself |
-| `rule: Nmm Nx` | A line across the region above what it holds: its thickness in mm, and the space between the line and the capitals below in x. In a region with columns a line above each item, across its column |
+| `rule: Nmm Nx` | A line across the region above what it holds: its thickness in mm, and the space between the line and the capitals below in x. In a region with columns a line above each item, across its column, the same space between the item above and the line |
 
 #### Items down columns
 
