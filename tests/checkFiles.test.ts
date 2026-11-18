@@ -74,8 +74,9 @@ test('a format names a purpose that is not there', () => {
 test('a purpose names a composition that is not there, or none', () => {
   const file = `${purpose(base()).id}.purpose`;
   assertEq(added(f => { purpose(f).preferredCompositions.push('gone'); }), [`error ${file}: compositions: composition "gone" does not exist`]);
+  // `compositions: none` parses to an empty list: a purpose only a sheet places is no finding
   const none = added(f => { purpose(f).preferredCompositions = []; });
-  assertEq(none.includes(`warning ${file}: compositions: is empty, so the purpose is never placed on a canvas`), true, 'empty');
+  assertEq(none.some(issue => issue.includes(`${file}: compositions`)), false, 'none');
 });
 
 test('a composition no purpose lists is a warning', () => {

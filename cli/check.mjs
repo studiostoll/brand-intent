@@ -3311,6 +3311,10 @@ function parsePurposeFile(content, fileName) {
       const value = line.slice(colonIdx + 1).trim();
       compositions = value.split(/[\s,]+/).map((s) => s.trim()).filter((s) => s.length > 0);
       if (compositions.length === 0) throw new Error(`${fileName}:${lineNum}: empty compositions list`);
+      if (compositions.includes("none")) {
+        if (compositions.length > 1) throw new Error(`${fileName}:${lineNum}: compositions is "none" or a list of compositions, not both`);
+        compositions = [];
+      }
       continue;
     }
     if (line.startsWith("palette:")) {
@@ -5245,7 +5249,6 @@ function checkFiles(files) {
   const used = /* @__PURE__ */ new Set();
   for (const purpose of purposes) {
     const file = `${purpose.id}.purpose`;
-    if (!purpose.preferredCompositions.length) warning(file, "compositions: is empty, so the purpose is never placed on a canvas");
     for (const id of purpose.preferredCompositions) {
       used.add(id);
       if (!compositionIds.has(id)) error(file, `compositions: composition "${id}" does not exist`);

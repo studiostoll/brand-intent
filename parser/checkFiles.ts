@@ -86,7 +86,6 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
   const used = new Set<string>();
   for (const purpose of purposes) {
     const file = `${purpose.id}.purpose`;
-    if (!purpose.preferredCompositions.length) warning(file, 'compositions: is empty, so the purpose is never placed on a canvas');
     for (const id of purpose.preferredCompositions) {
       used.add(id);
       if (!compositionIds.has(id)) error(file, `compositions: composition "${id}" does not exist`);

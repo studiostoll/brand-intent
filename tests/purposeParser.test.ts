@@ -49,6 +49,13 @@ test('override lineHeight: a multiplier or a percentage', () => {
   assertEq(/invalid lineHeight "tight"/.test(said), true, 'neither');
 });
 
+test('compositions: none is a purpose only a sheet places', () => {
+  assertEq(parsePurposeFile('id: sign\ncompositions: none   # print only\n', 'sign.purpose').preferredCompositions, [], 'none');
+  const said = (src: string) => { try { parsePurposeFile(src, 'sign.purpose'); return ''; } catch (e) { return (e as Error).message; } };
+  assertEq(/missing "compositions:" line/.test(said('id: sign\n')), true, 'no line');
+  assertEq(/"none" or a list of compositions, not both/.test(said('id: sign\ncompositions: none, panel\n')), true, 'none with a list');
+});
+
 test('a purpose without slots is a page without text', () => {
   const p = parsePurposeFile('id: plain\ncompositions: panel\n', 'plain.purpose');
   assertEq(p.slots.length, 0, 'slots');
