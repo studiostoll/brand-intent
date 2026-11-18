@@ -1528,6 +1528,8 @@ region foot
 | `fields: content` | As many whole fields as what the region holds needs, at least one. Decided when the piece is laid out: its slots in the sizes they are given, nothing reaching past the region |
 | `fields: rest` | The fields the other regions leave. A composition with `content` regions has exactly one `rest` region |
 | `fields: A-B` | The format's fields the region spans (or `A`), 1-based. Ascending, contiguous, from 1, no overlap; the last region ends on the format's last field. Binds the composition to formats with that many fields; numbers and `content`/`rest` don't mix |
+| `line: Nx` | Instead of `fields:`: a line without fields of its own, N x tall (a sender, a foot line). It stands on the edge of the fields of the region above it (the first region: below it), the last line on the bottom margin, and takes its height from that region, a gutter apart. Not with `stack: field` |
+| `box: A-B Nmm Nx` | The region's slots in an outlined box across columns A to B: its line in mm, the space between line and text in x. As tall as what it holds, on the region's bottom edge |
 | `logo: top\|bottom left\|right` | The brand's print logo in that corner of the region. At most one region per composition |
 | `place: SLOT top\|bottom [left\|right] A-B` | The slot stands on the region's top or bottom edge, aligned left (default) or right, across columns A to B (1-based). Repeatable; a slot is placed once |
 | `group: SLOT ...` | Lines that belong together; the distances between them follow the brand's spacers. A grouped slot no `place:` names stands across the region's columns. Needs `stack:` |
@@ -1537,7 +1539,7 @@ region foot
 | `fit: SLOT ...` | The slot's type as large as its longest line fills its columns |
 | `size: SLOT Nx` | The height of the slot's capitals in x, whatever its role says. Like a role, it counts capitals, not the em |
 
-A composition in `content` and `rest` travels: it holds on every format where the content regions find their fields and the `rest` region keeps enough for its stack. Where it doesn't, laying it out fails with the reason; nothing is squeezed or overlaps.
+A line counts in no field. A composition in `content` and `rest` travels: it holds on every format where the content regions find their fields and the `rest` region keeps enough for its stack. Where it doesn't, laying it out fails with the reason; nothing is squeezed or overlaps.
 
 In regions mode the top-level `logo:`, `icon:`, `sticky:`, `flow:` and grid slot lines are errors, and `region` is an error in any other mode. `mode: regions` is inferred when a file has `region` blocks and no `mode:` line. Every slot a composition names is a slot of the page's purpose.
 

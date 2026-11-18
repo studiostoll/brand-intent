@@ -228,6 +228,20 @@ test('regions mode: fields by content and the rest', () => {
   assertThrows(() => sign(t => t.replace('fields: 5-6', 'fields: some')), /invalid fields "some"/, 'shape');
 });
 
+test('regions mode: a line without fields, a box', () => {
+  const c = sign(t => t.replace('fields: 1-4', 'fields: rest').replace('fields: 5-6', 'line: 2x\n  box: 7-12 0.5mm 0.75x'));
+  assertEq(c.regions?.[1].fields, 'line', 'line');
+  assertEq(c.regions?.[1].lineX, 2, 'line height');
+  assertEq(c.regions?.[1].box, { cols: [7, 12], lineMm: 0.5, padX: 0.75 }, 'box');
+  assertEq(sign(t => t.replace('fields: 5-6', 'line: 2x')).regions?.map(r => r.fields), [[1, 4], 'line'], 'a line beside fields by number');
+  assertThrows(() => sign(t => t.replace('fields: 5-6', 'fields: 5-6\n  line: 2x')), /has its fields, a line has none/, 'fields and line');
+  assertThrows(() => sign(t => t.replace('fields: 5-6', 'line: 2x\n  fields: 5-6')), /is a line, it has no fields/, 'line and fields');
+  assertThrows(() => sign(t => t.replace('fields: 5-6', 'line: 2')), /invalid line "2"/, 'line shape');
+  assertThrows(() => sign(t => t.replace('fields: 1-4', 'line: 2x').replace('fields: 5-6', 'line: 2x')), /at least one region needs "fields:"/, 'only lines');
+  assertThrows(() => sign(t => t.replace('fields: 1-4', 'line: 2x').replace('fields: 5-6', 'fields: rest')), /is a line, its stack has no field/, 'line with a stack field');
+  assertThrows(() => sign(t => t.replace('fields: 5-6', 'fields: 5-6\n  box: 7-12 0.5 0.75x')), /invalid box/, 'box shape');
+});
+
 test('regions mode: mode conflicts', () => {
   assertThrows(() => sign(t => t.replace('mode: regions', 'mode: grid')), /"region" needs "mode: regions"/, 'grid');
   assertThrows(() => sign(t => t.replace('mode: regions', 'mode: flow')), /"region" needs "mode: regions"/, 'flow');

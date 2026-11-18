@@ -198,6 +198,7 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
               const most = rows - contents, need = r.stack && 'field' in r.stack ? r.stack.field : 1;
               if (most < need) say(`${where}: it needs ${need} field${need > 1 ? 's' : ''}, format "${format.id}" leaves it at most ${most}`);
             }
+            if (r.box && cols !== undefined && r.box.cols[1] > cols) say(`${where}: box columns ${r.box.cols[0]}-${r.box.cols[1]} are outside the format's ${cols} columns`);
             for (const pl of r.places) {
               if (cols !== undefined && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
               slot(pl.slot, where);

@@ -52,7 +52,13 @@ export interface ParsedRegion {
   id: string;
   /** The fields the region spans, 1-based, inclusive; or `content`: as many whole fields as what it holds needs, at
    *  least one, decided when the piece is laid out; or `rest`: the fields the other regions leave. */
-  fields: [number, number] | 'content' | 'rest';
+  fields: [number, number] | 'content' | 'rest' | 'line';
+  /** A line without fields of its own (`line: 2x`, `fields` is then `line`): its height in x. It stands on the edge
+   *  of the fields next to it, those of the region above (the first region: below), and takes its height from them. */
+  lineX?: number;
+  /** The region's slots in an outlined box (`box: 7-12 0.5mm 0.75x`): the columns it spans, its line, the space
+   *  between line and text. As tall as what it holds, on the region's bottom edge. */
+  box?: { cols: [number, number]; lineMm: number; padX: number };
   logo?: { v: 'top' | 'bottom'; h: 'left' | 'right' };
   places: ParsedRegionPlace[];
   group?: SlotId[];
@@ -326,7 +332,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ['fields', 'logo', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
+      const REGION_KEYS = ['fields', 'line', 'box', 'logo', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
       if (key && !['id', 'name', 'mode', 'image', 'illustration', 'grid', 'icon', 'sticky', 'flow'].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(', ')})`);
       }
@@ -358,10 +364,26 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         const once = (have: unknown) => { if (have) throw new Error(`${at}: "${key[1]}:" twice in region "${region!.id}"`); };
         switch (key[1]) {
           case 'fields': {
+            if (region.fields === 'line') throw new Error(`${at}: region "${region.id}" is a line, it has no fields`);
             once(fieldsSet.has(region));
             fieldsSet.add(region);
             if (words.length !== 1) throw new Error(`${at}: invalid fields "${value}" (expected "A-B", "A", "content" or "rest")`);
             region.fields = words[0] === 'content' || words[0] === 'rest' ? words[0] : rangeOf(words[0], 'fields');
+            break;
+          }
+          case 'line': {
+            if (fieldsSet.has(region)) throw new Error(`${at}: region "${region.id}" has its fields, a line has none ("fields:" or "line:")`);
+            fieldsSet.add(region);
+            if (words.length !== 1) throw new Error(`${at}: invalid line "${value}" (expected its height in x, e.g. "2x")`);
+            region.fields = 'line';
+            region.lineX = xOf(words[0], 'line');
+            break;
+          }
+          case 'box': {
+            once(region.box);
+            const mm = words[1]?.match(/^(\d+(?:\.\d+)?)mm$/);
+            if (words.length !== 3 || !mm || parseFloat(mm[1]) <= 0) throw new Error(`${at}: invalid box "${value}" (expected its columns, its line and its padding, e.g. "7-12 0.5mm 0.75x")`);
+            region.box = { cols: rangeOf(words[0], 'box columns'), lineMm: parseFloat(mm[1]), padX: xOf(words[2], 'box padding') };
             break;
           }
           case 'logo': {
@@ -755,9 +777,11 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     if (!regions.length) throw new Error(`${fileName}: "mode: regions" needs at least one "region" block`);
     if (foreign) throw new Error(`${fileName}:${(foreign as { line: number }).line}: ${(foreign as { what: string }).what} is not allowed in regions mode (a region places its slots itself)`);
     let next = 1;
-    const numbered = regions.filter(r => Array.isArray(r.fields)), rests = regions.filter(r => r.fields === 'rest');
-    for (const r of regions) if (!fieldsSet.has(r)) throw new Error(`${fileName}:${regionLines.get(r)}: region "${r.id}" needs "fields:"`);
-    if (numbered.length && numbered.length < regions.length) throw new Error(`${fileName}:${regionLines.get(regions.find(r => !Array.isArray(r.fields))!)}: fields by number and "content"/"rest" don't mix in one composition`);
+    const numbered = regions.filter(r => Array.isArray(r.fields)), rests = regions.filter(r => r.fields === 'rest'), lines = regions.filter(r => r.fields === 'line');
+    for (const r of regions) if (!fieldsSet.has(r)) throw new Error(`${fileName}:${regionLines.get(r)}: region "${r.id}" needs "fields:" (or "line:")`);
+    if (lines.length === regions.length) throw new Error(`${fileName}:${regionLines.get(regions[0])}: a line stands on the edge of fields, at least one region needs "fields:"`);
+    for (const r of lines) if (r.stack && 'field' in r.stack) throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}" is a line, its stack has no field to stand on`);
+    if (numbered.length && numbered.length < regions.length - lines.length) throw new Error(`${fileName}:${regionLines.get(regions.find(r => r.fields === 'content' || r.fields === 'rest')!)}: fields by number and "content"/"rest" don't mix in one composition`);
     if (!numbered.length && rests.length !== 1) throw new Error(`${fileName}:${regionLines.get(rests[1] ?? regions[0])}: a composition with "content" regions has one "rest" region, ${rests.length ? 'not two' : 'none here'}`);
     for (const r of regions) {
       const at = `${fileName}:${regionLines.get(r)}`;
