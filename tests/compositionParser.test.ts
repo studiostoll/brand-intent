@@ -122,5 +122,17 @@ test('bad photo align and size throw', () => {
   assertThrows(() => comp(`flow:\n  | photo center xl\n`), /invalid photo size/, 'size');
 });
 
+test('a composition places slots a purpose names itself', () => {
+  const c = comp(`image: full\n\ngrid: 4\n\nopening-hours  row 2  cols 1--4  left\n\nsticky: bottom s\n  | opening-hours left\n\nflow:\n  | opening-hours left\n`);
+  assertEq(c.slots.map(s => s.id), ['opening-hours'], 'grid slot');
+  assertEq((c.flow?.items[0] as { id: string }).id, 'opening-hours', 'flow item');
+});
+
+test('a slot named like a keyword is an error', () => {
+  assertThrows(() => comp(`sticky: bottom s\n  | spacer-wide left\n`), /"spacer-wide" can't name a slot/, 'sticky prefix');
+  assertThrows(() => comp(`sticky: bottom s\n  | flow left\n`), /"flow" can't name a slot/, 'sticky');
+  assertThrows(() => comp(`image: full\n\ngrid: 4\n\nlogo  row 2  cols 1--4  left\n`), /"logo" can't name a slot/, 'grid line');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

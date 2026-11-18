@@ -99,5 +99,5 @@ export type { ParsedStory, ParsedStoryPage, ParsedStoryExample, ParsedStoryExamp
 export { checkFiles } from './checkFiles';
 export type { BrandFiles, FileIssue } from './checkFiles';
 
-export type { SlotId, ZoneInsets, TextAlign } from './types';
-export { SLOT_IDS } from './types';
+export type { SlotId, CoreSlotId, ZoneInsets, TextAlign } from './types';
+export { SLOT_IDS, SLOT_ID_PATTERN } from './types';

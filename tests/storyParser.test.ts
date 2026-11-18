@@ -100,7 +100,7 @@ test('required: id, format, a page, a purpose per page', () => {
 });
 
 test('unknown keys, duplicates and bad indent are errors', () => {
-  assertThrows(() => parse('page\n  purpose: notice\n  body: x\n'), 'unknown key "body"');
+  assertThrows(() => parse('page\n  purpose: notice\n  Body: x\n'), 'unknown key "Body"');
   assertThrows(() => parse('page\n  purpose: notice\n  primary: a\n  primary: b\n'), 'duplicate "primary"');
   assertThrows(() => parse('page\n    purpose: notice\n'), 'unexpected indent');
   assertThrows(() => parse('colour: red\n'), 'unexpected');
@@ -569,6 +569,12 @@ test('prompt block: the brief that writes the open slots', () => {
   assertThrows(() => parse('page\n  purpose: notice\nprompt\n  model: small-one\n'), '"prompt" has no text');
   assertThrows(() => parse('page\n  purpose: notice\nprompt\n'), '"prompt" has no text');
   assertThrows(() => parse('page\n  purpose: notice\nprompt\n  One.\nprompt\n  Two.\n'), 'duplicate "prompt"');
+});
+
+test('a page may fix a slot a purpose names itself', () => {
+  const s = parse('page\n  purpose: notice\n  opening-hours: Mon to Fri\n');
+  assertEq(s.pages[0].texts, { 'opening-hours': 'Mon to Fri' }, 'texts');
+  assertThrows(() => parse('page\n  purpose: notice\n  Opening_Hours: x\n'), 'unknown key "Opening_Hours"');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

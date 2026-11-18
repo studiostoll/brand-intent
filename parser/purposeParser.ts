@@ -5,7 +5,7 @@
  * Throws on parse errors with file name and line number.
  */
 
-import { SLOT_IDS, type SlotId } from './types';
+import { isSlotIdShape, type SlotId } from './types';
 import { parseIconRef, parseListItem, splitLabelledItem } from './icons';
 import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
@@ -172,7 +172,6 @@ export interface CountRange {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VALID_SLOTS = new Set<string>(SLOT_IDS);
 
 /** Map short font family names to CSS font-family strings. */
 function resolveFontFamily(name: string): string {
@@ -388,7 +387,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         currentExample[key] = value;
         continue;
       }
-      if (!VALID_SLOTS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work or a slot id)`);
+      if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work or a slot the purpose declares)`);
       if (value) currentExample.texts[key as SlotId] = value;
       else exampleMultiKey = key as SlotId;
       continue;
@@ -549,7 +548,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     if (line.startsWith('slot ')) {
       closeBlocks(lineNum);
       const slotId = line.slice(5).trim();
-      if (!VALID_SLOTS.has(slotId)) throw new Error(`${fileName}:${lineNum}: unknown slot "${slotId}"`);
+      if (!isSlotIdShape(slotId)) throw new Error(`${fileName}:${lineNum}: invalid slot id "${slotId}" (lowercase letters, digits and hyphens, starting with a letter)`);
       currentSlot = { id: slotId as SlotId, samples: [], typography: {} as ParsedPurposeSlot['typography'] };
       continue;
     }

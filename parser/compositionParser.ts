@@ -8,7 +8,7 @@
  * Column names: 1=0, 2=1, 3=2, 4=3, 5=4, 6=5 (1-based in files, 0-based in output)
  */
 
-import { SLOT_IDS, type SlotId } from './types';
+import { isSlotIdShape, type SlotId } from './types';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -166,7 +166,21 @@ export interface ParsedDivider {
 
 const GRID_Y_KEYWORDS = new Set<string>(['top', 'center', 'bottom']);
 
-const VALID_SLOTS = new Set<string>(SLOT_IDS);
+// Words the composition grammar reads at the start of a line or a flow/sticky item. A slot may not
+// be named like one of them (and not "spacer-*" / "divider-*", which a flow reads by prefix).
+const RESERVED_SLOT_WORDS = new Set<string>([
+  'id', 'name', 'mode', 'image', 'illustration', 'sticker', 'grid', 'logo', 'icon', 'sticky', 'flow', 'group',
+  'photo', 'spacer', 'divider', 'direction', 'columns', 'column-gap', 'panel', 'split', 'width', 'row', 'cols',
+]);
+
+/** Throws when `id` can't name a slot in a composition; returns whether it is a slot id at all. */
+function checkSlotName(id: string, where: string): boolean {
+  if (!isSlotIdShape(id)) return false;
+  if (RESERVED_SLOT_WORDS.has(id) || /^(spacer|divider)-/.test(id)) {
+    throw new Error(`${where}: "${id}" can't name a slot, the composition language reads it as a keyword`);
+  }
+  return true;
+}
 // Spacer names: 'auto' + any key from figma-tokens.json spacing (s, m, l, xl, etc.)
 // Parser accepts any alphanumeric name — validation against actual tokens happens at render time.
 
@@ -416,7 +430,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
             align: (parts[1] as 'left' | 'center' | 'right') ?? 'left',
             verticalAlign: parseVAlign(parts[2]),
           });
-        } else if (VALID_SLOTS.has(parts[0])) {
+        } else if (checkSlotName(parts[0], `${fileName}:${i + 1}`)) {
           stickyItems.push({
             type: 'slot',
             id: parts[0],
@@ -509,7 +523,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
           if (photoParts.length > 3) throw new Error(`${fileName}:${i + 1}: unexpected "${photoParts.slice(3).join(' ')}" after photo (expected: photo ALIGN [SIZE])`);
           if (flowItems.some(it => it.type === 'photo')) throw new Error(`${fileName}:${i + 1}: a flow has one photo at most`);
           flowItems.push({ type: 'photo', align: align as ParsedFlowPhoto['align'], size: size as ParsedFlowPhoto['size'] });
-        } else if (itemStr.startsWith('icon')) {
+        } else if (itemStr === 'icon' || itemStr.startsWith('icon ')) {
           const iconParts = itemStr.split(/\s+/);
           const align = (iconParts[1] as 'left' | 'center' | 'right') ?? 'center';
           const size = (iconParts[2] as 's' | 'm' | 'l') ?? 'm';
@@ -524,7 +538,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
           // Slot: "primary left [top|center|bottom] [columns:N] [gap:M]"
           const parts = itemStr.split(/\s+/);
           const slotId = parts[0];
-          if (!VALID_SLOTS.has(slotId)) throw new Error(`${fileName}:${i + 1}: unknown slot "${slotId}" in flow block`);
+          if (!checkSlotName(slotId, `${fileName}:${i + 1}`)) throw new Error(`${fileName}:${i + 1}: unknown slot "${slotId}" in flow block`);
           const align = (parts[1] as 'left' | 'center' | 'right') ?? 'left';
           const VALIGNS = ['top', 'center', 'bottom'];
           let vAlign: 'top' | 'center' | 'bottom' | undefined;
@@ -557,10 +571,10 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     // Ungrouped slot: "primary  row 3  cols 1--4  left" or "meta  bottom  cols 1--2  left bottom"
     // Alignment: one keyword = horizontal only (vertical defaults to top)
     //            two keywords = horizontal + vertical (e.g. "left bottom", "center center")
-    const rowSlotMatch = line.match(/^(\w+)\s+(?:row\s+)?(\d+|top|center|bottom)\s+cols\s+(\S+)\s+(left|center|right)(?:\s+(top|center|bottom))?$/);
+    const rowSlotMatch = line.match(/^([a-z][a-z0-9-]*)\s+(?:row\s+)?(\d+|top|center|bottom)\s+cols\s+(\S+)\s+(left|center|right)(?:\s+(top|center|bottom))?$/);
     if (rowSlotMatch) {
       const [, slotId, rowStr, colRange, hAlign, vAlign] = rowSlotMatch;
-      if (!VALID_SLOTS.has(slotId)) throw new Error(`${fileName}:${lineNum}: unknown slot "${slotId}"`);
+      checkSlotName(slotId, `${fileName}:${lineNum}`);
       // Keyword rows use negative sentinels (same convention as logo): top=-1, center=-2, bottom=-3
       const rowNum = rowStr === 'top' ? -1 : rowStr === 'center' ? -2 : rowStr === 'bottom' ? -3 : parseInt(rowStr, 10) - 1;
       const cols = parseColRange(colRange, fileName, lineNum, 12);

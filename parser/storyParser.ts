@@ -7,7 +7,7 @@
  * (purposes, compositions, formats, maxLength) live in `checkStory`.
  */
 
-import { SLOT_IDS, type SlotId } from './types';
+import { isSlotIdShape, type SlotId } from './types';
 import type { ParsedPurpose } from './purposeParser';
 import { addressStreet, weekOpeningDays, type ParsedPlace, type WeekHours } from './placeParser';
 import { timeEntry, type ParsedTime, type TimeEntry } from './timeParser';
@@ -188,7 +188,6 @@ export interface ParsedStoryExamplePage {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VALID_SLOTS = new Set<string>(SLOT_IDS);
 const ID = /^[a-z][a-z0-9-]*$/;
 const VARIABLE = /\{([a-z][a-z0-9-]*(?: [a-z][a-z0-9-]*)?)\}/g;
 
@@ -275,7 +274,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
       return { key, value };
     }
-    if (!VALID_SLOTS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...extra, 'topic'].join(', ')} or a slot id)`);
+    if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...extra, 'topic'].join(', ')} or a slot id)`);
     if (!value) return { multi: key as SlotId };
     checkVariables(value, lineNum, allowVariables);
     target.texts[key as SlotId] = value;

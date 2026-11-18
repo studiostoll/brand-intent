@@ -1195,7 +1195,9 @@ The following slot IDs are valid:
 | `label` | Orientation marker (category badge, tag) |
 | `credit` | Attribution the content requires (data source, photo credit) |
 
-These names are fixed. They travel through the entire stack: a composition places `primary` without knowing what it contains; a purpose defines what `primary` means without knowing where it sits.
+These seven names carry a meaning in the language. They travel through the entire stack: a composition places `primary` without knowing what it contains; a purpose defines what `primary` means without knowing where it sits.
+
+A purpose may also name slots of its own. A slot ID is any name of lowercase letters, digits and hyphens that starts with a letter, like `opening-hours`. The seven keep their meaning (`label` is a badge, `cta` an action, `credit` is filled by the implementation or by `value:`); any other name is a plain text or list slot. A purpose's `example` blocks may fill only slots the purpose declares, and a composition places a new name like any other slot. A slot cannot be named like a keyword of the composition language (`logo`, `icon`, `photo`, `flow`, `spacer-*`, `divider-*` and the like); the parser says so.
 
 `credit` is not editorial. It carries what a licence or a source asks to be named: a fixed `value:` (a photographer), or a text the implementation fills (the data source of a value on the page). No example has to fill it, and AI never writes it. It usually gets the brand's smallest style and its own place, apart from `meta`.
 

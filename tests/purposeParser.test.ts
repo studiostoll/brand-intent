@@ -201,7 +201,7 @@ test('example validation errors', () => {
   const full = '  label: A\n  primary: B\n  detail:\n    C\n';
   assertThrows(() => withExamples(`example\n${full}  secondary: X\n`), /does not declare/, 'undeclared slot');
   assertThrows(() => withExamples(`example\n${full}  cta: Buy\n`), /fixed value/, 'value slot');
-  assertThrows(() => withExamples(`example\n${full}  colour: red\n`), /unknown example key/, 'unknown key');
+  assertThrows(() => withExamples(`example\n${full}  Colour: red\n`), /unknown example key "Colour"/, 'unknown key');
   assertThrows(() => withExamples(`example\n${full}  primary: again\n`), /duplicate "primary"/, 'duplicate key');
   assertThrows(() => withExamples(`example\n${full}  when: Christmas\n`), /invalid when/, 'when name');
   assertThrows(() => withExamples(`example\n  label: A @christmas\n  primary: B\n  detail:\n    C\n`), /use "when:"/, 'marker in text');
@@ -258,6 +258,15 @@ test('photo takes one id or a list', () => {
   assertEq(ph('photo: bar, glas'), ['bar', 'glas'], 'list');
   assertEq(ph('photo: bar'), ['bar'], 'single');
   assertEq(ph(''), undefined, 'none');
+});
+
+test('a purpose names its own slots', () => {
+  const slots = `slot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n\nslot opening-hours\n  label: Hours\n  typography: body\n  maxLength: 40\n`;
+  const p = withExamples(`example\n  primary: Open\n  opening-hours: Mon to Fri\n`, slots);
+  assertEq(p.slots.map(s => s.id), ['primary', 'opening-hours'], 'slots');
+  assertEq(p.examples[0].texts['opening-hours'], 'Mon to Fri', 'example text');
+  assertThrows(() => withExamples(`example\n  primary: Open\n  closing-time: 6\n`, slots), /example fills slot "closing-time", which the purpose does not declare/, 'undeclared own key');
+  assertThrows(() => withExamples(`example\n  primary: Open\n`, `slot Bad_Name\n  label: X\n  typography: body\n  maxLength: 5\n`), /invalid slot id "Bad_Name"/, 'bad shape');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

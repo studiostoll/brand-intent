@@ -3094,10 +3094,12 @@ function parseFormatFile(content, fileName) {
 }
 
 // parser/types.ts
-var SLOT_IDS = ["primary", "secondary", "detail", "meta", "cta", "label", "credit"];
+var SLOT_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+function isSlotIdShape(id) {
+  return SLOT_ID_PATTERN.test(id);
+}
 
 // parser/purposeParser.ts
-var VALID_SLOTS = new Set(SLOT_IDS);
 function resolveFontFamily(name) {
   return `'${name}', sans-serif`;
 }
@@ -3271,7 +3273,7 @@ function parsePurposeFile(content, fileName) {
         currentExample[key] = value;
         continue;
       }
-      if (!VALID_SLOTS.has(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work or a slot id)`);
+      if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work or a slot the purpose declares)`);
       if (value) currentExample.texts[key] = value;
       else exampleMultiKey = key;
       continue;
@@ -3392,7 +3394,7 @@ function parsePurposeFile(content, fileName) {
     if (line.startsWith("slot ")) {
       closeBlocks(lineNum);
       const slotId = line.slice(5).trim();
-      if (!VALID_SLOTS.has(slotId)) throw new Error(`${fileName}:${lineNum}: unknown slot "${slotId}"`);
+      if (!isSlotIdShape(slotId)) throw new Error(`${fileName}:${lineNum}: invalid slot id "${slotId}" (lowercase letters, digits and hyphens, starting with a letter)`);
       currentSlot = { id: slotId, samples: [], typography: {} };
       continue;
     }
@@ -3803,7 +3805,38 @@ var ILLUSTRATION_ANCHORS = /* @__PURE__ */ new Set([
   "bottom-right"
 ]);
 var GRID_Y_KEYWORDS = /* @__PURE__ */ new Set(["top", "center", "bottom"]);
-var VALID_SLOTS2 = new Set(SLOT_IDS);
+var RESERVED_SLOT_WORDS = /* @__PURE__ */ new Set([
+  "id",
+  "name",
+  "mode",
+  "image",
+  "illustration",
+  "sticker",
+  "grid",
+  "logo",
+  "icon",
+  "sticky",
+  "flow",
+  "group",
+  "photo",
+  "spacer",
+  "divider",
+  "direction",
+  "columns",
+  "column-gap",
+  "panel",
+  "split",
+  "width",
+  "row",
+  "cols"
+]);
+function checkSlotName(id, where) {
+  if (!isSlotIdShape(id)) return false;
+  if (RESERVED_SLOT_WORDS.has(id) || /^(spacer|divider)-/.test(id)) {
+    throw new Error(`${where}: "${id}" can't name a slot, the composition language reads it as a keyword`);
+  }
+  return true;
+}
 function parseCol(value, fileName, lineNum, maxCol = 12) {
   const n = parseInt(value, 10);
   if (isNaN(n) || n < 1 || n > maxCol) {
@@ -4002,7 +4035,7 @@ function parseCompositionFile(content, fileName) {
             align: parts[1] ?? "left",
             verticalAlign: parseVAlign(parts[2])
           });
-        } else if (VALID_SLOTS2.has(parts[0])) {
+        } else if (checkSlotName(parts[0], `${fileName}:${i + 1}`)) {
           stickyItems.push({
             type: "slot",
             id: parts[0],
@@ -4088,7 +4121,7 @@ function parseCompositionFile(content, fileName) {
           if (photoParts.length > 3) throw new Error(`${fileName}:${i + 1}: unexpected "${photoParts.slice(3).join(" ")}" after photo (expected: photo ALIGN [SIZE])`);
           if (flowItems.some((it) => it.type === "photo")) throw new Error(`${fileName}:${i + 1}: a flow has one photo at most`);
           flowItems.push({ type: "photo", align, size });
-        } else if (itemStr.startsWith("icon")) {
+        } else if (itemStr === "icon" || itemStr.startsWith("icon ")) {
           const iconParts = itemStr.split(/\s+/);
           const align = iconParts[1] ?? "center";
           const size = iconParts[2] ?? "m";
@@ -4102,7 +4135,7 @@ function parseCompositionFile(content, fileName) {
         } else {
           const parts = itemStr.split(/\s+/);
           const slotId = parts[0];
-          if (!VALID_SLOTS2.has(slotId)) throw new Error(`${fileName}:${i + 1}: unknown slot "${slotId}" in flow block`);
+          if (!checkSlotName(slotId, `${fileName}:${i + 1}`)) throw new Error(`${fileName}:${i + 1}: unknown slot "${slotId}" in flow block`);
           const align = parts[1] ?? "left";
           const VALIGNS = ["top", "center", "bottom"];
           let vAlign;
@@ -4127,10 +4160,10 @@ function parseCompositionFile(content, fileName) {
     if (line.startsWith("group:")) {
       throw new Error(`${fileName}:${lineNum}: "group:" syntax is removed \u2014 use "flow:" with "split" instead`);
     }
-    const rowSlotMatch = line.match(/^(\w+)\s+(?:row\s+)?(\d+|top|center|bottom)\s+cols\s+(\S+)\s+(left|center|right)(?:\s+(top|center|bottom))?$/);
+    const rowSlotMatch = line.match(/^([a-z][a-z0-9-]*)\s+(?:row\s+)?(\d+|top|center|bottom)\s+cols\s+(\S+)\s+(left|center|right)(?:\s+(top|center|bottom))?$/);
     if (rowSlotMatch) {
       const [, slotId, rowStr, colRange, hAlign, vAlign] = rowSlotMatch;
-      if (!VALID_SLOTS2.has(slotId)) throw new Error(`${fileName}:${lineNum}: unknown slot "${slotId}"`);
+      checkSlotName(slotId, `${fileName}:${lineNum}`);
       const rowNum = rowStr === "top" ? -1 : rowStr === "center" ? -2 : rowStr === "bottom" ? -3 : parseInt(rowStr, 10) - 1;
       const cols = parseColRange(colRange, fileName, lineNum, 12);
       slots.push({
@@ -4667,7 +4700,6 @@ var HOURS_CLOSED_LENGTH = 11;
 var SPECIAL_DAY_LENGTH = 12;
 var SPECIAL_RUN_LENGTH = 26;
 var BY_AND_LENGTH = 5;
-var VALID_SLOTS3 = new Set(SLOT_IDS);
 var ID = /^[a-z][a-z0-9-]*$/;
 var VARIABLE = /\{([a-z][a-z0-9-]*(?: [a-z][a-z0-9-]*)?)\}/g;
 function storyTextVariables(text) {
@@ -4725,7 +4757,7 @@ function parseStoryFile(content, fileName) {
       if (!value) throw new Error(`${fileName}:${lineNum}: empty ${key}`);
       return { key, value };
     }
-    if (!VALID_SLOTS3.has(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...extra, "topic"].join(", ")} or a slot id)`);
+    if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown key "${key}" (expected ${[...extra, "topic"].join(", ")} or a slot id)`);
     if (!value) return { multi: key };
     checkVariables(value, lineNum, allowVariables);
     target.texts[key] = value;

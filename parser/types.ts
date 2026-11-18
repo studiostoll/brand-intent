@@ -2,11 +2,23 @@
 // Extracted from Brand Atelier. These are the minimal types
 // needed by the four parsers.
 
-/** Semantic slot identifiers — fixed vocabulary. */
-export type SlotId = 'primary' | 'secondary' | 'detail' | 'meta' | 'cta' | 'label' | 'credit';
+/** The seven slot ids the language gives a meaning to. */
+export type CoreSlotId = 'primary' | 'secondary' | 'detail' | 'meta' | 'cta' | 'label' | 'credit';
 
-/** Every valid slot id, in the order of the spec's table. */
-export const SLOT_IDS: readonly SlotId[] = ['primary', 'secondary', 'detail', 'meta', 'cta', 'label', 'credit'];
+/** A slot id: one of the seven, or a name a purpose gives its own slot. The `(string & {})` keeps
+ *  the seven offered by autocompletion and comparable by name. */
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type SlotId = CoreSlotId | (string & {});
+
+/** The seven core slot ids, in the order of the spec's table. */
+export const SLOT_IDS: readonly CoreSlotId[] = ['primary', 'secondary', 'detail', 'meta', 'cta', 'label', 'credit'];
+
+/** The shape of any slot id: lowercase, digits, hyphens, starting with a letter. */
+export const SLOT_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+
+export function isSlotIdShape(id: string): boolean {
+  return SLOT_ID_PATTERN.test(id);
+}
 
 /** Inset distances in px (screen) or mm (print). */
 export interface ZoneInsets {
