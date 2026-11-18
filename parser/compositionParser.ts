@@ -75,7 +75,8 @@ export interface ParsedRegion {
   /** The region stands once per item of the page's list (`repeat: way`), each time with that item's texts. */
   repeat?: string;
   /** The region's columns, side by side (`columns: 1-4 5-8 9-12`): its items flow down them in order, a column filled
-   *  before the next. Only in a region that repeats. */
+   *  before the next. Only in a region that repeats. A slot it places stands at the foot of one of them (`place: qr
+   *  bottom right 11-12`): that column's items end above it. */
   columns?: [number, number][];
   /** A line above the region's content (`rule: 0.8mm 0.5x`): its thickness and the space between it and the text
    *  in x. In a repeated region a line above each item. */
@@ -847,7 +848,13 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       // Its items flow down its columns and fill its fields; without columns each item takes the fields it needs
       if (r.columns && !r.repeat) throw new Error(`${at}: region "${r.id}" has columns, what flows down them are the items of a "repeat:"`);
       if (r.columns && (r.fields === 'content' || r.fields === 'line')) throw new Error(`${at}: region "${r.id}": its items flow down its columns and fill its fields ("fields: rest" or "A-B")`);
-      if (r.columns && (r.places.length || r.group || r.stack || r.baseline || r.fit || r.box || r.photo)) throw new Error(`${at}: region "${r.id}": its items flow down its columns, it places nothing itself (no place, group, stack, baseline, fit, box or photo)`);
+      if (r.columns && (r.group || r.stack || r.baseline || r.fit || r.box || r.photo)) throw new Error(`${at}: region "${r.id}": its items flow down its columns, it groups nothing (no group, stack, baseline, fit, box or photo)`);
+      // A slot it places stands at the foot of one of its columns, whose items end above it
+      for (const pl of r.columns ? r.places : []) {
+        const cols = r.columns!;
+        if (pl.edge !== 'bottom') throw new Error(`${at}: region "${r.id}": its items flow down its columns from the top, "${pl.slot}" stands at their foot ("bottom")`);
+        if (!cols.some(c => pl.cols[0] >= c[0] && pl.cols[1] <= c[1])) throw new Error(`${at}: region "${r.id}": "${pl.slot}" on columns ${pl.cols[0]}-${pl.cols[1]} lies in none of its columns`);
+      }
       if (r.repeat && !r.columns && r.fields !== 'content') throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content"), or they flow down its "columns:"`);
       if (r.repeat && r.logo) throw new Error(`${at}: region "${r.id}" repeats, the logo stands once (give it to another region)`);
       for (const [slot, other] of Object.entries(r.sizesLike ?? {})) {

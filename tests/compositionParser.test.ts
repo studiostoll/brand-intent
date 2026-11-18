@@ -277,7 +277,10 @@ test('regions mode: items flowing down a region\'s columns, a rule above each', 
   assertThrows(() => parseCompositionFile(`id: b\nimage: none\n\nregion head\n  fields: rest\n  place: title top 1-4\n\nregion months\n  fields: content\n  repeat: month\n  columns: 1-6 7-12\n`, 'b.composition'), /fill its fields/, 'columns fill their fields');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6\n'), /two or more/, 'one column');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 5-12\n'), /overlap/, 'overlap');
-  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: month top 1-6\n'), /places nothing itself/, 'no place');
+  assertEq(two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr bottom right 11-12\n').regions?.[1].places[0]?.cols, [11, 12], 'a slot at a column\'s foot');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr top 11-12\n'), /stands at their foot/, 'not on top');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  place: qr bottom 5-8\n'), /lies in none of its columns/, 'within one column');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  group: qr\n  stack: neighbour\n'), /groups nothing/, 'no group');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  rule: 0.8mm\n'), /invalid rule/, 'rule needs its space');
   assertThrows(() => two('  fields: rest\n  repeat: month\n'), /or they flow down its "columns:"/, 'repeat without columns needs content');
 });
