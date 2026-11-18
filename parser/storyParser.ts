@@ -8,6 +8,7 @@
  */
 
 import { isSlotIdShape, type SlotId } from './types';
+import type { ParsedItemTexts } from './purposeParser';
 import type { ParsedPurpose } from './purposeParser';
 import { addressStreet, weekOpeningDays, type ParsedPlace, type WeekHours } from './placeParser';
 import { timeEntry, type ParsedTime, type TimeEntry } from './timeParser';
@@ -184,6 +185,8 @@ export interface ParsedStoryExamplePage {
   /** Photo id from the `.brand` that goes with this example's texts; overrides the page's photos. */
   photo?: string;
   texts: Partial<Record<SlotId, string>>;
+  /** The page's items in order (an `ITEM` block each, its slots at 6 spaces): texts for its purpose's item slots. */
+  items?: ParsedItemTexts[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -243,6 +246,8 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
   let multiIndent = 0;
   // A blank line was read inside a multi-line slot text: the next line starts a new paragraph
   let multiBlank = false;
+  // An item block inside the current example page (4-space `ITEM`, its slots at 6)
+  let currentItem: (ParsedItemTexts & { keys: Set<string> }) | null = null;
   const examplePageLines = new Map<ParsedStoryExamplePage, number>();
   // The `prompt` block: its header line once seen, whether its lines are being read, and its text
   let promptLine = 0;
@@ -299,6 +304,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     currentPage = null;
     currentExample = null;
     currentExamplePage = null;
+    currentItem = null;
     multiKey = null;
     inPrompt = false;
   }
@@ -311,7 +317,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
 
     // Blank line. Inside a multi-line slot text it is a paragraph break, once more text follows
     if (line === '') {
-      if (multiKey && (currentExamplePage ?? currentPage)?.texts[multiKey]) multiBlank = true;
+      if (multiKey && (currentItem ?? currentExamplePage ?? currentPage)?.texts[multiKey]) multiBlank = true;
       continue;
     }
 
@@ -333,7 +339,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
 
     // Multi-line slot text: lines deeper than the bare `slot:` line
     if (multiKey && indent >= multiIndent) {
-      const target = currentExamplePage ?? currentPage!;
+      const target = currentItem ?? currentExamplePage ?? currentPage!;
       checkVariables(line, lineNum, !currentExamplePage);
       const prev = target.texts[multiKey];
       target.texts[multiKey] = prev ? `${prev}${multiBlank ? '\n\n' : '\n'}${line}` : line;
@@ -341,7 +347,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       continue;
     }
     if (multiKey) {
-      const target = currentExamplePage ?? currentPage!;
+      const target = currentItem ?? currentExamplePage ?? currentPage!;
       if (!target.texts[multiKey]) throw new Error(`${fileName}:${lineNum}: "${multiKey}:" has no text (write it after the colon or on the following, deeper lines)`);
       multiKey = null;
     }
@@ -441,6 +447,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
     if (currentExample) {
       if (indent === 2) {
         currentExamplePage = null;
+        currentItem = null;
         const pageHead = /^page\s+(\d+)$/.exec(line);
         if (pageHead) {
           const n = parseInt(pageHead[1], 10);
@@ -458,7 +465,19 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         }
         throw new Error(`${fileName}:${lineNum}: expected "topic:" or "page N" in example, got "${line}"`);
       }
+      // An item of the page's list: its name, its slots' texts below it
+      if (indent === 6 && currentItem) {
+        const read = readKey(line, lineNum, currentItem, [], false);
+        if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 8; }
+        continue;
+      }
+      if (indent === 4 && currentExamplePage && ID.test(line)) {
+        currentItem = { item: line, texts: {}, keys: new Set() };
+        (currentExamplePage.items ??= []).push(currentItem);
+        continue;
+      }
       if (indent === 4 && currentExamplePage) {
+        currentItem = null;
         const read = readKey(line, lineNum, currentExamplePage, ['photo'], false);
         if (read && 'multi' in read) { multiKey = read.multi; multiIndent = 6; }
         else if (read?.key === 'photo') {
@@ -467,13 +486,13 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
         }
         continue;
       }
-      throw new Error(`${fileName}:${lineNum}: unexpected indent in example (page N at 2 spaces, its keys at 4)`);
+      throw new Error(`${fileName}:${lineNum}: unexpected indent in example (page N at 2 spaces, its keys and items at 4, an item's slots at 6)`);
     }
 
     throw new Error(`${fileName}:${lineNum}: unexpected "${line}"`);
   }
   if (multiKey) {
-    const target = currentExamplePage ?? currentPage!;
+    const target = currentItem ?? currentExamplePage ?? currentPage!;
     if (!target.texts[multiKey]) throw new Error(`${fileName}:${lines.length}: "${multiKey}:" has no text`);
   }
 
@@ -513,7 +532,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       const at = `${fileName}:${examplePageLines.get(ep)}`;
       const page = pages[ep.page - 1];
       if (!page) throw new Error(`${at}: example fills page ${ep.page}, the story has ${pages.length}`);
-      if (Object.keys(ep.texts).length === 0 && !ep.topic && !ep.photo) throw new Error(`${at}: example page ${ep.page} is empty`);
+      if (Object.keys(ep.texts).length === 0 && !ep.items?.length && !ep.topic && !ep.photo) throw new Error(`${at}: example page ${ep.page} is empty`);
       for (const slot of Object.keys(ep.texts)) {
         if (page.texts[slot as SlotId] !== undefined) throw new Error(`${at}: slot "${slot}" is fixed on page ${ep.page} and takes no example text`);
       }
@@ -539,7 +558,7 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       ...ex,
       pages: ex.pages.map(p => {
         const { line: _l, keys: _k, ...rest } = p as ParsedStoryExamplePage & { line: number; keys: Set<string> };
-        return rest;
+        return rest.items ? { ...rest, items: rest.items.map(({ item, texts }) => ({ item, texts })) } : rest;
       }),
     })),
     ...(promptLines.length ? { prompt: promptLines.join('\n') } : {}),
@@ -843,7 +862,20 @@ export function checkStory(
   story.examples.forEach((ex, i) => {
     for (const ep of ex.pages) {
       const purpose = purposes.get(story.pages[ep.page - 1].purpose);
-      if (purpose) checkTexts(`example ${i + 1}, page ${ep.page}`, purpose, ep.texts, ...pageFacts[ep.page - 1]);
+      const where = `example ${i + 1}, page ${ep.page}`;
+      if (purpose) checkTexts(where, purpose, ep.texts, ...pageFacts[ep.page - 1]);
+      // An item's slots are written in its blocks, every other slot outside them
+      if (purpose) for (const slotId of Object.keys(ep.texts)) {
+        const item = purpose.items?.find(it => it.slots.includes(slotId as SlotId));
+        if (item) say(`${where}: slot "${slotId}" belongs to item "${item.id}" of purpose "${purpose.id}": write it in a "${item.id}" block`);
+      }
+      if (purpose) for (const [n, entry] of (ep.items ?? []).entries()) {
+        const item = purpose.items?.find(it => it.id === entry.item);
+        if (!item) { say(`${where}: purpose "${purpose.id}" has no item "${entry.item}"`); continue; }
+        const outside = Object.keys(entry.texts).find(slotId => !item.slots.includes(slotId as SlotId));
+        if (outside) say(`${where}, ${entry.item} ${n + 1}: item "${item.id}" has no slot "${outside}" (its slots: ${item.slots.join(' ')})`);
+        else checkTexts(`${where}, ${entry.item} ${n + 1}`, purpose, entry.texts, ...pageFacts[ep.page - 1]);
+      }
       if (ep.photo && brand.photos && !brand.photos.includes(ep.photo)) say(`example ${i + 1}, page ${ep.page}: photo "${ep.photo}" does not exist`);
     }
   });

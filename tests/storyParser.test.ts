@@ -577,5 +577,16 @@ test('a page may fix a slot a purpose names itself', () => {
   assertThrows(() => parse('page\n  purpose: notice\n  Opening_Hours: x\n'), 'unknown key "Opening_Hours"');
 });
 
+
+test('items: an example page lists its items, their slots at 6 spaces', () => {
+  const story = parseStoryFile(`id: board\nformat: board\n\npage\n  purpose: board\n\nexample\n  page 1\n    here: Market square\n    way\n      arrow: ←\n      destination: Harbour\n    way\n      arrow: →\n      destination:\n        Old\n        Museum\n`, 'board.story');
+  assertEq(story.examples[0].pages[0].texts, { here: 'Market square' });
+  assertEq(story.examples[0].pages[0].items, [
+    { item: 'way', texts: { arrow: '←', destination: 'Harbour' } },
+    { item: 'way', texts: { arrow: '→', destination: 'Old\nMuseum' } },
+  ]);
+  assertThrows(() => parseStoryFile(`id: b\nformat: b\n\npage\n  purpose: b\n\nexample\n  page 1\n    way\n        arrow: ←\n`, 'b.story'), 'unexpected indent in example');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

@@ -3200,6 +3200,7 @@ function parsePurposeFile(content, fileName) {
   let description = "";
   let compositions = null;
   let use;
+  const items = [];
   let scope;
   let context;
   let inScopeBlock = false;
@@ -3229,6 +3230,8 @@ function parsePurposeFile(content, fileName) {
   const examples = [];
   let currentExample = null;
   let exampleMultiKey = null;
+  let currentItem = null;
+  let exampleMultiIndent = 4;
   let exampleBlank = false;
   let legacySamplesLine = 0;
   let firstHashText = "";
@@ -3284,6 +3287,7 @@ function parsePurposeFile(content, fileName) {
   function finalizeExample() {
     currentExample = null;
     exampleMultiKey = null;
+    currentItem = null;
   }
   function closeBlocks(lineNum) {
     finalizeSlot(lineNum);
@@ -3295,7 +3299,7 @@ function parsePurposeFile(content, fileName) {
     const text = raw.trim();
     const line = text.replace(/\s+#.*$/, "");
     if (line === "") {
-      if (currentExample && exampleMultiKey && currentExample.texts[exampleMultiKey]) exampleBlank = true;
+      if (currentExample && exampleMultiKey && (currentItem ?? currentExample).texts[exampleMultiKey]) exampleBlank = true;
       continue;
     }
     if (line.startsWith("#")) {
@@ -3343,14 +3347,37 @@ function parsePurposeFile(content, fileName) {
       continue;
     }
     if (currentExample && raw.startsWith("  ")) {
-      if (raw.startsWith("    ")) {
-        if (!exampleMultiKey) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line)`);
-        const prev = currentExample.texts[exampleMultiKey];
-        currentExample.texts[exampleMultiKey] = prev ? `${prev}${exampleBlank ? "\n\n" : "\n"}${text}` : text;
+      const indent = raw.length - raw.trimStart().length;
+      if (exampleMultiKey && indent >= exampleMultiIndent) {
+        const target = currentItem ?? currentExample;
+        const prev = target.texts[exampleMultiKey];
+        target.texts[exampleMultiKey] = prev ? `${prev}${exampleBlank ? "\n\n" : "\n"}${text}` : text;
         exampleBlank = false;
         continue;
       }
       exampleMultiKey = null;
+      if (indent >= 4) {
+        if (!currentItem || indent !== 4) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line, an item's slots follow its name)`);
+        const colonIdx2 = text.indexOf(":");
+        if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: expected "slot: text" in item "${currentItem.item}", got "${text}"`);
+        const key2 = text.slice(0, colonIdx2).trim(), value2 = text.slice(colonIdx2 + 1).trim();
+        if (!isSlotIdShape(key2)) throw new Error(`${fileName}:${lineNum}: "${key2}" is no slot (an item's block holds its slots' texts)`);
+        if (currentItem.keys.has(key2)) throw new Error(`${fileName}:${lineNum}: duplicate "${key2}" in item "${currentItem.item}"`);
+        currentItem.keys.add(key2);
+        if (value2) currentItem.texts[key2] = value2;
+        else {
+          exampleMultiKey = key2;
+          exampleMultiIndent = 6;
+        }
+        continue;
+      }
+      currentItem = null;
+      exampleMultiIndent = 4;
+      if (/^[a-z][a-z0-9-]*$/.test(line)) {
+        currentItem = { item: line, texts: {}, keys: /* @__PURE__ */ new Set() };
+        (currentExample.items ??= []).push(currentItem);
+        continue;
+      }
       const colonIdx = text.indexOf(":");
       if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" in example, got "${text}"`);
       const key = text.slice(0, colonIdx).trim();
@@ -3364,7 +3391,7 @@ function parsePurposeFile(content, fileName) {
         currentExample[key] = value;
         continue;
       }
-      if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work or a slot the purpose declares)`);
+      if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work, a slot the purpose declares or an item)`);
       if (value) currentExample.texts[key] = value;
       else exampleMultiKey = key;
       continue;
@@ -3404,6 +3431,16 @@ function parsePurposeFile(content, fileName) {
       if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid use "${value}" (lowercase letters, digits and hyphens, starting with a letter)`);
       if (use !== void 0) throw new Error(`${fileName}:${lineNum}: duplicate "use:"`);
       use = value;
+      continue;
+    }
+    const itemHead = !raw.startsWith(" ") ? /^item(?:\s+([^:]*))?:(.*)$/.exec(line) : null;
+    if (itemHead) {
+      closeBlocks(lineNum);
+      const itemId = (itemHead[1] ?? "").trim(), itemSlots = itemHead[2].trim().split(/\s+/).filter(Boolean);
+      if (!/^[a-z][a-z0-9-]*$/.test(itemId)) throw new Error(`${fileName}:${lineNum}: invalid item id "${itemId}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (items.some((it) => it.id === itemId)) throw new Error(`${fileName}:${lineNum}: more than one item "${itemId}"`);
+      if (itemSlots.length === 0) throw new Error(`${fileName}:${lineNum}: item "${itemId}" names no slots (item ${itemId}: SLOT ...)`);
+      items.push({ id: itemId, slots: itemSlots, line: lineNum });
       continue;
     }
     if (line.startsWith("compositions:")) {
@@ -3829,24 +3866,44 @@ function parsePurposeFile(content, fileName) {
   if (contextLines.length > 0 && !context) {
     context = contextLines.join("\n").trim();
   }
-  const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
-  return { id, name, description, preferredCompositions: compositions, ...use ? { use } : {}, slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...scrim ? { scrim } : {}, framing, goal, ...person ? { person } : {}, ...group ? { group } : {}, ...work ? { work } : {}, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  for (const it of items) {
+    for (const slotId of it.slots) {
+      if (!slots.some((s) => s.id === slotId)) throw new Error(`${fileName}:${it.line}: item "${it.id}" names slot "${slotId}", which the purpose does not declare`);
+      const other = items.find((o) => o !== it && o.slots.includes(slotId));
+      if (other || it.slots.indexOf(slotId) !== it.slots.lastIndexOf(slotId)) throw new Error(`${fileName}:${it.line}: slot "${slotId}" stands in more than one item`);
+    }
+  }
+  const parsedItems = items.map(({ line: _line, ...it }) => it);
+  const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings, parsedItems);
+  return { id, name, description, preferredCompositions: compositions, ...use ? { use } : {}, slots, ...parsedItems.length ? { items: parsedItems } : {}, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...scrim ? { scrim } : {}, framing, goal, ...person ? { person } : {}, ...group ? { group } : {}, ...work ? { work } : {}, analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
-function resolveExamples(examples, slots, legacySamplesLine, fileName, warnings) {
+function resolveExamples(examples, slots, legacySamplesLine, fileName, warnings, items = []) {
   const byId = new Map(slots.map((s) => [s.id, s]));
+  const itemOf = (slotId) => items.find((it) => it.slots.includes(slotId));
   const contentSlots = slots.filter((s) => !s.value && !s.iconOnly && s.id !== "credit");
   if (examples.length > 0) {
     if (legacySamplesLine) throw new Error(`${fileName}:${legacySamplesLine}: slot "samples:" next to "example" blocks \u2014 move the texts into the examples`);
     for (const ex of examples) {
       const at = (key) => `${fileName}:${ex.keyLines[key] ?? ex.line}`;
       const filled = Object.keys(ex.texts);
-      if (filled.length === 0) throw new Error(`${fileName}:${ex.line}: example without slot texts`);
+      if (filled.length === 0 && !ex.items?.length) throw new Error(`${fileName}:${ex.line}: example without slot texts`);
       for (const slotId of filled) {
+        const item = itemOf(slotId);
+        if (item) throw new Error(`${at(slotId)}: slot "${slotId}" belongs to item "${item.id}": write it in a "${item.id}" block`);
+      }
+      for (const entry of ex.items ?? []) {
+        const item = items.find((it) => it.id === entry.item);
+        if (!item) throw new Error(`${fileName}:${ex.line}: example lists an item "${entry.item}", which the purpose does not declare${items.length ? ` (it has ${items.map((it) => it.id).join(", ")})` : ""}`);
+        for (const slotId of Object.keys(entry.texts)) {
+          if (!item.slots.includes(slotId)) throw new Error(`${fileName}:${ex.line}: item "${item.id}" has no slot "${slotId}" (its slots: ${item.slots.join(" ")})`);
+        }
+      }
+      for (const [slotId, target] of [...filled.map((id) => [id, ex.texts]), ...(ex.items ?? []).flatMap((e) => Object.keys(e.texts).map((id) => [id, e.texts]))]) {
         const slot = byId.get(slotId);
         if (!slot) throw new Error(`${at(slotId)}: example fills slot "${slotId}", which the purpose does not declare`);
         if (slot.value) throw new Error(`${at(slotId)}: slot "${slotId}" has a fixed value and takes no example text`);
-        if (slot.slotType === "list") ex.texts[slotId] = ex.texts[slotId].replace(/\n{2,}/g, "\n");
-        const text = ex.texts[slotId];
+        if (slot.slotType === "list") target[slotId] = target[slotId].replace(/\n{2,}/g, "\n");
+        const text = target[slotId];
         if (text.split("\n").some((l) => SAMPLE_WINDOW_MARKER.test(l))) throw new Error(`${at(slotId)}: window marker in example text \u2014 use "when:" on the example`);
         if (slot.slotType === "list") {
           text.split("\n").forEach((item, i) => {
@@ -3859,9 +3916,9 @@ function resolveExamples(examples, slots, legacySamplesLine, fileName, warnings)
       }
     }
     for (const slot of contentSlots) {
-      if (!examples.some((ex) => ex.texts[slot.id])) throw new Error(`${fileName}: slot "${slot.id}" is filled by no example`);
+      if (!examples.some((ex) => ex.texts[slot.id] || ex.items?.some((e) => e.texts[slot.id]))) throw new Error(`${fileName}: slot "${slot.id}" is filled by no example`);
     }
-    return examples.map(({ line: _line, keyLines: _keyLines, ...ex }) => ex);
+    return examples.map(({ line: _line, keyLines: _keyLines, ...ex }) => ex.items ? { ...ex, items: ex.items.map(({ item, texts }) => ({ item, texts })) } : ex);
   }
   for (const slot of contentSlots) {
     if (slot.samples.length === 0) throw new Error(`${fileName}: slot "${slot.id}" has no text \u2014 add "example" blocks or a "value:"`);
@@ -4010,7 +4067,7 @@ function parseCompositionFile(content, fileName) {
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ["fields", "logo", "place", "group", "stack", "baseline", "fit", "size"];
+      const REGION_KEYS = ["fields", "line", "box", "photo", "logo", "repeat", "place", "group", "stack", "baseline", "fit", "size"];
       if (key && !["id", "name", "mode", "image", "illustration", "grid", "icon", "sticky", "flow"].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(", ")})`);
       }
@@ -4044,10 +4101,32 @@ function parseCompositionFile(content, fileName) {
         };
         switch (key[1]) {
           case "fields": {
+            if (region.fields === "line") throw new Error(`${at}: region "${region.id}" is a line, it has no fields`);
             once(fieldsSet.has(region));
             fieldsSet.add(region);
             if (words.length !== 1) throw new Error(`${at}: invalid fields "${value}" (expected "A-B", "A", "content" or "rest")`);
             region.fields = words[0] === "content" || words[0] === "rest" ? words[0] : rangeOf(words[0], "fields");
+            break;
+          }
+          case "line": {
+            if (fieldsSet.has(region)) throw new Error(`${at}: region "${region.id}" has its fields, a line has none ("fields:" or "line:")`);
+            fieldsSet.add(region);
+            if (words.length !== 1) throw new Error(`${at}: invalid line "${value}" (expected its height in x, e.g. "2x")`);
+            region.fields = "line";
+            region.lineX = xOf(words[0], "line");
+            break;
+          }
+          case "box": {
+            once(region.box);
+            const mm = words[1]?.match(/^(\d+(?:\.\d+)?)mm$/);
+            if (words.length !== 3 || !mm || parseFloat(mm[1]) <= 0) throw new Error(`${at}: invalid box "${value}" (expected its columns, its line and its padding, e.g. "7-12 0.5mm 0.75x")`);
+            region.box = { cols: rangeOf(words[0], "box columns"), lineMm: parseFloat(mm[1]), padX: xOf(words[2], "box padding") };
+            break;
+          }
+          case "photo": {
+            once(region.photo);
+            if (words.length !== 1) throw new Error(`${at}: invalid photo "${value}" (expected its columns, e.g. "9-12")`);
+            region.photo = rangeOf(words[0], "photo columns");
             break;
           }
           case "logo": {
@@ -4103,11 +4182,24 @@ function parseCompositionFile(content, fileName) {
             break;
           }
           case "size": {
-            if (words.length !== 2) throw new Error(`${at}: invalid size "${value}" (expected "SLOT Nx")`);
+            if (words.length !== 2 && !(words.length === 3 && words[1] === "like")) throw new Error(`${at}: invalid size "${value}" (expected "SLOT Nx" or "SLOT like SLOT")`);
             const slot = slotName(words[0]);
             region.sizes ??= {};
-            if (slot in region.sizes) throw new Error(`${at}: size of "${slot}" twice in region "${region.id}"`);
-            region.sizes[slot] = xOf(words[1], "size");
+            region.sizesLike ??= {};
+            if (slot in region.sizes || slot in region.sizesLike) throw new Error(`${at}: size of "${slot}" twice in region "${region.id}"`);
+            if (words.length === 3) {
+              const other = slotName(words[2]);
+              if (other === slot) throw new Error(`${at}: "${slot}" can't take its own size`);
+              region.sizesLike[slot] = other;
+            } else region.sizes[slot] = xOf(words[1], "size");
+            if (!Object.keys(region.sizes).length) delete region.sizes;
+            if (!Object.keys(region.sizesLike).length) delete region.sizesLike;
+            break;
+          }
+          case "repeat": {
+            once(region.repeat);
+            if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${at}: invalid repeat "${value}" (expected the name of an item of the purpose, e.g. "repeat: way")`);
+            region.repeat = value;
             break;
           }
         }
@@ -4403,9 +4495,11 @@ function parseCompositionFile(content, fileName) {
     if (!regions.length) throw new Error(`${fileName}: "mode: regions" needs at least one "region" block`);
     if (foreign) throw new Error(`${fileName}:${foreign.line}: ${foreign.what} is not allowed in regions mode (a region places its slots itself)`);
     let next = 1;
-    const numbered = regions.filter((r) => Array.isArray(r.fields)), rests = regions.filter((r) => r.fields === "rest");
-    for (const r of regions) if (!fieldsSet.has(r)) throw new Error(`${fileName}:${regionLines.get(r)}: region "${r.id}" needs "fields:"`);
-    if (numbered.length && numbered.length < regions.length) throw new Error(`${fileName}:${regionLines.get(regions.find((r) => !Array.isArray(r.fields)))}: fields by number and "content"/"rest" don't mix in one composition`);
+    const numbered = regions.filter((r) => Array.isArray(r.fields)), rests = regions.filter((r) => r.fields === "rest"), lines2 = regions.filter((r) => r.fields === "line");
+    for (const r of regions) if (!fieldsSet.has(r)) throw new Error(`${fileName}:${regionLines.get(r)}: region "${r.id}" needs "fields:" (or "line:")`);
+    if (lines2.length === regions.length) throw new Error(`${fileName}:${regionLines.get(regions[0])}: a line stands on the edge of fields, at least one region needs "fields:"`);
+    for (const r of lines2) if (r.stack && "field" in r.stack) throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}" is a line, its stack has no field to stand on`);
+    if (numbered.length && numbered.length < regions.length - lines2.length) throw new Error(`${fileName}:${regionLines.get(regions.find((r) => r.fields === "content" || r.fields === "rest"))}: fields by number and "content"/"rest" don't mix in one composition`);
     if (!numbered.length && rests.length !== 1) throw new Error(`${fileName}:${regionLines.get(rests[1] ?? regions[0])}: a composition with "content" regions has one "rest" region, ${rests.length ? "not two" : "none here"}`);
     for (const r of regions) {
       const at = `${fileName}:${regionLines.get(r)}`;
@@ -4417,6 +4511,11 @@ function parseCompositionFile(content, fileName) {
       if (r.stack && !r.group) throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": "stack:" needs "group:"`);
       if (r.stack && "field" in r.stack && Array.isArray(r.fields) && r.stack.field > r.fields[1] - r.fields[0] + 1) {
         throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field}, the region has ${r.fields[1] - r.fields[0] + 1} fields`);
+      }
+      if (r.repeat && r.fields !== "content") throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content")`);
+      if (r.repeat && r.logo) throw new Error(`${at}: region "${r.id}" repeats, the logo stands once (give it to another region)`);
+      for (const [slot, other] of Object.entries(r.sizesLike ?? {})) {
+        if (r.sizesLike?.[other]) throw new Error(`${at}: region "${r.id}": "${slot}" takes the size of "${other}", which takes another's itself`);
       }
       if (r.stack && "field" in r.stack && r.fields === "content") throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": a "content" region is as tall as what it holds, its stack stands on its neighbour ("stack: neighbour")`);
     }
@@ -4970,6 +5069,7 @@ function parseStoryFile(content, fileName) {
   let multiKey = null;
   let multiIndent = 0;
   let multiBlank = false;
+  let currentItem = null;
   const examplePageLines = /* @__PURE__ */ new Map();
   let promptLine = 0;
   let inPrompt = false;
@@ -5014,6 +5114,7 @@ function parseStoryFile(content, fileName) {
     currentPage = null;
     currentExample = null;
     currentExamplePage = null;
+    currentItem = null;
     multiKey = null;
     inPrompt = false;
   }
@@ -5023,7 +5124,7 @@ function parseStoryFile(content, fileName) {
     const line = raw.trim();
     const indent = raw.length - raw.trimStart().length;
     if (line === "") {
-      if (multiKey && (currentExamplePage ?? currentPage)?.texts[multiKey]) multiBlank = true;
+      if (multiKey && (currentItem ?? currentExamplePage ?? currentPage)?.texts[multiKey]) multiBlank = true;
       continue;
     }
     if (inPrompt && indent >= 2) {
@@ -5039,7 +5140,7 @@ function parseStoryFile(content, fileName) {
       continue;
     }
     if (multiKey && indent >= multiIndent) {
-      const target = currentExamplePage ?? currentPage;
+      const target = currentItem ?? currentExamplePage ?? currentPage;
       checkVariables(line, lineNum, !currentExamplePage);
       const prev = target.texts[multiKey];
       target.texts[multiKey] = prev ? `${prev}${multiBlank ? "\n\n" : "\n"}${line}` : line;
@@ -5047,7 +5148,7 @@ function parseStoryFile(content, fileName) {
       continue;
     }
     if (multiKey) {
-      const target = currentExamplePage ?? currentPage;
+      const target = currentItem ?? currentExamplePage ?? currentPage;
       if (!target.texts[multiKey]) throw new Error(`${fileName}:${lineNum}: "${multiKey}:" has no text (write it after the colon or on the following, deeper lines)`);
       multiKey = null;
     }
@@ -5138,6 +5239,7 @@ function parseStoryFile(content, fileName) {
     if (currentExample) {
       if (indent === 2) {
         currentExamplePage = null;
+        currentItem = null;
         const pageHead = /^page\s+(\d+)$/.exec(line);
         if (pageHead) {
           const n = parseInt(pageHead[1], 10);
@@ -5155,7 +5257,21 @@ function parseStoryFile(content, fileName) {
         }
         throw new Error(`${fileName}:${lineNum}: expected "topic:" or "page N" in example, got "${line}"`);
       }
+      if (indent === 6 && currentItem) {
+        const read = readKey(line, lineNum, currentItem, [], false);
+        if (read && "multi" in read) {
+          multiKey = read.multi;
+          multiIndent = 8;
+        }
+        continue;
+      }
+      if (indent === 4 && currentExamplePage && ID.test(line)) {
+        currentItem = { item: line, texts: {}, keys: /* @__PURE__ */ new Set() };
+        (currentExamplePage.items ??= []).push(currentItem);
+        continue;
+      }
       if (indent === 4 && currentExamplePage) {
+        currentItem = null;
         const read = readKey(line, lineNum, currentExamplePage, ["photo"], false);
         if (read && "multi" in read) {
           multiKey = read.multi;
@@ -5166,12 +5282,12 @@ function parseStoryFile(content, fileName) {
         }
         continue;
       }
-      throw new Error(`${fileName}:${lineNum}: unexpected indent in example (page N at 2 spaces, its keys at 4)`);
+      throw new Error(`${fileName}:${lineNum}: unexpected indent in example (page N at 2 spaces, its keys and items at 4, an item's slots at 6)`);
     }
     throw new Error(`${fileName}:${lineNum}: unexpected "${line}"`);
   }
   if (multiKey) {
-    const target = currentExamplePage ?? currentPage;
+    const target = currentItem ?? currentExamplePage ?? currentPage;
     if (!target.texts[multiKey]) throw new Error(`${fileName}:${lines.length}: "${multiKey}:" has no text`);
   }
   if (promptLine && promptLines.length === 0) throw new Error(`${fileName}:${promptLine}: "prompt" has no text (write the brief on the following, indented lines)`);
@@ -5208,7 +5324,7 @@ function parseStoryFile(content, fileName) {
       const at = `${fileName}:${examplePageLines.get(ep)}`;
       const page = pages[ep.page - 1];
       if (!page) throw new Error(`${at}: example fills page ${ep.page}, the story has ${pages.length}`);
-      if (Object.keys(ep.texts).length === 0 && !ep.topic && !ep.photo) throw new Error(`${at}: example page ${ep.page} is empty`);
+      if (Object.keys(ep.texts).length === 0 && !ep.items?.length && !ep.topic && !ep.photo) throw new Error(`${at}: example page ${ep.page} is empty`);
       for (const slot of Object.keys(ep.texts)) {
         if (page.texts[slot] !== void 0) throw new Error(`${at}: slot "${slot}" is fixed on page ${ep.page} and takes no example text`);
       }
@@ -5232,7 +5348,7 @@ function parseStoryFile(content, fileName) {
       ...ex,
       pages: ex.pages.map((p) => {
         const { line: _l, keys: _k, ...rest } = p;
-        return rest;
+        return rest.items ? { ...rest, items: rest.items.map(({ item, texts }) => ({ item, texts })) } : rest;
       })
     })),
     ...promptLines.length ? { prompt: promptLines.join("\n") } : {},
@@ -5481,7 +5597,22 @@ function checkStory(story, brand, fileName) {
   story.examples.forEach((ex, i) => {
     for (const ep of ex.pages) {
       const purpose = purposes.get(story.pages[ep.page - 1].purpose);
-      if (purpose) checkTexts(`example ${i + 1}, page ${ep.page}`, purpose, ep.texts, ...pageFacts[ep.page - 1]);
+      const where = `example ${i + 1}, page ${ep.page}`;
+      if (purpose) checkTexts(where, purpose, ep.texts, ...pageFacts[ep.page - 1]);
+      if (purpose) for (const slotId of Object.keys(ep.texts)) {
+        const item = purpose.items?.find((it) => it.slots.includes(slotId));
+        if (item) say(`${where}: slot "${slotId}" belongs to item "${item.id}" of purpose "${purpose.id}": write it in a "${item.id}" block`);
+      }
+      if (purpose) for (const [n, entry] of (ep.items ?? []).entries()) {
+        const item = purpose.items?.find((it) => it.id === entry.item);
+        if (!item) {
+          say(`${where}: purpose "${purpose.id}" has no item "${entry.item}"`);
+          continue;
+        }
+        const outside = Object.keys(entry.texts).find((slotId) => !item.slots.includes(slotId));
+        if (outside) say(`${where}, ${entry.item} ${n + 1}: item "${item.id}" has no slot "${outside}" (its slots: ${item.slots.join(" ")})`);
+        else checkTexts(`${where}, ${entry.item} ${n + 1}`, purpose, entry.texts, ...pageFacts[ep.page - 1]);
+      }
       if (ep.photo && brand.photos && !brand.photos.includes(ep.photo)) say(`example ${i + 1}, page ${ep.page}: photo "${ep.photo}" does not exist`);
     }
   });
@@ -5618,27 +5749,39 @@ function checkFiles(files) {
           const cols = format.grid?.cols;
           if (!format.grid) say(`regions mode needs a "grid: R C" in format "${format.id}"`);
           const slotIds = new Set(purpose.slots.map((s) => s.id));
-          const slot = (id, where) => {
-            if (!slotIds.has(id)) say(`${where}: slot "${id}" is not a slot of purpose "${purpose.id}"`);
+          const slot = (id, where, r) => {
+            if (!slotIds.has(id)) {
+              say(`${where}: slot "${id}" is not a slot of purpose "${purpose.id}"`);
+              return;
+            }
+            const item = purpose.items?.find((it) => it.slots.includes(id));
+            if (r?.repeat && item?.id !== r.repeat) say(`${where}: slot "${id}" is no slot of item "${r.repeat}", the region repeats per ${r.repeat}`);
+            if (r && !r.repeat && item) say(`${where}: slot "${id}" belongs to item "${item.id}", a region with "repeat: ${item.id}" holds it`);
           };
           const last = composition.regions[composition.regions.length - 1];
           if (rows !== void 0 && last && Array.isArray(last.fields) && last.fields[1] !== rows) say(`the last region ends on field ${last.fields[1]}, format "${format.id}" has ${rows} fields`);
           const contents = composition.regions.filter((r) => r.fields === "content").length;
           for (const r of composition.regions) {
             const where = `region "${r.id}"`;
+            if (r.repeat && !purpose.items?.some((it) => it.id === r.repeat)) say(`${where}: repeat "${r.repeat}" is no item of purpose "${purpose.id}"`);
             if (rows !== void 0 && Array.isArray(r.fields) && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
             if (rows !== void 0 && r.fields === "rest") {
               const most = rows - contents, need = r.stack && "field" in r.stack ? r.stack.field : 1;
               if (most < need) say(`${where}: it needs ${need} field${need > 1 ? "s" : ""}, format "${format.id}" leaves it at most ${most}`);
             }
+            if (r.photo && cols !== void 0 && r.photo[0] !== 1 && r.photo[1] !== cols) say(`${where}: photo columns ${r.photo[0]}-${r.photo[1]} stand on neither side of the format's ${cols} columns`);
+            if (r.photo && cols !== void 0) {
+              for (const pl of r.places) if (pl.cols[1] >= r.photo[0] && pl.cols[0] <= r.photo[1]) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} lie on the photo's ${r.photo[0]}-${r.photo[1]}`);
+            }
+            if (r.box && cols !== void 0 && r.box.cols[1] > cols) say(`${where}: box columns ${r.box.cols[0]}-${r.box.cols[1]} are outside the format's ${cols} columns`);
             for (const pl of r.places) {
               if (cols !== void 0 && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
-              slot(pl.slot, where);
+              slot(pl.slot, where, r);
             }
             if (r.stack && "neighbour" in r.stack && r.stack.gapX !== void 0 && print?.unit !== void 0 && !print.spacers?.includes(r.stack.gapX)) {
               say(`${where}: stack distance ${r.stack.gapX}x is not one of the brand's print spacers`);
             }
-            for (const id of [...r.group ?? [], ...r.baseline ?? [], ...r.fit ?? [], ...Object.keys(r.sizes ?? {})]) slot(id, where);
+            for (const id of [...r.group ?? [], ...r.baseline ?? [], ...r.fit ?? [], ...Object.keys(r.sizes ?? {}), ...Object.entries(r.sizesLike ?? {}).flat()]) slot(id, where, r);
           }
         }
       }

@@ -151,6 +151,24 @@ test('use: the slots name roles of that kind, not styles', () => {
     assertEq(added(f => { regionsBase(f); f.brand!.print!.spacers = [0.5, 1]; }), [at('region "foot": stack distance 1.5x is not one of the brand\'s print spacers')]);
   });
 
+  test('regions: a repeated region holds its item\'s slots, the others the rest', () => {
+    const [a, b] = purpose(base()).slots.map(sl => sl.id);
+    // The item's slot moves into item blocks in every example that writes it
+    const items = (f: BrandFiles) => {
+      purpose(f).items = [{ id: 'row', slots: [b] }];
+      for (const st of f.stories) for (const ex of st.examples) for (const ep of ex.pages) {
+        if (ep.texts[b] === undefined) continue;
+        ep.items = [{ item: 'row', texts: { [b]: ep.texts[b] } }];
+        delete ep.texts[b];
+      }
+    };
+    const text = (repeat: string, head = a) => `id: printed\nimage: none\n\nregion head\n  fields: rest\n  logo: top left\n  place: ${head} top 1-3\n\nregion row\n${repeat}  fields: content\n  place: ${b} bottom 1-4\n  size: ${b} 4x\n`;
+    assertEq(added(f => { items(f); regionsBase(f, text('  repeat: row\n')); }), [], 'fits');
+    assertEq(added(f => { items(f); regionsBase(f, text('  repeat: lane\n')); }).includes(at('region "row": repeat "lane" is no item of purpose "' + purpose(base()).id + '"')), true, 'unknown item');
+    assertEq(added(f => { items(f); regionsBase(f, text('')); }).includes(at(`region "row": slot "${b}" belongs to item "row", a region with "repeat: row" holds it`)), true, 'item slot outside');
+    assertEq(added(f => { items(f); regionsBase(f, text('  repeat: row\n').replace(`place: ${b} bottom 1-4`, `place: ${a} bottom 1-4`).replace(`place: ${a} top 1-3`, `place: ${b} top 1-3`)); }).includes(at(`region "row": slot "${a}" is no slot of item "row", the region repeats per row`)), true, 'page slot inside');
+  });
+
   test('regions: every slot is a slot of the purpose', () => {
     const msgs = added(f => { regionsBase(f, `id: printed\nimage: none\n\nregion all\n  fields: 1-4\n  place: ghost top 1-2\n  group: ghost\n  stack: field 1\n`); });
     assertEq(msgs, [at('region "all": slot "ghost" is not a slot of purpose "' + purpose(base()).id + '"')]);

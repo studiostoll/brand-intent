@@ -70,6 +70,10 @@ export interface ParsedRegion {
   fit?: SlotId[];
   /** Slot → the height of its capitals in x, as a role counts. */
   sizes?: Record<string, number>;
+  /** Slot → the slot whose size it takes (`size: arrow like place`). */
+  sizesLike?: Record<string, SlotId>;
+  /** The region stands once per item of the page's list (`repeat: way`), each time with that item's texts. */
+  repeat?: string;
 }
 
 export interface ParsedComposition {
@@ -335,7 +339,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ['fields', 'line', 'box', 'photo', 'logo', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
+      const REGION_KEYS = ['fields', 'line', 'box', 'photo', 'logo', 'repeat', 'place', 'group', 'stack', 'baseline', 'fit', 'size'];
       if (key && !['id', 'name', 'mode', 'image', 'illustration', 'grid', 'icon', 'sticky', 'flow'].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(', ')})`);
       }
@@ -440,11 +444,25 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
           case 'baseline': { once(region.baseline); region.baseline = slotList(); break; }
           case 'fit': { once(region.fit); region.fit = slotList(); break; }
           case 'size': {
-            if (words.length !== 2) throw new Error(`${at}: invalid size "${value}" (expected "SLOT Nx")`);
+            // `size: SLOT Nx`, or `size: SLOT like OTHER`: as large as another slot of the region
+            if (words.length !== 2 && !(words.length === 3 && words[1] === 'like')) throw new Error(`${at}: invalid size "${value}" (expected "SLOT Nx" or "SLOT like SLOT")`);
             const slot = slotName(words[0]);
             region.sizes ??= {};
-            if (slot in region.sizes) throw new Error(`${at}: size of "${slot}" twice in region "${region.id}"`);
-            region.sizes[slot] = xOf(words[1], 'size');
+            region.sizesLike ??= {};
+            if (slot in region.sizes || slot in region.sizesLike) throw new Error(`${at}: size of "${slot}" twice in region "${region.id}"`);
+            if (words.length === 3) {
+              const other = slotName(words[2]);
+              if (other === slot) throw new Error(`${at}: "${slot}" can't take its own size`);
+              region.sizesLike[slot] = other;
+            } else region.sizes[slot] = xOf(words[1], 'size');
+            if (!Object.keys(region.sizes).length) delete region.sizes;
+            if (!Object.keys(region.sizesLike).length) delete region.sizesLike;
+            break;
+          }
+          case 'repeat': {
+            once(region.repeat);
+            if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${at}: invalid repeat "${value}" (expected the name of an item of the purpose, e.g. "repeat: way")`);
+            region.repeat = value;
             break;
           }
         }
@@ -803,6 +821,12 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       // A stack's field counts from the region's first
       if (r.stack && 'field' in r.stack && Array.isArray(r.fields) && r.stack.field > r.fields[1] - r.fields[0] + 1) {
         throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field}, the region has ${r.fields[1] - r.fields[0] + 1} fields`);
+      }
+      // A repeated region stands once per item, each as tall as what it holds; the logo stands once
+      if (r.repeat && r.fields !== 'content') throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content")`);
+      if (r.repeat && r.logo) throw new Error(`${at}: region "${r.id}" repeats, the logo stands once (give it to another region)`);
+      for (const [slot, other] of Object.entries(r.sizesLike ?? {})) {
+        if (r.sizesLike?.[other]) throw new Error(`${at}: region "${r.id}": "${slot}" takes the size of "${other}", which takes another's itself`);
       }
       if (r.stack && 'field' in r.stack && r.fields === 'content') throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": a "content" region is as tall as what it holds, its stack stands on its neighbour ("stack: neighbour")`);
     }

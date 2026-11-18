@@ -281,5 +281,71 @@ test('a purpose names its own slots', () => {
   assertThrows(() => withExamples(`example\n  primary: Open\n`, `slot Bad_Name\n  label: X\n  typography: body\n  maxLength: 5\n`), /invalid slot id "Bad_Name"/, 'bad shape');
 });
 
+
+// ── Items: slots that repeat together on one page ──
+{
+  const BOARD = `id: board
+compositions: board
+use: sign
+
+item way: arrow destination time
+
+slot here
+  label: Here
+  maxLength: 30
+  typography: body
+
+slot arrow
+  label: Arrow
+  maxLength: 2
+  typography: body
+
+slot destination
+  label: Destination
+  maxLength: 24
+  typography: body
+
+slot time
+  label: Time
+  maxLength: 12
+  typography: body
+
+example
+  topic: Ways from the square
+  here: Market square
+  way
+    arrow: ←
+    destination: Harbour
+    time: 3 min
+  way
+    arrow: →
+    destination:
+      Old
+      Museum
+    time: 5 min
+`;
+  const board = (edit: (t: string) => string = t => t) => parsePurposeFile(edit(BOARD), 'board.purpose');
+
+  test('items: declared, and an example lists them in order', () => {
+    const b = board();
+    assertEq(b.items, [{ id: 'way', slots: ['arrow', 'destination', 'time'] }], 'items');
+    assertEq(b.examples[0].texts, { here: 'Market square' }, 'page texts');
+    assertEq(b.examples[0].items, [
+      { item: 'way', texts: { arrow: '←', destination: 'Harbour', time: '3 min' } },
+      { item: 'way', texts: { arrow: '→', destination: 'Old\nMuseum', time: '5 min' } },
+    ], 'item texts, a multi-line one at 6 spaces');
+  });
+
+  test('items: what an item and its blocks may hold', () => {
+    assertThrows(() => board(t => t.replace('item way: arrow destination time', 'item way: arrow ghost')), /item "way" names slot "ghost", which the purpose does not declare/, 'undeclared slot');
+    assertThrows(() => board(t => t.replace('item way: arrow destination time', 'item way: arrow destination time\nitem side: arrow')), /slot "arrow" stands in more than one item/, 'a slot in two items');
+    assertThrows(() => board(t => t.replace('item way: arrow destination time', 'item way:')), /names no slots/, 'no slots');
+    assertThrows(() => board(t => t.replace('  here: Market square', '  here: Market square\n  arrow: ↑')), /slot "arrow" belongs to item "way": write it in a "way" block/, 'item slot outside its block');
+    assertThrows(() => board(t => t.replace('    time: 3 min', '    time: 3 min\n    here: Pier')), /item "way" has no slot "here"/, 'page slot in an item');
+    assertThrows(() => board(t => t.replace('  way\n    arrow: ←', '  path\n    arrow: ←')), /lists an item "path", which the purpose does not declare/, 'unknown item');
+    assertThrows(() => board(t => t.replace('    time: 3 min', '    time: 3 min\n    time: 4 min')), /duplicate "time" in item "way"/, 'duplicate in an item');
+  });
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

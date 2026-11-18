@@ -26,6 +26,9 @@ export interface ParsedPurpose {
   /** The kind of use the purpose serves (`use:`). Its slots' `typography:` then names a role of this kind in the brand. */
   use?: string;
   slots: ParsedPurposeSlot[];
+  /** Slots that repeat together on one page (`item way: arrow place time`): a page holds a list of such items,
+   *  each with its own texts for these slots. */
+  items?: ParsedPurposeItem[];
   /** Content density — how much content this purpose typically carries. */
   density?: Density;
   /** Scope — narrows the composed upstream (audience, pillars). */
@@ -78,6 +81,18 @@ export interface ParsedPurpose {
   warnings: string[];
 }
 
+/** `item ID: SLOT ...`: slots of the purpose that repeat together, an item of the page's list. */
+export interface ParsedPurposeItem {
+  id: string;
+  slots: SlotId[];
+}
+
+/** One item of a page's list: its slots' texts. */
+export interface ParsedItemTexts {
+  item: string;
+  texts: Partial<Record<SlotId, string>>;
+}
+
 /** One `example` block: a whole page about one topic. */
 export interface ParsedExample {
   /** What the page is about, one sentence. Becomes the page topic. */
@@ -92,6 +107,8 @@ export interface ParsedExample {
   work?: string;
   /** Text per slot. List items are newline-separated. Slots with `value:` never appear. */
   texts: Partial<Record<SlotId, string>>;
+  /** The page's items in order (an `ITEM` block each), their slots' texts. */
+  items?: ParsedItemTexts[];
   /** True when built from deprecated slot `samples:`. */
   legacy?: boolean;
 }
@@ -190,6 +207,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let description = '';
   let compositions: string[] | null = null;
   let use: string | undefined;
+  const items: (ParsedPurposeItem & { line: number })[] = [];
   let scope: { audience?: string[]; pillars?: string } | undefined;
   let context: string | undefined;
   let inScopeBlock = false;
@@ -220,6 +238,9 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   // Example block being built, and the slot key whose multi-line value is being read (4-space lines)
   let currentExample: (typeof examples)[number] | null = null;
   let exampleMultiKey: SlotId | null = null;
+  // The item block being read in the example (2-space `ITEM`, its slots at 4), and the indent of a multi-line text
+  let currentItem: ParsedItemTexts & { keys: Set<string> } | null = null;
+  let exampleMultiIndent = 4;
   // A blank line was read inside that value: the next line starts a new paragraph
   let exampleBlank = false;
   // First line of a deprecated slot `samples:` (0 = none)
@@ -287,6 +308,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   function finalizeExample() {
     currentExample = null;
     exampleMultiKey = null;
+    currentItem = null;
   }
 
   /** A top-level line closes the open slot or example block. */
@@ -305,7 +327,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
 
     // Blank line. Inside a multi-line example text it is a paragraph break, once more text follows
     if (line === '') {
-      if (currentExample && exampleMultiKey && currentExample.texts[exampleMultiKey]) exampleBlank = true;
+      if (currentExample && exampleMultiKey && (currentItem ?? currentExample).texts[exampleMultiKey]) exampleBlank = true;
       continue;
     }
 
@@ -367,16 +389,38 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
-    // example block lines: `key: value`, or bare `key:` followed by 4-space lines (list items, line breaks)
+    // example block lines: `key: value`, or bare `key:` followed by 4-space lines (list items, line breaks); an
+    // item's block `ITEM` with its slots at 4 spaces, a multi-line text of one at 6
     if (currentExample && raw.startsWith('  ')) {
-      if (raw.startsWith('    ')) {
-        if (!exampleMultiKey) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line)`);
-        const prev = currentExample.texts[exampleMultiKey];
-        currentExample.texts[exampleMultiKey] = prev ? `${prev}${exampleBlank ? '\n\n' : '\n'}${text}` : text;
+      const indent = raw.length - raw.trimStart().length;
+      if (exampleMultiKey && indent >= exampleMultiIndent) {
+        const target = currentItem ?? currentExample;
+        const prev = target.texts[exampleMultiKey];
+        target.texts[exampleMultiKey] = prev ? `${prev}${exampleBlank ? '\n\n' : '\n'}${text}` : text;
         exampleBlank = false;
         continue;
       }
       exampleMultiKey = null;
+      if (indent >= 4) {
+        if (!currentItem || indent !== 4) throw new Error(`${fileName}:${lineNum}: unexpected "${line}" in example (multi-line text follows a bare "slot:" line, an item's slots follow its name)`);
+        const colonIdx = text.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "slot: text" in item "${currentItem.item}", got "${text}"`);
+        const key = text.slice(0, colonIdx).trim(), value = text.slice(colonIdx + 1).trim();
+        if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: "${key}" is no slot (an item's block holds its slots' texts)`);
+        if (currentItem.keys.has(key)) throw new Error(`${fileName}:${lineNum}: duplicate "${key}" in item "${currentItem.item}"`);
+        currentItem.keys.add(key);
+        if (value) currentItem.texts[key as SlotId] = value;
+        else { exampleMultiKey = key as SlotId; exampleMultiIndent = 6; }
+        continue;
+      }
+      currentItem = null;
+      exampleMultiIndent = 4;
+      // A bare name: an item of the page's list, its slots' texts below it
+      if (/^[a-z][a-z0-9-]*$/.test(line)) {
+        currentItem = { item: line, texts: {}, keys: new Set() };
+        (currentExample.items ??= []).push(currentItem);
+        continue;
+      }
       const colonIdx = text.indexOf(':');
       if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: expected "key: value" in example, got "${text}"`);
       const key = text.slice(0, colonIdx).trim();
@@ -390,7 +434,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
         currentExample[key] = value;
         continue;
       }
-      if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work or a slot the purpose declares)`);
+      if (!isSlotIdShape(key)) throw new Error(`${fileName}:${lineNum}: unknown example key "${key}" (expected topic, goal, when, work, a slot the purpose declares or an item)`);
       if (value) currentExample.texts[key as SlotId] = value;
       else exampleMultiKey = key as SlotId;
       continue;
@@ -437,6 +481,18 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${fileName}:${lineNum}: invalid use "${value}" (lowercase letters, digits and hyphens, starting with a letter)`);
       if (use !== undefined) throw new Error(`${fileName}:${lineNum}: duplicate "use:"`);
       use = value;
+      continue;
+    }
+
+    // `item ID: SLOT ...`: slots that repeat together, an item of the page's list
+    const itemHead = !raw.startsWith(' ') ? /^item(?:\s+([^:]*))?:(.*)$/.exec(line) : null;
+    if (itemHead) {
+      closeBlocks(lineNum);
+      const itemId = (itemHead[1] ?? '').trim(), itemSlots = itemHead[2].trim().split(/\s+/).filter(Boolean);
+      if (!/^[a-z][a-z0-9-]*$/.test(itemId)) throw new Error(`${fileName}:${lineNum}: invalid item id "${itemId}" (lowercase letters, digits and hyphens, starting with a letter)`);
+      if (items.some(it => it.id === itemId)) throw new Error(`${fileName}:${lineNum}: more than one item "${itemId}"`);
+      if (itemSlots.length === 0) throw new Error(`${fileName}:${lineNum}: item "${itemId}" names no slots (item ${itemId}: SLOT ...)`);
+      items.push({ id: itemId, slots: itemSlots as SlotId[], line: lineNum });
       continue;
     }
 
@@ -900,9 +956,18 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     context = contextLines.join('\n').trim();
   }
 
-  const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings);
+  // An item's slots are slots of the purpose, each in one item at most
+  for (const it of items) {
+    for (const slotId of it.slots) {
+      if (!slots.some(s => s.id === slotId)) throw new Error(`${fileName}:${it.line}: item "${it.id}" names slot "${slotId}", which the purpose does not declare`);
+      const other = items.find(o => o !== it && o.slots.includes(slotId));
+      if (other || it.slots.indexOf(slotId) !== it.slots.lastIndexOf(slotId)) throw new Error(`${fileName}:${it.line}: slot "${slotId}" stands in more than one item`);
+    }
+  }
+  const parsedItems = items.map(({ line: _line, ...it }) => it);
+  const parsedExamples = resolveExamples(examples, slots, legacySamplesLine, fileName, warnings, parsedItems);
 
-  return { id, name, description, preferredCompositions: compositions, ...(use ? { use } : {}), slots, density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, ...(person ? { person } : {}), ...(group ? { group } : {}), ...(work ? { work } : {}), analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
+  return { id, name, description, preferredCompositions: compositions, ...(use ? { use } : {}), slots, ...(parsedItems.length ? { items: parsedItems } : {}), density, palette, scope, context, voice, defaultLogo, photos, defaultVideo, illustrations, camera, cameraFacing, ...(scrim ? { scrim } : {}), framing, goal, ...(person ? { person } : {}), ...(group ? { group } : {}), ...(work ? { work } : {}), analyze, defaultIcon, bgPrompt, examples: parsedExamples, warnings };
 }
 
 /** Validate `example` blocks against the declared slots, or build examples from deprecated slot
@@ -913,8 +978,10 @@ function resolveExamples(
   legacySamplesLine: number,
   fileName: string,
   warnings: string[],
+  items: ParsedPurposeItem[] = [],
 ): ParsedExample[] {
   const byId = new Map(slots.map(s => [s.id, s]));
+  const itemOf = (slotId: SlotId) => items.find(it => it.slots.includes(slotId));
   // A credit is filled by the implementation (a data source, a photo credit), so no example has to.
   const contentSlots = slots.filter(s => !s.value && !s.iconOnly && s.id !== 'credit');
 
@@ -923,14 +990,26 @@ function resolveExamples(
     for (const ex of examples) {
       const at = (key: string) => `${fileName}:${ex.keyLines[key] ?? ex.line}`;
       const filled = Object.keys(ex.texts) as SlotId[];
-      if (filled.length === 0) throw new Error(`${fileName}:${ex.line}: example without slot texts`);
+      if (filled.length === 0 && !ex.items?.length) throw new Error(`${fileName}:${ex.line}: example without slot texts`);
+      // An item's slots are written in its blocks, every other slot outside them
       for (const slotId of filled) {
+        const item = itemOf(slotId);
+        if (item) throw new Error(`${at(slotId)}: slot "${slotId}" belongs to item "${item.id}": write it in a "${item.id}" block`);
+      }
+      for (const entry of ex.items ?? []) {
+        const item = items.find(it => it.id === entry.item);
+        if (!item) throw new Error(`${fileName}:${ex.line}: example lists an item "${entry.item}", which the purpose does not declare${items.length ? ` (it has ${items.map(it => it.id).join(', ')})` : ''}`);
+        for (const slotId of Object.keys(entry.texts) as SlotId[]) {
+          if (!item.slots.includes(slotId)) throw new Error(`${fileName}:${ex.line}: item "${item.id}" has no slot "${slotId}" (its slots: ${item.slots.join(' ')})`);
+        }
+      }
+      for (const [slotId, target] of [...filled.map(id => [id, ex.texts] as const), ...(ex.items ?? []).flatMap(e => (Object.keys(e.texts) as SlotId[]).map(id => [id, e.texts] as const))]) {
         const slot = byId.get(slotId);
         if (!slot) throw new Error(`${at(slotId)}: example fills slot "${slotId}", which the purpose does not declare`);
         if (slot.value) throw new Error(`${at(slotId)}: slot "${slotId}" has a fixed value and takes no example text`);
         // A list has items, not paragraphs: a blank line between two items is only spacing in the file
-        if (slot.slotType === 'list') ex.texts[slotId] = ex.texts[slotId]!.replace(/\n{2,}/g, '\n');
-        const text = ex.texts[slotId]!;
+        if (slot.slotType === 'list') target[slotId] = target[slotId]!.replace(/\n{2,}/g, '\n');
+        const text = target[slotId]!;
         if (text.split('\n').some(l => SAMPLE_WINDOW_MARKER.test(l))) throw new Error(`${at(slotId)}: window marker in example text — use "when:" on the example`);
         if (slot.slotType === 'list') {
           text.split('\n').forEach((item, i) => {
@@ -944,9 +1023,9 @@ function resolveExamples(
       }
     }
     for (const slot of contentSlots) {
-      if (!examples.some(ex => ex.texts[slot.id])) throw new Error(`${fileName}: slot "${slot.id}" is filled by no example`);
+      if (!examples.some(ex => ex.texts[slot.id] || ex.items?.some(e => e.texts[slot.id]))) throw new Error(`${fileName}: slot "${slot.id}" is filled by no example`);
     }
-    return examples.map(({ line: _line, keyLines: _keyLines, ...ex }) => ex);
+    return examples.map(({ line: _line, keyLines: _keyLines, ...ex }) => ex.items ? { ...ex, items: ex.items.map(({ item, texts }) => ({ item, texts })) } : ex);
   }
 
   for (const slot of contentSlots) {

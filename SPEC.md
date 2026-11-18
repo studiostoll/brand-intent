@@ -1191,6 +1191,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 | `work:` | `required` | No | Every page of this purpose speaks about a [work](#work-work): the bread of the day, the release. A page without one is not posted; `checkStory` reports it |
 | `analyze:` | bool | No | Include in photo/video AI analysis. Default: `true` |
 | `defaultIcon:` | icon ref | No | Default icon for the icon slot (see [Icon References](#icon-references)) |
+| `item ID: SLOTID ...` | string | No | Slots that repeat together on one page (repeatable): `item way: arrow destination time`. A page holds a list of such items, each with its own texts for these slots: the ways of a direction board. The slots are declared as usual; each stands in one item at most. An example writes them in `ID` blocks ([items](#items-in-an-example)), a composition places them in a region with [`repeat: ID`](#regions-mode) |
 | `slot SLOTID` | block | No | Semantic slot definition (repeatable): the form of a slot. A purpose without slots is a page without text: its picture or video, and what the composition places besides (the logo) |
 | `example` | block | Yes (1+)* | One example page (repeatable): the content of all slots together |
 
@@ -1359,6 +1360,28 @@ example
 - `maxLength`, `words:` and `sentences:` apply to example texts as they apply to any text in the slot.
 - An example text may contain [variables](#variables). They fill from the brand's only place, the `.time` and the example's `work:`; an example names no person and no group, so their variables have nothing to fill from. `checkFiles` reports a variable that cannot be filled.
 - AI writing produces whole pages in this shape, never independent variants per slot.
+
+#### Items in an example
+
+A purpose with [`item`](#top-level-keys-2) lines lists a page's items in the example, in order: a bare `ID` line at 2 spaces, its slots' texts below it at 4 (a bare `SLOTID:` takes the following 6-space lines).
+
+```yaml
+item way: arrow destination time
+
+example
+  topic: Ways from the market square
+  here: Market square
+  way
+    arrow: ←
+    destination: Harbour
+    time: 3 min
+  way
+    arrow: →
+    destination: Museum
+    time: 5 min
+```
+
+An item's slots are written only in its blocks, every other slot only outside them. A slot counts as filled when an item of some example fills it.
 
 **Deprecated: slot `samples:`.** Files written before `example` blocks list texts per slot (`samples: A | B` or multi-line `- ` entries, with a trailing ` @name` window marker). Parsers still read them, pair the samples by position into examples (`@name` becomes `when:`) and warn. Implementations should show the warning to the people editing the brand. A purpose with `example` blocks must not also have slot `samples:`.
 
@@ -1539,6 +1562,8 @@ region foot
 | `baseline: SLOT ...` | The slot's last baseline stands on the region's bottom edge |
 | `fit: SLOT ...` | The slot's type as large as its longest line fills its columns |
 | `size: SLOT Nx` | The height of the slot's capitals in x, whatever its role says. Like a role, it counts capitals, not the em |
+| `size: SLOT like OTHER` | The slot's type as large as OTHER's, a slot of the same region (an arrow as large as the word beside it, which `fit:` sizes). OTHER takes no size from a third slot this way |
+| `repeat: ITEM` | The region stands once per item of the page's list (an [`item`](#top-level-keys-2) of the purpose), in order, each time with that item's texts and in its own fields: `fields: content`, no `logo:`. Its slots are that item's; no other region places them. A `fit:` slot is one size in every item, the smallest any of them needs |
 
 A line counts in no field. A composition in `content` and `rest` travels: it holds on every format where the content regions find their fields and the `rest` region keeps enough for its stack. Where it doesn't, laying it out fails with the reason; nothing is squeezed or overlaps.
 
@@ -1841,6 +1866,7 @@ example
 | `topic:` | 4 | Page topic for page N |
 | `photo:` | 4 | One photo id from the `.brand` that belongs to this example's texts (the coffee bag its name is about). It overrides the page's `photo:` while the story is filled from this example |
 | `SLOTID:` | 4 | Text for an open slot of page N; a bare `SLOTID:` takes the following 6-space lines |
+| `ITEM` | 4 | One item of page N's list, in order, when the page's purpose has [items](#items-in-an-example): its slots' texts below it at 6 spaces (a bare `SLOTID:` takes the following 8-space lines) |
 
 **Rules:**
 - `page N` must exist in the story; each page appears at most once per example. A [page list](#page-lists)'s page may appear several times, once per copy in order, up to its MAX; the example then starts the story with that many copies.
