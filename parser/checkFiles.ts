@@ -208,14 +208,17 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
             if (r.photo && cols !== undefined && r.photo[0] !== 1 && r.photo[1] !== cols) say(`${where}: photo columns ${r.photo[0]}-${r.photo[1]} stand on neither side of the format's ${cols} columns`);
             if (r.photo && cols !== undefined) for (const pl of r.places) if (pl.cols[1] >= r.photo[0] && pl.cols[0] <= r.photo[1]) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} lie on the photo's ${r.photo[0]}-${r.photo[1]}`);
             if (r.box && cols !== undefined && r.box.cols[1] > cols) say(`${where}: box columns ${r.box.cols[0]}-${r.box.cols[1]} are outside the format's ${cols} columns`);
+            // A slot placed at the foot of a region's columns is the page's, not an item's
+            const feet = new Set(r.columns ? r.places.map(pl => pl.slot) : []);
+            const own = (id: string) => slot(id, where, feet.has(id) ? {} : r);
             for (const pl of r.places) {
               if (cols !== undefined && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
-              slot(pl.slot, where, r);
+              own(pl.slot);
             }
             if (r.stack && 'neighbour' in r.stack && r.stack.gapX !== undefined && print?.unit !== undefined && !print.spacers?.includes(r.stack.gapX)) {
               say(`${where}: stack distance ${r.stack.gapX}x is not one of the brand's print spacers`);
             }
-            for (const id of [...(r.group ?? []), ...(r.baseline ?? []), ...(r.fit ?? []), ...Object.keys(r.sizes ?? {}), ...Object.entries(r.sizesLike ?? {}).flat()]) slot(id, where, r);
+            for (const id of [...(r.group ?? []), ...(r.baseline ?? []), ...(r.fit ?? []), ...Object.keys(r.sizes ?? {}), ...Object.entries(r.sizesLike ?? {}).flat()]) own(id);
           }
         }
       }

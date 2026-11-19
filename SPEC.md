@@ -1239,7 +1239,7 @@ A slot block describes form only: limits, typography, colour. Its content comes 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `maxItems:` | int | - | Maximum items |
-| `maxLength:` | int | - | Max characters per item |
+| `maxLength:` | int | - | Max characters per item, without its `[ID]` prefix |
 | `marker:` | enum | `none` | `none` \| `counter` \| `icon` (item marker) |
 | `defaultIcon:` | icon ref | - | Icon for items without an `[ID]` prefix (`marker: icon` only) |
 | `iconOnly:` | bool | `false` | Icons only, no text (implies `marker: icon`) |

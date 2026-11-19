@@ -15,6 +15,7 @@ import { timeEntry, type ParsedTime, type TimeEntry } from './timeParser';
 import { personLabel, hasSomethingToShow, type ParsedPerson } from './personParser';
 import { groupHasSomethingToShow, type ParsedGroup } from './groupParser';
 import { isHexItem, type ParsedWork } from './workParser';
+import { parseListItem } from './icons';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -818,7 +819,8 @@ export function checkStory(
       const longest = longestText(text, facts, slot.slotType === 'list');
       const parts = slot.slotType === 'list' ? longest.split('\n') : [longest];
       if (slot.slotType === 'list' && slot.maxItems && parts.length > slot.maxItems) say(`${where}: slot "${slotId}" has ${parts.length} items, maxItems is ${slot.maxItems}`);
-      for (const part of parts) {
+      // A list entry counts its text, not the `[icon]` it names
+      for (const part of parts.map(p => slot.slotType === 'list' ? parseListItem(p).text : p)) {
         if (part.length > slot.maxLength) say(`${where}: slot "${slotId}" is ${part.length} characters long, maxLength is ${slot.maxLength}`);
       }
     }

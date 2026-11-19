@@ -3250,7 +3250,8 @@ function parsePurposeFile(content, fileName) {
       s.marker = "icon";
     }
     if (s.listColumns && s.listColumns > 1 && s.listDirection === "horizontal") throw new Error(`${fileName}:${lineNum}: slot "${s.id}": columns needs a vertical list`);
-    if (s.labelSize !== void 0 && s.listLabels !== "above") throw new Error(`${fileName}:${lineNum}: slot "${s.id}": labelSize needs "labels: above"`);
+    if (s.iconSize !== void 0 && s.marker !== "icon" && !s.iconOnly) throw new Error(`${fileName}:${lineNum}: slot "${s.id}": iconSize needs "marker: icon"`);
+    if (s.labelSize !== void 0 && s.listLabels !== "above" && s.listLabels !== "below") throw new Error(`${fileName}:${lineNum}: slot "${s.id}": labelSize needs "labels: above" or "below"`);
     if (s.listDivider === "hairline" && !(s.listColumns && s.listColumns > 1)) throw new Error(`${fileName}:${lineNum}: slot "${s.id}": divider needs "columns:" 2 or more`);
     if (s.defaultIcon && s.marker !== "icon") throw new Error(`${fileName}:${lineNum}: slot "${s.id}": defaultIcon needs "marker: icon"`);
     if (!s.value && s.samples) {
@@ -3697,6 +3698,12 @@ function parsePurposeFile(content, fileName) {
           currentSlot.iconGap = n;
           continue;
         }
+        if (prop.startsWith("iconSize:")) {
+          const n = parseFloat(prop.slice(9).trim());
+          if (isNaN(n) || n <= 0) throw new Error(`${fileName}:${lineNum}: invalid iconSize "${prop.slice(9).trim()}"`);
+          currentSlot.iconSize = n;
+          continue;
+        }
         if (prop.startsWith("itemGap:")) {
           const n = parseFloat(prop.slice(8).trim());
           if (isNaN(n) || n < 0) throw new Error(`${fileName}:${lineNum}: invalid itemGap "${prop.slice(8).trim()}"`);
@@ -3717,7 +3724,7 @@ function parsePurposeFile(content, fileName) {
         }
         if (prop.startsWith("labels:")) {
           const l = prop.slice(7).trim();
-          if (l !== "none" && l !== "above") throw new Error(`${fileName}:${lineNum}: invalid labels "${l}" \u2014 must be "none" or "above"`);
+          if (l !== "none" && l !== "above" && l !== "below") throw new Error(`${fileName}:${lineNum}: invalid labels "${l}" \u2014 must be "none", "above" or "below"`);
           currentSlot.listLabels = l;
           continue;
         }
@@ -3910,7 +3917,7 @@ function resolveExamples(examples, slots, legacySamplesLine, fileName, warnings,
             const { icon } = parseListItem(item);
             if (icon && slot.marker !== "icon") throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" names an icon, but the list has no "marker: icon"`);
             const continues = i > 0 && !(slot.listColumns && slot.listColumns > 1);
-            if (slot.listLabels === "above" && !continues && !splitLabelledItem(item).label) throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" needs a label ("Label: value") for "labels: above"`);
+            if ((slot.listLabels === "above" || slot.listLabels === "below") && !continues && !splitLabelledItem(item).label) throw new Error(`${at(slotId)}: slot "${slotId}": item "${item}" needs a label ("Label: value") for "labels: ${slot.listLabels}"`);
           });
         }
       }
@@ -4067,7 +4074,7 @@ function parseCompositionFile(content, fileName) {
     }
     if (region) {
       const key = line.match(/^([a-z][a-z-]*):\s*(.*)$/);
-      const REGION_KEYS = ["fields", "line", "box", "photo", "logo", "repeat", "columns", "rule", "place", "group", "stack", "baseline", "fit", "size"];
+      const REGION_KEYS = ["fields", "line", "box", "photo", "logo", "repeat", "columns", "break", "balance", "rule", "place", "group", "stack", "baseline", "fit", "size"];
       if (key && !["id", "name", "mode", "image", "illustration", "grid", "icon", "sticky", "flow"].includes(key[1]) && !REGION_KEYS.includes(key[1])) {
         throw new Error(`${fileName}:${lineNum}: unknown region key "${key[1]}" in region "${region.id}" (expected ${REGION_KEYS.join(", ")})`);
       }
@@ -4198,8 +4205,10 @@ function parseCompositionFile(content, fileName) {
           }
           case "repeat": {
             once(region.repeat);
-            if (!/^[a-z][a-z0-9-]*$/.test(value)) throw new Error(`${at}: invalid repeat "${value}" (expected the name of an item of the purpose, e.g. "repeat: way")`);
-            region.repeat = value;
+            if (!words.every((w) => /^[a-z][a-z0-9-]*$/.test(w))) throw new Error(`${at}: invalid repeat "${value}" (expected the names of items of the purpose, e.g. "repeat: way")`);
+            const twice = words.find((w, i2) => words.indexOf(w) !== i2);
+            if (twice) throw new Error(`${at}: repeat names "${twice}" twice`);
+            region.repeat = words;
             break;
           }
           case "columns": {
@@ -4208,6 +4217,18 @@ function parseCompositionFile(content, fileName) {
             const cols = words.map((w) => rangeOf(w, "columns"));
             for (let i2 = 1; i2 < cols.length; i2++) if (cols[i2][0] <= cols[i2 - 1][1]) throw new Error(`${at}: columns "${value}" overlap or run backwards (each starts after the one before ends)`);
             region.columns = cols;
+            break;
+          }
+          case "break": {
+            once(region.breakEntries);
+            if (value !== "entries") throw new Error(`${at}: invalid break "${value}" (expected "entries": an item breaks between its list's entries)`);
+            region.breakEntries = true;
+            break;
+          }
+          case "balance": {
+            once(region.balanceColumns);
+            if (value !== "columns") throw new Error(`${at}: invalid balance "${value}" (expected "columns": the columns end about level)`);
+            region.balanceColumns = true;
             break;
           }
           case "rule": {
@@ -4528,8 +4549,16 @@ function parseCompositionFile(content, fileName) {
         throw new Error(`${fileName}:${stackLines.get(r)}: region "${r.id}": stack field ${r.stack.field}, the region has ${r.fields[1] - r.fields[0] + 1} fields`);
       }
       if (r.columns && !r.repeat) throw new Error(`${at}: region "${r.id}" has columns, what flows down them are the items of a "repeat:"`);
+      if (r.balanceColumns && !r.columns) throw new Error(`${at}: region "${r.id}": "balance:" shares its items out between its columns, it has none`);
+      if (r.breakEntries && !r.columns) throw new Error(`${at}: region "${r.id}": "break:" is how its items break between its columns, it has none`);
       if (r.columns && (r.fields === "content" || r.fields === "line")) throw new Error(`${at}: region "${r.id}": its items flow down its columns and fill its fields ("fields: rest" or "A-B")`);
-      if (r.columns && (r.places.length || r.group || r.stack || r.baseline || r.fit || r.box || r.photo)) throw new Error(`${at}: region "${r.id}": its items flow down its columns, it places nothing itself (no place, group, stack, baseline, fit, box or photo)`);
+      if (r.columns && (r.group || r.stack || r.baseline || r.fit || r.box || r.photo)) throw new Error(`${at}: region "${r.id}": its items flow down its columns, it groups nothing (no group, stack, baseline, fit, box or photo)`);
+      for (const pl of r.columns ? r.places : []) {
+        const cols = r.columns;
+        if (pl.edge !== "bottom") throw new Error(`${at}: region "${r.id}": its items flow down its columns from the top, "${pl.slot}" stands at their foot ("bottom")`);
+        if (!cols.some((c) => pl.cols[0] >= c[0] && pl.cols[1] <= c[1]) && !(cols.some((c) => c[0] === pl.cols[0]) && cols.some((c) => c[1] === pl.cols[1]))) throw new Error(`${at}: region "${r.id}": "${pl.slot}" on columns ${pl.cols[0]}-${pl.cols[1]} lies inside one of its columns or covers whole ones`);
+      }
+      if (r.repeat && r.repeat.length > 1 && !r.columns) throw new Error(`${at}: region "${r.id}" repeats several kinds of item, they flow down its "columns:"`);
       if (r.repeat && !r.columns && r.fields !== "content") throw new Error(`${at}: region "${r.id}" repeats, each of its items takes the fields it needs ("fields: content"), or they flow down its "columns:"`);
       if (r.repeat && r.logo) throw new Error(`${at}: region "${r.id}" repeats, the logo stands once (give it to another region)`);
       for (const [slot, other] of Object.entries(r.sizesLike ?? {})) {
@@ -5565,7 +5594,7 @@ function checkStory(story, brand, fileName) {
       const longest = longestText(text, facts, slot.slotType === "list");
       const parts = slot.slotType === "list" ? longest.split("\n") : [longest];
       if (slot.slotType === "list" && slot.maxItems && parts.length > slot.maxItems) say(`${where}: slot "${slotId}" has ${parts.length} items, maxItems is ${slot.maxItems}`);
-      for (const part of parts) {
+      for (const part of parts.map((p) => slot.slotType === "list" ? parseListItem(p).text : p)) {
         if (part.length > slot.maxLength) say(`${where}: slot "${slotId}" is ${part.length} characters long, maxLength is ${slot.maxLength}`);
       }
     }
@@ -5787,7 +5816,7 @@ function checkFiles(files) {
               return;
             }
             const item = purpose.items?.find((it) => it.slots.includes(id));
-            if (r?.repeat && item?.id !== r.repeat) say(`${where}: slot "${id}" is no slot of item "${r.repeat}", the region repeats per ${r.repeat}`);
+            if (r?.repeat && !r.repeat.includes(item?.id ?? "")) say(`${where}: slot "${id}" is no slot of ${r.repeat.length > 1 ? "items" : "item"} "${r.repeat.join(" ")}", the region repeats per ${r.repeat.join(", ")}`);
             if (r && !r.repeat && item) say(`${where}: slot "${id}" belongs to item "${item.id}", a region with "repeat: ${item.id}" holds it`);
           };
           const last = composition.regions[composition.regions.length - 1];
@@ -5795,7 +5824,7 @@ function checkFiles(files) {
           const contents = composition.regions.filter((r) => r.fields === "content").length;
           for (const r of composition.regions) {
             const where = `region "${r.id}"`;
-            if (r.repeat && !purpose.items?.some((it) => it.id === r.repeat)) say(`${where}: repeat "${r.repeat}" is no item of purpose "${purpose.id}"`);
+            for (const id of r.repeat ?? []) if (!purpose.items?.some((it) => it.id === id)) say(`${where}: repeat "${id}" is no item of purpose "${purpose.id}"`);
             if (rows !== void 0 && Array.isArray(r.fields) && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
             if (rows !== void 0 && r.fields === "rest") {
               const most = rows - contents, need = r.stack && "field" in r.stack ? r.stack.field : 1;
@@ -5806,14 +5835,16 @@ function checkFiles(files) {
               for (const pl of r.places) if (pl.cols[1] >= r.photo[0] && pl.cols[0] <= r.photo[1]) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} lie on the photo's ${r.photo[0]}-${r.photo[1]}`);
             }
             if (r.box && cols !== void 0 && r.box.cols[1] > cols) say(`${where}: box columns ${r.box.cols[0]}-${r.box.cols[1]} are outside the format's ${cols} columns`);
+            const feet = new Set(r.columns ? r.places.map((pl) => pl.slot) : []);
+            const own = (id) => slot(id, where, feet.has(id) ? {} : r);
             for (const pl of r.places) {
               if (cols !== void 0 && pl.cols[1] > cols) say(`${where}: place "${pl.slot}" columns ${pl.cols[0]}-${pl.cols[1]} are outside the format's ${cols} columns`);
-              slot(pl.slot, where, r);
+              own(pl.slot);
             }
             if (r.stack && "neighbour" in r.stack && r.stack.gapX !== void 0 && print?.unit !== void 0 && !print.spacers?.includes(r.stack.gapX)) {
               say(`${where}: stack distance ${r.stack.gapX}x is not one of the brand's print spacers`);
             }
-            for (const id of [...r.group ?? [], ...r.baseline ?? [], ...r.fit ?? [], ...Object.keys(r.sizes ?? {}), ...Object.entries(r.sizesLike ?? {}).flat()]) slot(id, where, r);
+            for (const id of [...r.group ?? [], ...r.baseline ?? [], ...r.fit ?? [], ...Object.keys(r.sizes ?? {}), ...Object.entries(r.sizesLike ?? {}).flat()]) own(id);
           }
         }
       }

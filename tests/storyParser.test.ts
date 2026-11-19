@@ -193,6 +193,8 @@ test('slots: undeclared, fixed by the purpose, maxLength with variables, list li
     's.story: page 1: slot "detail" has 3 items, maxItems is 2',
     's.story: page 1: slot "detail" is 17 characters long, maxLength is 12',
   ], 'problems (primary fits: 19 of 20 with the longest weekday)');
+  const icons = parse('page\n  purpose: notice\n  primary: Open\n  detail:\n    [phosphor:shield-check] Twelve chars\n    [phosphor:info] Thirteen char\n');
+  assertEq(checkStory(icons, BRAND, 's.story'), ['s.story: page 1: slot "detail" is 13 characters long, maxLength is 12'], 'a list entry without its [icon]');
   const long = parse('page\n  purpose: notice\n  primary: Open {weekday} {date}\n');
   assertEq(checkStory(long, BRAND, 's.story'), ['s.story: page 1: slot "primary" is 29 characters long, maxLength is 20'], 'variables at longest form');
   const short = parse('page\n  purpose: notice\n  primary: Open {weekday short} {date short}\n');

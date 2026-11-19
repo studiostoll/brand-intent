@@ -167,6 +167,10 @@ test('use: the slots name roles of that kind, not styles', () => {
     assertEq(added(f => { items(f); regionsBase(f, text('  repeat: lane\n')); }).includes(at('region "row": repeat "lane" is no item of purpose "' + purpose(base()).id + '"')), true, 'unknown item');
     assertEq(added(f => { items(f); regionsBase(f, text('')); }).includes(at(`region "row": slot "${b}" belongs to item "row", a region with "repeat: row" holds it`)), true, 'item slot outside');
     assertEq(added(f => { items(f); regionsBase(f, text('  repeat: row\n').replace(`place: ${b} bottom 1-4`, `place: ${a} bottom 1-4`).replace(`place: ${a} top 1-3`, `place: ${b} top 1-3`)); }).includes(at(`region "row": slot "${a}" is no slot of item "row", the region repeats per row`)), true, 'page slot inside');
+    // A region whose items flow down columns places the page's slots at their foot, never an item's
+    const flowing = (foot: string) => `id: printed\nimage: none\n\nregion head\n  fields: 1-2\n  logo: top left\n\nregion rows\n  fields: 3-4\n  repeat: row\n  columns: 1-2 3-4\n  place: ${foot} bottom 3-4\n  size: ${foot} 2x\n`;
+    assertEq(added(f => { items(f); regionsBase(f, flowing(a)); }), [], 'a page slot at the columns\' foot');
+    assertEq(added(f => { items(f); regionsBase(f, flowing(b)); }).includes(at(`region "rows": slot "${b}" belongs to item "row", a region with "repeat: row" holds it`)), true, 'an item slot at the foot');
   });
 
   test('regions: every slot is a slot of the purpose', () => {
