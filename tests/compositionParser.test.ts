@@ -257,11 +257,13 @@ test('regions mode: mode conflicts', () => {
 
 test('regions mode: a region repeated per item, a size like another slot\'s', () => {
   const c = parseCompositionFile(`id: board\nimage: none\n\nregion head\n  fields: rest\n  logo: top left\n  place: here top 7-12\n\nregion way\n  repeat: way\n  fields: content\n  place: arrow bottom 1\n  place: destination bottom 2-8\n  place: time bottom 10-12\n  baseline: arrow destination time\n  fit: destination\n  size: arrow like destination\n`, 'board.composition');
-  assertEq(c.regions?.[1].repeat, 'way', 'repeat');
+  assertEq(c.regions?.[1].repeat, ['way'], 'repeat');
   assertEq(c.regions?.[1].sizesLike, { arrow: 'destination' }, 'size like');
   assertEq(c.regions?.[1].sizes, undefined, 'no size in x');
   const two = (region: string) => parseCompositionFile(`id: b\nimage: none\n\nregion head\n  fields: rest\n  place: here top 1-4\n\nregion way\n${region}`, 'b.composition');
   assertThrows(() => two('  repeat: way\n  line: 2x\n'), /each of its items takes the fields it needs/, 'repeat needs content');
+  assertThrows(() => two('  repeat: way lane\n  fields: content\n'), /several kinds of item, they flow down its "columns:"/, 'several kinds need columns');
+  assertThrows(() => two('  repeat: way way\n  fields: content\n'), /repeat names "way" twice/, 'a kind once');
   assertThrows(() => two('  repeat: way\n  fields: content\n  logo: top left\n'), /the logo stands once/, 'no logo in a repeat');
   assertThrows(() => two('  fields: content\n  size: arrow like arrow\n'), /can't take its own size/, 'own size');
   assertThrows(() => two('  fields: content\n  size: arrow like time\n  size: time like place\n'), /which takes another's itself/, 'chain');

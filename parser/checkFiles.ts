@@ -187,10 +187,10 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
           if (!format.grid) say(`regions mode needs a "grid: R C" in format "${format.id}"`);
           const slotIds = new Set<string>(purpose.slots.map(s => s.id));
           // A repeated region holds its item's slots, every other region the rest
-          const slot = (id: string, where: string, r?: { repeat?: string }) => {
+          const slot = (id: string, where: string, r?: { repeat?: string[] }) => {
             if (!slotIds.has(id)) { say(`${where}: slot "${id}" is not a slot of purpose "${purpose.id}"`); return; }
             const item = purpose.items?.find(it => it.slots.includes(id as never));
-            if (r?.repeat && item?.id !== r.repeat) say(`${where}: slot "${id}" is no slot of item "${r.repeat}", the region repeats per ${r.repeat}`);
+            if (r?.repeat && !r.repeat.includes(item?.id ?? '')) say(`${where}: slot "${id}" is no slot of ${r.repeat.length > 1 ? 'items' : 'item'} "${r.repeat.join(' ')}", the region repeats per ${r.repeat.join(', ')}`);
             if (r && !r.repeat && item) say(`${where}: slot "${id}" belongs to item "${item.id}", a region with "repeat: ${item.id}" holds it`);
           };
           const last = composition.regions[composition.regions.length - 1];
@@ -199,7 +199,7 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
           const contents = composition.regions.filter(r => r.fields === 'content').length;
           for (const r of composition.regions) {
             const where = `region "${r.id}"`;
-            if (r.repeat && !purpose.items?.some(it => it.id === r.repeat)) say(`${where}: repeat "${r.repeat}" is no item of purpose "${purpose.id}"`);
+            for (const id of r.repeat ?? []) if (!purpose.items?.some(it => it.id === id)) say(`${where}: repeat "${id}" is no item of purpose "${purpose.id}"`);
             if (rows !== undefined && Array.isArray(r.fields) && r.fields[1] > rows) say(`${where}: fields ${r.fields[0]}-${r.fields[1]} are outside the format's ${rows} fields`);
             if (rows !== undefined && r.fields === 'rest') {
               const most = rows - contents, need = r.stack && 'field' in r.stack ? r.stack.field : 1;
