@@ -288,6 +288,9 @@ test('regions mode: items flowing down a region\'s columns, a rule above each', 
   assertEq(two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  break: entries\n').regions?.[1].breakEntries, true, 'break between entries');
   assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  break: lines\n'), /invalid break/, 'break: entries only');
   assertThrows(() => two('  fields: rest\n  break: entries\n'), /it has none/, 'break needs columns');
+  assertEq(two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  balance: columns\n').regions?.[1].balanceColumns, true, 'balanced columns');
+  assertThrows(() => two('  fields: rest\n  repeat: month\n  columns: 1-6 7-12\n  balance: rows\n'), /invalid balance/, 'balance: columns only');
+  assertThrows(() => two('  fields: rest\n  balance: columns\n'), /it has none/, 'balance needs columns');
   assertThrows(() => two('  fields: rest\n  repeat: month\n'), /or they flow down its "columns:"/, 'repeat without columns needs content');
 });
 
