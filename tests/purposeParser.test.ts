@@ -211,6 +211,15 @@ test('list grid: columns, labels above, labelSize, divider', () => {
   assertThrows(() => facts('    columns: 2\n    labels: above\n', 'Hours: Mon–Fri 8–18\n    Sat 9–14'), /needs a label/, 'not in a grid');
 });
 
+test('list icon size: iconSize in em, icon markers only', () => {
+  const facts = (props: string) => withExamples(`example\n  primary: B\n  detail:\n    Wind: 4 Bft\n`,
+    `slot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n\nslot detail\n  label: Facts\n  typography: body\n  type: list\n    maxItems: 6\n    maxLength: 40\n${props}`).slots[1];
+  assertEq(facts('    marker: icon\n    defaultIcon: phosphor:info\n    iconSize: 2.4\n').iconSize, 2.4, 'parsed');
+  assertEq(facts('    marker: icon\n    defaultIcon: phosphor:info\n').iconSize, undefined, 'absent');
+  assertThrows(() => facts('    marker: icon\n    defaultIcon: phosphor:info\n    iconSize: 0\n'), /invalid iconSize/, 'zero');
+  assertThrows(() => facts('    iconSize: 2\n'), /iconSize needs "marker: icon"/, 'without icons');
+});
+
 test('example validation errors', () => {
   const full = '  label: A\n  primary: B\n  detail:\n    C\n';
   assertThrows(() => withExamples(`example\n${full}  secondary: X\n`), /does not declare/, 'undeclared slot');

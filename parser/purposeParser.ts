@@ -140,6 +140,8 @@ export interface ParsedPurposeSlot {
   iconOnly?: boolean;
   /** Space between marker and text, in em (list slots only). Default: 0.4 */
   iconGap?: number;
+  /** Size of an icon marker, in em of the list's text (list slots only). Default: 1 */
+  iconSize?: number;
   /** Gap between list items in em. Default: 0.5 */
   itemGap?: number;
   /** List layout direction: 'vertical' (default) or 'horizontal'. */
@@ -269,6 +271,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       s.marker = 'icon';
     }
     if (s.listColumns && s.listColumns > 1 && s.listDirection === 'horizontal') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": columns needs a vertical list`);
+    if (s.iconSize !== undefined && s.marker !== 'icon' && !s.iconOnly) throw new Error(`${fileName}:${lineNum}: slot "${s.id}": iconSize needs "marker: icon"`);
     if (s.labelSize !== undefined && s.listLabels !== 'above' && s.listLabels !== 'below') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": labelSize needs "labels: above" or "below"`);
     if (s.listDivider === 'hairline' && !(s.listColumns && s.listColumns > 1)) throw new Error(`${fileName}:${lineNum}: slot "${s.id}": divider needs "columns:" 2 or more`);
     if (s.defaultIcon && s.marker !== 'icon') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": defaultIcon needs "marker: icon"`);
@@ -767,6 +770,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
           const n = parseFloat(prop.slice(8).trim());
           if (isNaN(n) || n < 0) throw new Error(`${fileName}:${lineNum}: invalid iconGap "${prop.slice(8).trim()}"`);
           currentSlot.iconGap = n;
+          continue;
+        }
+        if (prop.startsWith('iconSize:')) {
+          const n = parseFloat(prop.slice(9).trim());
+          if (isNaN(n) || n <= 0) throw new Error(`${fileName}:${lineNum}: invalid iconSize "${prop.slice(9).trim()}"`);
+          currentSlot.iconSize = n;
           continue;
         }
         if (prop.startsWith('itemGap:')) {

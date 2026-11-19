@@ -1244,6 +1244,7 @@ A slot block describes form only: limits, typography, colour. Its content comes 
 | `defaultIcon:` | icon ref | - | Icon for items without an `[ID]` prefix (`marker: icon` only) |
 | `iconOnly:` | bool | `false` | Icons only, no text (implies `marker: icon`) |
 | `iconGap:` | float | `0.4` | Gap between marker and text (em) |
+| `iconSize:` | float | `1` | Size of an icon marker (em of the list's text; `marker: icon` only) |
 | `direction:` | enum | `vertical` | `vertical` \| `horizontal` |
 | `itemGap:` | float | `0.5` | Gap between items (em) |
 | `columns:` | int | `1` | Grid columns (1–6) for a vertical list, filled row by row; `itemGap` is the gap between rows and columns |
