@@ -89,8 +89,8 @@ export interface ParsedBrand {
   colorFamilies?: ColorFamilies;
   /** Ground / figure / text for every pair theme (authored `ground:`/`figure:` themes and emitted family pairs). */
   themePairs?: Record<string, ThemePair>;
-  /** Gradients (`gradient:` in a theme): theme name → image path relative to the brand folder. */
-  themeGradients?: Record<string, string>;
+  /** The backgrounds under the page (`background NAME` blocks), in declared order. */
+  backgrounds?: ParsedBackgroundDef[];
   /** Non-fatal color findings: rule violations, rejected family pairs, reach config hints. */
   colorWarnings?: string[];
   /** Non-fatal findings outside colour: blocks that moved to another file and are ignored here. */
@@ -164,6 +164,22 @@ export interface ParsedLocationDef {
   latitude: number;
   /** Decimal degrees, east positive. */
   longitude: number;
+}
+
+/** A background: the layer under the page, above the theme's plain `background` colour and below photos. */
+export interface ParsedBackgroundDef {
+  id: string;
+  /** Display name. Defaults to the id. */
+  label: string;
+  kind: 'gradient' | 'pattern';
+  /** The themes it lies under by default. Absent (patterns only): it fits every theme and is picked, never laid by default. */
+  themes?: string[];
+  /** Gradient: the image, relative to the brand folder. */
+  src?: string;
+  /** Pattern: the generator id, provided by the implementation (e.g. `ripples`, `swell`, `wind`). */
+  generator?: string;
+  /** Pattern: its one colour is a shade (darker) or a tint (lighter) of the ground. */
+  tone?: 'shade' | 'tint';
 }
 
 export interface ParsedFramingDef {
@@ -468,7 +484,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   const result: Partial<ParsedBrand> = {};
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'background';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -534,6 +550,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let photoLookDeclared = false;
   const warnings: string[] = [];
   const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
+  const backgroundsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -1016,6 +1033,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         framingsRaw[framingsRaw.length - 1].props[trimmed.slice(0, colonIdx).trim()] = { value: trimmed.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === 'background') {
+        const trimmed = raw.trim();
+        if (trimmed === '' || trimmed.startsWith('# ')) continue;
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: background property must be "KEY: VALUE", got "${trimmed}"`);
+        const key = trimmed.slice(0, colonIdx).trim();
+        const bg = backgroundsRaw[backgroundsRaw.length - 1];
+        if (bg.props[key]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${key}: twice`);
+        bg.props[key] = { value: trimmed.slice(colonIdx + 1).replace(/\s+#\s.*$/, '').trim(), line: lineNum };
+        continue;
+      }
       // Indented line with no active block — ignore
       continue;
     }
@@ -1135,6 +1163,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (framingsRaw.some(f => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate framing "${id}"`);
       framingsRaw.push({ id, line: lineNum, props: {} });
       activeBlock = 'framing';
+      continue;
+    }
+
+    // background <id> — the layer under the page: a gradient or a pattern
+    const backgroundMatch = raw.match(/^background\s+(\S+)\s*(?:#\s.*)?$/);
+    if (backgroundMatch) {
+      const id = backgroundMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: background name must be lowercase kebab-case, got "${id}"`);
+      if (backgroundsRaw.some(b => b.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate background "${id}"`);
+      backgroundsRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = 'background';
       continue;
     }
 
@@ -1617,15 +1656,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const neutralText = ['dark', 'light']
     .map(role => neutral?.entries.find(e => e.role === role)?.hex)
     .filter((h): h is string => !!h);
-  const themeGradients: Record<string, string> = {};
   for (const [name, theme] of Object.entries(themes)) {
     if (theme['gradient'] !== undefined) {
-      const path = theme['gradient'];
-      delete theme['gradient'];
-      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(path) || path.split('/').includes('..')) {
-        throw new Error(`${fileName}: theme "${name}" gradient must be a .png, .jpg or .webp path inside the brand folder, got "${path}"`);
-      }
-      themeGradients[name] = path;
+      const id = theme['gradient'].split('/').pop()?.replace(/\.[a-z]+$/i, '').toLowerCase() || name.toLowerCase();
+      throw new Error(`${fileName}: theme "${name}": gradient: is replaced by a background block (v0.61). Write:\n\nbackground ${id}\n  kind:   gradient\n  src:    ${theme['gradient']}\n  themes: ${name}\n`);
     }
     const pairRaw: Partial<Record<typeof PAIR_KEYS[number], string>> = {};
     for (const key of PAIR_KEYS) {
@@ -1700,7 +1734,46 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (theme['counter-fg'] === undefined && theme['label-fg'] !== undefined) theme['counter-fg'] = theme['label-fg'];
   }
 
-  // Rule checks on every theme (only when the brand declares color-rules).
+  // Backgrounds: a gradient names its themes (its colours are theirs);
+  // a pattern takes its one colour from the ground, so it fits any theme.
+  const backgrounds: ParsedBackgroundDef[] = backgroundsRaw.map(({ id, line, props }) => {
+    const kind = props['kind']?.value;
+    if (kind !== 'gradient' && kind !== 'pattern') throw new Error(`${fileName}:${line}: background "${id}" needs "kind: gradient" or "kind: pattern"${kind ? `, got "${kind}"` : ''}`);
+    const known = new Set(kind === 'gradient' ? ['label', 'kind', 'themes', 'src'] : ['label', 'kind', 'themes', 'generator', 'tone']);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: background "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(', ')})`);
+    }
+    const def: ParsedBackgroundDef = { id, label: props['label']?.value || id, kind };
+    if (props['themes']) {
+      const names = props['themes'].value.split(',').map(t => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props['themes'].line}: background "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props['themes'].line}: background "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    } else if (kind === 'gradient') {
+      throw new Error(`${fileName}:${line}: background "${id}" is a gradient and needs "themes:", the themes whose colours it carries`);
+    }
+    if (kind === 'gradient') {
+      const src = props['src'];
+      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split('/').includes('..')) {
+        throw new Error(`${fileName}:${src.line}: background "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+    } else {
+      const gen = props['generator']?.value;
+      if (!gen) throw new Error(`${fileName}:${line}: background "${id}" is a pattern and needs "generator:" (e.g. ripples)`);
+      if (!/^[a-z][a-z0-9-]*$/.test(gen)) throw new Error(`${fileName}:${props['generator'].line}: background "${id}" generator must be a lowercase id, got "${gen}"`);
+      def.generator = gen;
+      const tone = props['tone']?.value;
+      if (tone !== 'shade' && tone !== 'tint') throw new Error(`${fileName}:${props['tone']?.line ?? line}: background "${id}" needs "tone: shade" or "tone: tint"${tone ? `, got "${tone}"` : ''}`);
+      def.tone = tone;
+    }
+    return def;
+  });
+
+  // Rule checks on every theme (only when the brand declares color-rules)
   if (colorRulesDeclared) {
     for (const [name, theme] of Object.entries(themes)) {
       const bg = theme['background'];
@@ -1726,7 +1799,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     result.themeDescriptions = themeDescriptions;
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
-  if (Object.keys(themeGradients).length > 0) result.themeGradients = themeGradients;
+  if (backgrounds.length > 0) result.backgrounds = backgrounds;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {

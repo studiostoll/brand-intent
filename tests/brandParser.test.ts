@@ -684,27 +684,63 @@ test('flat brand color keeps its hex when a comment follows', () => {
   assertEq(out.themes?.Laden?.background, '#FAF6F0', 'theme resolves the commented colour');
 });
 
-// ── Gradient (theme) ─────────────────────────────────────────────────────────
+// ── Background ───────────────────────────────────────────────────────────────
 
-console.log('\nGradient:');
+console.log('\nBackground:');
 
-test('gradient is kept apart from the colour slots', () => {
-  const src = `${HEADER}theme Dusk\n  ground: #3B2A5C\n  figure: #F2E6FF\n  gradient: gradients/dusk.png\n`;
+const DUSK = `theme Dusk\n  ground: #3B2A5C\n  figure: #FFFFFF\n  text: #FFFFFF\n`;
+const GRADIENT = (extra = '') => `background dusk\n  kind:   gradient\n  src:    gradients/dusk.png\n  themes: Dusk\n${extra}`;
+
+test('a gradient background: src and its themes', () => {
+  const src = `${HEADER}${DUSK}background dusk   # the evening one\n  label:  Dusk\n  kind:   gradient\n  src:    gradients/dusk.png   # the image\n  themes: Dusk\n`;
   const out = parseBrandFile(src, 'test.brand');
-  assertEq(out.themeGradients, { Dusk: 'gradients/dusk.png' }, 'gradients');
-  assertEq(out.themes?.Dusk?.['gradient'], undefined, 'not a colour slot');
-  assertEq(out.themes?.Dusk?.background, '#3B2A5C', 'ground stays the colour');
+  assertEq(out.backgrounds, [{ id: 'dusk', label: 'Dusk', kind: 'gradient', themes: ['Dusk'], src: 'gradients/dusk.png' }], 'background');
+  assertEq(out.themes?.Dusk?.background, '#3B2A5C', 'the ground stays the theme colour');
 });
 
-test('a brand without gradients has no themeGradients', () => {
-  const out = parseBrandFile(`${HEADER}theme Plain\n  ground: #FFFFFF\n  figure: #111111\n`, 'test.brand');
-  assertEq(out.themeGradients, undefined, 'absent');
+test('a pattern background: generator and tone, themes optional', () => {
+  const src = `${HEADER}${DUSK}background ripples\n  kind:      pattern\n  generator: ripples\n  tone:      shade\nbackground foam\n  kind:      pattern\n  generator: swell\n  tone:      tint\n  themes:    Dusk\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.backgrounds, [
+    { id: 'ripples', label: 'ripples', kind: 'pattern', generator: 'ripples', tone: 'shade' },
+    { id: 'foam', label: 'foam', kind: 'pattern', themes: ['Dusk'], generator: 'swell', tone: 'tint' },
+  ], 'patterns');
 });
 
-test('gradient outside the brand folder or not an image is an error', () => {
-  for (const bad of ['../other/dusk.png', '/grounds/dusk.png', 'https://x.test/dusk.png', 'grounds/dusk.svg']) {
-    assertThrows(() => parseBrandFile(`${HEADER}theme Dusk\n  ground: #3B2A5C\n  figure: #F2E6FF\n  gradient: ${bad}\n`, 'test.brand'), /gradient must be/, bad);
+test('a brand without backgrounds has none', () => {
+  assertEq(parseBrandFile(`${HEADER}${DUSK}`, 'test.brand').backgrounds, undefined, 'absent');
+});
+
+test('gradient: in a theme is an error that writes out the background block', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}${DUSK}  gradient: gradients/dusk.png\n`, 'test.brand'), /replaced by a background block[\s\S]*background dusk[\s\S]*kind: +gradient[\s\S]*src: +gradients\/dusk.png[\s\S]*themes: Dusk/, 'gradient');
+});
+
+test('a gradient needs themes and src, and takes no range', () => {
+  const bad = (body: string, re: RegExp, msg: string) => assertThrows(() => parseBrandFile(`${HEADER}${DUSK}background dusk\n${body}`, 'test.brand'), re, msg);
+  bad('  kind: gradient\n  src: gradients/dusk.png\n', /needs "themes:"/, 'no themes');
+  bad('  kind: gradient\n  themes: Dusk\n', /needs "src:"/, 'no src');
+  bad('  kind: gradient\n  src: gradients/dusk.png\n  range: #1E1030, #4A3570\n  themes: Dusk\n', /has no "range:"/, 'range');
+  bad('  kind: gradient\n  src: gradients/dusk.png\n  themes: Dawn\n', /unknown theme "Dawn"/, 'unknown theme');
+  for (const path of ['../other/dusk.png', '/grounds/dusk.png', 'https://x.test/dusk.png', 'grounds/dusk.svg']) {
+    bad(`  kind: gradient\n  src: ${path}\n  themes: Dusk\n`, /src must be/, path);
   }
+});
+
+test('a background needs a kind, and each kind only its own keys', () => {
+  const bad = (body: string, re: RegExp, msg: string) => assertThrows(() => parseBrandFile(`${HEADER}${DUSK}background b\n${body}`, 'test.brand'), re, msg);
+  bad('  generator: ripples\n', /needs "kind: gradient" or "kind: pattern"/, 'no kind');
+  bad('  kind: noise\n', /got "noise"/, 'unknown kind');
+  bad('  kind: pattern\n  generator: ripples\n  tone: shade\n  src: x.png\n', /has no "src:"/, 'gradient key on a pattern');
+  bad('  kind: pattern\n  tone: shade\n', /needs "generator:"/, 'no generator');
+  bad('  kind: pattern\n  generator: ripples\n', /needs "tone: shade" or "tone: tint"/, 'no tone');
+  assertThrows(() => parseBrandFile(`${HEADER}${DUSK}${GRADIENT()}${GRADIENT()}`, 'test.brand'), /duplicate background "dusk"/, 'duplicate');
+});
+
+test('a background changes no contrast check: the theme counts against its ground', () => {
+  const light = `${HEADER}color-rules\n  text: 4.5\ntheme Dusk\n  background: #3B2A5C\n  text-primary: #F2E6FF\n  logo: #F2E6FF\n`;
+  assertEq(parseBrandFile(`${light}${GRADIENT()}`, 'test.brand').colorWarnings, undefined, 'gradient');
+  const dark = `${HEADER}color-rules\n  text: 4.5\ntheme Dusk\n  background: #3B2A5C\n  text-primary: #2A1E40\n`;
+  assertEq(parseBrandFile(`${dark}${GRADIENT()}`, 'test.brand').colorWarnings?.some(w => /text-primary #2A1E40 on #3B2A5C/.test(w)), true, 'checked on the ground');
 });
 
 // ── Summary ──────────────────────────────────────────────────────────────────

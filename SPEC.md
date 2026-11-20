@@ -341,6 +341,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `color-rules` | block | No | Contrast minimums and tone combinations to avoid |
 | `color-families` | block | No | Ordered color sets with roles, borrowing rules and curated pairs |
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
+| `background NAME` | block | No | The layer under the page: a gradient or a pattern, and the themes it lies under (repeatable) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
 | `spacing:` | block | No | Spacing token scale |
@@ -708,20 +709,50 @@ theme Shop
   divider:        $accent1 40%
 ```
 
-**Gradient.** A theme can lay a gradient under the page instead of a plain colour. `gradient:` names it as an image file, a `.png`, `.jpg` or `.webp` inside the brand folder. The theme still declares its colours; `background` (or `ground:`) is the colour the gradient stands for, and every contrast check counts against it.
+A theme's `background` slot (in a pair theme, `ground:`) is the plain colour of the page. What lies on it, a gradient or a pattern, is a [`background NAME` block](#background-name-block), which names the themes it belongs to. Before v0.61 a theme named its gradient with `gradient:`; the parser rejects the key and writes out the block that replaces it.
+
+### `background NAME` Block
+
+The background is the layer under the page: above the theme's plain `background` colour, below a photo or video. A page has at most one. `NAME` is a lowercase kebab-case identifier; `kind:` says what the background is, and each kind has its own keys. Since v0.61.
 
 ```yaml
-theme Dusk
-  ground:   $plum                # the gradient's mean colour, for contrast
-  figure:   $lilac
-  gradient: gradients/dusk.png
+background dusk
+  label:  Dusk
+  kind:   gradient
+  src:    backgrounds/dusk.png
+  themes: Dusk
+
+background ripples
+  label:     Ripples
+  kind:      pattern
+  generator: ripples
+  tone:      shade
 ```
 
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `gradient:` | path | No | The gradient under the page, as an image relative to the brand folder. Absent → the page has the plain `background` |
+| Key | Type | Kind | Required | Description |
+|-----|------|------|----------|-------------|
+| `label:` | string | all | No | Display name. Default: the block's name |
+| `kind:` | `gradient` \| `pattern` | all | Yes | What the background is |
+| `themes:` | theme names, comma list | all | Gradient: yes. Pattern: no | The themes it lies under (see Pairing) |
+| `src:` | path | gradient | Yes | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
+| `generator:` | id | pattern | Yes | The generator that draws it. Ids are the implementation's, like a logo's `generator:` (for example `ripples`, `swell`, `wind`) |
+| `tone:` | `shade` \| `tint` | pattern | Yes | A shade is darker than the ground, a tint lighter |
 
-The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so its grain (the noise that keeps a gradient from banding) looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when it gives the page the theme and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown. A photo on the page lies above the gradient; with `image: full` the gradient is covered.
+**Gradient.** Its colours are its themes' colours, so it names them. Each theme keeps its `ground:` (or `background`) as the colour the gradient stands for; the slots derived from the ground (`label-fg`, `sticker-fg`) take it. The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so its grain (the noise that keeps a gradient from banding) looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when the page gets the background and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown.
+
+**Pattern.** A pattern has one colour, taken from the ground: a shade is darker, a tint lighter, and near black or white the direction turns so the pattern stays visible. So a pattern fits any theme. How strong, how large and in which direction it is drawn are the page's, not the language's.
+
+**Pairing.** The background names its themes, the theme doesn't name its background.
+
+- A background with `themes:` lies under every page in those themes. A theme named by several takes one of them per page.
+- A pattern without `themes:` fits every theme and lies under no page until someone picks it.
+- A theme in `themes:` the brand doesn't declare is an error.
+
+A photo or video on the page lies above the background; with `image: full` it is covered.
+
+**Contrast.** A background adds no rule to its themes: each is checked against its ground, as every theme. Whether text reads on a gradient is checked per page, against the part of the gradient under the text, by an implementation that reads the image.
+
+**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand: a generated gradient (`kind: gradient` with colour stops instead of `src:`) or grain on any background.
 
 ### `font NAME` Block
 

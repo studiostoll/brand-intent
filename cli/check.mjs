@@ -1322,6 +1322,7 @@ function parseBrandFile(content, fileName) {
   let photoLookDeclared = false;
   const warnings = [];
   const framingsRaw = [];
+  const backgroundsRaw = [];
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const lineNum = i + 1;
@@ -1766,6 +1767,17 @@ function parseBrandFile(content, fileName) {
         framingsRaw[framingsRaw.length - 1].props[trimmed.slice(0, colonIdx2).trim()] = { value: trimmed.slice(colonIdx2 + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === "background") {
+        const trimmed = raw.trim();
+        if (trimmed === "" || trimmed.startsWith("# ")) continue;
+        const colonIdx2 = trimmed.indexOf(":");
+        if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: background property must be "KEY: VALUE", got "${trimmed}"`);
+        const key2 = trimmed.slice(0, colonIdx2).trim();
+        const bg = backgroundsRaw[backgroundsRaw.length - 1];
+        if (bg.props[key2]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${key2}: twice`);
+        bg.props[key2] = { value: trimmed.slice(colonIdx2 + 1).replace(/\s+#\s.*$/, "").trim(), line: lineNum };
+        continue;
+      }
       continue;
     }
     if (raw.trim() === "") continue;
@@ -1851,6 +1863,15 @@ function parseBrandFile(content, fileName) {
       if (framingsRaw.some((f) => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate framing "${id}"`);
       framingsRaw.push({ id, line: lineNum, props: {} });
       activeBlock = "framing";
+      continue;
+    }
+    const backgroundMatch = raw.match(/^background\s+(\S+)\s*(?:#\s.*)?$/);
+    if (backgroundMatch) {
+      const id = backgroundMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: background name must be lowercase kebab-case, got "${id}"`);
+      if (backgroundsRaw.some((b) => b.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate background "${id}"`);
+      backgroundsRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = "background";
       continue;
     }
     const themeMatch = raw.match(/^theme\s+(\S+)/);
@@ -2262,15 +2283,16 @@ function parseBrandFile(content, fileName) {
   const themePairs = {};
   const neutral = colorGroups.find((g) => g.key === "neutral");
   const neutralText = ["dark", "light"].map((role) => neutral?.entries.find((e) => e.role === role)?.hex).filter((h) => !!h);
-  const themeGradients = {};
   for (const [name, theme] of Object.entries(themes)) {
     if (theme["gradient"] !== void 0) {
-      const path = theme["gradient"];
-      delete theme["gradient"];
-      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(path) || path.split("/").includes("..")) {
-        throw new Error(`${fileName}: theme "${name}" gradient must be a .png, .jpg or .webp path inside the brand folder, got "${path}"`);
-      }
-      themeGradients[name] = path;
+      const id = theme["gradient"].split("/").pop()?.replace(/\.[a-z]+$/i, "").toLowerCase() || name.toLowerCase();
+      throw new Error(`${fileName}: theme "${name}": gradient: is replaced by a background block (v0.61). Write:
+
+background ${id}
+  kind:   gradient
+  src:    ${theme["gradient"]}
+  themes: ${name}
+`);
     }
     const pairRaw = {};
     for (const key of PAIR_KEYS) {
@@ -2343,6 +2365,42 @@ function parseBrandFile(content, fileName) {
     if (theme["counter-bg"] === void 0 && theme["label-bg"] !== void 0) theme["counter-bg"] = theme["label-bg"];
     if (theme["counter-fg"] === void 0 && theme["label-fg"] !== void 0) theme["counter-fg"] = theme["label-fg"];
   }
+  const backgrounds = backgroundsRaw.map(({ id, line, props }) => {
+    const kind = props["kind"]?.value;
+    if (kind !== "gradient" && kind !== "pattern") throw new Error(`${fileName}:${line}: background "${id}" needs "kind: gradient" or "kind: pattern"${kind ? `, got "${kind}"` : ""}`);
+    const known = new Set(kind === "gradient" ? ["label", "kind", "themes", "src"] : ["label", "kind", "themes", "generator", "tone"]);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: background "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(", ")})`);
+    }
+    const def = { id, label: props["label"]?.value || id, kind };
+    if (props["themes"]) {
+      const names = props["themes"].value.split(",").map((t) => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props["themes"].line}: background "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props["themes"].line}: background "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    } else if (kind === "gradient") {
+      throw new Error(`${fileName}:${line}: background "${id}" is a gradient and needs "themes:", the themes whose colours it carries`);
+    }
+    if (kind === "gradient") {
+      const src = props["src"];
+      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split("/").includes("..")) {
+        throw new Error(`${fileName}:${src.line}: background "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+    } else {
+      const gen = props["generator"]?.value;
+      if (!gen) throw new Error(`${fileName}:${line}: background "${id}" is a pattern and needs "generator:" (e.g. ripples)`);
+      if (!/^[a-z][a-z0-9-]*$/.test(gen)) throw new Error(`${fileName}:${props["generator"].line}: background "${id}" generator must be a lowercase id, got "${gen}"`);
+      def.generator = gen;
+      const tone = props["tone"]?.value;
+      if (tone !== "shade" && tone !== "tint") throw new Error(`${fileName}:${props["tone"]?.line ?? line}: background "${id}" needs "tone: shade" or "tone: tint"${tone ? `, got "${tone}"` : ""}`);
+      def.tone = tone;
+    }
+    return def;
+  });
   if (colorRulesDeclared) {
     for (const [name, theme] of Object.entries(themes)) {
       const bg = theme["background"];
@@ -2365,7 +2423,7 @@ function parseBrandFile(content, fileName) {
     result.themeDescriptions = themeDescriptions;
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
-  if (Object.keys(themeGradients).length > 0) result.themeGradients = themeGradients;
+  if (backgrounds.length > 0) result.backgrounds = backgrounds;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {

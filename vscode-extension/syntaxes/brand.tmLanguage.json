@@ -435,14 +435,14 @@
       }
     },
     "asset-header": {
-      "match": "^(logo|photo|video|illustration|framing)\\s+(\\S+)",
+      "match": "^(logo|photo|video|illustration|framing|background)\\s+(\\S+)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" },
         "2": { "name": "entity.name.type.brand-intent-brand" }
       }
     },
     "asset-value": {
-      "match": "^(\\s{2,})(label|src|lottie|gltf|generator|group|work|when|framing|place|person|taken|focus|horizon|description|caption|goals)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params|align-left|align-center|align-right)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
+      "match": "^(\\s{2,})(label|src|lottie|gltf|generator|group|work|when|framing|place|person|taken|focus|horizon|description|caption|goals|kind|themes|tone)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params|align-left|align-center|align-right)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -524,7 +524,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|location)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|background|location)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

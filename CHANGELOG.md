@@ -2,6 +2,10 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.61 · 20 Nov 2026
+
+- **Brand.** `background NAME` lays a layer under the page, between the theme's plain colour and a photo: `kind: gradient` (an image, `src:`) or `kind: pattern` (`generator:` and `tone: shade | tint`, its colour taken from the ground). `themes:` names the themes it lies under; a pattern without it fits every theme and is picked. `gradient:` in a theme is gone; the parser writes out the block that replaces it.
+
 ## v0.60 · 20 Nov 2026
 
 - **Brand.** Type sizes (`size:`, `autofit-min:`, `autofit-max:`) count in % of the canvas's shorter side (cqmin), like spacing, instead of its height. A text keeps its size across 1:1, 4:5 and 9:16 of the same width. The padding and radius of `label` and `cta` and the scrim's padding and gap follow, with defaults ×1.78 so a story looks as before.
