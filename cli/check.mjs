@@ -2538,10 +2538,10 @@ function parseBrandFile(content, fileName) {
     return { padding, radius: isNaN(radius) ? defaults.radius : radius };
   };
   if (Object.keys(labelRaw).length > 0) {
-    result.label = parseBadgeStyle(labelRaw, { padding: [0.5, 1, 0.7, 1], radius: 0 });
+    result.label = parseBadgeStyle(labelRaw, { padding: [0.89, 1.78, 1.24, 1.78], radius: 0 });
   }
   if (Object.keys(ctaRaw).length > 0) {
-    result.cta = parseBadgeStyle(ctaRaw, { padding: [0.8, 2.5, 0.8, 2.5], radius: 999 });
+    result.cta = parseBadgeStyle(ctaRaw, { padding: [1.42, 4.44, 1.42, 4.44], radius: 999 });
   }
   if (iconsDeclared) {
     if (icons.length === 0) throw new Error(`${fileName}: icons block is empty`);
@@ -2694,14 +2694,14 @@ function parseBrandFile(content, fileName) {
     if (scrimPadding) {
       const parts = scrimPadding.value.split(/\s+/);
       if (parts.length > 4 || !parts.every((p) => /^\d+(\.\d+)?$/.test(p))) {
-        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqh), got "${scrimPadding.value}"`);
+        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqmin), got "${scrimPadding.value}"`);
       }
       const n = parts.map(Number);
       look.scrimPadding = [n[0], n[1] ?? n[0], n[2] ?? n[0], n[3] ?? n[1] ?? n[0]];
     }
     const scrimGap = photoLookRaw["scrim-gap"];
     if (scrimGap) {
-      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqh), got "${scrimGap.value}"`);
+      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqmin), got "${scrimGap.value}"`);
       look.scrimGap = Number(scrimGap.value);
     }
     result.photoLook = look;

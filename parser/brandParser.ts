@@ -107,9 +107,9 @@ export interface ParsedBrand {
   typographies?: Record<string, ParsedTypographyDef>;
   /** Brand-declared assets: curated logos, photos, videos, illustrations with labels and metadata */
   assets?: { logos?: ParsedAssetDef[]; photos?: ParsedAssetDef[]; videos?: ParsedAssetDef[]; illustrations?: ParsedAssetDef[] };
-  /** Label badge style — padding (top/right/bottom/left in cqh) and corner radius (cqh) */
+  /** Label badge style — padding (top/right/bottom/left in cqmin) and corner radius (cqmin) */
   label?: ParsedBadgeStyle;
-  /** CTA pill style — padding (top/right/bottom/left in cqh) and corner radius (cqh, or 999 for full pill) */
+  /** CTA pill style — padding (top/right/bottom/left in cqmin) and corner radius (cqmin, or 999 for full pill) */
   cta?: ParsedBadgeStyle;
   /** Brand icon set (`icons` block), in declaration order. Absent → the brand has no set. */
   icons?: ParsedIconDef[];
@@ -144,9 +144,9 @@ export interface ParsedPhotoLookDef {
   fixed: PhotoLookKey[];
   /** Darkest a gradient under light text on a photo may get, 0..100 (%). Absent → no scrim. */
   scrim?: number;
-  /** Paragraph and line scrim: space between the text and the edge of its ground, top/right/bottom/left in cqh. */
+  /** Paragraph and line scrim: space between the text and the edge of its ground, top/right/bottom/left in cqmin. */
   scrimPadding?: [number, number, number, number];
-  /** Paragraph and line scrim: space between two grounds, in cqh. */
+  /** Paragraph and line scrim: space between two grounds, in cqmin. */
   scrimGap?: number;
 }
 
@@ -247,9 +247,9 @@ export interface ParsedAssetDef {
 export type LogoAlign = 'left' | 'center' | 'right';
 
 export interface ParsedBadgeStyle {
-  /** Padding in cqh: [top, right, bottom, left] */
+  /** Padding in cqmin: [top, right, bottom, left] */
   padding: [number, number, number, number];
-  /** Corner radius in cqh. Use 999 for a full pill. */
+  /** Corner radius in cqmin. Use 999 for a full pill. */
   radius: number;
 }
 
@@ -294,9 +294,9 @@ export interface ParsedTypographyDef {
   uppercase?: boolean;
   /** Weight to use for **strong** inline markup. If absent, strong renders as normal. */
   strong?: number;
-  /** Autofit minimum font size in cqh. If absent, autofit is disabled (fixed size). */
+  /** Autofit minimum font size in cqmin. If absent, autofit is disabled (fixed size). */
   autofitMin?: number;
-  /** Autofit maximum font size in cqh. If absent, autofit is disabled (fixed size). */
+  /** Autofit maximum font size in cqmin. If absent, autofit is disabled (fixed size). */
   autofitMax?: number;
 }
 
@@ -1916,10 +1916,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     return { padding, radius: isNaN(radius) ? defaults.radius : radius };
   };
   if (Object.keys(labelRaw).length > 0) {
-    result.label = parseBadgeStyle(labelRaw, { padding: [0.5, 1, 0.7, 1], radius: 0 });
+    result.label = parseBadgeStyle(labelRaw, { padding: [0.89, 1.78, 1.24, 1.78], radius: 0 });
   }
   if (Object.keys(ctaRaw).length > 0) {
-    result.cta = parseBadgeStyle(ctaRaw, { padding: [0.8, 2.5, 0.8, 2.5], radius: 999 });
+    result.cta = parseBadgeStyle(ctaRaw, { padding: [1.42, 4.44, 1.42, 4.44], radius: 999 });
   }
 
   // Finalise icon set — font glyphs need a declared font (bare `font U+…` → first font).
@@ -2083,14 +2083,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (scrimPadding) {
       const parts = scrimPadding.value.split(/\s+/);
       if (parts.length > 4 || !parts.every(p => /^\d+(\.\d+)?$/.test(p))) {
-        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqh), got "${scrimPadding.value}"`);
+        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqmin), got "${scrimPadding.value}"`);
       }
       const n = parts.map(Number);
       look.scrimPadding = [n[0], n[1] ?? n[0], n[2] ?? n[0], n[3] ?? n[1] ?? n[0]];
     }
     const scrimGap = photoLookRaw['scrim-gap'];
     if (scrimGap) {
-      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqh), got "${scrimGap.value}"`);
+      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqmin), got "${scrimGap.value}"`);
       look.scrimGap = Number(scrimGap.value);
     }
     result.photoLook = look;

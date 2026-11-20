@@ -757,14 +757,14 @@ font primary
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `weight:` | int | Yes | Font weight (100-900) |
-| `size:` | float | Yes | Font size in cqh |
+| `size:` | float | Yes | Font size in cqmin (% of the canvas's shorter side, like spacing) |
 | `lineHeight:` | float | Yes | Line height multiplier |
 | `font:` | string | No | Named font key; defaults to brand primary |
 | `strong:` | int | No | Weight for `**strong**` markup (100-900) |
 | `opsz:` | float | No | Optical size axis value |
 | `letterSpacing:` | float | No | Letter spacing in em |
-| `autofit-min:` | float | No | Minimum autofit size (cqh) |
-| `autofit-max:` | float | No | Maximum autofit size (cqh) |
+| `autofit-min:` | float | No | Minimum autofit size (cqmin) |
+| `autofit-max:` | float | No | Maximum autofit size (cqmin) |
 | `italic` | flag | No | Enable italic |
 | `uppercase` | flag | No | Enable uppercase transform |
 
@@ -802,23 +802,23 @@ Badge/pill style for `label` and `cta` slot rendering. Both optional; both fall 
 
 ```yaml
 label:
-  padding: 0.5 1 0.7 1
+  padding: 0.89 1.78 1.24 1.78
   radius: 0
 
 cta:
-  padding: 0.8 2.5
+  padding: 1.42 4.44
   radius: 999
 ```
 
 | Key        | Type          | Description                                            |
 |------------|---------------|--------------------------------------------------------|
-| `padding:` | CSS shorthand | 1–4 values in cqh, CSS order (top/right/bottom/left)   |
-| `radius:`  | float         | Corner radius in cqh; `999` = full pill                |
+| `padding:` | CSS shorthand | 1–4 values in cqmin, CSS order (top/right/bottom/left)   |
+| `radius:`  | float         | Corner radius in cqmin; `999` = full pill                |
 
 **Defaults** when a block is omitted or a field is missing:
 
-- `label` — padding `0.5 1 0.7 1`, radius `0`
-- `cta` — padding `0.8 2.5`, radius `999`
+- `label` — padding `0.89 1.78 1.24 1.78`, radius `0`
+- `cta` — padding `1.42 4.44`, radius `999`
 
 ### `icons` Block
 
@@ -925,8 +925,8 @@ photo-look
   # duotone:  $ink $sand   # shadows → highlights
   # fixed:    mono         # keys the person cannot change
   # scrim:    45%          # dark gradient under light text, at most this dark
-  # scrim-padding: 1 1.6   # paragraph and line scrim: space around the text
-  # scrim-gap: 0.4         # paragraph and line scrim: space between two grounds
+  # scrim-padding: 1.78 2.84   # paragraph and line scrim: space around the text
+  # scrim-gap: 0.71        # paragraph and line scrim: space between two grounds
 ```
 
 | Key | Type | Default | Description |
@@ -939,8 +939,8 @@ photo-look
 | `duotone:` | color pair | — | Maps luminance onto two colors, shadow first. Each is a `$ref` to `brand-colors` or `#HEX`. Excludes `mono` |
 | `fixed:` | key list | — | Keys the person cannot change. Each must be set in the block |
 | `scrim:` | percent | — | Under light text on a photo a dark gradient may lie, at most this dark (`1%`–`100%` black). Absent → no scrim |
-| `scrim-padding:` | 1–4 numbers | `1 1.6` | [Paragraph and line scrim](#paragraph-and-line-scrim): space between the text and the edge of its ground, in cqh, CSS order (top/right/bottom/left) |
-| `scrim-gap:` | number | `0.4` | Paragraph and line scrim: space between two grounds, in cqh |
+| `scrim-padding:` | 1–4 numbers | `1.78 2.84` | [Paragraph and line scrim](#paragraph-and-line-scrim): space between the text and the edge of its ground, in cqmin, CSS order (top/right/bottom/left) |
+| `scrim-gap:` | number | `0.71` | Paragraph and line scrim: space between two grounds, in cqmin |
 
 **Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a grayscale-only or duotone brand).
 
