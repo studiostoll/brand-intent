@@ -2432,7 +2432,9 @@ background ${id}
       s: parseFloat(spacingRaw["s"] ?? "2"),
       m: parseFloat(spacingRaw["m"] ?? "3"),
       l: parseFloat(spacingRaw["l"] ?? "5"),
-      xl: parseFloat(spacingRaw["xl"] ?? "6.5")
+      xl: parseFloat(spacingRaw["xl"] ?? "6.5"),
+      ...spacingRaw["2xl"] !== void 0 ? { "2xl": parseFloat(spacingRaw["2xl"]) } : {},
+      ...spacingRaw["3xl"] !== void 0 ? { "3xl": parseFloat(spacingRaw["3xl"]) } : {}
     };
   }
   if (Object.keys(dividersRaw).length > 0) {

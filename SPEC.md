@@ -815,6 +815,7 @@ spacing:
 |-----|------|---------|-------------|
 | `unit:` | string | `cqmin` | Unit for all spacing values |
 | `xs`, `s`, `m`, `l`, `xl` | float | - | Spacing scale values |
+| `2xl`, `3xl` | float | - | Larger steps, optional: only there when declared (since v0.62) |
 
 ### `divider NAME` Block
 

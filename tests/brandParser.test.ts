@@ -743,6 +743,12 @@ test('a background changes no contrast check: the theme counts against its groun
   assertEq(parseBrandFile(`${dark}${GRADIENT()}`, 'test.brand').colorWarnings?.some(w => /text-primary #2A1E40 on #3B2A5C/.test(w)), true, 'checked on the ground');
 });
 
+test('spacing: 2xl and 3xl are optional steps above xl', () => {
+  const sp = (body: string) => parseBrandFile(`${HEADER}spacing:\n  unit: cqmin\n  xs: 1\n  s: 2\n  m: 3\n  l: 5\n  xl: 7\n${body}`, 'test.brand').spacing;
+  assertEq(sp('  2xl: 12\n  3xl: 25\n'), { unit: 'cqmin', xs: 1, s: 2, m: 3, l: 5, xl: 7, '2xl': 12, '3xl': 25 }, 'both declared');
+  assertEq(sp(''), { unit: 'cqmin', xs: 1, s: 2, m: 3, l: 5, xl: 7 }, 'absent when not declared');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

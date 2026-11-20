@@ -5,6 +5,7 @@ What the Brand Intent language gained in each release, by file type. The [specif
 ## v0.62 · 20 Nov 2026
 
 - **Purpose.** A bare `value:` takes its fixed text on the 4-space lines below it, one line each, so a fixed text can hold line breaks.
+- **Brand.** `2xl:` and `3xl:` in `spacing:` add two larger, optional steps above `xl`, for `spacer-2xl` and `spacer-3xl` in a flow.
 - **Tooling.** `checkFolder` takes `{ skip }`, folder names it leaves out.
 
 ## v0.61 · 20 Nov 2026

@@ -375,7 +375,7 @@
     },
     "spacing-value": {
       "comment": "Indented spacing key-value pairs",
-      "match": "^(\\s{2,})(unit|xs|s|m|l|xl)(:\\s*)(\\S+)",
+      "match": "^(\\s{2,})(unit|xs|s|m|l|xl|2xl|3xl)(:\\s*)(\\S+)",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

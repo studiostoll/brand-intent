@@ -100,7 +100,7 @@ export interface ParsedBrand {
   /** Print annotations from inline # comments: slot name → annotation text */
   themeDescriptions?: Record<string, string>;
   /** Spacing scale */
-  spacing?: { unit: string; xs: number; s: number; m: number; l: number; xl: number };
+  spacing?: { unit: string; xs: number; s: number; m: number; l: number; xl: number; '2xl'?: number; '3xl'?: number };
   /** Divider style definitions: name → divider config */
   dividers?: Record<string, ParsedDividerDef>;
   /** Named typography styles: name → style definition */
@@ -1809,6 +1809,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       m:  parseFloat(spacingRaw['m']  ?? '3'),
       l:  parseFloat(spacingRaw['l']  ?? '5'),
       xl: parseFloat(spacingRaw['xl'] ?? '6.5'),
+      ...(spacingRaw['2xl'] !== undefined ? { '2xl': parseFloat(spacingRaw['2xl']) } : {}),
+      ...(spacingRaw['3xl'] !== undefined ? { '3xl': parseFloat(spacingRaw['3xl']) } : {}),
     };
   }
 
