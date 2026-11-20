@@ -1541,7 +1541,7 @@ A plain `flow:` is one stack: its items follow each other from the top, and `spa
 
 `TOKEN` is a spacing token of the `.brand` (`xs` to `xl`, `2xl`, `3xl`), so the distance is the brand's and the same on every format. An anchored block is as tall as its items and as wide as the safe area; it grows away from its anchor (a bottom block upwards, a centre block both ways). The items are the plain flow's, with `direction:`, `columns:` and `column-gap:`, without `spacer-auto` (there is no room to fill) and without `| photo`.
 
-Anchored flows don't push each other, and sticky bars don't push them: each block is placed from its anchor alone. Two blocks on one anchor, or an anchored block on the edge of a sticky bar, lie on top of each other; `brand-intent check` warns about both. Whether two blocks on different anchors meet depends on the text, so an application keeps them apart.
+Anchored flows don't push each other, and sticky bars don't push them: each block is placed from its anchor alone. Two blocks on one anchor, or an anchored block on the edge of a sticky bar, lie on top of each other; `brand-intent check` warns about both. If text makes blocks meet, top and bottom blocks keep their place and a centre block moves away from the one it would touch, keeping at least `m` between them. If top and bottom blocks would meet, the page overflows, as a plain flow does when its text is too long.
 
 ```yaml
 # statement.composition: a title block on the bottom, a name at the top
