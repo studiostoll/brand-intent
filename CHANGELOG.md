@@ -4,15 +4,16 @@ What the Brand Intent language gained in each release, by file type. The [specif
 
 ## v0.61 · 20 Nov 2026
 
-- **Brand.** `background NAME` lays a layer under the page, between the theme's plain colour and a photo: `kind: gradient` (an image, `src:`) or `kind: pattern` (`generator:` and `tone: shade | tint`, its colour taken from the ground). `themes:` names the themes it lies under; a pattern without it fits every theme and is picked. `gradient:` in a theme is gone; the parser writes out the block that replaces it.
+- **Brand.** `background NAME` declares the layer between a theme's ground colour and the page's photo. `kind: gradient` takes `src:`, an image file; `kind: pattern` takes `generator:` and `tone: shade | tint`. `themes:` names the themes a background belongs to; a pattern without it fits any theme. It replaces `gradient:` in a theme (v0.59). *Breaking.*
+- **Tooling.** The parser rejects `gradient:` in a theme and prints the `background` block that replaces it.
 
 ## v0.60 · 20 Nov 2026
 
-- **Brand.** Type sizes (`size:`, `autofit-min:`, `autofit-max:`) count in % of the canvas's shorter side (cqmin), like spacing, instead of its height. A text keeps its size across 1:1, 4:5 and 9:16 of the same width. The padding and radius of `label` and `cta` and the scrim's padding and gap follow, with defaults ×1.78 so a story looks as before.
+- **Brand.** `size:`, `autofit-min:` and `autofit-max:` in a `typography` block are in cqmin, % of the canvas's shorter side, like spacing, instead of % of its height. So are `padding:` and `radius:` of `label` and `cta`, and `scrim-padding:` and `scrim-gap:` in `photo-look`. A value written against a 9:16 height is ×1.78 in cqmin; the defaults moved by that factor. *Breaking.*
 
 ## v0.59 · 20 Nov 2026
 
-- **Brand.** `gradient:` in a theme lays a gradient under the page instead of a plain colour, given as an image file for now. Each page shows its own section of it, and the theme's colours still count for contrast.
+- ~~**Brand.** `gradient:` in a theme names an image file as the theme's ground.~~ Replaced in v0.61 by the `background` block.
 
 ## v0.58 · 12 Nov 2026
 
