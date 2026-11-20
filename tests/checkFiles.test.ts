@@ -88,6 +88,19 @@ test('sticky in a grid-mode composition is a warning', () => {
   assertEq(issues, [`warning ${base().compositions[0].id}.composition: sticky: is for flow mode; a grid-mode composition ignores it`]);
 });
 
+test('two flows on one anchor, or on a sticky bar\'s edge, are warnings', () => {
+  const file = `${base().compositions[0].id}.composition`;
+  const issues = added(f => {
+    f.compositions[0].mode = 'flow';
+    f.compositions[0].anchoredFlows = [{ anchor: { edge: 'bottom' } }, { anchor: { edge: 'bottom', distance: 'xl' } }, { anchor: { edge: 'top' } }] as never;
+    f.compositions[0].sticky = [{ position: 'top', size: 'm' } as never];
+  });
+  assertEq(issues, [
+    `warning ${file}: flow: top and sticky: top overlap; a sticky bar doesn't push an anchored flow`,
+    `warning ${file}: two flows are anchored to the bottom, so they overlap; make them one flow`,
+  ]);
+});
+
 test('scope names an audience the identity does not have', () => {
   const file = `${purpose(base()).id}.purpose`;
   assertEq(added(f => { purpose(f).scope = { audience: ['nobody'] }; }), [`error ${file}: scope: audience "nobody" is not in the .identity`]);

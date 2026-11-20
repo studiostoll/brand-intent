@@ -122,5 +122,40 @@ test('bad photo align and size throw', () => {
   assertThrows(() => comp(`flow:\n  | photo center xl\n`), /invalid photo size/, 'size');
 });
 
+// ── anchored flows ───────────────────────────────────────────────────────────
+
+test('anchored flows: top with a distance, bottom, centre', () => {
+  const c = comp(`flow: top xl\n  | label right\nflow: center\n  | primary center\n  | spacer-m\n  | secondary center\nflow: bottom\n  | meta left\n`);
+  assertEq(c.flow, null, 'no plain flow');
+  assertEq(c.anchoredFlows.map(f => f.anchor), [{ edge: 'top', distance: 'xl' }, { edge: 'center' }, { edge: 'bottom' }], 'anchors');
+  assertEq(c.anchoredFlows[1].items.length, 3, 'centre items');
+});
+
+test('a plain flow stays as it was', () => {
+  const c = comp(`flow:\n  | primary left\n`);
+  assertEq(c.anchoredFlows, [], 'no anchored flows');
+  assertEq(c.flow?.anchor, undefined, 'no anchor');
+});
+
+test('2xl and 3xl are distances', () => {
+  assertEq(comp(`flow: bottom 3xl\n  | primary left\n`).anchoredFlows[0].anchor, { edge: 'bottom', distance: '3xl' }, '3xl');
+});
+
+test('anchored flow errors', () => {
+  assertThrows(() => comp(`flow: center m\n  | primary center\n`), /takes no distance/, 'centre distance');
+  assertThrows(() => comp(`flow: top 4xl\n  | primary left\n`), /invalid flow distance/, 'unknown token');
+  assertThrows(() => comp(`flow: top m l\n  | primary left\n`), /unexpected "l"/, 'extra word');
+  assertThrows(() => comp(`flow: bottom\n  | primary left\n  | spacer-auto\n`), /spacer-auto/, 'spacer-auto');
+  assertThrows(() => comp(`flow: bottom\n  | photo center\n`), /only allowed in a plain/, 'photo');
+});
+
+test('a plain flow and an anchored flow can\'t be combined', () => {
+  assertThrows(() => comp(`flow:\n  | primary left\nflow: top\n  | label left\n`), /can't be combined/, 'mixed');
+});
+
+test('a second plain flow throws', () => {
+  assertThrows(() => comp(`flow:\n  | primary left\nflow:\n  | secondary left\n`), /second plain/, 'two plain');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

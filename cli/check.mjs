@@ -3815,6 +3815,7 @@ var ILLUSTRATION_ANCHORS = /* @__PURE__ */ new Set([
   "bottom-center",
   "bottom-right"
 ]);
+var SPACING_TOKENS = ["xs", "s", "m", "l", "xl", "2xl", "3xl"];
 var GRID_Y_KEYWORDS = /* @__PURE__ */ new Set(["top", "center", "bottom"]);
 var VALID_SLOTS2 = new Set(SLOT_IDS);
 function parseCol(value, fileName, lineNum, maxCol = 12) {
@@ -3851,6 +3852,7 @@ function parseCompositionFile(content, fileName) {
   const slots = [];
   const sticky = [];
   let flow = null;
+  const anchoredFlows = [];
   let illustration = void 0;
   function parseFraction(s, ctx) {
     const parts = s.split("/");
@@ -4037,7 +4039,16 @@ function parseCompositionFile(content, fileName) {
       let columnGap;
       let split = void 0;
       let width;
-      if (value.startsWith("panel")) {
+      let anchor = void 0;
+      const firstWord = value.split(/\s+/)[0];
+      if (firstWord === "top" || firstWord === "center" || firstWord === "bottom") {
+        const parts = value.split(/\s+/);
+        const distance = parts[1];
+        if (parts.length > 2) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(2).join(" ")}" in anchored flow (expected: flow: top|bottom [TOKEN] or flow: center)`);
+        if (distance !== void 0 && firstWord === "center") throw new Error(`${fileName}:${lineNum}: "flow: center" takes no distance (it sits on the centre of the safe area)`);
+        if (distance !== void 0 && !SPACING_TOKENS.includes(distance)) throw new Error(`${fileName}:${lineNum}: invalid flow distance "${distance}" (expected a spacing token: ${SPACING_TOKENS.join(", ")})`);
+        anchor = { edge: firstWord, ...distance !== void 0 ? { distance } : {} };
+      } else if (value.startsWith("panel")) {
         const all = value.split(/\s+/);
         const inset = all.includes("inset");
         const parts = all.filter((p) => p !== "inset");
@@ -4060,7 +4071,7 @@ function parseCompositionFile(content, fileName) {
         width = parseFraction(parts[1], `${fileName}:${lineNum}`);
         if (width <= 0 || width > 1) throw new Error(`${fileName}:${lineNum}: flow width "${parts[1]}" must be above 0 and at most 1/1`);
       } else if (value) {
-        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected panel, split or width)`);
+        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected top, center, bottom, panel, split or width)`);
       }
       const flowItems = [];
       while (i + 1 < lines.length) {
@@ -4134,7 +4145,14 @@ function parseCompositionFile(content, fileName) {
           flowItems.push({ type: "slot", id: slotId, textAlign: align, verticalAlign: vAlign, columns: slotCols, columnGap: slotGap });
         }
       }
-      flow = { panel, split, ...width !== void 0 ? { width } : {}, direction, columns, columnGap, items: flowItems };
+      if (anchor) {
+        if (flowItems.some((it) => it.type === "spacer" && it.size === "auto")) throw new Error(`${fileName}:${lineNum}: "spacer-auto" in an anchored flow (the block is as tall as its content, so there is no room to fill)`);
+        if (flowItems.some((it) => it.type === "photo")) throw new Error(`${fileName}:${lineNum}: "| photo" is only allowed in a plain "flow:"`);
+        anchoredFlows.push({ anchor, direction, columns, columnGap, items: flowItems });
+      } else {
+        if (flow) throw new Error(`${fileName}:${lineNum}: a second plain "flow:" (a composition has one plain flow, or several anchored ones: flow: top|center|bottom)`);
+        flow = { panel, split, ...width !== void 0 ? { width } : {}, direction, columns, columnGap, items: flowItems };
+      }
       continue;
     }
     if (line.startsWith("group:")) {
@@ -4173,9 +4191,10 @@ function parseCompositionFile(content, fileName) {
     if (imageExplicit) throw new Error(`${fileName}: "image:" and a "| photo" flow item can't be combined (the flow photo is the page's image)`);
     if (flow.panel || flow.split) throw new Error(`${fileName}: "| photo" is only allowed in a plain "flow:" (not in a panel or split)`);
   }
+  if (flow && anchoredFlows.length) throw new Error(`${fileName}: a plain "flow:" and anchored flows (flow: top|center|bottom) can't be combined`);
   if (!image) image = "full";
   if (!logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
-  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || void 0, icon, slots, sticky, flow, illustration };
+  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || void 0, icon, slots, sticky, flow, anchoredFlows, illustration };
 }
 
 // parser/personParser.ts
@@ -5272,6 +5291,11 @@ function checkFiles(files) {
     const file = `${composition.id}.composition`;
     if (!used.has(composition.id)) warning(file, "no purpose lists this composition, so it is never used");
     if (composition.mode === "grid" && composition.sticky.length) warning(file, "sticky: is for flow mode; a grid-mode composition ignores it");
+    const anchored = composition.anchoredFlows ?? [];
+    for (const edge of ["top", "center", "bottom"]) {
+      if (anchored.filter((f) => f.anchor?.edge === edge).length > 1) warning(file, `two flows are anchored to the ${edge}, so they overlap; make them one flow`);
+      if (edge !== "center" && anchored.some((f) => f.anchor?.edge === edge) && composition.sticky.some((st) => st.position === edge)) warning(file, `flow: ${edge} and sticky: ${edge} overlap; a sticky bar doesn't push an anchored flow`);
+    }
   }
   const firstTheme = Object.values(brand?.themes ?? {})[0];
   const themeKeys = firstTheme && new Set(Object.keys(firstTheme));

@@ -15,6 +15,7 @@
     { "include": "#illustration" },
     { "include": "#mode" },
     { "include": "#flow" },
+    { "include": "#flow-anchor" },
     { "include": "#flow-panel" },
     { "include": "#flow-split" },
     { "include": "#flow-width" },
@@ -132,6 +133,14 @@
       "match": "^(flow:)\\s*$",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-composition" }
+      }
+    },
+    "flow-anchor": {
+      "match": "^(flow:)\\s+(top|center|bottom)(?:\\s+(xs|s|m|l|xl|2xl|3xl))?\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.brand-intent-composition" },
+        "2": { "name": "constant.language.brand-intent-composition" },
+        "3": { "name": "constant.numeric.brand-intent-composition" }
       }
     },
     "flow-panel": {

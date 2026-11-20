@@ -1443,7 +1443,7 @@ The composition file describes how slots are arranged on the canvas. It knows sl
 | `icon:` | string | No | Icon placement |
 | `illustration:` | string | No | Illustration placement (anchor, fit, scale) |
 | `sticky: POSITION [SIZE]` | block | No | Sticky bar (flow mode, repeatable) |
-| `flow: [TYPE] [PROPS]` | block | No | Flow region (flow mode) |
+| `flow: [TYPE] [PROPS]` | block | No | Flow region (flow mode); one plain flow, or several anchored flows |
 | Slot placement lines | - | Yes (grid mode) | Grid slot placements |
 
 ### Grid Mode
@@ -1498,6 +1498,7 @@ sticky: bottom s
 - `flow: panel POSITION WIDTH HEIGHT [inset]` floating panel (e.g., `panel bottom-left 2/3 1/1`). Without `inset` the panel sits on the canvas edges. With `inset` the box keeps its size, its outer edges sit on the safe-area lines (aligned with a logo in the same corner), and the padding inside is equal on all sides.
 - `flow: split EDGE FRACTION` split layout (e.g., `split bottom 1/2`)
 - `flow: width FRACTION` narrower text (e.g., `width 3/4`). The flow's content takes this share of the flow's width, on the side its first slot's text is aligned to. No surface is drawn behind it.
+- `flow: top [TOKEN]`, `flow: bottom [TOKEN]`, `flow: center` anchored flow, see below.
 
 **Properties** (indented, no pipe):
 - `direction: vertical | horizontal`
@@ -1505,7 +1506,7 @@ sticky: bottom s
 - `column-gap: TOKEN`
 
 **Items** (2-space indent + `|` prefix):
-- `| spacer-TOKEN` spacing (TOKEN: `auto`, `xs`, `s`, `m`, `l`, `xl`)
+- `| spacer-TOKEN` spacing (TOKEN: `auto`, `xs`, `s`, `m`, `l`, `xl`, `2xl`, `3xl`)
 - `| divider-VARIANT` divider (VARIANT: `ruler`, `hairline`)
 - `| SLOTID ALIGN [VALIGN]` text slot with alignment
 - `| logo ALIGN [SIZE]` logo
@@ -1529,6 +1530,38 @@ flow: panel bottom-left 2/3 1/1
   | spacer-auto
   | meta left
 ```
+
+#### Anchored flows
+
+A plain `flow:` is one stack: its items follow each other from the top, and `spacer-auto` takes the room that is left. An anchored flow is a block pinned to a place on the canvas instead. A composition has either one plain flow or several anchored flows, never both.
+
+- `flow: top [TOKEN]` the block's top edge sits on the top line of the safe area, or `TOKEN` below it.
+- `flow: bottom [TOKEN]` the block's bottom edge sits on the bottom line of the safe area, or `TOKEN` above it.
+- `flow: center` the block's centre sits on the centre of the safe area. It takes no distance.
+
+`TOKEN` is a spacing token of the `.brand` (`xs` to `xl`, `2xl`, `3xl`), so the distance is the brand's and the same on every format. An anchored block is as tall as its items and as wide as the safe area; it grows away from its anchor (a bottom block upwards, a centre block both ways). The items are the plain flow's, with `direction:`, `columns:` and `column-gap:`, without `spacer-auto` (there is no room to fill) and without `| photo`.
+
+Anchored flows don't push each other, and sticky bars don't push them: each block is placed from its anchor alone. Two blocks on one anchor, or an anchored block on the edge of a sticky bar, lie on top of each other; `brand-intent check` warns about both. Whether two blocks on different anchors meet depends on the text, so an application keeps them apart.
+
+```yaml
+# statement.composition: a title block on the bottom, a name at the top
+id:    statement
+mode:  flow
+image: none
+logo:  none
+
+flow: top xl
+  | credit right
+
+flow: bottom 3xl
+  | primary left
+  | spacer-2xl
+  | secondary left
+```
+
+The same composition serves every format: the distances are tokens, so the title sits the same distance from the bottom on a square, a portrait and a story.
+
+**Direction (not part of the language yet):** a sticky bar is an anchored flow on an edge that reserves its room, and a panel is an anchored flow with a surface. Both may later be written as anchored flows.
 
 ### `image:` Values
 

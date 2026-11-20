@@ -64,8 +64,10 @@ export interface ParsedComposition {
   slots: ParsedSlot[];
   /** Sticky regions — composed repetition areas (logo, label). */
   sticky: ParsedStickyRegion[];
-  /** Flow regions — content-driven flow areas. */
+  /** The plain flow: content-driven, fills the area the sticky bars leave (null without one). */
   flow: ParsedFlowRegion | null;
+  /** Anchored flows (`flow: top|center|bottom [TOKEN]`): each block is pinned to an edge or the centre of the safe area and as tall as its content; they don't push each other. Empty without them. Never combined with a plain flow. */
+  anchoredFlows: ParsedFlowRegion[];
   /** Illustration placement (grid mode only for now). */
   illustration?: ParsedIllustration;
 }
@@ -87,8 +89,14 @@ export interface ParsedStickyItem {
   size?: 's' | 'm' | 'l';
 }
 
+/** Spacing tokens of a `.brand` `spacing:` block. */
+export type SpacingToken = 'xs' | 's' | 'm' | 'l' | 'xl' | '2xl' | '3xl';
+const SPACING_TOKENS: readonly string[] = ['xs', 's', 'm', 'l', 'xl', '2xl', '3xl'];
+
 /** A flow region — where content flows. */
 export interface ParsedFlowRegion {
+  /** Anchored flow: pinned to the top or bottom edge of the safe area (at `distance`, a spacing token, or on the edge) or to its centre. As tall as its content. */
+  anchor?: { edge: 'top' | 'center' | 'bottom'; distance?: SpacingToken };
   /** Panel positioning (null = fill remaining space). */
   panel?: {
     position: string;  // e.g. 'bottom-left', 'top-right'
@@ -215,6 +223,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
   const slots: ParsedSlot[] = [];
   const sticky: ParsedStickyRegion[] = [];
   let flow: ParsedFlowRegion | null = null;
+  const anchoredFlows: ParsedFlowRegion[] = [];
   let illustration: ParsedIllustration | undefined = undefined;
 
   /** Parse a fraction string like "2/3" → 0.667. */
@@ -441,8 +450,18 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
 
       let split: ParsedFlowRegion['split'] = undefined;
       let width: number | undefined;
+      let anchor: ParsedFlowRegion['anchor'] = undefined;
+      const firstWord = value.split(/\s+/)[0];
 
-      if (value.startsWith('panel')) {
+      if (firstWord === 'top' || firstWord === 'center' || firstWord === 'bottom') {
+        // Anchored flow: "flow: top [TOKEN]", "flow: bottom [TOKEN]", "flow: center"
+        const parts = value.split(/\s+/);
+        const distance = parts[1];
+        if (parts.length > 2) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(2).join(' ')}" in anchored flow (expected: flow: top|bottom [TOKEN] or flow: center)`);
+        if (distance !== undefined && firstWord === 'center') throw new Error(`${fileName}:${lineNum}: "flow: center" takes no distance (it sits on the centre of the safe area)`);
+        if (distance !== undefined && !SPACING_TOKENS.includes(distance)) throw new Error(`${fileName}:${lineNum}: invalid flow distance "${distance}" (expected a spacing token: ${SPACING_TOKENS.join(', ')})`);
+        anchor = { edge: firstWord, ...(distance !== undefined ? { distance: distance as SpacingToken } : {}) };
+      } else if (value.startsWith('panel')) {
         // Parse: "panel <position> [<width>] [<height>] [inset]"
         const all = value.split(/\s+/);
         const inset = all.includes('inset');
@@ -468,7 +487,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         width = parseFraction(parts[1], `${fileName}:${lineNum}`);
         if (width <= 0 || width > 1) throw new Error(`${fileName}:${lineNum}: flow width "${parts[1]}" must be above 0 and at most 1/1`);
       } else if (value) {
-        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected panel, split or width)`);
+        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected top, center, bottom, panel, split or width)`);
       }
 
       const flowItems: ParsedFlowItem[] = [];
@@ -544,7 +563,14 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         }
       }
 
-      flow = { panel, split, ...(width !== undefined ? { width } : {}), direction, columns, columnGap, items: flowItems };
+      if (anchor) {
+        if (flowItems.some(it => it.type === 'spacer' && it.size === 'auto')) throw new Error(`${fileName}:${lineNum}: "spacer-auto" in an anchored flow (the block is as tall as its content, so there is no room to fill)`);
+        if (flowItems.some(it => it.type === 'photo')) throw new Error(`${fileName}:${lineNum}: "| photo" is only allowed in a plain "flow:"`);
+        anchoredFlows.push({ anchor, direction, columns, columnGap, items: flowItems });
+      } else {
+        if (flow) throw new Error(`${fileName}:${lineNum}: a second plain "flow:" (a composition has one plain flow, or several anchored ones: flow: top|center|bottom)`);
+        flow = { panel, split, ...(width !== undefined ? { width } : {}), direction, columns, columnGap, items: flowItems };
+      }
       continue;
     }
 
@@ -600,7 +626,8 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
     if (imageExplicit) throw new Error(`${fileName}: "image:" and a "| photo" flow item can't be combined (the flow photo is the page's image)`);
     if (flow.panel || flow.split) throw new Error(`${fileName}: "| photo" is only allowed in a plain "flow:" (not in a panel or split)`);
   }
+  if (flow && anchoredFlows.length) throw new Error(`${fileName}: a plain "flow:" and anchored flows (flow: top|center|bottom) can't be combined`);
   if (!image) image = 'full'; // default to full-bleed image
   if (!logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
-  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || undefined, icon, slots, sticky, flow, illustration };
+  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || undefined, icon, slots, sticky, flow, anchoredFlows, illustration };
 }
