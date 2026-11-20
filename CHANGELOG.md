@@ -2,6 +2,11 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.66 · 20 Nov 2026
+
+- **Brand.** `trim: cap | none` in a `typography` block sets the text box: `cap` runs it from the first line's cap height to the last line's baseline, so spacers, padding and anchored-flow distances measure to the letters. Descenders and accents hang outside it. Default `none`; any other value is an error.
+- **Purpose.** A slot's `override:` takes `trim:` too.
+
 ## v0.65 · 20 Nov 2026
 
 - **Composition.** An anchored flow's distance is a spacing token or a number in cqmin (`flow: top 6.85`), and `flow: center` takes a signed offset (`+m`, `-4.44`; down is `+`). An indented `on FORMAT: VALUE` line gives one format its own distance (`on 4:5: 12.04`); the `flow:` line is the default. Distances are measured from the safe area. Format ids in `on` lines are the one per-format value a composition may hold.
