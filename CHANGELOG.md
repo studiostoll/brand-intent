@@ -2,6 +2,11 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.62 · 20 Nov 2026
+
+- **Purpose.** A bare `value:` takes its fixed text on the 4-space lines below it, one line each, so a fixed text can hold line breaks.
+- **Tooling.** `checkFolder` takes `{ skip }`, folder names it leaves out.
+
 ## v0.61 · 20 Nov 2026
 
 - **Brand.** `background NAME` declares the layer between a theme's ground colour and the page's photo. `kind: gradient` takes `src:`, an image file; `kind: pattern` takes `generator:` and `tone: shade | tint`. `themes:` names the themes a background belongs to; a pattern without it fits any theme. It replaces `gradient:` in a theme (v0.59). *Breaking.*

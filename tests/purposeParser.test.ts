@@ -153,6 +153,13 @@ test('example blocks: topic, goal, when, single- and multi-line slot texts', () 
   assertEq(p.slots.map(s => s.samples), [[], [], [], ['Order now']], 'slot samples empty, value kept');
 });
 
+test('a bare value: holds its fixed text on 4-space lines, one line each', () => {
+  const p = withExamples(`example\n  label: A\n  primary: B\n  detail:\n    C\n`, `${SLOTS}\nslot credit\n  label: Credit\n  typography: caption\n  maxLength: 40\n  value:\n    North Street\n    Bakery\n`);
+  assertEq(p.slots.find(s => s.id === 'credit')?.value, 'North Street\nBakery', 'value lines joined with a line break');
+  assertEq(p.slots.find(s => s.id === 'credit')?.samples, ['North Street\nBakery'], 'value kept as the one sample');
+  assertThrows(() => withExamples(`example\n  label: A\n  primary: B\n  detail:\n    C\n`, `${SLOTS}\nslot credit\n  label: Credit\n  typography: caption\n  maxLength: 40\n  value:\n`), /empty value/, 'bare value without lines');
+});
+
 test('a credit slot needs no example: the implementation fills it', () => {
   const p = withExamples(`example\n  label: A\n  primary: B\n  detail:\n    C\n`, `${SLOTS}\nslot credit\n  label: Credit\n  typography: caption\n  maxLength: 60\n`);
   assertEq(p.slots.map(s => s.id), ['label', 'primary', 'detail', 'cta', 'credit'], 'credit slot parsed');

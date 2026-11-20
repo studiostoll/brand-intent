@@ -232,10 +232,13 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
   let inListBlock = false;
   // Multi-line samples state: 'slot' (2-space context) or 'list' (4-space context)
   let inMultiLineSamples: 'slot' | 'list' | false = false;
+  // Lines of a bare `value:` being read (4-space lines, joined with line breaks)
+  let inMultiLineValue = false;
 
   function finalizeSlot(lineNum: number) {
     if (!currentSlot) return;
     const s = currentSlot;
+    if (s.value === '') throw new Error(`${fileName}:${lineNum}: slot "${s.id}": empty value`);
     if (!s.id) throw new Error(`${fileName}:${lineNum}: slot missing id`);
     if (!s.label) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing label`);
     if (!s.maxLength) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing maxLength`);
@@ -277,6 +280,7 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
     inOverrideBlock = false;
     inListBlock = false;
     inMultiLineSamples = false;
+    inMultiLineValue = false;
     slots.push(s as ParsedPurposeSlot);
     currentSlot = null;
   }
@@ -548,6 +552,16 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       continue;
     }
 
+    // Lines of a bare `value:`: each 4-space line is one line of the fixed text
+    if (inMultiLineValue && currentSlot) {
+      if (raw.startsWith('    ')) {
+        currentSlot.value = currentSlot.value ? `${currentSlot.value}\n${text}` : text;
+        currentSlot.samples = [currentSlot.value];
+        continue;
+      }
+      inMultiLineValue = false;
+    }
+
     // Multi-line samples: continuation lines after a bare `samples:` line
     if (inMultiLineSamples && currentSlot) {
       const baseIndent = inMultiLineSamples === 'list' ? 6 : 4;
@@ -764,7 +778,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
       }
       if (prop.startsWith('value:')) {
         const val = prop.slice(6).trim();
-        if (!val) throw new Error(`${fileName}:${lineNum}: empty value`);
+        if (!val) {
+          // Bare `value:`: the text follows on 4-space lines, one line each
+          currentSlot.value = '';
+          inMultiLineValue = true;
+          continue;
+        }
         currentSlot.value = val;
         // value implies a single-entry samples array for backward compat
         currentSlot.samples = [val];

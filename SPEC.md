@@ -1207,7 +1207,7 @@ These names are fixed. They travel through the entire stack: a composition place
 | `maxLength:` | int | Yes | Character limit. The hard limit: layouts are built for it |
 | `words:` | range | No | Editorial word range, `N` or `MIN..MAX` (e.g. `3..8`). Guidance for writing and review on top of `maxLength` |
 | `sentences:` | range | No | Editorial sentence range, `N` or `MIN..MAX` |
-| `value:` | string | No | Fixed text, never AI-generated or shuffled. The slot takes no example text |
+| `value:` | string | No | Fixed text, never AI-generated or shuffled. The slot takes no example text. A bare `value:` takes the text on the 4-space lines below it, one line each (since v0.62) |
 | `editable` | bool | No | When `false`, slot is locked (no user editing in any mode). Default: `true` |
 | `type:` | enum | No | `text` (default) or `list` |
 | `override:` | block | No | Typography property overrides (4-space indent) |

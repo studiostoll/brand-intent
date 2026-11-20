@@ -3142,9 +3142,11 @@ function parsePurposeFile(content, fileName) {
   let inOverrideBlock = false;
   let inListBlock = false;
   let inMultiLineSamples = false;
+  let inMultiLineValue = false;
   function finalizeSlot(lineNum) {
     if (!currentSlot) return;
     const s = currentSlot;
+    if (s.value === "") throw new Error(`${fileName}:${lineNum}: slot "${s.id}": empty value`);
     if (!s.id) throw new Error(`${fileName}:${lineNum}: slot missing id`);
     if (!s.label) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing label`);
     if (!s.maxLength) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing maxLength`);
@@ -3184,6 +3186,7 @@ function parsePurposeFile(content, fileName) {
     inOverrideBlock = false;
     inListBlock = false;
     inMultiLineSamples = false;
+    inMultiLineValue = false;
     slots.push(s);
     currentSlot = null;
   }
@@ -3390,6 +3393,15 @@ function parsePurposeFile(content, fileName) {
       if (!VALID_SLOTS.has(slotId)) throw new Error(`${fileName}:${lineNum}: unknown slot "${slotId}"`);
       currentSlot = { id: slotId, samples: [], typography: {} };
       continue;
+    }
+    if (inMultiLineValue && currentSlot) {
+      if (raw.startsWith("    ")) {
+        currentSlot.value = currentSlot.value ? `${currentSlot.value}
+${text}` : text;
+        currentSlot.samples = [currentSlot.value];
+        continue;
+      }
+      inMultiLineValue = false;
     }
     if (inMultiLineSamples && currentSlot) {
       const baseIndent = inMultiLineSamples === "list" ? 6 : 4;
@@ -3618,7 +3630,11 @@ function parsePurposeFile(content, fileName) {
       }
       if (prop.startsWith("value:")) {
         const val = prop.slice(6).trim();
-        if (!val) throw new Error(`${fileName}:${lineNum}: empty value`);
+        if (!val) {
+          currentSlot.value = "";
+          inMultiLineValue = true;
+          continue;
+        }
         currentSlot.value = val;
         currentSlot.samples = [val];
         continue;
