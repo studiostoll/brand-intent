@@ -8,7 +8,7 @@ What the Brand Intent language gained in each release, by file type. The [specif
 
 ## v0.59 · 20 Nov 2026
 
-- **Brand.** `ground-image:` in a theme lays an image under the page instead of a plain colour, such as a gradient or a texture. Each page shows its own section of it, and the theme's colours still count for contrast.
+- **Brand.** `gradient:` in a theme lays a gradient under the page instead of a plain colour, given as an image file for now. Each page shows its own section of it, and the theme's colours still count for contrast.
 
 ## v0.58 · 12 Nov 2026
 

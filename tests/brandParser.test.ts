@@ -684,26 +684,26 @@ test('flat brand color keeps its hex when a comment follows', () => {
   assertEq(out.themes?.Laden?.background, '#FAF6F0', 'theme resolves the commented colour');
 });
 
-// ── Ground image (theme) ─────────────────────────────────────────────────────
+// ── Gradient (theme) ─────────────────────────────────────────────────────────
 
-console.log('\nGround image:');
+console.log('\nGradient:');
 
-test('ground-image is kept apart from the colour slots', () => {
-  const src = `${HEADER}theme Dusk\n  ground: #3B2A5C\n  figure: #F2E6FF\n  ground-image: grounds/dusk.png\n`;
+test('gradient is kept apart from the colour slots', () => {
+  const src = `${HEADER}theme Dusk\n  ground: #3B2A5C\n  figure: #F2E6FF\n  gradient: gradients/dusk.png\n`;
   const out = parseBrandFile(src, 'test.brand');
-  assertEq(out.themeGroundImages, { Dusk: 'grounds/dusk.png' }, 'ground images');
-  assertEq(out.themes?.Dusk?.['ground-image'], undefined, 'not a colour slot');
+  assertEq(out.themeGradients, { Dusk: 'gradients/dusk.png' }, 'gradients');
+  assertEq(out.themes?.Dusk?.['gradient'], undefined, 'not a colour slot');
   assertEq(out.themes?.Dusk?.background, '#3B2A5C', 'ground stays the colour');
 });
 
-test('a brand without ground images has no themeGroundImages', () => {
+test('a brand without gradients has no themeGradients', () => {
   const out = parseBrandFile(`${HEADER}theme Plain\n  ground: #FFFFFF\n  figure: #111111\n`, 'test.brand');
-  assertEq(out.themeGroundImages, undefined, 'absent');
+  assertEq(out.themeGradients, undefined, 'absent');
 });
 
-test('ground-image outside the brand folder or not an image is an error', () => {
+test('gradient outside the brand folder or not an image is an error', () => {
   for (const bad of ['../other/dusk.png', '/grounds/dusk.png', 'https://x.test/dusk.png', 'grounds/dusk.svg']) {
-    assertThrows(() => parseBrandFile(`${HEADER}theme Dusk\n  ground: #3B2A5C\n  figure: #F2E6FF\n  ground-image: ${bad}\n`, 'test.brand'), /ground-image must be/, bad);
+    assertThrows(() => parseBrandFile(`${HEADER}theme Dusk\n  ground: #3B2A5C\n  figure: #F2E6FF\n  gradient: ${bad}\n`, 'test.brand'), /gradient must be/, bad);
   }
 });
 

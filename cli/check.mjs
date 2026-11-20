@@ -2262,15 +2262,15 @@ function parseBrandFile(content, fileName) {
   const themePairs = {};
   const neutral = colorGroups.find((g) => g.key === "neutral");
   const neutralText = ["dark", "light"].map((role) => neutral?.entries.find((e) => e.role === role)?.hex).filter((h) => !!h);
-  const themeGroundImages = {};
+  const themeGradients = {};
   for (const [name, theme] of Object.entries(themes)) {
-    if (theme["ground-image"] !== void 0) {
-      const path = theme["ground-image"];
-      delete theme["ground-image"];
+    if (theme["gradient"] !== void 0) {
+      const path = theme["gradient"];
+      delete theme["gradient"];
       if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(path) || path.split("/").includes("..")) {
-        throw new Error(`${fileName}: theme "${name}" ground-image must be a .png, .jpg or .webp path inside the brand folder, got "${path}"`);
+        throw new Error(`${fileName}: theme "${name}" gradient must be a .png, .jpg or .webp path inside the brand folder, got "${path}"`);
       }
-      themeGroundImages[name] = path;
+      themeGradients[name] = path;
     }
     const pairRaw = {};
     for (const key of PAIR_KEYS) {
@@ -2365,7 +2365,7 @@ function parseBrandFile(content, fileName) {
     result.themeDescriptions = themeDescriptions;
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
-  if (Object.keys(themeGroundImages).length > 0) result.themeGroundImages = themeGroundImages;
+  if (Object.keys(themeGradients).length > 0) result.themeGradients = themeGradients;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {

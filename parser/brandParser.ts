@@ -89,8 +89,8 @@ export interface ParsedBrand {
   colorFamilies?: ColorFamilies;
   /** Ground / figure / text for every pair theme (authored `ground:`/`figure:` themes and emitted family pairs). */
   themePairs?: Record<string, ThemePair>;
-  /** Ground images (`ground-image:` in a theme): theme name → image path relative to the brand folder. */
-  themeGroundImages?: Record<string, string>;
+  /** Gradients (`gradient:` in a theme): theme name → image path relative to the brand folder. */
+  themeGradients?: Record<string, string>;
   /** Non-fatal color findings: rule violations, rejected family pairs, reach config hints. */
   colorWarnings?: string[];
   /** Non-fatal findings outside colour: blocks that moved to another file and are ignored here. */
@@ -1617,15 +1617,15 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const neutralText = ['dark', 'light']
     .map(role => neutral?.entries.find(e => e.role === role)?.hex)
     .filter((h): h is string => !!h);
-  const themeGroundImages: Record<string, string> = {};
+  const themeGradients: Record<string, string> = {};
   for (const [name, theme] of Object.entries(themes)) {
-    if (theme['ground-image'] !== undefined) {
-      const path = theme['ground-image'];
-      delete theme['ground-image'];
+    if (theme['gradient'] !== undefined) {
+      const path = theme['gradient'];
+      delete theme['gradient'];
       if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(path) || path.split('/').includes('..')) {
-        throw new Error(`${fileName}: theme "${name}" ground-image must be a .png, .jpg or .webp path inside the brand folder, got "${path}"`);
+        throw new Error(`${fileName}: theme "${name}" gradient must be a .png, .jpg or .webp path inside the brand folder, got "${path}"`);
       }
-      themeGroundImages[name] = path;
+      themeGradients[name] = path;
     }
     const pairRaw: Partial<Record<typeof PAIR_KEYS[number], string>> = {};
     for (const key of PAIR_KEYS) {
@@ -1726,7 +1726,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     result.themeDescriptions = themeDescriptions;
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
-  if (Object.keys(themeGroundImages).length > 0) result.themeGroundImages = themeGroundImages;
+  if (Object.keys(themeGradients).length > 0) result.themeGradients = themeGradients;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {
