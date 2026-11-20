@@ -5344,17 +5344,17 @@ function listMedia(mediaDir, extensions, prefix = "", skipped = []) {
 function mediaIndexText(mediaDir, extensions, skipped) {
   return JSON.stringify(listMedia(mediaDir, extensions, "", skipped), null, 2) + "\n";
 }
-function walk(dir) {
+function walk(dir, skip = SKIP_DIRS) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-    if (e.isDirectory()) return SKIP_DIRS.has(e.name) || e.name.startsWith(".") ? [] : walk(join(dir, e.name));
+    if (e.isDirectory()) return skip.has(e.name) || e.name.startsWith(".") ? [] : walk(join(dir, e.name), skip);
     return [join(dir, e.name)];
   });
 }
-function checkFolder(dir, label = dir) {
+function checkFolder(dir, label = dir, { skip = [] } = {}) {
   const errors = [];
   const warnings = [];
   const counts = {};
-  const files = walk(dir);
+  const files = walk(dir, /* @__PURE__ */ new Set([...SKIP_DIRS, ...skip]));
   const name = (f) => relative(dir, f);
   const read = (f) => readFileSync(f, "utf8");
   const ofType = (ext) => {

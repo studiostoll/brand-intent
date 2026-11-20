@@ -5,6 +5,8 @@
  * Atelier may lawfully be behind a breaking change it has not adopted yet: a parse error whose
  * message names the version it came with ("… since v0.44") is tolerated while Atelier's
  * package.json pins an older brand-intent. Once Atelier is bumped, it fails the suite again.
+ *
+ * A brand's `lab/` folder is left out: Atelier's Lab reads it with its own, unpublished version of the language.
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -33,7 +35,7 @@ for (const brandId of readdirSync(BRANDS_DIR)) {
   try { dirStat = statSync(brandDir); } catch { continue; }
   if (!dirStat.isDirectory() || brandId.startsWith('.')) continue;
   // Every problem `brand-intent check` finds; a breaking-change error Atelier has not adopted yet is tolerated.
-  const { errors, counts } = checkFolder(brandDir, brandId);
+  const { errors, counts } = checkFolder(brandDir, brandId, { skip: ['lab'] });
   const real = errors.filter(e => !tolerated(e));
   toleratedCount += errors.length - real.length;
   for (const e of errors.filter(tolerated)) console.log(`  ~ ${brandId}: ${e} (Atelier not yet bumped)`);
