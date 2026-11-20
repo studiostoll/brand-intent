@@ -139,7 +139,7 @@ _Role: derived expression conditions — the "how it looks and sounds" layer, no
 - **Language / locale:** {brand.language} / {brand.locale}
 - **Color primitives:** list each `brand-colors` entry as `name → hex`
 - **Themes:** list each theme with its slot-to-color mappings
-- **Typography styles:** for each named style — font, weight, size (always append unit `cqh` — container-query-height, responsive to the canvas height), lineHeight, letterSpacing, flags like `uppercase`, autofit-min/max if present
+- **Typography styles:** for each named style — font, weight, size (always append unit `cqmin` — % of the canvas's shorter side, the same share on every format), lineHeight, letterSpacing, flags like `uppercase`, autofit-min/max if present
 - **Fonts:** for each font block — name, source, variants
 - **Spacing scale:** unit + named steps (e.g. `cqmin` — container-query-min, responsive to the shorter canvas side; xs/s/m/l/xl)
 - **Dividers:** if present, list each
