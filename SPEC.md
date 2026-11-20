@@ -708,20 +708,20 @@ theme Shop
   divider:        $accent1 40%
 ```
 
-**Ground image.** A theme can lay an image under the page instead of a plain colour: a surface without a direction, such as a gradient or a texture. `ground-image:` names the file, a `.png`, `.jpg` or `.webp` inside the brand folder. The theme still declares its colours; `background` (or `ground:`) is the colour the image stands for, and every contrast check counts against it.
+**Gradient.** A theme can lay a gradient under the page instead of a plain colour. `gradient:` names it as an image file, a `.png`, `.jpg` or `.webp` inside the brand folder. The theme still declares its colours; `background` (or `ground:`) is the colour the gradient stands for, and every contrast check counts against it.
 
 ```yaml
 theme Dusk
-  ground:       $plum          # the image's mean colour, for contrast
-  figure:       $lilac
-  ground-image: grounds/dusk.png
+  ground:   $plum                # the gradient's mean colour, for contrast
+  figure:   $lilac
+  gradient: gradients/dusk.png
 ```
 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
-| `ground-image:` | path | No | Image under the page, relative to the brand folder. Absent → the page has the plain `background` |
+| `gradient:` | path | No | The gradient under the page, as an image relative to the brand folder. Absent → the page has the plain `background` |
 
-The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so a grain in it looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when it gives the page the theme and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown. A photo on the page lies above the ground image; with `image: full` the image is covered.
+The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so its grain (the noise that keeps a gradient from banding) looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when it gives the page the theme and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown. A photo on the page lies above the gradient; with `image: full` the gradient is covered.
 
 ### `font NAME` Block
 
