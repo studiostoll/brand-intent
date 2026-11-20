@@ -2,6 +2,12 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.65 · 20 Nov 2026
+
+- **Composition.** An anchored flow's distance is a spacing token or a number in cqmin (`flow: top 6.85`), and `flow: center` takes a signed offset (`+m`, `-4.44`; down is `+`). An indented `on FORMAT: VALUE` line gives one format its own distance (`on 4:5: 12.04`); the `flow:` line is the default. Distances are measured from the safe area. Format ids in `on` lines are the one per-format value a composition may hold.
+- **Brand.** A finish's `blend:` takes the sixteen modes a browser and a PDF share: `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`, `hue`, `saturation`, `color`, `luminosity`. Default stays `overlay`.
+- **Tooling.** `brand-intent check` warns about an `on` line naming a format the brand doesn't declare.
+
 ## v0.64 · 20 Nov 2026
 
 - **Brand.** `finish NAME` declares the surface over the whole page, ground, photo, text and logo. `kind: grain` takes `amount:` (%) and `size:` (cqmin); `kind: image` takes `src:`, `fit: tile | cover` and, for a tile, `scale:` (cqmin). Both take `blend: multiply | overlay | soft-light | screen`, `opacity:` and `themes:`. A page has one finish: two finishes on one theme are an error.
