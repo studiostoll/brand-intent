@@ -2,6 +2,11 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.64 · 20 Nov 2026
+
+- **Brand.** `finish NAME` declares the surface over the whole page, ground, photo, text and logo. `kind: grain` takes `amount:` (%) and `size:` (cqmin); `kind: image` takes `src:`, `fit: tile | cover` and, for a tile, `scale:` (cqmin). Both take `blend: multiply | overlay | soft-light | screen`, `opacity:` and `themes:`. A page has one finish: two finishes on one theme are an error.
+- **Tooling.** `brand-intent check` reports a finish whose `src:` file is missing.
+
 ## v0.63 · 20 Nov 2026
 
 - **Composition.** `flow: top [TOKEN]`, `flow: bottom [TOKEN]` and `flow: center` declare anchored flows: blocks pinned to the safe area's top, bottom or centre, `TOKEN` (a spacing token) away from the edge. A composition has one plain `flow:` or several anchored flows, never both; an anchored flow takes no `spacer-auto` and no `| photo`. When text makes blocks meet, a centre block moves away and keeps at least `m`; top and bottom blocks that meet overflow the page.
