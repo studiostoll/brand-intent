@@ -126,6 +126,11 @@ export function checkFolder(dir: string, label = dir, { skip = [] }: { skip?: st
     }
   }
 
+  // A finish's texture is a file in the brand folder.
+  for (const f of brand?.finishes ?? []) {
+    if (f.src && !existsSync(join(dir, f.src))) errors.push(`${name(brandFiles[0])}: finish "${f.id}" src: ${f.src} is not in the brand folder`);
+  }
+
   for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds, videos: videoIds })) {
     (issue.severity === 'error' ? errors : warnings).push(`${issue.file}: ${issue.message}`);
   }

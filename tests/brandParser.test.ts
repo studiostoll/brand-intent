@@ -749,6 +749,60 @@ test('spacing: 2xl and 3xl are optional steps above xl', () => {
   assertEq(sp(''), { unit: 'cqmin', xs: 1, s: 2, m: 3, l: 5, xl: 7 }, 'absent when not declared');
 });
 
+// ── Finish ───────────────────────────────────────────────────────────────────
+
+console.log('\nFinish:');
+
+const DAY = `theme Day\n  ground: #F4EFE6\n  figure: #1C1E26\n  text: #1C1E26\n`;
+
+test('a grain finish: amount and size, blend overlay and full opacity by default', () => {
+  const src = `${HEADER}${DUSK}finish grain   # the paper feel\n  label:  Grain\n  kind:   grain\n  amount: 12%\n  size:   0.15   # one grain\n`;
+  assertEq(parseBrandFile(src, 'test.brand').finishes, [{ id: 'grain', label: 'Grain', kind: 'grain', blend: 'overlay', opacity: 100, amount: 12, size: 0.15 }], 'grain');
+});
+
+test('an image finish: tiled with a scale, or cover; blend, opacity and themes', () => {
+  const src = `${HEADER}${DUSK}${DAY}finish paper\n  kind:    image\n  src:     finishes/paper.png\n  fit:     tile\n  scale:   40\n  blend:   multiply\n  opacity: 60%\n  themes:  Day\nfinish print\n  kind:   image\n  src:    finishes/print.jpg\n  fit:    cover\n  blend:  soft-light\n  themes: Dusk\n`;
+  assertEq(parseBrandFile(src, 'test.brand').finishes, [
+    { id: 'paper', label: 'paper', kind: 'image', blend: 'multiply', opacity: 60, themes: ['Day'], src: 'finishes/paper.png', fit: 'tile', scale: 40 },
+    { id: 'print', label: 'print', kind: 'image', blend: 'soft-light', opacity: 100, themes: ['Dusk'], src: 'finishes/print.jpg', fit: 'cover' },
+  ], 'images');
+});
+
+test('a brand without finishes has none', () => {
+  assertEq(parseBrandFile(`${HEADER}${DUSK}`, 'test.brand').finishes, undefined, 'absent');
+});
+
+test('a finish needs a kind, its own keys and valid values', () => {
+  const bad = (body: string, re: RegExp, msg: string) => assertThrows(() => parseBrandFile(`${HEADER}${DUSK}finish f\n${body}`, 'test.brand'), re, msg);
+  bad('  amount: 12%\n', /needs "kind: grain" or "kind: image"/, 'no kind');
+  bad('  kind: noise\n', /got "noise"/, 'unknown kind');
+  bad('  kind: grain\n  size: 0.15\n', /needs "amount:"/, 'no amount');
+  bad('  kind: grain\n  amount: 12%\n', /needs "size:"/, 'no size');
+  bad('  kind: grain\n  amount: 12\n  size: 0.15\n', /amount: must be a percentage/, 'amount without %');
+  bad('  kind: grain\n  amount: 0%\n  size: 0.15\n', /amount: must be a percentage/, 'amount 0');
+  bad('  kind: grain\n  amount: 12%\n  size: s\n', /size: must be a number above 0, in cqmin/, 'token as size');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  src: x.png\n', /has no "src:"/, 'image key on grain');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  blend: darken\n', /blend: must be multiply, overlay, soft-light or screen/, 'blend');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  opacity: 120%\n', /opacity: must be a percentage/, 'opacity');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  themes: Dawn\n', /unknown theme "Dawn"/, 'unknown theme');
+  bad('  kind: image\n  fit: cover\n', /needs "src:"/, 'no src');
+  bad('  kind: image\n  src: x.png\n', /needs "fit: tile" or "fit: cover"/, 'no fit');
+  bad('  kind: image\n  src: x.png\n  fit: tile\n', /needs "scale:"/, 'tile without scale');
+  bad('  kind: image\n  src: x.png\n  fit: cover\n  scale: 40\n', /only a tiled image takes one/, 'cover with scale');
+  bad('  kind: image\n  src: ../x.png\n  fit: cover\n', /src must be/, 'src outside');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  amount: 10%\n', /amount: twice/, 'twice');
+});
+
+test('a page has one finish: two finishes may not cover one theme', () => {
+  const G = (id: string, themes = '') => `finish ${id}\n  kind: grain\n  amount: 12%\n  size: 0.15\n${themes ? `  themes: ${themes}\n` : ''}`;
+  const p = (body: string) => () => parseBrandFile(`${HEADER}${DUSK}${DAY}${body}`, 'test.brand');
+  assertThrows(p(G('a') + G('b')), /both lie on every page/, 'two without themes');
+  assertThrows(p(G('a') + G('b', 'Day')), /both lie on theme "Day"/, 'one everywhere, one on Day');
+  assertThrows(p(G('a', 'Day, Dusk') + G('b', 'Dusk')), /both lie on theme "Dusk"/, 'shared theme');
+  assertThrows(p(G('a') + G('a', 'Day')), /duplicate finish "a"/, 'duplicate');
+  assertEq(p(G('a', 'Day') + G('b', 'Dusk'))().finishes?.map(f => f.id), ['a', 'b'], 'one per theme');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} passed, ${fail} failed`);

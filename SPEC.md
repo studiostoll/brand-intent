@@ -342,6 +342,7 @@ The brand file encodes derived expression intent: visual language and operationa
 | `color-families` | block | No | Ordered color sets with roles, borrowing rules and curated pairs |
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
 | `background NAME` | block | No | The layer under the page: a gradient or a pattern, and the themes it lies under (repeatable) |
+| `finish NAME` | block | No | The surface over the whole page: grain or a texture image, and the themes it lies on (repeatable, one per page) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
 | `spacing:` | block | No | Spacing token scale |
@@ -752,7 +753,55 @@ A photo or video on the page lies above the background; with `image: full` it is
 
 **Contrast.** A background adds no rule to its themes: each is checked against its ground, as every theme. Whether text reads on a gradient is checked per page, against the part of the gradient under the text, by an implementation that reads the image.
 
-**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand: a generated gradient (`kind: gradient` with colour stops instead of `src:`) or grain on any background.
+**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand: a generated gradient (`kind: gradient` with colour stops instead of `src:`). Grain over the page is a [finish](#finish-name-block), not a background.
+
+### `finish NAME` Block
+
+A finish is the surface of the whole page: it lies over everything on it, ground, background, photo, text and logo, on screen and in print. A brand that wants grain or a paper texture declares it; an implementation adds no finish of its own. `NAME` is a lowercase kebab-case identifier; `kind:` says what the finish is, and each kind has its own keys. Since v0.64.
+
+```yaml
+finish grain
+  label:   Grain
+  kind:    grain
+  amount:  12%
+  size:    0.15
+  blend:   overlay
+  opacity: 40%
+
+finish paper
+  label:   Paper
+  kind:    image
+  src:     finishes/paper.png
+  fit:     tile
+  scale:   40
+  blend:   multiply
+  themes:  Day
+```
+
+| Key | Type | Kind | Required | Description |
+|-----|------|------|----------|-------------|
+| `label:` | string | all | No | Display name. Default: the block's name |
+| `kind:` | `grain` \| `image` | all | Yes | What the finish is: generated grain, or a texture image |
+| `themes:` | theme names, comma list | all | No | The themes whose pages it lies on. Without it, every page |
+| `blend:` | `multiply` \| `overlay` \| `soft-light` \| `screen` | all | No | How it meets what lies under it. Default: `overlay` |
+| `opacity:` | percentage, 1–100% | all | No | How strongly it shows. Default: `100%` |
+| `amount:` | percentage, 1–100% | grain | Yes | The share of the surface that carries a grain |
+| `size:` | number, cqmin | grain | Yes | The size of one grain, in % of the canvas's shorter side |
+| `src:` | path | image | Yes | The texture as a `.png`, `.jpg` or `.webp` file inside the brand folder. `brand-intent check` reports a file that isn't there |
+| `fit:` | `tile` \| `cover` | image | Yes | `tile` repeats the image; `cover` stretches one image over the page |
+| `scale:` | number, cqmin | image, `tile` | Yes | The width of one tile, in % of the canvas's shorter side. `cover` takes none |
+
+**Sizes.** `size:` and `scale:` are in cqmin, like type sizes, so a grain and a tile are the same share of the page on a square, a portrait and a story. They are numbers, not spacing tokens: spacing steps are distances between blocks (`xs` is 1.5 cqmin, 16 px on a 1080 px post), and a grain is a fraction of that.
+
+**Blend.** The four modes are the ones a browser (`mix-blend-mode`) and a PDF (blend modes of the transparency model) both have, so a finish looks the same on screen and in print. `multiply` darkens, `screen` lightens, `overlay` and `soft-light` do both, and keep the page's mid tones.
+
+**Pairing.** A page has one finish. A finish without `themes:` lies on every page; with it, on the pages in those themes. Two finishes that would lie on one page are an error: two without `themes:`, one without and one with, or two that name the same theme. A theme in `themes:` the brand doesn't declare is an error. A brand that wants grain on a paper texture puts both in one image.
+
+**Print.** A grain smaller than the halftone screen disappears in print. An implementation that prints keeps a grain at least two halftone cells wide (about 0.35 mm at 150 lpi), and keeps a tile at least its source pixels at the print resolution. The language says how large a grain is on the page; how far print must enlarge it is the implementation's. On screen, a grain is drawn no smaller than one device pixel.
+
+**Contrast.** A finish adds no contrast rule: text and logo are checked against the ground, as without it.
+
+**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand.
 
 ### `font NAME` Block
 

@@ -1322,6 +1322,7 @@ function parseBrandFile(content, fileName) {
   let photoLookDeclared = false;
   const warnings = [];
   const framingsRaw = [];
+  const finishesRaw = [];
   const backgroundsRaw = [];
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -1778,6 +1779,17 @@ function parseBrandFile(content, fileName) {
         bg.props[key2] = { value: trimmed.slice(colonIdx2 + 1).replace(/\s+#\s.*$/, "").trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === "finish") {
+        const trimmed = raw.trim();
+        if (trimmed === "" || trimmed.startsWith("# ")) continue;
+        const colonIdx2 = trimmed.indexOf(":");
+        if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: finish property must be "KEY: VALUE", got "${trimmed}"`);
+        const key2 = trimmed.slice(0, colonIdx2).trim();
+        const fin = finishesRaw[finishesRaw.length - 1];
+        if (fin.props[key2]) throw new Error(`${fileName}:${lineNum}: finish "${fin.id}" has ${key2}: twice`);
+        fin.props[key2] = { value: trimmed.slice(colonIdx2 + 1).replace(/\s+#\s.*$/, "").trim(), line: lineNum };
+        continue;
+      }
       continue;
     }
     if (raw.trim() === "") continue;
@@ -1872,6 +1884,15 @@ function parseBrandFile(content, fileName) {
       if (backgroundsRaw.some((b) => b.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate background "${id}"`);
       backgroundsRaw.push({ id, line: lineNum, props: {} });
       activeBlock = "background";
+      continue;
+    }
+    const finishMatch = raw.match(/^finish\s+(\S+)\s*(?:#\s.*)?$/);
+    if (finishMatch) {
+      const id = finishMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: finish name must be lowercase kebab-case, got "${id}"`);
+      if (finishesRaw.some((f) => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate finish "${id}"`);
+      finishesRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = "finish";
       continue;
     }
     const themeMatch = raw.match(/^theme\s+(\S+)/);
@@ -2401,6 +2422,70 @@ background ${id}
     }
     return def;
   });
+  const finishes = finishesRaw.map(({ id, line, props }) => {
+    const kind = props["kind"]?.value;
+    if (kind !== "grain" && kind !== "image") throw new Error(`${fileName}:${line}: finish "${id}" needs "kind: grain" or "kind: image"${kind ? `, got "${kind}"` : ""}`);
+    const common = ["label", "kind", "themes", "blend", "opacity"];
+    const known = new Set(kind === "grain" ? [...common, "amount", "size"] : [...common, "src", "fit", "scale"]);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: finish "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(", ")})`);
+    }
+    const percent = (key, min) => {
+      const p = props[key];
+      const m = p.value.match(/^(\d+(?:\.\d+)?)%$/);
+      const n = m ? parseFloat(m[1]) : NaN;
+      if (!(n >= min && n <= 100)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a percentage from ${min}% to 100%, got "${p.value}"`);
+      return n;
+    };
+    const cqmin = (key) => {
+      const p = props[key];
+      const n = /^\d+(?:\.\d+)?$/.test(p.value) ? parseFloat(p.value) : NaN;
+      if (!(n > 0)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a number above 0, in cqmin (% of the canvas's shorter side), got "${p.value}"`);
+      return n;
+    };
+    const blend = props["blend"]?.value ?? "overlay";
+    if (!["multiply", "overlay", "soft-light", "screen"].includes(blend)) throw new Error(`${fileName}:${props["blend"].line}: finish "${id}" blend: must be multiply, overlay, soft-light or screen, got "${blend}"`);
+    const def = { id, label: props["label"]?.value || id, kind, blend, opacity: props["opacity"] ? percent("opacity", 1) : 100 };
+    if (props["themes"]) {
+      const names = props["themes"].value.split(",").map((t) => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props["themes"].line}: finish "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props["themes"].line}: finish "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    }
+    if (kind === "grain") {
+      if (!props["amount"]) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "amount:", the share of the surface that carries a grain (e.g. 12%)`);
+      if (!props["size"]) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "size:", one grain in cqmin (e.g. 0.15)`);
+      def.amount = percent("amount", 1);
+      def.size = cqmin("size");
+    } else {
+      const src = props["src"];
+      if (!src) throw new Error(`${fileName}:${line}: finish "${id}" is an image and needs "src:", the texture in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split("/").includes("..")) {
+        throw new Error(`${fileName}:${src.line}: finish "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+      const fit = props["fit"]?.value;
+      if (fit !== "tile" && fit !== "cover") throw new Error(`${fileName}:${props["fit"]?.line ?? line}: finish "${id}" needs "fit: tile" or "fit: cover"${fit ? `, got "${fit}"` : ""}`);
+      def.fit = fit;
+      if (fit === "tile") {
+        if (!props["scale"]) throw new Error(`${fileName}:${line}: finish "${id}" is tiled and needs "scale:", the width of one tile in cqmin`);
+        def.scale = cqmin("scale");
+      } else if (props["scale"]) {
+        throw new Error(`${fileName}:${props["scale"].line}: finish "${id}" has scale:, but only a tiled image takes one (fit: cover fills the page)`);
+      }
+    }
+    return def;
+  });
+  for (let i = 0; i < finishes.length; i++) {
+    for (let j = 0; j < i; j++) {
+      const a = finishes[j], b = finishes[i];
+      const shared = !a.themes || !b.themes ? a.themes ?? b.themes ?? Object.keys(themes) : a.themes.filter((t) => b.themes.includes(t));
+      if (!a.themes && !b.themes) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on every page; a page has one finish, so give them themes:`);
+      if (shared.length > 0) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on theme "${shared[0]}"; a page has one finish`);
+    }
+  }
   if (colorRulesDeclared) {
     for (const [name, theme] of Object.entries(themes)) {
       const bg = theme["background"];
@@ -2424,6 +2509,7 @@ background ${id}
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
   if (backgrounds.length > 0) result.backgrounds = backgrounds;
+  if (finishes.length > 0) result.finishes = finishes;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {
@@ -5457,6 +5543,9 @@ function checkFolder(dir, label = dir, { skip = [] } = {}) {
       if (library && kind === "photo") photoIds = library.map((p) => p.id);
       if (library && kind === "video") videoIds = library.map((v) => v.id);
     }
+  }
+  for (const f of brand?.finishes ?? []) {
+    if (f.src && !existsSync(join(dir, f.src))) errors.push(`${name(brandFiles[0])}: finish "${f.id}" src: ${f.src} is not in the brand folder`);
   }
   for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds, videos: videoIds })) {
     (issue.severity === "error" ? errors : warnings).push(`${issue.file}: ${issue.message}`);

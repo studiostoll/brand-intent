@@ -91,6 +91,8 @@ export interface ParsedBrand {
   themePairs?: Record<string, ThemePair>;
   /** The backgrounds under the page (`background NAME` blocks), in declared order. */
   backgrounds?: ParsedBackgroundDef[];
+  /** The finishes over the page (`finish NAME` blocks), in declared order. */
+  finishes?: ParsedFinishDef[];
   /** Non-fatal color findings: rule violations, rejected family pairs, reach config hints. */
   colorWarnings?: string[];
   /** Non-fatal findings outside colour: blocks that moved to another file and are ignored here. */
@@ -180,6 +182,33 @@ export interface ParsedBackgroundDef {
   generator?: string;
   /** Pattern: its one colour is a shade (darker) or a tint (lighter) of the ground. */
   tone?: 'shade' | 'tint';
+}
+
+/** How a finish meets what lies under it. The four modes CSS and PDF both have. */
+export type FinishBlend = 'multiply' | 'overlay' | 'soft-light' | 'screen';
+
+/** A finish: the surface over the whole page (ground, photos, text, logo), on screen and in print. */
+export interface ParsedFinishDef {
+  id: string;
+  /** Display name. Defaults to the id. */
+  label: string;
+  kind: 'grain' | 'image';
+  /** The themes whose pages it lies on. Absent: every page. */
+  themes?: string[];
+  /** Default `overlay`. */
+  blend: FinishBlend;
+  /** 0–100 (%). Default 100. */
+  opacity: number;
+  /** Grain: share of the surface that carries a grain, 1–100 (%). */
+  amount?: number;
+  /** Grain: size of one grain, in cqmin (% of the canvas's shorter side). */
+  size?: number;
+  /** Image: the texture, relative to the brand folder. */
+  src?: string;
+  /** Image: repeated (`tile`) or stretched over the page (`cover`). */
+  fit?: 'tile' | 'cover';
+  /** Image, tile: width of one tile, in cqmin. */
+  scale?: number;
 }
 
 export interface ParsedFramingDef {
@@ -484,7 +513,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   const result: Partial<ParsedBrand> = {};
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'background';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'background' | 'finish';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -550,6 +579,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let photoLookDeclared = false;
   const warnings: string[] = [];
   const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
+  const finishesRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
   const backgroundsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -1044,6 +1074,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         bg.props[key] = { value: trimmed.slice(colonIdx + 1).replace(/\s+#\s.*$/, '').trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === 'finish') {
+        const trimmed = raw.trim();
+        if (trimmed === '' || trimmed.startsWith('# ')) continue;
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: finish property must be "KEY: VALUE", got "${trimmed}"`);
+        const key = trimmed.slice(0, colonIdx).trim();
+        const fin = finishesRaw[finishesRaw.length - 1];
+        if (fin.props[key]) throw new Error(`${fileName}:${lineNum}: finish "${fin.id}" has ${key}: twice`);
+        fin.props[key] = { value: trimmed.slice(colonIdx + 1).replace(/\s+#\s.*$/, '').trim(), line: lineNum };
+        continue;
+      }
       // Indented line with no active block — ignore
       continue;
     }
@@ -1174,6 +1215,17 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (backgroundsRaw.some(b => b.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate background "${id}"`);
       backgroundsRaw.push({ id, line: lineNum, props: {} });
       activeBlock = 'background';
+      continue;
+    }
+
+    // finish <id> — the surface over the whole page: grain or an image
+    const finishMatch = raw.match(/^finish\s+(\S+)\s*(?:#\s.*)?$/);
+    if (finishMatch) {
+      const id = finishMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: finish name must be lowercase kebab-case, got "${id}"`);
+      if (finishesRaw.some(f => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate finish "${id}"`);
+      finishesRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = 'finish';
       continue;
     }
 
@@ -1773,6 +1825,73 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     return def;
   });
 
+  // Finishes: grain or an image over the whole page. A page has at most one,
+  // so two finishes may not cover the same theme.
+  const finishes: ParsedFinishDef[] = finishesRaw.map(({ id, line, props }) => {
+    const kind = props['kind']?.value;
+    if (kind !== 'grain' && kind !== 'image') throw new Error(`${fileName}:${line}: finish "${id}" needs "kind: grain" or "kind: image"${kind ? `, got "${kind}"` : ''}`);
+    const common = ['label', 'kind', 'themes', 'blend', 'opacity'];
+    const known = new Set(kind === 'grain' ? [...common, 'amount', 'size'] : [...common, 'src', 'fit', 'scale']);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: finish "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(', ')})`);
+    }
+    const percent = (key: string, min: number): number => {
+      const p = props[key];
+      const m = p.value.match(/^(\d+(?:\.\d+)?)%$/);
+      const n = m ? parseFloat(m[1]) : NaN;
+      if (!(n >= min && n <= 100)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a percentage from ${min}% to 100%, got "${p.value}"`);
+      return n;
+    };
+    const cqmin = (key: string): number => {
+      const p = props[key];
+      const n = /^\d+(?:\.\d+)?$/.test(p.value) ? parseFloat(p.value) : NaN;
+      if (!(n > 0)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a number above 0, in cqmin (% of the canvas's shorter side), got "${p.value}"`);
+      return n;
+    };
+    const blend = props['blend']?.value ?? 'overlay';
+    if (!['multiply', 'overlay', 'soft-light', 'screen'].includes(blend)) throw new Error(`${fileName}:${props['blend'].line}: finish "${id}" blend: must be multiply, overlay, soft-light or screen, got "${blend}"`);
+    const def: ParsedFinishDef = { id, label: props['label']?.value || id, kind, blend: blend as FinishBlend, opacity: props['opacity'] ? percent('opacity', 1) : 100 };
+    if (props['themes']) {
+      const names = props['themes'].value.split(',').map(t => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props['themes'].line}: finish "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props['themes'].line}: finish "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    }
+    if (kind === 'grain') {
+      if (!props['amount']) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "amount:", the share of the surface that carries a grain (e.g. 12%)`);
+      if (!props['size']) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "size:", one grain in cqmin (e.g. 0.15)`);
+      def.amount = percent('amount', 1);
+      def.size = cqmin('size');
+    } else {
+      const src = props['src'];
+      if (!src) throw new Error(`${fileName}:${line}: finish "${id}" is an image and needs "src:", the texture in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split('/').includes('..')) {
+        throw new Error(`${fileName}:${src.line}: finish "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+      const fit = props['fit']?.value;
+      if (fit !== 'tile' && fit !== 'cover') throw new Error(`${fileName}:${props['fit']?.line ?? line}: finish "${id}" needs "fit: tile" or "fit: cover"${fit ? `, got "${fit}"` : ''}`);
+      def.fit = fit;
+      if (fit === 'tile') {
+        if (!props['scale']) throw new Error(`${fileName}:${line}: finish "${id}" is tiled and needs "scale:", the width of one tile in cqmin`);
+        def.scale = cqmin('scale');
+      } else if (props['scale']) {
+        throw new Error(`${fileName}:${props['scale'].line}: finish "${id}" has scale:, but only a tiled image takes one (fit: cover fills the page)`);
+      }
+    }
+    return def;
+  });
+  for (let i = 0; i < finishes.length; i++) {
+    for (let j = 0; j < i; j++) {
+      const a = finishes[j], b = finishes[i];
+      const shared = !a.themes || !b.themes ? (a.themes ?? b.themes ?? Object.keys(themes)) : a.themes.filter(t => b.themes!.includes(t));
+      if (!a.themes && !b.themes) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on every page; a page has one finish, so give them themes:`);
+      if (shared.length > 0) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on theme "${shared[0]}"; a page has one finish`);
+    }
+  }
+
   // Rule checks on every theme (only when the brand declares color-rules)
   if (colorRulesDeclared) {
     for (const [name, theme] of Object.entries(themes)) {
@@ -1800,6 +1919,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
   if (backgrounds.length > 0) result.backgrounds = backgrounds;
+  if (finishes.length > 0) result.finishes = finishes;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {
