@@ -2,6 +2,11 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.63 · 20 Nov 2026
+
+- **Composition.** `flow: top [TOKEN]`, `flow: bottom [TOKEN]` and `flow: center` declare anchored flows: blocks pinned to the safe area's top, bottom or centre, `TOKEN` (a spacing token) away from the edge. A composition has one plain `flow:` or several anchored flows, never both; an anchored flow takes no `spacer-auto` and no `| photo`. When text makes blocks meet, a centre block moves away and keeps at least `m`; top and bottom blocks that meet overflow the page.
+- **Tooling.** `brand-intent check` warns about two flows on one anchor and about an anchored flow on the edge of a sticky bar.
+
 ## v0.62 · 20 Nov 2026
 
 - **Purpose.** A bare `value:` takes its fixed text on the 4-space lines below it, one line each, so a fixed text can hold line breaks.
