@@ -1474,11 +1474,11 @@ A `.purpose` file must NOT contain: color values (only named theme slots), absol
 
 ## Layer 5: Composition (`.composition`)
 
-**Cardinality:** Multiple. The most reusable layer, with zero brand-specific information.
+**Cardinality:** Multiple. The most reusable layer, with no brand-specific information beyond format ids in `on FORMAT:` lines (see [Distances per format](#distances-per-format)).
 **File extension:** `.composition`
 **Filename convention:** descriptive kebab-case (e.g., `editorial.composition`, `panel.composition`)
 
-The composition file describes how slots are arranged on the canvas. It knows slot names and their spatial relationships. Nothing else.
+The composition file describes how slots are arranged on the canvas. It knows slot names and their spatial relationships. Nothing else, with one exception: an anchored flow may name format ids in `on FORMAT:` lines, for its distance on that format only.
 
 ### Top-Level Keys
 
@@ -1588,7 +1588,7 @@ A plain `flow:` is one stack: its items follow each other from the top, and `spa
 - `flow: bottom [DISTANCE]` the block's bottom edge sits on the bottom line of the safe area, or `DISTANCE` above it.
 - `flow: center [OFFSET]` the block's centre sits on the centre of the safe area, or `OFFSET` from it: `+` down, `-` up.
 
-`DISTANCE` is a spacing token of the `.brand` (`xs` to `xl`, `2xl`, `3xl`) or a number of px (see [Distances per format](#distances-per-format)). `OFFSET` is the same with a sign, `+m`, `-m`, `+48`, `-48`; without a sign it is an error. A token is the brand's distance and the same share of the page on every format. An anchored block is as tall as its items and as wide as the safe area; it grows away from its anchor (a bottom block upwards, a centre block both ways). The items are the plain flow's, with `direction:`, `columns:` and `column-gap:`, without `spacer-auto` (there is no room to fill) and without `| photo`.
+`DISTANCE` is a spacing token of the `.brand` (`xs` to `xl`, `2xl`, `3xl`) or a number in cqmin (see [Distances per format](#distances-per-format)). `OFFSET` is the same with a sign, `+m`, `-m`, `+4.44`, `-4.44`; without a sign it is an error. A token is the brand's distance and the same share of the page on every format. An anchored block is as tall as its items and as wide as the safe area; it grows away from its anchor (a bottom block upwards, a centre block both ways). The items are the plain flow's, with `direction:`, `columns:` and `column-gap:`, without `spacer-auto` (there is no room to fill) and without `| photo`.
 
 Anchored flows don't push each other, and sticky bars don't push them: each block is placed from its anchor. Two blocks on one anchor, or an anchored block on the edge of a sticky bar, lie on top of each other; `brand-intent check` warns about both. If text makes blocks meet, top and bottom blocks keep their place and a centre block moves away from the one it would touch, keeping at least `m` between them; with an offset, it moves from its offset place. If top and bottom blocks would meet, the page overflows, as a plain flow does when its text is too long.
 
@@ -1615,30 +1615,30 @@ The same composition serves every format: the distances are tokens, so the title
 A brand whose compositions are drawn by hand for each format, the feed post with other margins than the story, writes those margins as they are. An `on FORMAT:` line under an anchored flow gives one format its own distance; the value on the `flow:` line is the default for every format without one. `FORMAT` is a format's `id:`.
 
 ```yaml
-flow: top 74
-  on 4:5:  130
+flow: top 6.85
+  on 4:5:  12.04
   | credit left
 
 flow: center
-  on 4:5:  +48
+  on 4:5:  +4.44
   | primary center
   | spacer-2xl
   | secondary center
 
-flow: bottom 110
-  on 4:5:  200
+flow: bottom 10.19
+  on 4:5:  18.52
   | primary left
 ```
 
-Here the credit sits 74 px below the safe area's top line on every format, 130 px on the feed post; the centre block sits on the centre, 48 px below it on the feed post. An `on` line takes what the `flow:` line takes: a token or a number for `top` and `bottom`, a signed offset for `center`. It may name a format the `flow:` line gives no value; then the others sit on the anchor. A format has one `on` line per flow; `on` lines belong to anchored flows only.
+Here the credit sits 6.85 below the safe area's top line on every format, 12.04 on the feed post; the centre block sits on the centre, 4.44 below it on the feed post. An `on` line takes what the `flow:` line takes: a token or a number for `top` and `bottom`, a signed offset for `center`. It may name a format the `flow:` line gives no value; then the others sit on the anchor. A format has one `on` line per flow; `on` lines belong to anchored flows only.
 
-**A number is px of the format's own size**, the px a design tool shows on a frame of that size. The screen formats share their shorter side (1080 px), so a number means the same on all of them. A print format is measured in mm; its px are those of its `size:` at its `dpi:` (default 300), so on A4 a px is 25.4 / 300 = 0.085 mm: `130` is 11 mm, 5% of the shorter side, where on a feed post it is 12%. A number as the default reaches print formats as their px too: a composition that also serves print gives each print format its own `on` value, and `brand-intent check` warns where one is missing.
+**A number is cqmin**, % of the canvas's shorter side, like every number in the language (type sizes, spacing, padding, grain). It is the same share of the page on every format, screen or print. To translate a design tool's px, divide by a hundredth of the frame's shorter side: on a 1080 px frame, 130 px is 130 / 10.8 = `12.04`, 74 px is `6.85`. Two decimals are enough: a hundredth of a cqmin is a tenth of a px on a 1080 px frame.
 
-**Distances are measured from the safe area**, as tokens are: from the line inside `danger`, `crop` and `comfort` (see [Safe Zone Model](#safe-zone-model)). A distance read off a frame's edge in a design tool is that value minus the format's safe inset on that edge: the feed post's `crop:` and `comfort:` take 40 px from the top, so a credit 170 px below the frame's top edge is `130`. Measuring from the canvas edge would save that subtraction, but it would give one flow two references (tokens from the safe area, numbers from the edge) and let a default distance that suits one format fall into another format's crop zone. From the safe area, a distance can't put text where the platform covers it.
+**Distances are measured from the safe area**, as tokens are: from the line inside `danger`, `crop` and `comfort` (see [Safe Zone Model](#safe-zone-model)). A distance read off a frame's edge in a design tool is that value minus the format's safe inset on that edge: the feed post's `crop:` and `comfort:` take 40 px from the top, so a credit 170 px below the frame's top edge is 130 px from the safe area, `12.04`. Measuring from the canvas edge would save that subtraction, but it would give one flow two references (tokens from the safe area, numbers from the edge) and let a default distance that suits one format fall into another format's crop zone. From the safe area, a distance can't put text where the platform covers it.
 
 **Best practice stays one distance.** Tokens make a brand coherent: the same margin on every format, written once. `on` lines and numbers are there so that a composition drawn per format translates without compromise; a brand that starts in the language writes tokens.
 
-`brand-intent check` warns about an `on` line whose format the brand doesn't declare (when the brand declares formats), and about a number default that reaches a print format without its own value.
+`brand-intent check` warns about an `on` line whose format the brand doesn't declare (when the brand declares formats).
 
 **Direction (not part of the language yet):** a sticky bar is an anchored flow on an edge that reserves its room, and a panel is an anchored flow with a surface. Both may later be written as anchored flows.
 
@@ -1679,7 +1679,7 @@ SVG illustrations are colorized at runtime using the `illustration` theme color 
 
 ### Exclusion Rule
 
-A `.composition` file must NOT contain: color values, typography values, slot content definitions, brand/voice/identity information, or platform constraints.
+A `.composition` file must NOT contain: color values, typography values, slot content definitions, brand/voice/identity information, or platform constraints. Format ids appear only in `on FORMAT:` lines, for distances; nothing else is written per format.
 
 ---
 

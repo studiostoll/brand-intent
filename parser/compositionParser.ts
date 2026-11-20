@@ -94,8 +94,8 @@ export type SpacingToken = 'xs' | 's' | 'm' | 'l' | 'xl' | '2xl' | '3xl';
 const SPACING_TOKENS: readonly string[] = ['xs', 's', 'm', 'l', 'xl', '2xl', '3xl'];
 
 /**
- * An anchored flow's distance: a spacing token, or a number of px of the format's own size
- * (a print format's px at its dpi). A centre offset is signed, down positive: a number carries
+ * An anchored flow's distance: a spacing token, or a number in cqmin (% of the canvas's shorter
+ * side, like every number in the language). A centre offset is signed, down positive: a number carries
  * its sign, a token upwards is written `-TOKEN`.
  */
 export type FlowDistance = SpacingToken | `-${SpacingToken}` | number;
@@ -109,11 +109,11 @@ function readFlowDistance(raw: string, edge: 'top' | 'center' | 'bottom', where:
     const [, sign, rest] = m;
     if (SPACING_TOKENS.includes(rest)) return (sign === '-' ? `-${rest}` : rest) as FlowDistance;
     if (/^\d+(?:\.\d+)?$/.test(rest)) return (sign === '-' ? -1 : 1) * parseFloat(rest);
-    return fail(`invalid centre offset "${raw}" (expected +/- a spacing token or a number of px)`);
+    return fail(`invalid centre offset "${raw}" (expected +/- a spacing token or a number)`);
   }
   if (SPACING_TOKENS.includes(raw)) return raw as SpacingToken;
   if (/^\d+(?:\.\d+)?$/.test(raw)) return parseFloat(raw);
-  return fail(`invalid flow distance "${raw}" (expected a spacing token: ${SPACING_TOKENS.join(', ')}, or a number of px)`);
+  return fail(`invalid flow distance "${raw}" (expected a spacing token: ${SPACING_TOKENS.join(', ')}, or a number in cqmin)`);
 }
 
 /** A flow region — where content flows. */
@@ -526,7 +526,7 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
         if (onFormat || nextLine.startsWith('on ')) {
           i++;
           if (!anchor) throw new Error(`${fileName}:${i + 1}: "on FORMAT:" is only allowed in an anchored flow (flow: top|center|bottom)`);
-          if (!onFormat) throw new Error(`${fileName}:${i + 1}: invalid "${nextLine}" (expected: on FORMAT: DISTANCE, e.g. on 4:5: 130)`);
+          if (!onFormat) throw new Error(`${fileName}:${i + 1}: invalid "${nextLine}" (expected: on FORMAT: DISTANCE, e.g. on 4:5: 12.04)`);
           const [, formatId, raw] = onFormat;
           const d = readFlowDistance(raw, anchor.edge, `${fileName}:${i + 1}`);
           anchor.formats ??= {};

@@ -152,6 +152,28 @@ test('anchored flow errors', () => {
   assertThrows(() => comp(`flow: bottom\n  | photo center\n`), /only allowed in a plain/, 'photo');
 });
 
+test('numbers are cqmin with decimals, a centre offset carries its sign', () => {
+  const c = comp(`flow: top 6.85\n  | label right\nflow: center -4.44\n  | primary center\nflow: bottom 10\n  | meta left\n`);
+  assertEq(c.anchoredFlows.map(f => f.anchor), [{ edge: 'top', distance: 6.85 }, { edge: 'center', distance: -4.44 }, { edge: 'bottom', distance: 10 }], 'anchors');
+  assertEq(comp(`flow: center -m\n  | primary center\n`).anchoredFlows[0].anchor, { edge: 'center', distance: '-m' }, 'token up');
+  assertEq(comp(`flow: center +m\n  | primary center\n`).anchoredFlows[0].anchor, { edge: 'center', distance: 'm' }, 'token down');
+});
+
+test('on FORMAT: gives one format its own distance', () => {
+  const c = comp(`flow: top 6.85\n  on 4:5: 12.04\n  on 1:1: xl\n  | label right\nflow: center\n  on 4:5: +4.44\n  | primary center\n`);
+  assertEq(c.anchoredFlows[0].anchor, { edge: 'top', distance: 6.85, formats: { '4:5': 12.04, '1:1': 'xl' } }, 'top');
+  assertEq(c.anchoredFlows[1].anchor, { edge: 'center', formats: { '4:5': 4.44 } }, 'centre without a default');
+  assertEq(c.anchoredFlows[0].items.length, 1, 'on lines are not items');
+});
+
+test('on FORMAT: errors', () => {
+  assertThrows(() => comp(`flow: top\n  on 4:5: +12\n  | primary left\n`), /invalid flow distance "\+12"/, 'sign on top');
+  assertThrows(() => comp(`flow: center\n  on 4:5: 12\n  | primary center\n`), /needs a sign/, 'no sign on centre');
+  assertThrows(() => comp(`flow: top\n  on 4:5: 12\n  on 4:5: 13\n  | primary left\n`), /twice/, 'twice');
+  assertThrows(() => comp(`flow:\n  on 4:5: 12\n  | primary left\n`), /only allowed in an anchored flow/, 'plain flow');
+  assertThrows(() => comp(`flow: top\n  on 4:5 12\n  | primary left\n`), /expected: on FORMAT: DISTANCE/, 'no colon');
+});
+
 test('a plain flow and an anchored flow can\'t be combined', () => {
   assertThrows(() => comp(`flow:\n  | primary left\nflow: top\n  | label left\n`), /can't be combined/, 'mixed');
 });

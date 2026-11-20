@@ -3912,11 +3912,11 @@ function readFlowDistance(raw, edge, where) {
     const [, sign, rest] = m;
     if (SPACING_TOKENS.includes(rest)) return sign === "-" ? `-${rest}` : rest;
     if (/^\d+(?:\.\d+)?$/.test(rest)) return (sign === "-" ? -1 : 1) * parseFloat(rest);
-    return fail(`invalid centre offset "${raw}" (expected +/- a spacing token or a number of px)`);
+    return fail(`invalid centre offset "${raw}" (expected +/- a spacing token or a number)`);
   }
   if (SPACING_TOKENS.includes(raw)) return raw;
   if (/^\d+(?:\.\d+)?$/.test(raw)) return parseFloat(raw);
-  return fail(`invalid flow distance "${raw}" (expected a spacing token: ${SPACING_TOKENS.join(", ")}, or a number of px)`);
+  return fail(`invalid flow distance "${raw}" (expected a spacing token: ${SPACING_TOKENS.join(", ")}, or a number in cqmin)`);
 }
 var GRID_Y_KEYWORDS = /* @__PURE__ */ new Set(["top", "center", "bottom"]);
 var VALID_SLOTS2 = new Set(SLOT_IDS);
@@ -4186,7 +4186,7 @@ function parseCompositionFile(content, fileName) {
         if (onFormat || nextLine.startsWith("on ")) {
           i++;
           if (!anchor) throw new Error(`${fileName}:${i + 1}: "on FORMAT:" is only allowed in an anchored flow (flow: top|center|bottom)`);
-          if (!onFormat) throw new Error(`${fileName}:${i + 1}: invalid "${nextLine}" (expected: on FORMAT: DISTANCE, e.g. on 4:5: 130)`);
+          if (!onFormat) throw new Error(`${fileName}:${i + 1}: invalid "${nextLine}" (expected: on FORMAT: DISTANCE, e.g. on 4:5: 12.04)`);
           const [, formatId, raw2] = onFormat;
           const d = readFlowDistance(raw2, anchor.edge, `${fileName}:${i + 1}`);
           anchor.formats ??= {};
@@ -5415,11 +5415,6 @@ function checkFiles(files) {
       if (formats.length) {
         for (const id of Object.keys(anchor.formats ?? {})) {
           if (!formats.some((f) => f.id === id)) warning(file, `flow: ${anchor.edge} has a distance for format "${id}", which the brand doesn't declare`);
-        }
-      }
-      if (typeof anchor.distance === "number" && anchor.distance !== 0) {
-        for (const f of formats) {
-          if (f.widthMm !== void 0 && !(f.id in (anchor.formats ?? {}))) warning(file, `flow: ${anchor.edge} ${anchor.distance > 0 && anchor.edge === "center" ? "+" : ""}${anchor.distance} is ${Math.abs(anchor.distance)} px on print format "${f.id}" too, ${(Math.abs(anchor.distance) * 25.4 / (f.dpi ?? 300)).toFixed(1)} mm at ${f.dpi ?? 300} dpi; give it its own "on ${f.id}:" value`);
         }
       }
     }

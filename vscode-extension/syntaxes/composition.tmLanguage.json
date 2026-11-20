@@ -16,7 +16,6 @@
     { "include": "#mode" },
     { "include": "#flow" },
     { "include": "#flow-anchor" },
-    { "include": "#flow-on-format" },
     { "include": "#flow-panel" },
     { "include": "#flow-split" },
     { "include": "#flow-width" },
@@ -137,16 +136,49 @@
       }
     },
     "flow-anchor": {
-      "match": "^(flow:)\\s+(top|center|bottom)(?:\\s+([+-]?(?:xs|s|m|l|xl|2xl|3xl|\\d+(?:\\.\\d+)?)))?\\s*$",
+      "comment": "An anchored flow and its on-format lines. top/bottom take an unsigned distance, center a signed offset; the block ends at the next unindented line",
+      "patterns": [
+        {
+          "begin": "^(flow:)\\s+(top|bottom)(?:\\s+((?:xs|s|m|l|xl|2xl|3xl|\\d+(?:\\.\\d+)?)))?\\s*$",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.brand-intent-composition" },
+            "2": { "name": "constant.language.brand-intent-composition" },
+            "3": { "name": "constant.numeric.brand-intent-composition" }
+          },
+          "end": "^(?=\\S)",
+          "patterns": [
+            { "include": "#flow-on-format-distance" },
+            { "include": "$self" }
+          ]
+        },
+        {
+          "begin": "^(flow:)\\s+(center)(?:\\s+([+-](?:xs|s|m|l|xl|2xl|3xl|\\d+(?:\\.\\d+)?)))?\\s*$",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.brand-intent-composition" },
+            "2": { "name": "constant.language.brand-intent-composition" },
+            "3": { "name": "constant.numeric.brand-intent-composition" }
+          },
+          "end": "^(?=\\S)",
+          "patterns": [
+            { "include": "#flow-on-format-offset" },
+            { "include": "$self" }
+          ]
+        }
+      ]
+    },
+    "flow-on-format-distance": {
+      "comment": "A distance on one format under flow: top|bottom, e.g. on 4:5: 12.04",
+      "match": "^(\\s+)(on)\\s+(\\S+?)(:)\\s+((?:xs|s|m|l|xl|2xl|3xl|\\d+(?:\\.\\d+)?))\\s*$",
       "captures": {
-        "1": { "name": "keyword.control.brand-intent-composition" },
-        "2": { "name": "constant.language.brand-intent-composition" },
-        "3": { "name": "constant.numeric.brand-intent-composition" }
+        "2": { "name": "keyword.control.brand-intent-composition" },
+        "3": { "name": "entity.name.tag.brand-intent-composition" },
+        "4": { "name": "punctuation.separator.key-value.brand-intent-composition" },
+        "5": { "name": "constant.numeric.brand-intent-composition" }
       }
     },
-    "flow-on-format": {
-      "comment": "An anchored flow's distance on one format: on 4:5: 130",
-      "match": "^(\\s+)(on)\\s+(\\S+?)(:)\\s+([+-]?(?:xs|s|m|l|xl|2xl|3xl|\\d+(?:\\.\\d+)?))\\s*$",
+    "flow-on-format-offset": {
+      "comment": "An offset on one format under flow: center, e.g. on 4:5: +4.44",
+      "match": "^(\\s+)(on)\\s+(\\S+?)(:)\\s+([+-](?:xs|s|m|l|xl|2xl|3xl|\\d+(?:\\.\\d+)?))\\s*$",
       "captures": {
         "2": { "name": "keyword.control.brand-intent-composition" },
         "3": { "name": "entity.name.tag.brand-intent-composition" },
