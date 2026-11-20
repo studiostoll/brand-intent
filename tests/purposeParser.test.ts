@@ -49,19 +49,19 @@ test('override lineHeight: a multiplier or a percentage', () => {
   assertEq(/invalid lineHeight "tight"/.test(said), true, 'neither');
 });
 
-test('compositions: none is a purpose only a sheet places', () => {
-  assertEq(parsePurposeFile('id: sign\ncompositions: none   # print only\n', 'sign.purpose').preferredCompositions, [], 'none');
+test('a purpose names at least one composition', () => {
   const said = (src: string) => { try { parsePurposeFile(src, 'sign.purpose'); return ''; } catch (e) { return (e as Error).message; } };
   assertEq(/missing "compositions:" line/.test(said('id: sign\n')), true, 'no line');
-  assertEq(/"none" or a list of compositions, not both/.test(said('id: sign\ncompositions: none, panel\n')), true, 'none with a list');
+  assertEq(/compositions: none is gone/.test(said('id: sign\ncompositions: none\n')), true, 'none');
+  assertEq(/compositions: none is gone/.test(said('id: sign\ncompositions: none, panel\n')), true, 'none with a list');
 });
 
 test('use: names the kind of use a purpose serves', () => {
-  assertEq(parsePurposeFile('id: sign\nuse: sign\ncompositions: none\n', 'sign.purpose').use, 'sign', 'use');
-  assertEq(parsePurposeFile('id: sign\ncompositions: none\n', 'sign.purpose').use, undefined, 'without');
+  assertEq(parsePurposeFile('id: sign\nuse: sign\ncompositions: panel\n', 'sign.purpose').use, 'sign', 'use');
+  assertEq(parsePurposeFile('id: sign\ncompositions: panel\n', 'sign.purpose').use, undefined, 'without');
   const said = (src: string) => { try { parsePurposeFile(src, 'sign.purpose'); return ''; } catch (e) { return (e as Error).message; } };
-  assertEq(/invalid use "Sign Board"/.test(said('id: sign\nuse: Sign Board\ncompositions: none\n')), true, 'shape');
-  assertEq(/duplicate "use:"/.test(said('id: sign\nuse: a\nuse: b\ncompositions: none\n')), true, 'twice');
+  assertEq(/invalid use "Sign Board"/.test(said('id: sign\nuse: Sign Board\ncompositions: panel\n')), true, 'shape');
+  assertEq(/duplicate "use:"/.test(said('id: sign\nuse: a\nuse: b\ncompositions: panel\n')), true, 'twice');
 });
 test('a slot named like a composition keyword is refused', () => {
   const said = (id: string) => { try { parsePurposeFile(`id: p\ncompositions: panel\n\nslot ${id}\n  label: X\n  typography: body\n  maxLength: 5\n  value: x\n`, 'p.purpose'); return ''; } catch (e) { return (e as Error).message; } };

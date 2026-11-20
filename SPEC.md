@@ -1100,7 +1100,7 @@ video intro                # media/videos/intro.mp4
 
 ### Exclusion Rule
 
-A `.brand` file must NOT contain: identity reasoning, audience definitions, content pillar descriptions, strategic prose, composition rules, or platform specifications. The `print` block holds the measures every sheet shares; a sheet's size, its columns and rows, its regions and which style stands where are not the brand's.
+A `.brand` file must NOT contain: identity reasoning, audience definitions, content pillar descriptions, strategic prose, composition rules, or platform specifications. The `print` block holds the measures every printed piece shares; its size, columns and rows, regions and which style stands where belong to its format and composition, not the brand.
 
 ---
 
@@ -1173,7 +1173,7 @@ The purpose file defines a content type through semantic slots and composes AI c
 |-----|------|----------|-------------|
 | `id:` | string | Yes | Unique purpose identifier |
 | `name:` | string | No | Display name (derived from id if omitted) |
-| `compositions:` | list or `none` | Yes | Valid composition IDs for this purpose. `none`: the purpose has no composition of its own; only a sheet places it (print). A missing line stays an error, and `none` stands alone |
+| `compositions:` | list | Yes | Valid composition IDs for this purpose, at least one: a piece is always one purpose and one composition |
 | `use:` | string | No | The kind of use the purpose serves (`use: sign`). The `.brand` must have [`roles`](#roles-kind-block) for it, and each slot's `typography:` names a role of that kind instead of a style. Without `use:`, `typography:` names a style |
 | `density:` | enum | No | `light` \| `medium` \| `full` |
 | `palette:` | string | No | Color palette strategy (see below) |

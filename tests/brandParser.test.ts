@@ -740,8 +740,8 @@ test('print block rejects what it cannot read', () => {
   assertThrows(p('  x: 7mm\n'), /print x is a share of the sheet's short side/, 'x');
   assertThrows(p('  x: short/30\n  margin: 14mm\n'), /print margin is a count of x/, 'mm');
   assertThrows(p('  x: short/30\n  spacers: 1x, 0.5x\n'), /spacers must be ascending/, 'order');
-  assertThrows(p('  x: short/30\n  columns: 12\n'), /unknown print property "columns"/, 'columns stay with the sheet');
-  assertThrows(p('  x: short/30\n  row: 1x\n'), /unknown print property "row"/, 'rows stay with the sheet');
+  assertThrows(p('  x: short/30\n  columns: 12\n'), /unknown print property "columns"/, 'columns belong to the composition');
+  assertThrows(p('  x: short/30\n  row: 1x\n'), /unknown print property "row"/, 'rows belong to the composition');
   assertThrows(p('  x: short/30\n  logo: mark\n'), /print logo "mark" is not a declared logo/, 'logo');
   assertThrows(p('  x: short/30\n  bleed: 1x\n'), /unknown print property "bleed"/, 'unknown');
   assertThrows(p('  x: short/30\n  roles: headline 2x 700\n'), /print takes no roles/, 'roles');

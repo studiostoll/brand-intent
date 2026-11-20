@@ -3449,10 +3449,7 @@ function parsePurposeFile(content, fileName) {
       const value = line.slice(colonIdx + 1).trim();
       compositions = value.split(/[\s,]+/).map((s) => s.trim()).filter((s) => s.length > 0);
       if (compositions.length === 0) throw new Error(`${fileName}:${lineNum}: empty compositions list`);
-      if (compositions.includes("none")) {
-        if (compositions.length > 1) throw new Error(`${fileName}:${lineNum}: compositions is "none" or a list of compositions, not both`);
-        compositions = [];
-      }
+      if (compositions.includes("none")) throw new Error(`${fileName}:${lineNum}: compositions: none is gone; a purpose names at least one composition`);
       continue;
     }
     if (line.startsWith("palette:")) {
