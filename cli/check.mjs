@@ -1167,6 +1167,7 @@ function splitLabelledItem(text) {
 
 // parser/brandParser.ts
 var FINISH_BLENDS = ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"];
+var TEXT_TRIMS = ["cap", "none"];
 var GROUP_KEYWORDS = /* @__PURE__ */ new Set(["primary", "secondary", "accent", "neutral"]);
 var NEUTRAL_ROLES = /* @__PURE__ */ new Set(["light", "subtle", "mid", "muted", "dark"]);
 var STATE_KEYS = /* @__PURE__ */ new Set(["problem", "warning", "success", "info", "inactive"]);
@@ -1653,6 +1654,7 @@ function parseBrandFile(content, fileName) {
         if (colonIdx2 !== -1) {
           const key2 = trimmed.slice(0, colonIdx2).trim();
           const value2 = trimmed.slice(colonIdx2 + 1).trim();
+          if (key2 === "trim" && !TEXT_TRIMS.includes(value2)) throw new Error(`${fileName}:${lineNum}: typography "${currentTypographyName}" trim: must be cap or none, got "${value2}"`);
           typographiesRaw[currentTypographyName][key2] = value2;
         } else if (trimmed === "italic" || trimmed === "uppercase") {
           typographiesRaw[currentTypographyName][trimmed] = "true";
@@ -2581,6 +2583,7 @@ background ${id}
       if (raw["strong"] !== void 0) def.strong = parseInt(raw["strong"], 10);
       if (raw["autofit-min"] !== void 0) def.autofitMin = parseFloat(raw["autofit-min"]);
       if (raw["autofit-max"] !== void 0) def.autofitMax = parseFloat(raw["autofit-max"]);
+      if (raw["trim"] === "cap") def.trim = "cap";
       typographies[name] = def;
     }
     result.typographies = typographies;
@@ -3589,6 +3592,12 @@ ${text}` : text;
           const n = parseFloat(prop.slice(12).trim());
           if (isNaN(n)) throw new Error(`${fileName}:${lineNum}: invalid autofit-max "${prop.slice(12).trim()}"`);
           currentSlot.typographyOverrides.autofitMax = n;
+          continue;
+        }
+        if (prop.startsWith("trim:")) {
+          const v = prop.slice(5).trim();
+          if (v !== "cap" && v !== "none") throw new Error(`${fileName}:${lineNum}: invalid trim "${v}" \u2014 expected cap or none`);
+          currentSlot.typographyOverrides.trim = v;
           continue;
         }
         if (prop.startsWith("textAlign:")) {

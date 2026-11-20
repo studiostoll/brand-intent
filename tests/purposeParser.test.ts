@@ -40,6 +40,15 @@ test('hyphenate: bare, true, false, fit', () => {
   assertEq(h('hyphenate: fit'), 'fit', 'fit');
 });
 
+test('trim: cap or none per slot, anything else throws', () => {
+  const t = (line: string) => parsePurposeFile(PURPOSE(`    ${line}\n`), 'p.purpose').slots[0].typographyOverrides?.trim;
+  assertEq(t('trim: cap'), 'cap', 'cap');
+  assertEq(t('trim: none'), 'none', 'none');
+  let said = '';
+  try { t('trim: x-height'); } catch (e) { said = (e as Error).message; }
+  assertEq(/invalid trim "x-height"/.test(said), true, 'unknown');
+});
+
 test('a purpose without slots is a page without text', () => {
   const p = parsePurposeFile('id: plain\ncompositions: panel\n', 'plain.purpose');
   assertEq(p.slots.length, 0, 'slots');

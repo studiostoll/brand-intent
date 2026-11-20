@@ -423,7 +423,7 @@
     },
     "typography-value": {
       "comment": "Indented typography block properties; font ref colored teal as a cross-reference",
-      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing|autofit-min|autofit-max)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$",
+      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing|autofit-min|autofit-max)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$|^(\\s{2,})(trim)(:\\s*)(cap|none)\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -431,7 +431,10 @@
         "6": { "name": "support.type.property-name.brand-intent-brand" },
         "7": { "name": "punctuation.separator.key-value.brand-intent-brand" },
         "8": { "name": "constant.numeric.brand-intent-brand" },
-        "10": { "name": "support.type.property-name.brand-intent-brand" }
+        "10": { "name": "support.type.property-name.brand-intent-brand" },
+        "12": { "name": "support.type.property-name.brand-intent-brand" },
+        "13": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "14": { "name": "constant.language.brand-intent-brand" }
       }
     },
     "asset-header": {

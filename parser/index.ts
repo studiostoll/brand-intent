@@ -5,7 +5,7 @@
 export { parseIdentityFile } from './identityParser';
 export type { ParsedIdentity, ParsedVoice, ParsedReplacement, ParsedPillars, ParsedAudience, ParsedAntiAudience, ParsedValue, ParsedImagery, ParsedImageTheme, ParsedGoal, ParsedReview } from './identityParser';
 
-export { parseBrandFile, checkBrand, photoLibrary, videoLibrary, PHOTO_EXTENSIONS, VIDEO_EXTENSIONS, FINISH_BLENDS } from './brandParser';
+export { parseBrandFile, checkBrand, photoLibrary, videoLibrary, PHOTO_EXTENSIONS, VIDEO_EXTENSIONS, FINISH_BLENDS, TEXT_TRIMS } from './brandParser';
 export {
   contrastRatio,
   relativeLuminance,
@@ -29,7 +29,7 @@ export {
   DEFAULT_COLOR_RULES,
 } from './colorSystem';
 export type { ReachConfig, ToneAnchors } from './colorSystem';
-export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedBackgroundDef, ParsedFinishDef, FinishBlend, ParsedCameraDef, ParsedLocationDef, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
+export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedBackgroundDef, ParsedFinishDef, FinishBlend, TextTrim, ParsedCameraDef, ParsedLocationDef, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
 
 export { parseDateWindowRanges, isInDateWindow, SAMPLE_WINDOW_MARKER } from './dateWindows';
 export type { DateWindowRange } from './dateWindows';

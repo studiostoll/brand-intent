@@ -345,7 +345,13 @@ export interface ParsedTypographyDef {
   autofitMin?: number;
   /** Autofit maximum font size in cqmin. If absent, autofit is disabled (fixed size). */
   autofitMax?: number;
+  /** `cap`: the text box runs from the first line's cap height to the last line's baseline. Absent: `none`, the full line boxes. */
+  trim?: TextTrim;
 }
+
+/** How a text box is trimmed vertically: `cap` to cap height and baseline, `none` not at all. */
+export type TextTrim = 'cap' | 'none';
+export const TEXT_TRIMS: readonly TextTrim[] = ['cap', 'none'];
 
 export interface ParsedDividerDef {
   /** Line thickness in cqmin */
@@ -942,6 +948,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         if (colonIdx !== -1) {
           const key = trimmed.slice(0, colonIdx).trim();
           const value = trimmed.slice(colonIdx + 1).trim();
+          if (key === 'trim' && !(TEXT_TRIMS as readonly string[]).includes(value)) throw new Error(`${fileName}:${lineNum}: typography "${currentTypographyName}" trim: must be cap or none, got "${value}"`);
           typographiesRaw[currentTypographyName][key] = value;
         } else if (trimmed === 'italic' || trimmed === 'uppercase') {
           // Bare flag — presence means true
@@ -2000,6 +2007,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (raw['strong'] !== undefined) def.strong = parseInt(raw['strong'], 10);
       if (raw['autofit-min'] !== undefined) def.autofitMin = parseFloat(raw['autofit-min']);
       if (raw['autofit-max'] !== undefined) def.autofitMax = parseFloat(raw['autofit-max']);
+      if (raw['trim'] === 'cap') def.trim = 'cap';
       typographies[name] = def;
     }
     result.typographies = typographies;

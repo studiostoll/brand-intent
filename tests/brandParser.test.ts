@@ -812,6 +812,16 @@ test('a page has one finish: two finishes may not cover one theme', () => {
 
 // ── Summary ──────────────────────────────────────────────────────────────────
 
+test('typography trim: cap, none or absent; anything else is an error', () => {
+  const typo = (line: string) => parseBrandFile(`${HEADER}typography headline\n  weight: 700\n  size: 8\n  lineHeight: 1.1\n${line}`, 'test.brand').typographies?.headline;
+  assertEq(typo('  trim: cap\n')?.trim, 'cap', 'cap');
+  assertEq(typo('  trim: none\n')?.trim, undefined, 'none is the default');
+  assertEq(typo('')?.trim, undefined, 'absent');
+  let said = '';
+  try { typo('  trim: baseline\n'); } catch (e) { said = (e as Error).message; }
+  assertEq(said, 'test.brand:9: typography "headline" trim: must be cap or none, got "baseline"', 'unknown');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) {
   console.log('\nFailures:');

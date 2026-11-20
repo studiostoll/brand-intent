@@ -11,6 +11,7 @@ import type { IconRef } from './icons';
 import { SAMPLE_WINDOW_MARKER } from './dateWindows';
 import { timeEntryNames, type ParsedTime } from './timeParser';
 import type { ParsedWork } from './workParser';
+import type { TextTrim } from './brandParser';
 
 // ── Parsed types ──────────────────────────────────────────────────────────────
 
@@ -160,6 +161,8 @@ export interface ParsedPurposeSlot {
     textAlign: 'left' | 'center' | 'right' | 'justify';
     /** true = hyphenate freely (body text); 'fit' = only when a word doesn't fit at autofit-min. */
     hyphenate: boolean | 'fit';
+    /** The typography's `trim:`, per slot; `none` turns a style's `cap` off. */
+    trim: TextTrim;
   }>;
 }
 
@@ -645,6 +648,12 @@ export function parsePurposeFile(content: string, fileName: string): ParsedPurpo
           const n = parseFloat(prop.slice(12).trim());
           if (isNaN(n)) throw new Error(`${fileName}:${lineNum}: invalid autofit-max "${prop.slice(12).trim()}"`);
           currentSlot.typographyOverrides.autofitMax = n;
+          continue;
+        }
+        if (prop.startsWith('trim:')) {
+          const v = prop.slice(5).trim();
+          if (v !== 'cap' && v !== 'none') throw new Error(`${fileName}:${lineNum}: invalid trim "${v}" — expected cap or none`);
+          currentSlot.typographyOverrides.trim = v;
           continue;
         }
         if (prop.startsWith('textAlign:')) {

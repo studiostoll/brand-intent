@@ -847,6 +847,25 @@ font primary
 | `autofit-max:` | float | No | Maximum autofit size (cqmin) |
 | `italic` | flag | No | Enable italic |
 | `uppercase` | flag | No | Enable uppercase transform |
+| `trim:` | `cap` \| `none` | No | Vertical trim of the text box, see [Vertical trim](#vertical-trim). Default: `none` (since v0.66) |
+
+#### Vertical trim
+
+A line box is taller than its letters: the line height adds room above the capitals and below the baseline, more or less of it depending on the font. With `trim: none` a text box is its full line boxes, so the space between two blocks is the distance plus that room. With `trim: cap` the box runs from the cap height of its first line to the baseline of its last line; the line height between the lines stays as it is.
+
+```yaml
+typography headline
+  weight:     700
+  size:       8
+  lineHeight: 1.1
+  trim:       cap
+```
+
+Every distance then measures to the trimmed box: a `spacer-TOKEN` between two slots, a panel's padding, and an anchored flow's position (`flow: top xl` puts the cap height of the first line `xl` below the safe area's top line; `flow: bottom` puts the last baseline on the bottom line). So a distance written in the language is the distance the eye sees, whatever font and line height a style has.
+
+Descenders (g, p, y) hang below a trimmed box, and accents on capitals (É, Å) above it. The box doesn't make room for them, and the safe area must still hold them: a trimmed text whose last baseline sits on the safe area's bottom line (`flow: bottom` without a distance) puts its descenders outside the safe area. A composition that sets trimmed text on an edge gives it a distance at least as deep as the descenders, `flow: bottom s` rather than `flow: bottom`.
+
+`trim:` is a property of the style, so a slot can change it in its `override:` (`trim: none` turns a style's `cap` off for one slot). An unknown value is an error.
 
 ### `spacing:` Block
 
@@ -1340,7 +1359,7 @@ On a `.story` page the same slot can take the place's facts: `Hours: {week-hours
 
 #### `override:` Sub-Block (4-space indent)
 
-Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`, `hyphenate`.
+Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`, `hyphenate`, `trim`.
 
 `hyphenate` sets how a slot may hyphenate (German syllables):
 
