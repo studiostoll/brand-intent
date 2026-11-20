@@ -1166,10 +1166,12 @@ function splitLabelledItem(text) {
 }
 
 // parser/brandParser.ts
+var FINISH_BLENDS = ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"];
 function parseLineHeight(value) {
   const m = value.trim().match(/^(\d+(?:\.\d+)?)(%?)$/);
   return m ? m[2] ? parseFloat(m[1]) / 100 : parseFloat(m[1]) : NaN;
 }
+var TEXT_TRIMS = ["cap", "none"];
 var GROUP_KEYWORDS = /* @__PURE__ */ new Set(["primary", "secondary", "accent", "neutral"]);
 var NEUTRAL_ROLES = /* @__PURE__ */ new Set(["light", "subtle", "mid", "muted", "dark"]);
 var STATE_KEYS = /* @__PURE__ */ new Set(["problem", "warning", "success", "info", "inactive"]);
@@ -1330,6 +1332,8 @@ function parseBrandFile(content, fileName) {
   let photoLookDeclared = false;
   const warnings = [];
   const framingsRaw = [];
+  const finishesRaw = [];
+  const backgroundsRaw = [];
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const lineNum = i + 1;
@@ -1658,6 +1662,7 @@ function parseBrandFile(content, fileName) {
         if (colonIdx2 !== -1) {
           const key2 = trimmed.slice(0, colonIdx2).trim();
           const value2 = trimmed.slice(colonIdx2 + 1).replace(/\s+#.*$/, "").trim();
+          if (key2 === "trim" && !TEXT_TRIMS.includes(value2)) throw new Error(`${fileName}:${lineNum}: typography "${currentTypographyName}" trim: must be cap or none, got "${value2}"`);
           typographiesRaw[currentTypographyName][key2] = value2;
         } else if (trimmed === "italic" || trimmed === "uppercase") {
           typographiesRaw[currentTypographyName][trimmed] = "true";
@@ -1793,6 +1798,28 @@ function parseBrandFile(content, fileName) {
         framingsRaw[framingsRaw.length - 1].props[trimmed.slice(0, colonIdx2).trim()] = { value: trimmed.slice(colonIdx2 + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === "background") {
+        const trimmed = raw.trim();
+        if (trimmed === "" || trimmed.startsWith("# ")) continue;
+        const colonIdx2 = trimmed.indexOf(":");
+        if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: background property must be "KEY: VALUE", got "${trimmed}"`);
+        const key2 = trimmed.slice(0, colonIdx2).trim();
+        const bg = backgroundsRaw[backgroundsRaw.length - 1];
+        if (bg.props[key2]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${key2}: twice`);
+        bg.props[key2] = { value: trimmed.slice(colonIdx2 + 1).replace(/\s+#\s.*$/, "").trim(), line: lineNum };
+        continue;
+      }
+      if (activeBlock === "finish") {
+        const trimmed = raw.trim();
+        if (trimmed === "" || trimmed.startsWith("# ")) continue;
+        const colonIdx2 = trimmed.indexOf(":");
+        if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: finish property must be "KEY: VALUE", got "${trimmed}"`);
+        const key2 = trimmed.slice(0, colonIdx2).trim();
+        const fin = finishesRaw[finishesRaw.length - 1];
+        if (fin.props[key2]) throw new Error(`${fileName}:${lineNum}: finish "${fin.id}" has ${key2}: twice`);
+        fin.props[key2] = { value: trimmed.slice(colonIdx2 + 1).replace(/\s+#\s.*$/, "").trim(), line: lineNum };
+        continue;
+      }
       continue;
     }
     if (raw.trim() === "") continue;
@@ -1884,6 +1911,24 @@ function parseBrandFile(content, fileName) {
       if (framingsRaw.some((f) => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate framing "${id}"`);
       framingsRaw.push({ id, line: lineNum, props: {} });
       activeBlock = "framing";
+      continue;
+    }
+    const backgroundMatch = raw.match(/^background\s+(\S+)\s*(?:#\s.*)?$/);
+    if (backgroundMatch) {
+      const id = backgroundMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: background name must be lowercase kebab-case, got "${id}"`);
+      if (backgroundsRaw.some((b) => b.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate background "${id}"`);
+      backgroundsRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = "background";
+      continue;
+    }
+    const finishMatch = raw.match(/^finish\s+(\S+)\s*(?:#\s.*)?$/);
+    if (finishMatch) {
+      const id = finishMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: finish name must be lowercase kebab-case, got "${id}"`);
+      if (finishesRaw.some((f) => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate finish "${id}"`);
+      finishesRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = "finish";
       continue;
     }
     const themeMatch = raw.match(/^theme\s+(\S+)/);
@@ -2305,6 +2350,16 @@ function parseBrandFile(content, fileName) {
   const neutral = colorGroups.find((g) => g.key === "neutral");
   const neutralText = ["dark", "light"].map((role) => neutral?.entries.find((e) => e.role === role)?.hex).filter((h) => !!h);
   for (const [name, theme] of Object.entries(themes)) {
+    if (theme["gradient"] !== void 0) {
+      const id = theme["gradient"].split("/").pop()?.replace(/\.[a-z]+$/i, "").toLowerCase() || name.toLowerCase();
+      throw new Error(`${fileName}: theme "${name}": gradient: is replaced by a background block (v0.61). Write:
+
+background ${id}
+  kind:   gradient
+  src:    ${theme["gradient"]}
+  themes: ${name}
+`);
+    }
     const pairRaw = {};
     for (const key of PAIR_KEYS) {
       if (theme[key] !== void 0) {
@@ -2376,6 +2431,106 @@ function parseBrandFile(content, fileName) {
     if (theme["counter-bg"] === void 0 && theme["label-bg"] !== void 0) theme["counter-bg"] = theme["label-bg"];
     if (theme["counter-fg"] === void 0 && theme["label-fg"] !== void 0) theme["counter-fg"] = theme["label-fg"];
   }
+  const backgrounds = backgroundsRaw.map(({ id, line, props }) => {
+    const kind = props["kind"]?.value;
+    if (kind !== "gradient" && kind !== "pattern") throw new Error(`${fileName}:${line}: background "${id}" needs "kind: gradient" or "kind: pattern"${kind ? `, got "${kind}"` : ""}`);
+    const known = new Set(kind === "gradient" ? ["label", "kind", "themes", "src"] : ["label", "kind", "themes", "generator", "tone"]);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: background "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(", ")})`);
+    }
+    const def = { id, label: props["label"]?.value || id, kind };
+    if (props["themes"]) {
+      const names = props["themes"].value.split(",").map((t) => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props["themes"].line}: background "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props["themes"].line}: background "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    } else if (kind === "gradient") {
+      throw new Error(`${fileName}:${line}: background "${id}" is a gradient and needs "themes:", the themes whose colours it carries`);
+    }
+    if (kind === "gradient") {
+      const src = props["src"];
+      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split("/").includes("..")) {
+        throw new Error(`${fileName}:${src.line}: background "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+    } else {
+      const gen = props["generator"]?.value;
+      if (!gen) throw new Error(`${fileName}:${line}: background "${id}" is a pattern and needs "generator:" (e.g. ripples)`);
+      if (!/^[a-z][a-z0-9-]*$/.test(gen)) throw new Error(`${fileName}:${props["generator"].line}: background "${id}" generator must be a lowercase id, got "${gen}"`);
+      def.generator = gen;
+      const tone = props["tone"]?.value;
+      if (tone !== "shade" && tone !== "tint") throw new Error(`${fileName}:${props["tone"]?.line ?? line}: background "${id}" needs "tone: shade" or "tone: tint"${tone ? `, got "${tone}"` : ""}`);
+      def.tone = tone;
+    }
+    return def;
+  });
+  const finishes = finishesRaw.map(({ id, line, props }) => {
+    const kind = props["kind"]?.value;
+    if (kind !== "grain" && kind !== "image") throw new Error(`${fileName}:${line}: finish "${id}" needs "kind: grain" or "kind: image"${kind ? `, got "${kind}"` : ""}`);
+    const common = ["label", "kind", "themes", "blend", "opacity"];
+    const known = new Set(kind === "grain" ? [...common, "amount", "size"] : [...common, "src", "fit", "scale"]);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: finish "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(", ")})`);
+    }
+    const percent = (key, min) => {
+      const p = props[key];
+      const m = p.value.match(/^(\d+(?:\.\d+)?)%$/);
+      const n = m ? parseFloat(m[1]) : NaN;
+      if (!(n >= min && n <= 100)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a percentage from ${min}% to 100%, got "${p.value}"`);
+      return n;
+    };
+    const cqmin = (key) => {
+      const p = props[key];
+      const n = /^\d+(?:\.\d+)?$/.test(p.value) ? parseFloat(p.value) : NaN;
+      if (!(n > 0)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a number above 0, in cqmin (% of the canvas's shorter side), got "${p.value}"`);
+      return n;
+    };
+    const blend = props["blend"]?.value ?? "overlay";
+    if (!FINISH_BLENDS.includes(blend)) throw new Error(`${fileName}:${props["blend"].line}: finish "${id}" blend: must be one of ${FINISH_BLENDS.join(", ")}, got "${blend}"`);
+    const def = { id, label: props["label"]?.value || id, kind, blend, opacity: props["opacity"] ? percent("opacity", 1) : 100 };
+    if (props["themes"]) {
+      const names = props["themes"].value.split(",").map((t) => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props["themes"].line}: finish "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props["themes"].line}: finish "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    }
+    if (kind === "grain") {
+      if (!props["amount"]) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "amount:", the share of the surface that carries a grain (e.g. 12%)`);
+      if (!props["size"]) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "size:", one grain in cqmin (e.g. 0.15)`);
+      def.amount = percent("amount", 1);
+      def.size = cqmin("size");
+    } else {
+      const src = props["src"];
+      if (!src) throw new Error(`${fileName}:${line}: finish "${id}" is an image and needs "src:", the texture in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split("/").includes("..")) {
+        throw new Error(`${fileName}:${src.line}: finish "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+      const fit = props["fit"]?.value;
+      if (fit !== "tile" && fit !== "cover") throw new Error(`${fileName}:${props["fit"]?.line ?? line}: finish "${id}" needs "fit: tile" or "fit: cover"${fit ? `, got "${fit}"` : ""}`);
+      def.fit = fit;
+      if (fit === "tile") {
+        if (!props["scale"]) throw new Error(`${fileName}:${line}: finish "${id}" is tiled and needs "scale:", the width of one tile in cqmin`);
+        def.scale = cqmin("scale");
+      } else if (props["scale"]) {
+        throw new Error(`${fileName}:${props["scale"].line}: finish "${id}" has scale:, but only a tiled image takes one (fit: cover fills the page)`);
+      }
+    }
+    return def;
+  });
+  for (let i = 0; i < finishes.length; i++) {
+    for (let j = 0; j < i; j++) {
+      const a = finishes[j], b = finishes[i];
+      const shared = !a.themes || !b.themes ? a.themes ?? b.themes ?? Object.keys(themes) : a.themes.filter((t) => b.themes.includes(t));
+      if (!a.themes && !b.themes) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on every page; a page has one finish, so give them themes:`);
+      if (shared.length > 0) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on theme "${shared[0]}"; a page has one finish`);
+    }
+  }
   if (colorRulesDeclared) {
     for (const [name, theme] of Object.entries(themes)) {
       const bg = theme["background"];
@@ -2398,6 +2553,8 @@ function parseBrandFile(content, fileName) {
     result.themeDescriptions = themeDescriptions;
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
+  if (backgrounds.length > 0) result.backgrounds = backgrounds;
+  if (finishes.length > 0) result.finishes = finishes;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {
@@ -2406,7 +2563,9 @@ function parseBrandFile(content, fileName) {
       s: parseFloat(spacingRaw["s"] ?? "2"),
       m: parseFloat(spacingRaw["m"] ?? "3"),
       l: parseFloat(spacingRaw["l"] ?? "5"),
-      xl: parseFloat(spacingRaw["xl"] ?? "6.5")
+      xl: parseFloat(spacingRaw["xl"] ?? "6.5"),
+      ...spacingRaw["2xl"] !== void 0 ? { "2xl": parseFloat(spacingRaw["2xl"]) } : {},
+      ...spacingRaw["3xl"] !== void 0 ? { "3xl": parseFloat(spacingRaw["3xl"]) } : {}
     };
   }
   if (Object.keys(dividersRaw).length > 0) {
@@ -2471,6 +2630,7 @@ function parseBrandFile(content, fileName) {
         if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}: typography "${name}": cap is the height of the capitals in x (e.g. "2x"), got "${raw["cap"]}"`);
         def.cap = parseFloat(m[1]);
       }
+      if (raw["trim"] === "cap") def.trim = "cap";
       typographies[name] = def;
     }
     result.typographies = typographies;
@@ -2618,10 +2778,10 @@ function parseBrandFile(content, fileName) {
     return { padding, radius: isNaN(radius) ? defaults.radius : radius };
   };
   if (Object.keys(labelRaw).length > 0) {
-    result.label = parseBadgeStyle(labelRaw, { padding: [0.5, 1, 0.7, 1], radius: 0 });
+    result.label = parseBadgeStyle(labelRaw, { padding: [0.89, 1.78, 1.24, 1.78], radius: 0 });
   }
   if (Object.keys(ctaRaw).length > 0) {
-    result.cta = parseBadgeStyle(ctaRaw, { padding: [0.8, 2.5, 0.8, 2.5], radius: 999 });
+    result.cta = parseBadgeStyle(ctaRaw, { padding: [1.42, 4.44, 1.42, 4.44], radius: 999 });
   }
   if (iconsDeclared) {
     if (icons.length === 0) throw new Error(`${fileName}: icons block is empty`);
@@ -2815,14 +2975,14 @@ function parseBrandFile(content, fileName) {
     if (scrimPadding) {
       const parts = scrimPadding.value.split(/\s+/);
       if (parts.length > 4 || !parts.every((p) => /^\d+(\.\d+)?$/.test(p))) {
-        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqh), got "${scrimPadding.value}"`);
+        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqmin), got "${scrimPadding.value}"`);
       }
       const n = parts.map(Number);
       look.scrimPadding = [n[0], n[1] ?? n[0], n[2] ?? n[0], n[3] ?? n[1] ?? n[0]];
     }
     const scrimGap = photoLookRaw["scrim-gap"];
     if (scrimGap) {
-      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqh), got "${scrimGap.value}"`);
+      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqmin), got "${scrimGap.value}"`);
       look.scrimGap = Number(scrimGap.value);
     }
     result.photoLook = look;
@@ -3239,9 +3399,11 @@ function parsePurposeFile(content, fileName) {
   let inOverrideBlock = false;
   let inListBlock = false;
   let inMultiLineSamples = false;
+  let inMultiLineValue = false;
   function finalizeSlot(lineNum) {
     if (!currentSlot) return;
     const s = currentSlot;
+    if (s.value === "") throw new Error(`${fileName}:${lineNum}: slot "${s.id}": empty value`);
     if (!s.id) throw new Error(`${fileName}:${lineNum}: slot missing id`);
     if (!s.label) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing label`);
     if (!s.maxLength) throw new Error(`${fileName}:${lineNum}: slot "${s.id}" missing maxLength`);
@@ -3282,6 +3444,7 @@ function parsePurposeFile(content, fileName) {
     inOverrideBlock = false;
     inListBlock = false;
     inMultiLineSamples = false;
+    inMultiLineValue = false;
     slots.push(s);
     currentSlot = null;
   }
@@ -3532,6 +3695,15 @@ function parsePurposeFile(content, fileName) {
       currentSlot = { id: slotId, samples: [], typography: {} };
       continue;
     }
+    if (inMultiLineValue && currentSlot) {
+      if (raw.startsWith("    ")) {
+        currentSlot.value = currentSlot.value ? `${currentSlot.value}
+${text}` : text;
+        currentSlot.samples = [currentSlot.value];
+        continue;
+      }
+      inMultiLineValue = false;
+    }
     if (inMultiLineSamples && currentSlot) {
       const baseIndent = inMultiLineSamples === "list" ? 6 : 4;
       const contIndent = baseIndent + 2;
@@ -3629,6 +3801,12 @@ function parsePurposeFile(content, fileName) {
           const n = parseFloat(prop.slice(12).trim());
           if (isNaN(n)) throw new Error(`${fileName}:${lineNum}: invalid autofit-max "${prop.slice(12).trim()}"`);
           currentSlot.typographyOverrides.autofitMax = n;
+          continue;
+        }
+        if (prop.startsWith("trim:")) {
+          const v = prop.slice(5).trim();
+          if (v !== "cap" && v !== "none") throw new Error(`${fileName}:${lineNum}: invalid trim "${v}" \u2014 expected cap or none`);
+          currentSlot.typographyOverrides.trim = v;
           continue;
         }
         if (prop.startsWith("textAlign:")) {
@@ -3765,7 +3943,11 @@ function parsePurposeFile(content, fileName) {
       }
       if (prop.startsWith("value:")) {
         const val = prop.slice(6).trim();
-        if (!val) throw new Error(`${fileName}:${lineNum}: empty value`);
+        if (!val) {
+          currentSlot.value = "";
+          inMultiLineValue = true;
+          continue;
+        }
         currentSlot.value = val;
         currentSlot.samples = [val];
         continue;
@@ -3964,6 +4146,23 @@ var ILLUSTRATION_ANCHORS = /* @__PURE__ */ new Set([
   "bottom-center",
   "bottom-right"
 ]);
+var SPACING_TOKENS = ["xs", "s", "m", "l", "xl", "2xl", "3xl"];
+function readFlowDistance(raw, edge, where) {
+  const fail = (msg) => {
+    throw new Error(`${where}: ${msg}`);
+  };
+  if (edge === "center") {
+    const m = raw.match(/^([+-])(.+)$/);
+    if (!m) return fail(`a centre offset needs a sign: +${raw} moves it down, -${raw} up`);
+    const [, sign, rest] = m;
+    if (SPACING_TOKENS.includes(rest)) return sign === "-" ? `-${rest}` : rest;
+    if (/^\d+(?:\.\d+)?$/.test(rest)) return (sign === "-" ? -1 : 1) * parseFloat(rest);
+    return fail(`invalid centre offset "${raw}" (expected +/- a spacing token or a number)`);
+  }
+  if (SPACING_TOKENS.includes(raw)) return raw;
+  if (/^\d+(?:\.\d+)?$/.test(raw)) return parseFloat(raw);
+  return fail(`invalid flow distance "${raw}" (expected a spacing token: ${SPACING_TOKENS.join(", ")}, or a number in cqmin)`);
+}
 var GRID_Y_KEYWORDS = /* @__PURE__ */ new Set(["top", "center", "bottom"]);
 function checkSlotName(id, where) {
   if (!isSlotIdShape(id)) return false;
@@ -4018,6 +4217,7 @@ function parseCompositionFile(content, fileName) {
   const slots = [];
   const sticky = [];
   let flow = null;
+  const anchoredFlows = [];
   let illustration = void 0;
   function parseFraction(s, ctx) {
     const parts = s.split("/");
@@ -4390,7 +4590,16 @@ function parseCompositionFile(content, fileName) {
       let columnGap;
       let split = void 0;
       let width;
-      if (value.startsWith("panel")) {
+      let anchor = void 0;
+      const firstWord = value.split(/\s+/)[0];
+      if (firstWord === "top" || firstWord === "center" || firstWord === "bottom") {
+        const parts = value.split(/\s+/);
+        if (parts.length > 2) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(2).join(" ")}" in anchored flow (expected: flow: top|bottom [DISTANCE] or flow: center [+/-OFFSET])`);
+        anchor = { edge: firstWord };
+        if (parts[1] !== void 0) {
+          anchor.distance = readFlowDistance(parts[1], firstWord, `${fileName}:${lineNum}`);
+        }
+      } else if (value.startsWith("panel")) {
         const all = value.split(/\s+/);
         const inset = all.includes("inset");
         const parts = all.filter((p) => p !== "inset");
@@ -4413,13 +4622,25 @@ function parseCompositionFile(content, fileName) {
         width = parseFraction(parts[1], `${fileName}:${lineNum}`);
         if (width <= 0 || width > 1) throw new Error(`${fileName}:${lineNum}: flow width "${parts[1]}" must be above 0 and at most 1/1`);
       } else if (value) {
-        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected panel, split or width)`);
+        throw new Error(`${fileName}:${lineNum}: unknown flow type "${value}" (expected top, center, bottom, panel, split or width)`);
       }
       const flowItems = [];
       while (i + 1 < lines.length) {
         const nextLine = lines[i + 1].trim();
         if (nextLine === "") {
           i++;
+          continue;
+        }
+        const onFormat = nextLine.match(/^on\s+(\S+?):\s+(\S+)$/);
+        if (onFormat || nextLine.startsWith("on ")) {
+          i++;
+          if (!anchor) throw new Error(`${fileName}:${i + 1}: "on FORMAT:" is only allowed in an anchored flow (flow: top|center|bottom)`);
+          if (!onFormat) throw new Error(`${fileName}:${i + 1}: invalid "${nextLine}" (expected: on FORMAT: DISTANCE, e.g. on 4:5: 12.04)`);
+          const [, formatId, raw2] = onFormat;
+          const d = readFlowDistance(raw2, anchor.edge, `${fileName}:${i + 1}`);
+          anchor.formats ??= {};
+          if (formatId in anchor.formats) throw new Error(`${fileName}:${i + 1}: format "${formatId}" has a distance twice in this flow`);
+          anchor.formats[formatId] = d;
           continue;
         }
         if (nextLine.startsWith("direction:")) {
@@ -4487,7 +4708,14 @@ function parseCompositionFile(content, fileName) {
           flowItems.push({ type: "slot", id: slotId, textAlign: align, verticalAlign: vAlign, columns: slotCols, columnGap: slotGap });
         }
       }
-      flow = { panel, split, ...width !== void 0 ? { width } : {}, direction, columns, columnGap, items: flowItems };
+      if (anchor) {
+        if (flowItems.some((it) => it.type === "spacer" && it.size === "auto")) throw new Error(`${fileName}:${lineNum}: "spacer-auto" in an anchored flow (the block is as tall as its content, so there is no room to fill)`);
+        if (flowItems.some((it) => it.type === "photo")) throw new Error(`${fileName}:${lineNum}: "| photo" is only allowed in a plain "flow:"`);
+        anchoredFlows.push({ anchor, direction, columns, columnGap, items: flowItems });
+      } else {
+        if (flow) throw new Error(`${fileName}:${lineNum}: a second plain "flow:" (a composition has one plain flow, or several anchored ones: flow: top|center|bottom)`);
+        flow = { panel, split, ...width !== void 0 ? { width } : {}, direction, columns, columnGap, items: flowItems };
+      }
       continue;
     }
     if (line.startsWith("group:")) {
@@ -4570,9 +4798,10 @@ function parseCompositionFile(content, fileName) {
     if (imageExplicit) throw new Error(`${fileName}: "image:" and a "| photo" flow item can't be combined (the flow photo is the page's image)`);
     if (flow.panel || flow.split) throw new Error(`${fileName}: "| photo" is only allowed in a plain "flow:" (not in a panel or split)`);
   }
+  if (flow && anchoredFlows.length) throw new Error(`${fileName}: a plain "flow:" and anchored flows (flow: top|center|bottom) can't be combined`);
   if (!image) image = "full";
   if (mode !== "regions" && !logo && !logoNone && !sticky.length) throw new Error(`${fileName}: missing "logo:" line (or use sticky: block)`);
-  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || void 0, icon, slots, sticky, flow, illustration, ...mode === "regions" ? { regions } : {} };
+  return { id, name, description, mode, image, imageExplicit, logo, logoNone: logoNone || void 0, icon, slots, sticky, flow, anchoredFlows, illustration, ...mode === "regions" ? { regions } : {} };
 }
 
 // parser/personParser.ts
@@ -5713,6 +5942,19 @@ function checkFiles(files) {
     const file = `${composition.id}.composition`;
     if (!used.has(composition.id)) warning(file, "no purpose lists this composition, so it is never used");
     if (composition.mode === "grid" && composition.sticky.length) warning(file, "sticky: is for flow mode; a grid-mode composition ignores it");
+    const anchored = composition.anchoredFlows ?? [];
+    for (const edge of ["top", "center", "bottom"]) {
+      if (anchored.filter((f) => f.anchor?.edge === edge).length > 1) warning(file, `two flows are anchored to the ${edge}, so they overlap; make them one flow`);
+      if (edge !== "center" && anchored.some((f) => f.anchor?.edge === edge) && composition.sticky.some((st) => st.position === edge)) warning(file, `flow: ${edge} and sticky: ${edge} overlap; a sticky bar doesn't push an anchored flow`);
+    }
+    for (const { anchor } of anchored) {
+      if (!anchor) continue;
+      if (formats.length) {
+        for (const id of Object.keys(anchor.formats ?? {})) {
+          if (!formats.some((f) => f.id === id)) warning(file, `flow: ${anchor.edge} has a distance for format "${id}", which the brand doesn't declare`);
+        }
+      }
+    }
   }
   const firstTheme = Object.values(brand?.themes ?? {})[0];
   const themeKeys = firstTheme && new Set(Object.keys(firstTheme));
@@ -5874,17 +6116,17 @@ function listMedia(mediaDir, extensions, prefix = "", skipped = []) {
 function mediaIndexText(mediaDir, extensions, skipped) {
   return JSON.stringify(listMedia(mediaDir, extensions, "", skipped), null, 2) + "\n";
 }
-function walk(dir) {
+function walk(dir, skip = SKIP_DIRS) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-    if (e.isDirectory()) return SKIP_DIRS.has(e.name) || e.name.startsWith(".") ? [] : walk(join(dir, e.name));
+    if (e.isDirectory()) return skip.has(e.name) || e.name.startsWith(".") ? [] : walk(join(dir, e.name), skip);
     return [join(dir, e.name)];
   });
 }
-function checkFolder(dir, label = dir) {
+function checkFolder(dir, label = dir, { skip = [] } = {}) {
   const errors = [];
   const warnings = [];
   const counts = {};
-  const files = walk(dir);
+  const files = walk(dir, /* @__PURE__ */ new Set([...SKIP_DIRS, ...skip]));
   const name = (f) => relative(dir, f);
   const read = (f) => readFileSync(f, "utf8");
   const ofType = (ext) => {
@@ -5945,6 +6187,9 @@ function checkFolder(dir, label = dir) {
       if (library && kind === "photo") photoIds = library.map((p) => p.id);
       if (library && kind === "video") videoIds = library.map((v) => v.id);
     }
+  }
+  for (const f of brand?.finishes ?? []) {
+    if (f.src && !existsSync(join(dir, f.src))) errors.push(`${name(brandFiles[0])}: finish "${f.id}" src: ${f.src} is not in the brand folder`);
   }
   for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds, videos: videoIds })) {
     (issue.severity === "error" ? errors : warnings).push(`${issue.file}: ${issue.message}`);

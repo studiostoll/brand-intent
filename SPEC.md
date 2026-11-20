@@ -342,6 +342,8 @@ The brand file encodes derived expression intent: visual language and operationa
 | `color-rules` | block | No | Contrast minimums and tone combinations to avoid |
 | `color-families` | block | No | Ordered color sets with roles, borrowing rules and curated pairs |
 | `theme NAME` | block | Yes (1+) | Semantic theme (repeatable) |
+| `background NAME` | block | No | The layer under the page: a gradient or a pattern, and the themes it lies under (repeatable) |
+| `finish NAME` | block | No | The surface over the whole page: grain or a texture image, and the themes it lies on (repeatable, one per page) |
 | `font NAME` | block | Yes (1+) | Font definition (repeatable) |
 | `typography NAME` | block | Yes (1+) | Named typography style (repeatable) |
 | `spacing:` | block | No | Spacing token scale |
@@ -710,6 +712,99 @@ theme Shop
   divider:        $accent1 40%
 ```
 
+A theme's `background` slot (in a pair theme, `ground:`) is the plain colour of the page. What lies on it, a gradient or a pattern, is a [`background NAME` block](#background-name-block), which names the themes it belongs to. Before v0.61 a theme named its gradient with `gradient:`; the parser rejects the key and writes out the block that replaces it.
+
+### `background NAME` Block
+
+The background is the layer under the page: above the theme's plain `background` colour, below a photo or video. A page has at most one. `NAME` is a lowercase kebab-case identifier; `kind:` says what the background is, and each kind has its own keys. Since v0.61.
+
+```yaml
+background dusk
+  label:  Dusk
+  kind:   gradient
+  src:    backgrounds/dusk.png
+  themes: Dusk
+
+background ripples
+  label:     Ripples
+  kind:      pattern
+  generator: ripples
+  tone:      shade
+```
+
+| Key | Type | Kind | Required | Description |
+|-----|------|------|----------|-------------|
+| `label:` | string | all | No | Display name. Default: the block's name |
+| `kind:` | `gradient` \| `pattern` | all | Yes | What the background is |
+| `themes:` | theme names, comma list | all | Gradient: yes. Pattern: no | The themes it lies under (see Pairing) |
+| `src:` | path | gradient | Yes | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
+| `generator:` | id | pattern | Yes | The generator that draws it. Ids are the implementation's, like a logo's `generator:` (for example `ripples`, `swell`, `wind`) |
+| `tone:` | `shade` \| `tint` | pattern | Yes | A shade is darker than the ground, a tint lighter |
+
+**Gradient.** Its colours are its themes' colours, so it names them. Each theme keeps its `ground:` (or `background`) as the colour the gradient stands for; the slots derived from the ground (`label-fg`, `sticker-fg`) take it. The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so its grain (the noise that keeps a gradient from banding) looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when the page gets the background and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown.
+
+**Pattern.** A pattern has one colour, taken from the ground: a shade is darker, a tint lighter, and near black or white the direction turns so the pattern stays visible. So a pattern fits any theme. How strong, how large and in which direction it is drawn are the page's, not the language's.
+
+**Pairing.** The background names its themes, the theme doesn't name its background.
+
+- A background with `themes:` lies under every page in those themes. A theme named by several takes one of them per page.
+- A pattern without `themes:` fits every theme and lies under no page until someone picks it.
+- A theme in `themes:` the brand doesn't declare is an error.
+
+A photo or video on the page lies above the background; with `image: full` it is covered.
+
+**Contrast.** A background adds no rule to its themes: each is checked against its ground, as every theme. Whether text reads on a gradient is checked per page, against the part of the gradient under the text, by an implementation that reads the image.
+
+**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand: a generated gradient (`kind: gradient` with colour stops instead of `src:`). Grain over the page is a [finish](#finish-name-block), not a background.
+
+### `finish NAME` Block
+
+A finish is the surface of the whole page: it lies over everything on it, ground, background, photo, text and logo, on screen and in print. A brand that wants grain or a paper texture declares it; an implementation adds no finish of its own. `NAME` is a lowercase kebab-case identifier; `kind:` says what the finish is, and each kind has its own keys. Since v0.64.
+
+```yaml
+finish grain
+  label:   Grain
+  kind:    grain
+  amount:  12%
+  size:    0.15
+  blend:   overlay
+  opacity: 40%
+
+finish paper
+  label:   Paper
+  kind:    image
+  src:     finishes/paper.png
+  fit:     tile
+  scale:   40
+  blend:   multiply
+  themes:  Day
+```
+
+| Key | Type | Kind | Required | Description |
+|-----|------|------|----------|-------------|
+| `label:` | string | all | No | Display name. Default: the block's name |
+| `kind:` | `grain` \| `image` | all | Yes | What the finish is: generated grain, or a texture image |
+| `themes:` | theme names, comma list | all | No | The themes whose pages it lies on. Without it, every page |
+| `blend:` | a blend mode (see Blend) | all | No | How it meets what lies under it. Default: `overlay` |
+| `opacity:` | percentage, 1–100% | all | No | How strongly it shows. Default: `100%` |
+| `amount:` | percentage, 1–100% | grain | Yes | The share of the surface that carries a grain |
+| `size:` | number, cqmin | grain | Yes | The size of one grain, in % of the canvas's shorter side |
+| `src:` | path | image | Yes | The texture as a `.png`, `.jpg` or `.webp` file inside the brand folder. `brand-intent check` reports a file that isn't there |
+| `fit:` | `tile` \| `cover` | image | Yes | `tile` repeats the image; `cover` stretches one image over the page |
+| `scale:` | number, cqmin | image, `tile` | Yes | The width of one tile, in % of the canvas's shorter side. `cover` takes none |
+
+**Sizes.** `size:` and `scale:` are in cqmin, like type sizes, so a grain and a tile are the same share of the page on a square, a portrait and a story. They are numbers, not spacing tokens: spacing steps are distances between blocks (`xs` is 1.5 cqmin, 16 px on a 1080 px post), and a grain is a fraction of that.
+
+**Blend.** The modes are the sixteen a browser (`mix-blend-mode`) and a PDF (blend modes of the transparency model) both have, under the same names, so a finish looks the same on screen and in print: `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`, `hue`, `saturation`, `color`, `luminosity`. `normal` lays the finish over the page at its `opacity:`; `multiply`, `darken` and `color-burn` darken; `screen`, `lighten` and `color-dodge` lighten; `overlay`, `soft-light` and `hard-light` do both and keep the page's mid tones; `difference` and `exclusion` invert; `hue`, `saturation`, `color` and `luminosity` take one property of the finish's colour.
+
+**Pairing.** A page has one finish. A finish without `themes:` lies on every page; with it, on the pages in those themes. Two finishes that would lie on one page are an error: two without `themes:`, one without and one with, or two that name the same theme. A theme in `themes:` the brand doesn't declare is an error. A brand that wants grain on a paper texture puts both in one image.
+
+**Print.** A grain smaller than the halftone screen disappears in print. An implementation that prints keeps a grain at least two halftone cells wide (about 0.35 mm at 150 lpi), and keeps a tile at least its source pixels at the print resolution. The language says how large a grain is on the page; how far print must enlarge it is the implementation's. On screen, a grain is drawn no smaller than one device pixel.
+
+**Contrast.** A finish adds no contrast rule: text and logo are checked against the ground, as without it.
+
+**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand.
+
 ### `font NAME` Block
 
 `NAME` is a lowercase identifier. The first font defined is the brand default.
@@ -744,17 +839,36 @@ font primary
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `weight:` | int | Yes | Font weight (100-900) |
-| `size:` | float | Yes, unless `cap:` is set | Font size in cqh |
+| `size:` | float | Yes, unless `cap:` is set | Font size in cqmin (% of the canvas's shorter side, like spacing) |
 | `lineHeight:` | float or percent | Yes | Line height as a multiplier or a percentage: `1.1` and `110%` are the same value |
 | `cap:` | x | No | Height of the capitals in print, in x (`cap: 2x`). Needs a [`print`](#print-block) block with `x:` |
 | `font:` | string | No | Named font key; defaults to brand primary |
 | `strong:` | int | No | Weight for `**strong**` markup (100-900) |
 | `opsz:` | float | No | Optical size axis value |
 | `letterSpacing:` | float | No | Letter spacing in em |
-| `autofit-min:` | float | No | Minimum autofit size (cqh) |
-| `autofit-max:` | float | No | Maximum autofit size (cqh) |
+| `autofit-min:` | float | No | Minimum autofit size (cqmin) |
+| `autofit-max:` | float | No | Maximum autofit size (cqmin) |
 | `italic` | flag | No | Enable italic |
 | `uppercase` | flag | No | Enable uppercase transform |
+| `trim:` | `cap` \| `none` | No | Vertical trim of the text box, see [Vertical trim](#vertical-trim). Default: `none` (since v0.66) |
+
+#### Vertical trim
+
+A line box is taller than its letters: the line height adds room above the capitals and below the baseline, more or less of it depending on the font. With `trim: none` a text box is its full line boxes, so the space between two blocks is the distance plus that room. With `trim: cap` the box runs from the cap height of its first line to the baseline of its last line; the line height between the lines stays as it is.
+
+```yaml
+typography headline
+  weight:     700
+  size:       8
+  lineHeight: 1.1
+  trim:       cap
+```
+
+Every distance then measures to the trimmed box: a `spacer-TOKEN` between two slots, a panel's padding, and an anchored flow's position (`flow: top xl` puts the cap height of the first line `xl` below the safe area's top line; `flow: bottom` puts the last baseline on the bottom line). So a distance written in the language is the distance the eye sees, whatever font and line height a style has.
+
+Descenders (g, p, y) hang below a trimmed box, and accents on capitals (É, Å) above it. The box doesn't make room for them, and the safe area must still hold them: a trimmed text whose last baseline sits on the safe area's bottom line (`flow: bottom` without a distance) puts its descenders outside the safe area. A composition that sets trimmed text on an edge gives it a distance at least as deep as the descenders, `flow: bottom s` rather than `flow: bottom`.
+
+`trim:` is a property of the style, so a slot can change it in its `override:` (`trim: none` turns a style's `cap` off for one slot). An unknown value is an error.
 
 A style is the one source for type, on screen and in print. `size:` is its size on a screen format, `cap:` its size in print; font, weight and line height are the same in both. A style with `cap:` and no `size:` is a style for print only.
 
@@ -788,6 +902,7 @@ spacing:
 |-----|------|---------|-------------|
 | `unit:` | string | `cqmin` | Unit for all spacing values |
 | `xs`, `s`, `m`, `l`, `xl` | float | - | Spacing scale values |
+| `2xl`, `3xl` | float | - | Larger steps, optional: only there when declared (since v0.62) |
 
 ### `print` Block
 
@@ -849,23 +964,23 @@ Badge/pill style for `label` and `cta` slot rendering. Both optional; both fall 
 
 ```yaml
 label:
-  padding: 0.5 1 0.7 1
+  padding: 0.89 1.78 1.24 1.78
   radius: 0
 
 cta:
-  padding: 0.8 2.5
+  padding: 1.42 4.44
   radius: 999
 ```
 
 | Key        | Type          | Description                                            |
 |------------|---------------|--------------------------------------------------------|
-| `padding:` | CSS shorthand | 1–4 values in cqh, CSS order (top/right/bottom/left)   |
-| `radius:`  | float         | Corner radius in cqh; `999` = full pill                |
+| `padding:` | CSS shorthand | 1–4 values in cqmin, CSS order (top/right/bottom/left)   |
+| `radius:`  | float         | Corner radius in cqmin; `999` = full pill                |
 
 **Defaults** when a block is omitted or a field is missing:
 
-- `label` — padding `0.5 1 0.7 1`, radius `0`
-- `cta` — padding `0.8 2.5`, radius `999`
+- `label` — padding `0.89 1.78 1.24 1.78`, radius `0`
+- `cta` — padding `1.42 4.44`, radius `999`
 
 ### `icons` Block
 
@@ -972,8 +1087,8 @@ photo-look
   # duotone:  $ink $sand   # shadows → highlights
   # fixed:    mono         # keys the person cannot change
   # scrim:    45%          # dark gradient under light text, at most this dark
-  # scrim-padding: 1 1.6   # paragraph and line scrim: space around the text
-  # scrim-gap: 0.4         # paragraph and line scrim: space between two grounds
+  # scrim-padding: 1.78 2.84   # paragraph and line scrim: space around the text
+  # scrim-gap: 0.71        # paragraph and line scrim: space between two grounds
 ```
 
 | Key | Type | Default | Description |
@@ -986,8 +1101,8 @@ photo-look
 | `duotone:` | color pair | — | Maps luminance onto two colors, shadow first. Each is a `$ref` to `brand-colors` or `#HEX`. Excludes `mono` |
 | `fixed:` | key list | — | Keys the person cannot change. Each must be set in the block |
 | `scrim:` | percent | — | Under light text on a photo a dark gradient may lie, at most this dark (`1%`–`100%` black). Absent → no scrim |
-| `scrim-padding:` | 1–4 numbers | `1 1.6` | [Paragraph and line scrim](#paragraph-and-line-scrim): space between the text and the edge of its ground, in cqh, CSS order (top/right/bottom/left) |
-| `scrim-gap:` | number | `0.4` | Paragraph and line scrim: space between two grounds, in cqh |
+| `scrim-padding:` | 1–4 numbers | `1.78 2.84` | [Paragraph and line scrim](#paragraph-and-line-scrim): space between the text and the edge of its ground, in cqmin, CSS order (top/right/bottom/left) |
+| `scrim-gap:` | number | `0.71` | Paragraph and line scrim: space between two grounds, in cqmin |
 
 **Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a grayscale-only or duotone brand).
 
@@ -1227,7 +1342,7 @@ A purpose may also name slots of its own. A slot ID is any name of lowercase let
 | `maxLength:` | int | Yes | Character limit. The hard limit: layouts are built for it |
 | `words:` | range | No | Editorial word range, `N` or `MIN..MAX` (e.g. `3..8`). Guidance for writing and review on top of `maxLength` |
 | `sentences:` | range | No | Editorial sentence range, `N` or `MIN..MAX` |
-| `value:` | string | No | Fixed text, never AI-generated or shuffled. The slot takes no example text |
+| `value:` | string | No | Fixed text, never AI-generated or shuffled. The slot takes no example text. A bare `value:` takes the text on the 4-space lines below it, one line each (since v0.62) |
 | `editable` | bool | No | When `false`, slot is locked (no user editing in any mode). Default: `true` |
 | `type:` | enum | No | `text` (default) or `list` |
 | `override:` | block | No | Typography property overrides (4-space indent) |
@@ -1311,7 +1426,7 @@ On a `.story` page the same slot can take the place's facts: `Hours: {week-hours
 
 #### `override:` Sub-Block (4-space indent)
 
-Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`, `hyphenate`. `lineHeight` reads a multiplier or a percentage (`1.1` or `110%`), as in the brand's styles.
+Any typography property can be overridden: `weight`, `size`, `opsz`, `lineHeight`, `letterSpacing`, `italic`, `uppercase`, `autofit-min`, `autofit-max`, `autofit: none`, `textAlign`, `hyphenate`, `trim`. `lineHeight` reads a multiplier or a percentage (`1.1` or `110%`), as in the brand's styles.
 
 `hyphenate` sets how a slot may hyphenate (German syllables):
 
@@ -1467,11 +1582,11 @@ A `.purpose` file must NOT contain: color values (only named theme slots), absol
 
 ## Layer 5: Composition (`.composition`)
 
-**Cardinality:** Multiple. The most reusable layer, with zero brand-specific information.
+**Cardinality:** Multiple. The most reusable layer, with no brand-specific information beyond format ids in `on FORMAT:` lines (see [Distances per format](#distances-per-format)).
 **File extension:** `.composition`
 **Filename convention:** descriptive kebab-case (e.g., `editorial.composition`, `panel.composition`)
 
-The composition file describes how slots are arranged on the canvas. It knows slot names and their spatial relationships. Nothing else.
+The composition file describes how slots are arranged on the canvas. It knows slot names and their spatial relationships. Nothing else, with one exception: an anchored flow may name format ids in `on FORMAT:` lines, for its distance on that format only.
 
 ### Top-Level Keys
 
@@ -1485,7 +1600,7 @@ The composition file describes how slots are arranged on the canvas. It knows sl
 | `icon:` | string | No | Icon placement |
 | `illustration:` | string | No | Illustration placement (anchor, fit, scale) |
 | `sticky: POSITION [SIZE]` | block | No | Sticky bar (flow mode, repeatable) |
-| `flow: [TYPE] [PROPS]` | block | No | Flow region (flow mode) |
+| `flow: [TYPE] [PROPS]` | block | No | Flow region (flow mode); one plain flow, or several anchored flows |
 | Slot placement lines | - | Yes (grid mode) | Grid slot placements |
 
 ### Grid Mode
@@ -1618,6 +1733,7 @@ sticky: bottom s
 - `flow: panel POSITION WIDTH HEIGHT [inset]` floating panel (e.g., `panel bottom-left 2/3 1/1`). Without `inset` the panel sits on the canvas edges. With `inset` the box keeps its size, its outer edges sit on the safe-area lines (aligned with a logo in the same corner), and the padding inside is equal on all sides.
 - `flow: split EDGE FRACTION` split layout (e.g., `split bottom 1/2`)
 - `flow: width FRACTION` narrower text (e.g., `width 3/4`). The flow's content takes this share of the flow's width, on the side its first slot's text is aligned to. No surface is drawn behind it.
+- `flow: top [DISTANCE]`, `flow: bottom [DISTANCE]`, `flow: center [OFFSET]` anchored flow, see below.
 
 **Properties** (indented, no pipe):
 - `direction: vertical | horizontal`
@@ -1625,7 +1741,7 @@ sticky: bottom s
 - `column-gap: TOKEN`
 
 **Items** (2-space indent + `|` prefix):
-- `| spacer-TOKEN` spacing (TOKEN: `auto`, `xs`, `s`, `m`, `l`, `xl`)
+- `| spacer-TOKEN` spacing (TOKEN: `auto`, `xs`, `s`, `m`, `l`, `xl`, `2xl`, `3xl`)
 - `| divider-VARIANT` divider (VARIANT: `ruler`, `hairline`)
 - `| SLOTID ALIGN [VALIGN]` text slot with alignment
 - `| logo ALIGN [SIZE]` logo
@@ -1649,6 +1765,68 @@ flow: panel bottom-left 2/3 1/1
   | spacer-auto
   | meta left
 ```
+
+#### Anchored flows
+
+A plain `flow:` is one stack: its items follow each other from the top, and `spacer-auto` takes the room that is left. An anchored flow is a block pinned to a place on the canvas instead. A composition has either one plain flow or several anchored flows, never both.
+
+- `flow: top [DISTANCE]` the block's top edge sits on the top line of the safe area, or `DISTANCE` below it.
+- `flow: bottom [DISTANCE]` the block's bottom edge sits on the bottom line of the safe area, or `DISTANCE` above it.
+- `flow: center [OFFSET]` the block's centre sits on the centre of the safe area, or `OFFSET` from it: `+` down, `-` up.
+
+`DISTANCE` is a spacing token of the `.brand` (`xs` to `xl`, `2xl`, `3xl`) or a number in cqmin (see [Distances per format](#distances-per-format)). `OFFSET` is the same with a sign, `+m`, `-m`, `+4.44`, `-4.44`; without a sign it is an error. A token is the brand's distance and the same share of the page on every format. An anchored block is as tall as its items and as wide as the safe area; it grows away from its anchor (a bottom block upwards, a centre block both ways). The items are the plain flow's, with `direction:`, `columns:` and `column-gap:`, without `spacer-auto` (there is no room to fill) and without `| photo`.
+
+Anchored flows don't push each other, and sticky bars don't push them: each block is placed from its anchor. Two blocks on one anchor, or an anchored block on the edge of a sticky bar, lie on top of each other; `brand-intent check` warns about both. If text makes blocks meet, top and bottom blocks keep their place and a centre block moves away from the one it would touch, keeping at least `m` between them; with an offset, it moves from its offset place. If top and bottom blocks would meet, the page overflows, as a plain flow does when its text is too long.
+
+```yaml
+# statement.composition: a title block on the bottom, a name at the top
+id:    statement
+mode:  flow
+image: none
+logo:  none
+
+flow: top xl
+  | credit right
+
+flow: bottom 3xl
+  | primary left
+  | spacer-2xl
+  | secondary left
+```
+
+The same composition serves every format: the distances are tokens, so the title sits the same distance from the bottom on a square, a portrait and a story.
+
+#### Distances per format
+
+A brand whose compositions are drawn by hand for each format, the feed post with other margins than the story, writes those margins as they are. An `on FORMAT:` line under an anchored flow gives one format its own distance; the value on the `flow:` line is the default for every format without one. `FORMAT` is a format's `id:`.
+
+```yaml
+flow: top 6.85
+  on 4:5:  12.04
+  | credit left
+
+flow: center
+  on 4:5:  +4.44
+  | primary center
+  | spacer-2xl
+  | secondary center
+
+flow: bottom 10.19
+  on 4:5:  18.52
+  | primary left
+```
+
+Here the credit sits 6.85 below the safe area's top line on every format, 12.04 on the feed post; the centre block sits on the centre, 4.44 below it on the feed post. An `on` line takes what the `flow:` line takes: a token or a number for `top` and `bottom`, a signed offset for `center`. It may name a format the `flow:` line gives no value; then the others sit on the anchor. A format has one `on` line per flow; `on` lines belong to anchored flows only.
+
+**A number is cqmin**, % of the canvas's shorter side, like every number in the language (type sizes, spacing, padding, grain). It is the same share of the page on every format, screen or print. To translate a design tool's px, divide by a hundredth of the frame's shorter side: on a 1080 px frame, 130 px is 130 / 10.8 = `12.04`, 74 px is `6.85`. Two decimals are enough: a hundredth of a cqmin is a tenth of a px on a 1080 px frame.
+
+**Distances are measured from the safe area**, as tokens are: from the line inside `danger`, `crop` and `comfort` (see [Safe Zone Model](#safe-zone-model)). A distance read off a frame's edge in a design tool is that value minus the format's safe inset on that edge: the feed post's `crop:` and `comfort:` take 40 px from the top, so a credit 170 px below the frame's top edge is 130 px from the safe area, `12.04`. Measuring from the canvas edge would save that subtraction, but it would give one flow two references (tokens from the safe area, numbers from the edge) and let a default distance that suits one format fall into another format's crop zone. From the safe area, a distance can't put text where the platform covers it.
+
+**Best practice stays one distance.** Tokens make a brand coherent: the same margin on every format, written once. `on` lines and numbers are there so that a composition drawn per format translates without compromise; a brand that starts in the language writes tokens.
+
+`brand-intent check` warns about an `on` line whose format the brand doesn't declare (when the brand declares formats).
+
+**Direction (not part of the language yet):** a sticky bar is an anchored flow on an edge that reserves its room, and a panel is an anchored flow with a surface. Both may later be written as anchored flows.
 
 ### `image:` Values
 
@@ -1687,7 +1865,7 @@ SVG illustrations are colorized at runtime using the `illustration` theme color 
 
 ### Exclusion Rule
 
-A `.composition` file must NOT contain: color values, typography values, slot content definitions, brand/voice/identity information, or platform constraints.
+A `.composition` file must NOT contain: color values, typography values, slot content definitions, brand/voice/identity information, or platform constraints. Format ids appear only in `on FORMAT:` lines, for distances; nothing else is written per format.
 
 ---
 

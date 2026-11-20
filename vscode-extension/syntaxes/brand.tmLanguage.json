@@ -376,7 +376,7 @@
     },
     "spacing-value": {
       "comment": "Indented spacing key-value pairs",
-      "match": "^(\\s{2,})(unit|xs|s|m|l|xl)(:\\s*)(\\S+)",
+      "match": "^(\\s{2,})(unit|xs|s|m|l|xl|2xl|3xl)(:\\s*)(\\S+)",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -424,7 +424,7 @@
     },
     "typography-value": {
       "comment": "Indented typography block properties; font ref colored teal as a cross-reference",
-      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing|autofit-min|autofit-max|cap)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$",
+      "match": "^(\\s{2,})(font)(:\\s*)(\\$[\\w]+)|^(\\s{2,})(weight|strong|size|opsz|lineHeight|letterSpacing|autofit-min|autofit-max|cap)(:\\s*)(\\S+)|^(\\s{2,})(italic|uppercase)\\s*$|^(\\s{2,})(trim)(:\\s*)(cap|none)\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -432,18 +432,21 @@
         "6": { "name": "support.type.property-name.brand-intent-brand" },
         "7": { "name": "punctuation.separator.key-value.brand-intent-brand" },
         "8": { "name": "constant.numeric.brand-intent-brand" },
-        "10": { "name": "support.type.property-name.brand-intent-brand" }
+        "10": { "name": "support.type.property-name.brand-intent-brand" },
+        "12": { "name": "support.type.property-name.brand-intent-brand" },
+        "13": { "name": "punctuation.separator.key-value.brand-intent-brand" },
+        "14": { "name": "constant.language.brand-intent-brand" }
       }
     },
     "asset-header": {
-      "match": "^(logo|photo|video|illustration|framing)\\s+(\\S+)",
+      "match": "^(logo|photo|video|illustration|framing|background|finish)\\s+(\\S+)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" },
         "2": { "name": "entity.name.type.brand-intent-brand" }
       }
     },
     "asset-value": {
-      "match": "^(\\s{2,})(label|src|lottie|gltf|generator|group|work|when|framing|place|person|taken|focus|horizon|description|caption|goals)(:\\s*)(.*)|^(\\s{2,})(aspect|scale)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params|align-left|align-center|align-right)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
+      "match": "^(\\s{2,})(label|src|lottie|gltf|generator|group|work|when|framing|place|person|taken|focus|horizon|description|caption|goals|kind|themes|tone|blend|fit)(:\\s*)(.*)|^(\\s{2,})(aspect|scale|amount|opacity)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params|align-left|align-center|align-right)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },
@@ -544,7 +547,7 @@
     },
     "keyword-partial": {
       "comment": "Fallback: color the keyword token on incomplete lines (while typing)",
-      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|location|print)(?=\\s|$)",
+      "match": "^(id:|name:|language:|locale:|spacing:|label:|cta:|color-mode:|color-strategy:|color-adherence:|brand-colors|state-colors|color-bounds|color-rules|color-families|theme|divider|font|typography|logo|photo|video|illustration|icons|counter|framing|location|print|background|finish)(?=\\s|$)",
       "captures": {
         "1": { "name": "keyword.control.brand-intent-brand" }
       }

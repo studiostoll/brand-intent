@@ -68,6 +68,15 @@ test('a slot named like a composition keyword is refused', () => {
   for (const id of ['logo', 'flow', 'photo', 'spacer-wide', 'divider-thin']) assertEq(said(id).includes(`"${id}" can't name a slot`), true, id);
   assertEq(said('opening-hours'), '', 'a plain name');
 });
+test('trim: cap or none per slot, anything else throws', () => {
+  const t = (line: string) => parsePurposeFile(PURPOSE(`    ${line}\n`), 'p.purpose').slots[0].typographyOverrides?.trim;
+  assertEq(t('trim: cap'), 'cap', 'cap');
+  assertEq(t('trim: none'), 'none', 'none');
+  let said = '';
+  try { t('trim: x-height'); } catch (e) { said = (e as Error).message; }
+  assertEq(/invalid trim "x-height"/.test(said), true, 'unknown');
+});
+
 test('a purpose without slots is a page without text', () => {
   const p = parsePurposeFile('id: plain\ncompositions: panel\n', 'plain.purpose');
   assertEq(p.slots.length, 0, 'slots');
@@ -179,6 +188,13 @@ test('example blocks: topic, goal, when, single- and multi-line slot texts', () 
   ], 'examples');
   assertEq(p.warnings, [], 'no warnings');
   assertEq(p.slots.map(s => s.samples), [[], [], [], ['Order now']], 'slot samples empty, value kept');
+});
+
+test('a bare value: holds its fixed text on 4-space lines, one line each', () => {
+  const p = withExamples(`example\n  label: A\n  primary: B\n  detail:\n    C\n`, `${SLOTS}\nslot credit\n  label: Credit\n  typography: caption\n  maxLength: 40\n  value:\n    North Street\n    Bakery\n`);
+  assertEq(p.slots.find(s => s.id === 'credit')?.value, 'North Street\nBakery', 'value lines joined with a line break');
+  assertEq(p.slots.find(s => s.id === 'credit')?.samples, ['North Street\nBakery'], 'value kept as the one sample');
+  assertThrows(() => withExamples(`example\n  label: A\n  primary: B\n  detail:\n    C\n`, `${SLOTS}\nslot credit\n  label: Credit\n  typography: caption\n  maxLength: 40\n  value:\n`), /empty value/, 'bare value without lines');
 });
 
 test('a credit slot needs no example: the implementation fills it', () => {

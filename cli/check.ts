@@ -51,19 +51,20 @@ export interface CheckResult {
   counts: Record<string, number>;
 }
 
-function walk(dir: string): string[] {
+function walk(dir: string, skip: ReadonlySet<string> = SKIP_DIRS): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap(e => {
-    if (e.isDirectory()) return SKIP_DIRS.has(e.name) || e.name.startsWith('.') ? [] : walk(join(dir, e.name));
+    if (e.isDirectory()) return skip.has(e.name) || e.name.startsWith('.') ? [] : walk(join(dir, e.name), skip);
     return [join(dir, e.name)];
   });
 }
 
 /** Check one brand folder. Never throws: every problem lands in `errors` or `warnings`. */
-export function checkFolder(dir: string, label = dir): CheckResult {
+/** `skip`: more folder names to leave out, besides the ones a brand repo always keeps (e.g. a folder another version of the language reads). */
+export function checkFolder(dir: string, label = dir, { skip = [] }: { skip?: string[] } = {}): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const counts: Record<string, number> = {};
-  const files = walk(dir);
+  const files = walk(dir, new Set([...SKIP_DIRS, ...skip]));
   const name = (f: string) => relative(dir, f);
   const read = (f: string) => readFileSync(f, 'utf8');
   const ofType = (ext: string) => {
@@ -123,6 +124,11 @@ export function checkFolder(dir: string, label = dir): CheckResult {
       if (library && kind === 'photo') photoIds = library.map(p => p.id);
       if (library && kind === 'video') videoIds = library.map(v => v.id);
     }
+  }
+
+  // A finish's texture is a file in the brand folder.
+  for (const f of brand?.finishes ?? []) {
+    if (f.src && !existsSync(join(dir, f.src))) errors.push(`${name(brandFiles[0])}: finish "${f.id}" src: ${f.src} is not in the brand folder`);
   }
 
   for (const issue of checkFiles({ brand, identity, formats, compositions, purposes, stories, places, time, people, groups, works, photos: photoIds, videos: videoIds })) {

@@ -99,6 +99,10 @@ export interface ParsedBrand {
   colorFamilies?: ColorFamilies;
   /** Ground / figure / text for every pair theme (authored `ground:`/`figure:` themes and emitted family pairs). */
   themePairs?: Record<string, ThemePair>;
+  /** The backgrounds under the page (`background NAME` blocks), in declared order. */
+  backgrounds?: ParsedBackgroundDef[];
+  /** The finishes over the page (`finish NAME` blocks), in declared order. */
+  finishes?: ParsedFinishDef[];
   /** Non-fatal color findings: rule violations, rejected family pairs, reach config hints. */
   colorWarnings?: string[];
   /** Non-fatal findings outside colour: blocks that moved to another file and are ignored here. */
@@ -108,7 +112,7 @@ export interface ParsedBrand {
   /** Print annotations from inline # comments: slot name → annotation text */
   themeDescriptions?: Record<string, string>;
   /** Spacing scale */
-  spacing?: { unit: string; xs: number; s: number; m: number; l: number; xl: number };
+  spacing?: { unit: string; xs: number; s: number; m: number; l: number; xl: number; '2xl'?: number; '3xl'?: number };
   /** Divider style definitions: name → divider config */
   dividers?: Record<string, ParsedDividerDef>;
   /** Roles by kind of use (`roles <kind>`): kind → role → the style it stands for, with overrides */
@@ -117,9 +121,9 @@ export interface ParsedBrand {
   typographies?: Record<string, ParsedTypographyDef>;
   /** Brand-declared assets: curated logos, photos, videos, illustrations with labels and metadata */
   assets?: { logos?: ParsedAssetDef[]; photos?: ParsedAssetDef[]; videos?: ParsedAssetDef[]; illustrations?: ParsedAssetDef[] };
-  /** Label badge style — padding (top/right/bottom/left in cqh) and corner radius (cqh) */
+  /** Label badge style — padding (top/right/bottom/left in cqmin) and corner radius (cqmin) */
   label?: ParsedBadgeStyle;
-  /** CTA pill style — padding (top/right/bottom/left in cqh) and corner radius (cqh, or 999 for full pill) */
+  /** CTA pill style — padding (top/right/bottom/left in cqmin) and corner radius (cqmin, or 999 for full pill) */
   cta?: ParsedBadgeStyle;
   /** Brand icon set (`icons` block), in declaration order. Absent → the brand has no set. */
   icons?: ParsedIconDef[];
@@ -174,9 +178,9 @@ export interface ParsedPhotoLookDef {
   fixed: PhotoLookKey[];
   /** Darkest a gradient under light text on a photo may get, 0..100 (%). Absent → no scrim. */
   scrim?: number;
-  /** Paragraph and line scrim: space between the text and the edge of its ground, top/right/bottom/left in cqh. */
+  /** Paragraph and line scrim: space between the text and the edge of its ground, top/right/bottom/left in cqmin. */
   scrimPadding?: [number, number, number, number];
-  /** Paragraph and line scrim: space between two grounds, in cqh. */
+  /** Paragraph and line scrim: space between two grounds, in cqmin. */
   scrimGap?: number;
 }
 
@@ -194,6 +198,51 @@ export interface ParsedLocationDef {
   latitude: number;
   /** Decimal degrees, east positive. */
   longitude: number;
+}
+
+/** A background: the layer under the page, above the theme's plain `background` colour and below photos. */
+export interface ParsedBackgroundDef {
+  id: string;
+  /** Display name. Defaults to the id. */
+  label: string;
+  kind: 'gradient' | 'pattern';
+  /** The themes it lies under by default. Absent (patterns only): it fits every theme and is picked, never laid by default. */
+  themes?: string[];
+  /** Gradient: the image, relative to the brand folder. */
+  src?: string;
+  /** Pattern: the generator id, provided by the implementation (e.g. `ripples`, `swell`, `wind`). */
+  generator?: string;
+  /** Pattern: its one colour is a shade (darker) or a tint (lighter) of the ground. */
+  tone?: 'shade' | 'tint';
+}
+
+/** How a finish meets what lies under it. The four modes CSS and PDF both have. */
+/** The blend modes a browser (`mix-blend-mode`) and a PDF (the transparency model's blend modes) both have. */
+export const FINISH_BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'] as const;
+export type FinishBlend = typeof FINISH_BLENDS[number];
+
+/** A finish: the surface over the whole page (ground, photos, text, logo), on screen and in print. */
+export interface ParsedFinishDef {
+  id: string;
+  /** Display name. Defaults to the id. */
+  label: string;
+  kind: 'grain' | 'image';
+  /** The themes whose pages it lies on. Absent: every page. */
+  themes?: string[];
+  /** Default `overlay`. */
+  blend: FinishBlend;
+  /** 0–100 (%). Default 100. */
+  opacity: number;
+  /** Grain: share of the surface that carries a grain, 1–100 (%). */
+  amount?: number;
+  /** Grain: size of one grain, in cqmin (% of the canvas's shorter side). */
+  size?: number;
+  /** Image: the texture, relative to the brand folder. */
+  src?: string;
+  /** Image: repeated (`tile`) or stretched over the page (`cover`). */
+  fit?: 'tile' | 'cover';
+  /** Image, tile: width of one tile, in cqmin. */
+  scale?: number;
 }
 
 export interface ParsedFramingDef {
@@ -277,9 +326,9 @@ export interface ParsedAssetDef {
 export type LogoAlign = 'left' | 'center' | 'right';
 
 export interface ParsedBadgeStyle {
-  /** Padding in cqh: [top, right, bottom, left] */
+  /** Padding in cqmin: [top, right, bottom, left] */
   padding: [number, number, number, number];
-  /** Corner radius in cqh. Use 999 for a full pill. */
+  /** Corner radius in cqmin. Use 999 for a full pill. */
   radius: number;
 }
 
@@ -324,12 +373,14 @@ export interface ParsedTypographyDef {
   uppercase?: boolean;
   /** Weight to use for **strong** inline markup. If absent, strong renders as normal. */
   strong?: number;
-  /** Autofit minimum font size in cqh. If absent, autofit is disabled (fixed size). */
+  /** Autofit minimum font size in cqmin. If absent, autofit is disabled (fixed size). */
   autofitMin?: number;
-  /** Autofit maximum font size in cqh. If absent, autofit is disabled (fixed size). */
+  /** Autofit maximum font size in cqmin. If absent, autofit is disabled (fixed size). */
   autofitMax?: number;
   /** Height of the capitals in print, in x (`cap: 2x`), the unit of the `print` block. Absent → the style has no print size. */
   cap?: number;
+  /** `cap`: the text box runs from the first line's cap height to the last line's baseline. Absent: `none`, the full line boxes. */
+  trim?: TextTrim;
 }
 
 /** A line height: a multiplier (`1.1`) or a percentage (`110%`), the same value. NaN when it is neither. */
@@ -337,6 +388,10 @@ export function parseLineHeight(value: string): number {
   const m = value.trim().match(/^(\d+(?:\.\d+)?)(%?)$/);
   return m ? (m[2] ? parseFloat(m[1]) / 100 : parseFloat(m[1])) : NaN;
 }
+
+/** How a text box is trimmed vertically: `cap` to cap height and baseline, `none` not at all. */
+export type TextTrim = 'cap' | 'none';
+export const TEXT_TRIMS: readonly TextTrim[] = ['cap', 'none'];
 
 export interface ParsedDividerDef {
   /** Line thickness in cqmin */
@@ -506,7 +561,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   const result: Partial<ParsedBrand> = {};
 
-  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'print' | 'roles';
+  type ActiveBlock = 'none' | 'brand-colors' | 'state-colors' | 'color-bounds' | 'color-adherence' | 'color-rules' | 'tones' | 'levels' | 'color-families' | 'theme' | 'spacing' | 'divider' | 'typography' | 'font' | 'logo' | 'photo' | 'video' | 'illustration' | 'label' | 'cta' | 'icons' | 'counter' | 'framing' | 'camera' | 'photo-look' | 'windows' | 'location' | 'print' | 'roles' | 'background' | 'finish';
   let activeBlock: ActiveBlock = 'none';
   let currentThemeName = '';
   let currentDividerName = '';
@@ -576,6 +631,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   let photoLookDeclared = false;
   const warnings: string[] = [];
   const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
+  const finishesRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
+  const backgroundsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -935,6 +992,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         if (colonIdx !== -1) {
           const key = trimmed.slice(0, colonIdx).trim();
           const value = trimmed.slice(colonIdx + 1).replace(/\s+#.*$/, '').trim();
+          if (key === 'trim' && !(TEXT_TRIMS as readonly string[]).includes(value)) throw new Error(`${fileName}:${lineNum}: typography "${currentTypographyName}" trim: must be cap or none, got "${value}"`);
           typographiesRaw[currentTypographyName][key] = value;
         } else if (trimmed === 'italic' || trimmed === 'uppercase') {
           // Bare flag — presence means true
@@ -1077,6 +1135,28 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         framingsRaw[framingsRaw.length - 1].props[trimmed.slice(0, colonIdx).trim()] = { value: trimmed.slice(colonIdx + 1).trim(), line: lineNum };
         continue;
       }
+      if (activeBlock === 'background') {
+        const trimmed = raw.trim();
+        if (trimmed === '' || trimmed.startsWith('# ')) continue;
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: background property must be "KEY: VALUE", got "${trimmed}"`);
+        const key = trimmed.slice(0, colonIdx).trim();
+        const bg = backgroundsRaw[backgroundsRaw.length - 1];
+        if (bg.props[key]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${key}: twice`);
+        bg.props[key] = { value: trimmed.slice(colonIdx + 1).replace(/\s+#\s.*$/, '').trim(), line: lineNum };
+        continue;
+      }
+      if (activeBlock === 'finish') {
+        const trimmed = raw.trim();
+        if (trimmed === '' || trimmed.startsWith('# ')) continue;
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: finish property must be "KEY: VALUE", got "${trimmed}"`);
+        const key = trimmed.slice(0, colonIdx).trim();
+        const fin = finishesRaw[finishesRaw.length - 1];
+        if (fin.props[key]) throw new Error(`${fileName}:${lineNum}: finish "${fin.id}" has ${key}: twice`);
+        fin.props[key] = { value: trimmed.slice(colonIdx + 1).replace(/\s+#\s.*$/, '').trim(), line: lineNum };
+        continue;
+      }
       // Indented line with no active block — ignore
       continue;
     }
@@ -1204,6 +1284,28 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (framingsRaw.some(f => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate framing "${id}"`);
       framingsRaw.push({ id, line: lineNum, props: {} });
       activeBlock = 'framing';
+      continue;
+    }
+
+    // background <id> — the layer under the page: a gradient or a pattern
+    const backgroundMatch = raw.match(/^background\s+(\S+)\s*(?:#\s.*)?$/);
+    if (backgroundMatch) {
+      const id = backgroundMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: background name must be lowercase kebab-case, got "${id}"`);
+      if (backgroundsRaw.some(b => b.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate background "${id}"`);
+      backgroundsRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = 'background';
+      continue;
+    }
+
+    // finish <id> — the surface over the whole page: grain or an image
+    const finishMatch = raw.match(/^finish\s+(\S+)\s*(?:#\s.*)?$/);
+    if (finishMatch) {
+      const id = finishMatch[1];
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${fileName}:${lineNum}: finish name must be lowercase kebab-case, got "${id}"`);
+      if (finishesRaw.some(f => f.id === id)) throw new Error(`${fileName}:${lineNum}: duplicate finish "${id}"`);
+      finishesRaw.push({ id, line: lineNum, props: {} });
+      activeBlock = 'finish';
       continue;
     }
 
@@ -1698,6 +1800,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     .map(role => neutral?.entries.find(e => e.role === role)?.hex)
     .filter((h): h is string => !!h);
   for (const [name, theme] of Object.entries(themes)) {
+    if (theme['gradient'] !== undefined) {
+      const id = theme['gradient'].split('/').pop()?.replace(/\.[a-z]+$/i, '').toLowerCase() || name.toLowerCase();
+      throw new Error(`${fileName}: theme "${name}": gradient: is replaced by a background block (v0.61). Write:\n\nbackground ${id}\n  kind:   gradient\n  src:    ${theme['gradient']}\n  themes: ${name}\n`);
+    }
     const pairRaw: Partial<Record<typeof PAIR_KEYS[number], string>> = {};
     for (const key of PAIR_KEYS) {
       if (theme[key] !== undefined) { pairRaw[key] = theme[key]; delete theme[key]; }
@@ -1771,7 +1877,113 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (theme['counter-fg'] === undefined && theme['label-fg'] !== undefined) theme['counter-fg'] = theme['label-fg'];
   }
 
-  // Rule checks on every theme (only when the brand declares color-rules).
+  // Backgrounds: a gradient names its themes (its colours are theirs);
+  // a pattern takes its one colour from the ground, so it fits any theme.
+  const backgrounds: ParsedBackgroundDef[] = backgroundsRaw.map(({ id, line, props }) => {
+    const kind = props['kind']?.value;
+    if (kind !== 'gradient' && kind !== 'pattern') throw new Error(`${fileName}:${line}: background "${id}" needs "kind: gradient" or "kind: pattern"${kind ? `, got "${kind}"` : ''}`);
+    const known = new Set(kind === 'gradient' ? ['label', 'kind', 'themes', 'src'] : ['label', 'kind', 'themes', 'generator', 'tone']);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: background "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(', ')})`);
+    }
+    const def: ParsedBackgroundDef = { id, label: props['label']?.value || id, kind };
+    if (props['themes']) {
+      const names = props['themes'].value.split(',').map(t => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props['themes'].line}: background "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props['themes'].line}: background "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    } else if (kind === 'gradient') {
+      throw new Error(`${fileName}:${line}: background "${id}" is a gradient and needs "themes:", the themes whose colours it carries`);
+    }
+    if (kind === 'gradient') {
+      const src = props['src'];
+      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split('/').includes('..')) {
+        throw new Error(`${fileName}:${src.line}: background "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+    } else {
+      const gen = props['generator']?.value;
+      if (!gen) throw new Error(`${fileName}:${line}: background "${id}" is a pattern and needs "generator:" (e.g. ripples)`);
+      if (!/^[a-z][a-z0-9-]*$/.test(gen)) throw new Error(`${fileName}:${props['generator'].line}: background "${id}" generator must be a lowercase id, got "${gen}"`);
+      def.generator = gen;
+      const tone = props['tone']?.value;
+      if (tone !== 'shade' && tone !== 'tint') throw new Error(`${fileName}:${props['tone']?.line ?? line}: background "${id}" needs "tone: shade" or "tone: tint"${tone ? `, got "${tone}"` : ''}`);
+      def.tone = tone;
+    }
+    return def;
+  });
+
+  // Finishes: grain or an image over the whole page. A page has at most one,
+  // so two finishes may not cover the same theme.
+  const finishes: ParsedFinishDef[] = finishesRaw.map(({ id, line, props }) => {
+    const kind = props['kind']?.value;
+    if (kind !== 'grain' && kind !== 'image') throw new Error(`${fileName}:${line}: finish "${id}" needs "kind: grain" or "kind: image"${kind ? `, got "${kind}"` : ''}`);
+    const common = ['label', 'kind', 'themes', 'blend', 'opacity'];
+    const known = new Set(kind === 'grain' ? [...common, 'amount', 'size'] : [...common, 'src', 'fit', 'scale']);
+    for (const [key, { line: l }] of Object.entries(props)) {
+      if (!known.has(key)) throw new Error(`${fileName}:${l}: finish "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(', ')})`);
+    }
+    const percent = (key: string, min: number): number => {
+      const p = props[key];
+      const m = p.value.match(/^(\d+(?:\.\d+)?)%$/);
+      const n = m ? parseFloat(m[1]) : NaN;
+      if (!(n >= min && n <= 100)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a percentage from ${min}% to 100%, got "${p.value}"`);
+      return n;
+    };
+    const cqmin = (key: string): number => {
+      const p = props[key];
+      const n = /^\d+(?:\.\d+)?$/.test(p.value) ? parseFloat(p.value) : NaN;
+      if (!(n > 0)) throw new Error(`${fileName}:${p.line}: finish "${id}" ${key}: must be a number above 0, in cqmin (% of the canvas's shorter side), got "${p.value}"`);
+      return n;
+    };
+    const blend = props['blend']?.value ?? 'overlay';
+    if (!(FINISH_BLENDS as readonly string[]).includes(blend)) throw new Error(`${fileName}:${props['blend'].line}: finish "${id}" blend: must be one of ${FINISH_BLENDS.join(', ')}, got "${blend}"`);
+    const def: ParsedFinishDef = { id, label: props['label']?.value || id, kind, blend: blend as FinishBlend, opacity: props['opacity'] ? percent('opacity', 1) : 100 };
+    if (props['themes']) {
+      const names = props['themes'].value.split(',').map(t => t.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error(`${fileName}:${props['themes'].line}: finish "${id}" themes: names no theme`);
+      for (const t of names) {
+        if (!themes[t]) throw new Error(`${fileName}:${props['themes'].line}: finish "${id}" names unknown theme "${t}"`);
+      }
+      def.themes = names;
+    }
+    if (kind === 'grain') {
+      if (!props['amount']) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "amount:", the share of the surface that carries a grain (e.g. 12%)`);
+      if (!props['size']) throw new Error(`${fileName}:${line}: finish "${id}" is grain and needs "size:", one grain in cqmin (e.g. 0.15)`);
+      def.amount = percent('amount', 1);
+      def.size = cqmin('size');
+    } else {
+      const src = props['src'];
+      if (!src) throw new Error(`${fileName}:${line}: finish "${id}" is an image and needs "src:", the texture in the brand folder`);
+      if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split('/').includes('..')) {
+        throw new Error(`${fileName}:${src.line}: finish "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
+      }
+      def.src = src.value;
+      const fit = props['fit']?.value;
+      if (fit !== 'tile' && fit !== 'cover') throw new Error(`${fileName}:${props['fit']?.line ?? line}: finish "${id}" needs "fit: tile" or "fit: cover"${fit ? `, got "${fit}"` : ''}`);
+      def.fit = fit;
+      if (fit === 'tile') {
+        if (!props['scale']) throw new Error(`${fileName}:${line}: finish "${id}" is tiled and needs "scale:", the width of one tile in cqmin`);
+        def.scale = cqmin('scale');
+      } else if (props['scale']) {
+        throw new Error(`${fileName}:${props['scale'].line}: finish "${id}" has scale:, but only a tiled image takes one (fit: cover fills the page)`);
+      }
+    }
+    return def;
+  });
+  for (let i = 0; i < finishes.length; i++) {
+    for (let j = 0; j < i; j++) {
+      const a = finishes[j], b = finishes[i];
+      const shared = !a.themes || !b.themes ? (a.themes ?? b.themes ?? Object.keys(themes)) : a.themes.filter(t => b.themes!.includes(t));
+      if (!a.themes && !b.themes) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on every page; a page has one finish, so give them themes:`);
+      if (shared.length > 0) throw new Error(`${fileName}:${finishesRaw[i].line}: finishes "${a.id}" and "${b.id}" both lie on theme "${shared[0]}"; a page has one finish`);
+    }
+  }
+
+  // Rule checks on every theme (only when the brand declares color-rules)
   if (colorRulesDeclared) {
     for (const [name, theme] of Object.entries(themes)) {
       const bg = theme['background'];
@@ -1797,6 +2009,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     result.themeDescriptions = themeDescriptions;
   }
   if (Object.keys(themePairs).length > 0) result.themePairs = themePairs;
+  if (backgrounds.length > 0) result.backgrounds = backgrounds;
+  if (finishes.length > 0) result.finishes = finishes;
   if (colorWarnings.length > 0) result.colorWarnings = colorWarnings;
   if (Object.keys(spacingRaw).length > 0) {
     result.spacing = {
@@ -1806,6 +2020,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       m:  parseFloat(spacingRaw['m']  ?? '3'),
       l:  parseFloat(spacingRaw['l']  ?? '5'),
       xl: parseFloat(spacingRaw['xl'] ?? '6.5'),
+      ...(spacingRaw['2xl'] !== undefined ? { '2xl': parseFloat(spacingRaw['2xl']) } : {}),
+      ...(spacingRaw['3xl'] !== undefined ? { '3xl': parseFloat(spacingRaw['3xl']) } : {}),
     };
   }
 
@@ -1878,6 +2094,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
         if (!m || parseFloat(m[1]) <= 0) throw new Error(`${fileName}: typography "${name}": cap is the height of the capitals in x (e.g. "2x"), got "${raw['cap']}"`);
         def.cap = parseFloat(m[1]);
       }
+      if (raw['trim'] === 'cap') def.trim = 'cap';
       typographies[name] = def;
     }
     result.typographies = typographies;
@@ -2036,10 +2253,10 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     return { padding, radius: isNaN(radius) ? defaults.radius : radius };
   };
   if (Object.keys(labelRaw).length > 0) {
-    result.label = parseBadgeStyle(labelRaw, { padding: [0.5, 1, 0.7, 1], radius: 0 });
+    result.label = parseBadgeStyle(labelRaw, { padding: [0.89, 1.78, 1.24, 1.78], radius: 0 });
   }
   if (Object.keys(ctaRaw).length > 0) {
-    result.cta = parseBadgeStyle(ctaRaw, { padding: [0.8, 2.5, 0.8, 2.5], radius: 999 });
+    result.cta = parseBadgeStyle(ctaRaw, { padding: [1.42, 4.44, 1.42, 4.44], radius: 999 });
   }
 
   // Finalise icon set — font glyphs need a declared font (bare `font U+…` → first font).
@@ -2246,14 +2463,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (scrimPadding) {
       const parts = scrimPadding.value.split(/\s+/);
       if (parts.length > 4 || !parts.every(p => /^\d+(\.\d+)?$/.test(p))) {
-        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqh), got "${scrimPadding.value}"`);
+        throw new Error(`${fileName}:${scrimPadding.line}: photo-look scrim-padding must be 1 to 4 numbers (top right bottom left, in cqmin), got "${scrimPadding.value}"`);
       }
       const n = parts.map(Number);
       look.scrimPadding = [n[0], n[1] ?? n[0], n[2] ?? n[0], n[3] ?? n[1] ?? n[0]];
     }
     const scrimGap = photoLookRaw['scrim-gap'];
     if (scrimGap) {
-      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqh), got "${scrimGap.value}"`);
+      if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqmin), got "${scrimGap.value}"`);
       look.scrimGap = Number(scrimGap.value);
     }
     result.photoLook = look;

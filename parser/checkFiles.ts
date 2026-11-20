@@ -30,7 +30,7 @@ export interface BrandFiles {
   /** Without an identity, `scope.audience` is not checked. */
   identity?: Pick<ParsedIdentity, 'audiences'>;
   formats: Pick<ParsedFormat, 'id' | 'purposes' | 'grid' | 'widthMm' | 'heightMm'>[];
-  compositions: Pick<ParsedComposition, 'id' | 'mode' | 'sticky' | 'regions'>[];
+  compositions: (Pick<ParsedComposition, 'id' | 'mode' | 'sticky' | 'regions'> & Partial<Pick<ParsedComposition, 'anchoredFlows'>>)[];
   purposes: ParsedPurpose[];
   stories: ParsedStory[];
   places: ParsedPlace[];
@@ -95,6 +95,21 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
     const file = `${composition.id}.composition`;
     if (!used.has(composition.id)) warning(file, 'no purpose lists this composition, so it is never used');
     if (composition.mode === 'grid' && composition.sticky.length) warning(file, 'sticky: is for flow mode; a grid-mode composition ignores it');
+    // Anchored flows don't push each other: two on one anchor, or one on the edge of a sticky bar, lie on top of each other
+    const anchored = composition.anchoredFlows ?? [];
+    for (const edge of ['top', 'center', 'bottom'] as const) {
+      if (anchored.filter(f => f.anchor?.edge === edge).length > 1) warning(file, `two flows are anchored to the ${edge}, so they overlap; make them one flow`);
+      if (edge !== 'center' && anchored.some(f => f.anchor?.edge === edge) && composition.sticky.some(st => st.position === edge)) warning(file, `flow: ${edge} and sticky: ${edge} overlap; a sticky bar doesn't push an anchored flow`);
+    }
+    // A distance per format names a format of the brand
+    for (const { anchor } of anchored) {
+      if (!anchor) continue;
+      if (formats.length) {
+        for (const id of Object.keys(anchor.formats ?? {})) {
+          if (!formats.some(f => f.id === id)) warning(file, `flow: ${anchor.edge} has a distance for format "${id}", which the brand doesn't declare`);
+        }
+      }
+    }
   }
 
   // ── Purposes against the identity and the brand ────────────────────────────

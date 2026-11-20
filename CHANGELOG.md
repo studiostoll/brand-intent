@@ -2,11 +2,45 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
-## v0.59 · 18 Nov 2026
+## v0.66 · 20 Nov 2026
 
-- **Brand.** A `print` block holds the brand's measures for print. They are counted in x, a share of the sheet's short side (`x: short/30`): `margin`, `gutter`, `logo`, `logo-height`, `clear-space` and `spacers`, the distances between lines of type.
-- **Brand.** `cap:` on a typography style is the height of its capitals in print, in x. A style is the one source for type on screen and in print.
-- **Brand, Purpose.** `lineHeight` reads a multiplier or a percentage: `1.1` and `110%` are the same value.
+- **Brand.** `trim: cap | none` in a `typography` block sets the text box: `cap` runs it from the first line's cap height to the last line's baseline, so spacers, padding and anchored-flow distances measure to the letters. Descenders and accents hang outside it. Default `none`; any other value is an error.
+- **Purpose.** A slot's `override:` takes `trim:` too.
+
+## v0.65 · 20 Nov 2026
+
+- **Composition.** An anchored flow's distance is a spacing token or a number in cqmin (`flow: top 6.85`), and `flow: center` takes a signed offset (`+m`, `-4.44`; down is `+`). An indented `on FORMAT: VALUE` line gives one format its own distance (`on 4:5: 12.04`); the `flow:` line is the default. Distances are measured from the safe area. Format ids in `on` lines are the one per-format value a composition may hold.
+- **Brand.** A finish's `blend:` takes the sixteen modes a browser and a PDF share: `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`, `hue`, `saturation`, `color`, `luminosity`. Default stays `overlay`.
+- **Tooling.** `brand-intent check` warns about an `on` line naming a format the brand doesn't declare.
+
+## v0.64 · 20 Nov 2026
+
+- **Brand.** `finish NAME` declares the surface over the whole page, ground, photo, text and logo. `kind: grain` takes `amount:` (%) and `size:` (cqmin); `kind: image` takes `src:`, `fit: tile | cover` and, for a tile, `scale:` (cqmin). Both take `blend: multiply | overlay | soft-light | screen`, `opacity:` and `themes:`. A page has one finish: two finishes on one theme are an error.
+- **Tooling.** `brand-intent check` reports a finish whose `src:` file is missing.
+
+## v0.63 · 20 Nov 2026
+
+- **Composition.** `flow: top [TOKEN]`, `flow: bottom [TOKEN]` and `flow: center` declare anchored flows: blocks pinned to the safe area's top, bottom or centre, `TOKEN` (a spacing token) away from the edge. A composition has one plain `flow:` or several anchored flows, never both; an anchored flow takes no `spacer-auto` and no `| photo`. When text makes blocks meet, a centre block moves away and keeps at least `m`; top and bottom blocks that meet overflow the page.
+- **Tooling.** `brand-intent check` warns about two flows on one anchor and about an anchored flow on the edge of a sticky bar.
+
+## v0.62 · 20 Nov 2026
+
+- **Purpose.** A bare `value:` takes its fixed text on the 4-space lines below it, one line each, so a fixed text can hold line breaks.
+- **Brand.** `2xl:` and `3xl:` in `spacing:` add two larger, optional steps above `xl`, for `spacer-2xl` and `spacer-3xl` in a flow.
+- **Tooling.** `checkFolder` takes `{ skip }`, folder names it leaves out.
+
+## v0.61 · 20 Nov 2026
+
+- **Brand.** `background NAME` declares the layer between a theme's ground colour and the page's photo. `kind: gradient` takes `src:`, an image file; `kind: pattern` takes `generator:` and `tone: shade | tint`. `themes:` names the themes a background belongs to; a pattern without it fits any theme. It replaces `gradient:` in a theme (v0.59). *Breaking.*
+- **Tooling.** The parser rejects `gradient:` in a theme and prints the `background` block that replaces it.
+
+## v0.60 · 20 Nov 2026
+
+- **Brand.** `size:`, `autofit-min:` and `autofit-max:` in a `typography` block are in cqmin, % of the canvas's shorter side, like spacing, instead of % of its height. So are `padding:` and `radius:` of `label` and `cta`, and `scrim-padding:` and `scrim-gap:` in `photo-look`. A value written against a 9:16 height is ×1.78 in cqmin; the defaults moved by that factor. *Breaking.*
+
+## v0.59 · 20 Nov 2026
+
+- ~~**Brand.** `gradient:` in a theme names an image file as the theme's ground.~~ Replaced in v0.61 by the `background` block.
 
 ## v0.58 · 12 Nov 2026
 

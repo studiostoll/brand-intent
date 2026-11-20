@@ -769,7 +769,143 @@ test('lineHeight reads a multiplier or a percentage', () => {
   assertEq(lh('100%'), 1, 'hundred');
 });
 
+// ── Background ───────────────────────────────────────────────────────────────
+
+console.log('\nBackground:');
+
+const DUSK = `theme Dusk\n  ground: #3B2A5C\n  figure: #FFFFFF\n  text: #FFFFFF\n`;
+const GRADIENT = (extra = '') => `background dusk\n  kind:   gradient\n  src:    gradients/dusk.png\n  themes: Dusk\n${extra}`;
+
+test('a gradient background: src and its themes', () => {
+  const src = `${HEADER}${DUSK}background dusk   # the evening one\n  label:  Dusk\n  kind:   gradient\n  src:    gradients/dusk.png   # the image\n  themes: Dusk\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.backgrounds, [{ id: 'dusk', label: 'Dusk', kind: 'gradient', themes: ['Dusk'], src: 'gradients/dusk.png' }], 'background');
+  assertEq(out.themes?.Dusk?.background, '#3B2A5C', 'the ground stays the theme colour');
+});
+
+test('a pattern background: generator and tone, themes optional', () => {
+  const src = `${HEADER}${DUSK}background ripples\n  kind:      pattern\n  generator: ripples\n  tone:      shade\nbackground foam\n  kind:      pattern\n  generator: swell\n  tone:      tint\n  themes:    Dusk\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.backgrounds, [
+    { id: 'ripples', label: 'ripples', kind: 'pattern', generator: 'ripples', tone: 'shade' },
+    { id: 'foam', label: 'foam', kind: 'pattern', themes: ['Dusk'], generator: 'swell', tone: 'tint' },
+  ], 'patterns');
+});
+
+test('a brand without backgrounds has none', () => {
+  assertEq(parseBrandFile(`${HEADER}${DUSK}`, 'test.brand').backgrounds, undefined, 'absent');
+});
+
+test('gradient: in a theme is an error that writes out the background block', () => {
+  assertThrows(() => parseBrandFile(`${HEADER}${DUSK}  gradient: gradients/dusk.png\n`, 'test.brand'), /replaced by a background block[\s\S]*background dusk[\s\S]*kind: +gradient[\s\S]*src: +gradients\/dusk.png[\s\S]*themes: Dusk/, 'gradient');
+});
+
+test('a gradient needs themes and src, and takes no range', () => {
+  const bad = (body: string, re: RegExp, msg: string) => assertThrows(() => parseBrandFile(`${HEADER}${DUSK}background dusk\n${body}`, 'test.brand'), re, msg);
+  bad('  kind: gradient\n  src: gradients/dusk.png\n', /needs "themes:"/, 'no themes');
+  bad('  kind: gradient\n  themes: Dusk\n', /needs "src:"/, 'no src');
+  bad('  kind: gradient\n  src: gradients/dusk.png\n  range: #1E1030, #4A3570\n  themes: Dusk\n', /has no "range:"/, 'range');
+  bad('  kind: gradient\n  src: gradients/dusk.png\n  themes: Dawn\n', /unknown theme "Dawn"/, 'unknown theme');
+  for (const path of ['../other/dusk.png', '/grounds/dusk.png', 'https://x.test/dusk.png', 'grounds/dusk.svg']) {
+    bad(`  kind: gradient\n  src: ${path}\n  themes: Dusk\n`, /src must be/, path);
+  }
+});
+
+test('a background needs a kind, and each kind only its own keys', () => {
+  const bad = (body: string, re: RegExp, msg: string) => assertThrows(() => parseBrandFile(`${HEADER}${DUSK}background b\n${body}`, 'test.brand'), re, msg);
+  bad('  generator: ripples\n', /needs "kind: gradient" or "kind: pattern"/, 'no kind');
+  bad('  kind: noise\n', /got "noise"/, 'unknown kind');
+  bad('  kind: pattern\n  generator: ripples\n  tone: shade\n  src: x.png\n', /has no "src:"/, 'gradient key on a pattern');
+  bad('  kind: pattern\n  tone: shade\n', /needs "generator:"/, 'no generator');
+  bad('  kind: pattern\n  generator: ripples\n', /needs "tone: shade" or "tone: tint"/, 'no tone');
+  assertThrows(() => parseBrandFile(`${HEADER}${DUSK}${GRADIENT()}${GRADIENT()}`, 'test.brand'), /duplicate background "dusk"/, 'duplicate');
+});
+
+test('a background changes no contrast check: the theme counts against its ground', () => {
+  const light = `${HEADER}color-rules\n  text: 4.5\ntheme Dusk\n  background: #3B2A5C\n  text-primary: #F2E6FF\n  logo: #F2E6FF\n`;
+  assertEq(parseBrandFile(`${light}${GRADIENT()}`, 'test.brand').colorWarnings, undefined, 'gradient');
+  const dark = `${HEADER}color-rules\n  text: 4.5\ntheme Dusk\n  background: #3B2A5C\n  text-primary: #2A1E40\n`;
+  assertEq(parseBrandFile(`${dark}${GRADIENT()}`, 'test.brand').colorWarnings?.some(w => /text-primary #2A1E40 on #3B2A5C/.test(w)), true, 'checked on the ground');
+});
+
+test('spacing: 2xl and 3xl are optional steps above xl', () => {
+  const sp = (body: string) => parseBrandFile(`${HEADER}spacing:\n  unit: cqmin\n  xs: 1\n  s: 2\n  m: 3\n  l: 5\n  xl: 7\n${body}`, 'test.brand').spacing;
+  assertEq(sp('  2xl: 12\n  3xl: 25\n'), { unit: 'cqmin', xs: 1, s: 2, m: 3, l: 5, xl: 7, '2xl': 12, '3xl': 25 }, 'both declared');
+  assertEq(sp(''), { unit: 'cqmin', xs: 1, s: 2, m: 3, l: 5, xl: 7 }, 'absent when not declared');
+});
+
+// ── Finish ───────────────────────────────────────────────────────────────────
+
+console.log('\nFinish:');
+
+const DAY = `theme Day\n  ground: #F4EFE6\n  figure: #1C1E26\n  text: #1C1E26\n`;
+
+test('a grain finish: amount and size, blend overlay and full opacity by default', () => {
+  const src = `${HEADER}${DUSK}finish grain   # the paper feel\n  label:  Grain\n  kind:   grain\n  amount: 12%\n  size:   0.15   # one grain\n`;
+  assertEq(parseBrandFile(src, 'test.brand').finishes, [{ id: 'grain', label: 'Grain', kind: 'grain', blend: 'overlay', opacity: 100, amount: 12, size: 0.15 }], 'grain');
+});
+
+test('a finish takes every blend mode a browser and a PDF share', () => {
+  for (const blend of ['normal', 'color-burn', 'hard-light', 'luminosity']) {
+    const src = `${HEADER}${DUSK}${DAY}finish grain\n  kind:   grain\n  amount: 12%\n  size:   0.15\n  blend:  ${blend}\n`;
+    assertEq(parseBrandFile(src, 'test.brand').finishes?.[0].blend, blend, blend);
+  }
+});
+
+test('an image finish: tiled with a scale, or cover; blend, opacity and themes', () => {
+  const src = `${HEADER}${DUSK}${DAY}finish paper\n  kind:    image\n  src:     finishes/paper.png\n  fit:     tile\n  scale:   40\n  blend:   multiply\n  opacity: 60%\n  themes:  Day\nfinish print\n  kind:   image\n  src:    finishes/print.jpg\n  fit:    cover\n  blend:  soft-light\n  themes: Dusk\n`;
+  assertEq(parseBrandFile(src, 'test.brand').finishes, [
+    { id: 'paper', label: 'paper', kind: 'image', blend: 'multiply', opacity: 60, themes: ['Day'], src: 'finishes/paper.png', fit: 'tile', scale: 40 },
+    { id: 'print', label: 'print', kind: 'image', blend: 'soft-light', opacity: 100, themes: ['Dusk'], src: 'finishes/print.jpg', fit: 'cover' },
+  ], 'images');
+});
+
+test('a brand without finishes has none', () => {
+  assertEq(parseBrandFile(`${HEADER}${DUSK}`, 'test.brand').finishes, undefined, 'absent');
+});
+
+test('a finish needs a kind, its own keys and valid values', () => {
+  const bad = (body: string, re: RegExp, msg: string) => assertThrows(() => parseBrandFile(`${HEADER}${DUSK}finish f\n${body}`, 'test.brand'), re, msg);
+  bad('  amount: 12%\n', /needs "kind: grain" or "kind: image"/, 'no kind');
+  bad('  kind: noise\n', /got "noise"/, 'unknown kind');
+  bad('  kind: grain\n  size: 0.15\n', /needs "amount:"/, 'no amount');
+  bad('  kind: grain\n  amount: 12%\n', /needs "size:"/, 'no size');
+  bad('  kind: grain\n  amount: 12\n  size: 0.15\n', /amount: must be a percentage/, 'amount without %');
+  bad('  kind: grain\n  amount: 0%\n  size: 0.15\n', /amount: must be a percentage/, 'amount 0');
+  bad('  kind: grain\n  amount: 12%\n  size: s\n', /size: must be a number above 0, in cqmin/, 'token as size');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  src: x.png\n', /has no "src:"/, 'image key on grain');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  blend: burn\n', /blend: must be one of normal, multiply, .*luminosity, got "burn"/, 'blend');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  opacity: 120%\n', /opacity: must be a percentage/, 'opacity');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  themes: Dawn\n', /unknown theme "Dawn"/, 'unknown theme');
+  bad('  kind: image\n  fit: cover\n', /needs "src:"/, 'no src');
+  bad('  kind: image\n  src: x.png\n', /needs "fit: tile" or "fit: cover"/, 'no fit');
+  bad('  kind: image\n  src: x.png\n  fit: tile\n', /needs "scale:"/, 'tile without scale');
+  bad('  kind: image\n  src: x.png\n  fit: cover\n  scale: 40\n', /only a tiled image takes one/, 'cover with scale');
+  bad('  kind: image\n  src: ../x.png\n  fit: cover\n', /src must be/, 'src outside');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  amount: 10%\n', /amount: twice/, 'twice');
+});
+
+test('a page has one finish: two finishes may not cover one theme', () => {
+  const G = (id: string, themes = '') => `finish ${id}\n  kind: grain\n  amount: 12%\n  size: 0.15\n${themes ? `  themes: ${themes}\n` : ''}`;
+  const p = (body: string) => () => parseBrandFile(`${HEADER}${DUSK}${DAY}${body}`, 'test.brand');
+  assertThrows(p(G('a') + G('b')), /both lie on every page/, 'two without themes');
+  assertThrows(p(G('a') + G('b', 'Day')), /both lie on theme "Day"/, 'one everywhere, one on Day');
+  assertThrows(p(G('a', 'Day, Dusk') + G('b', 'Dusk')), /both lie on theme "Dusk"/, 'shared theme');
+  assertThrows(p(G('a') + G('a', 'Day')), /duplicate finish "a"/, 'duplicate');
+  assertEq(p(G('a', 'Day') + G('b', 'Dusk'))().finishes?.map(f => f.id), ['a', 'b'], 'one per theme');
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
+
+test('typography trim: cap, none or absent; anything else is an error', () => {
+  const typo = (line: string) => parseBrandFile(`${HEADER}typography headline\n  weight: 700\n  size: 8\n  lineHeight: 1.1\n${line}`, 'test.brand').typographies?.headline;
+  assertEq(typo('  trim: cap\n')?.trim, 'cap', 'cap');
+  assertEq(typo('  trim: none\n')?.trim, undefined, 'none is the default');
+  assertEq(typo('')?.trim, undefined, 'absent');
+  let said = '';
+  try { typo('  trim: baseline\n'); } catch (e) { said = (e as Error).message; }
+  assertEq(said, 'test.brand:9: typography "headline" trim: must be cap or none, got "baseline"', 'unknown');
+});
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) {

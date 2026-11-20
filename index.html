@@ -154,10 +154,9 @@ hide_bar: true
     </div>
     <div class="layer-body">
       <p>
-        The expression: colours and themes, fonts and typography styles, spacing, dividers, badges, icons.
+        The expression: colours and themes, the backgrounds under a page and the finish over it, fonts and typography styles, spacing, dividers, badges, icons.
         And the brand&rsquo;s place in the world: a <code>location</code> for sunrise and weather,
         a <code>camera</code>, <code>framing</code> modules for photos, a <code>photo-look</code>.
-        For paper, a <code>print</code> block: measures in a unit that grows with the sheet.
         Photos and videos are two folders, <code>media/photos/</code> and <code>media/videos/</code>: a file&rsquo;s name is its id, its folders are the sections.
         Every value traces back to a sentence in the identity.
       </p>
@@ -236,7 +235,7 @@ hide_bar: true
     </div>
     <div class="layer-body">
       <p>
-        Where the slots go. Grid mode places them in rows and columns. Flow mode stacks them in panels with sticky bars, spacers and dividers.
+        Where the slots go. Grid mode places them in rows and columns. Flow mode stacks them in panels with sticky bars, spacers and dividers, or pins blocks to the top, bottom or centre.
         Photos and illustrations too. Nothing brand-specific, so one composition serves any brand.
       </p>
 <pre><span class="kw">sticky:</span> <span class="val">bottom s</span>
@@ -495,13 +494,13 @@ hide_bar: true
 <!-- ═══ CHANGELOG ═══ -->
 <section id="changelog" class="landing-section">
   <span class="section-label">05 / Recent changes</span>
-  <h2>Version 0.59, November 2026.</h2>
+  <h2>Version 0.66, November 2026.</h2>
   <p>What the language gained in the last releases. Every release is in the <a href="https://github.com/studiostoll/brand-intent/blob/main/CHANGELOG.md">changelog</a>.</p>
 
   <dl class="changelog">
-    <div><dt>v0.59 <span>18 Nov 2026</span></dt><dd><strong>Brand.</strong> A <code>print</code> block holds the brand&rsquo;s measures for print in x, a share of the sheet&rsquo;s short side: margin, gutter, logo height, clear space and the distances between lines. <code>cap:</code> on a typography style is the height of its capitals in print. <code>lineHeight</code> reads a multiplier or a percentage.</dd></div>
-    <div><dt>v0.58 <span>12 Nov 2026</span></dt><dd><strong>Story.</strong> <code>placeholder: true</code> marks a page&rsquo;s photo or video as a stand-in. The page is not published until a person replaces it.</dd></div>
-    <div><dt>v0.57 <span>12 Nov 2026</span></dt><dd><strong>Place.</strong> Opening hours can carry dates: <code>hours from DATE</code> starts a new regular week, <code>hours NAME</code> holds a set of special days. <strong>Story.</strong> <code>{hours NAME}</code>, <code>{new-week-hours}</code> and <code>{new-hours-from}</code> announce them ahead.</dd></div>
+    <div><dt>v0.66 <span>20 Nov 2026</span></dt><dd><strong>Brand.</strong> <code>trim: cap</code> in a <code>typography</code> block runs the text box from the first line&rsquo;s cap height to the last line&rsquo;s baseline, so every distance measures to the letters. A slot&rsquo;s <code>override:</code> takes it too.</dd></div>
+    <div><dt>v0.65 <span>20 Nov 2026</span></dt><dd><strong>Composition.</strong> An anchored flow&rsquo;s distance is a spacing token or a number in cqmin, <code>flow: center</code> takes a signed offset, and an <code>on FORMAT:</code> line gives one format its own distance. <strong>Brand.</strong> A finish&rsquo;s <code>blend:</code> takes the sixteen modes a browser and a PDF share, <code>color-burn</code> among them.</dd></div>
+    <div><dt>v0.64 <span>20 Nov 2026</span></dt><dd><strong>Brand.</strong> <code>finish NAME</code> declares the surface over the whole page: grain (<code>amount:</code>, <code>size:</code>) or a texture image (<code>src:</code>, <code>fit:</code>, <code>scale:</code>), with <code>blend:</code>, <code>opacity:</code> and <code>themes:</code>. A page has one finish.</dd></div>
   </dl>
 </section>
 
