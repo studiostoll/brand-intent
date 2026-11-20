@@ -495,7 +495,7 @@
     },
     "print-value": {
       "comment": "print block: the unit, measures in x, columns, logo and the spacers",
-      "match": "^(\\s{2,})(?:(x)(:\\s*)(short\\s*/\\s*\\d+(?:\\.\\d+)?)|(margin|gutter|logo-height|clear-space)(:\\s*)(\\d+(?:\\.\\d+)?x)|(spacers)(:\\s*)((?:\\d+(?:\\.\\d+)?x\\s*,?\\s*)+)|(logo)(:\\s*)([\\w-]+))\\s*(#.*)?$",
+      "match": "^(\\s{2,})(?:(x)(:\\s*)(short\\s*/\\s*\\d+(?:\\.\\d+)?)|(margin|gutter|logo-height|clear-space)(:\\s*)(\\d+(?:\\.\\d+)?x|max\\(\\s*\\d+(?:\\.\\d+)?x\\s*,\\s*\\d+(?:\\.\\d+)?mm\\s*\\))|(spacers)(:\\s*)((?:\\d+(?:\\.\\d+)?x\\s*,?\\s*)+)|(logo)(:\\s*)([\\w-]+))\\s*(#.*)?$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

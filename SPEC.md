@@ -929,7 +929,7 @@ typography headline
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `x:` | `short/N` | Yes, when the brand uses x | The unit: the sheet's short side divided by `N`. On an A4 sheet, `short/30` is 7 mm, upright or landscape |
-| `margin:` | x | No | The margin on all four sides |
+| `margin:` | x, or `max(x, length)` | No | The margin on all four sides. `max(2x, 6mm)` keeps it at least 6 mm on a small sheet, where x is small; the floor is in mm, and only the margin has one |
 | `gutter:` | x | No | The distance between two columns |
 | `logo:` | string | No | Id of the [`logo`](#logo-name-photo-name-video-name-blocks) printed matter carries |
 | `logo-height:` | x | No | The logo's height |

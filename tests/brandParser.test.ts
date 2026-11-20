@@ -730,6 +730,15 @@ test('print block: the unit, the measures in x, logo and spacers', () => {
   assertEq(out.print, { unit: 30, margin: 2, gutter: 0.75, logoHeight: 2, clearSpace: 1, spacers: [0.25, 0.5, 1, 2], logo: 'wordmark' }, 'print');
 });
 
+test('print margin: a floor in mm, max(<count of x>, <length>)', () => {
+  const out = parseBrandFile(PRINT_BRAND(`print\n  x: short/30\n  margin: max(2x, 6mm)   # never less than 6 mm\n`), 'test.brand');
+  assertEq(out.print, { unit: 30, margin: 2, marginMinMm: 6 }, 'print');
+  const p = (body: string) => () => parseBrandFile(PRINT_BRAND(`print\n  x: short/30\n${body}`), 'test.brand');
+  assertThrows(p('  margin: max(2x, 6pt)\n'), /margin's floor is a length in mm/, 'unit');
+  assertThrows(p('  margin: max(6mm, 2x)\n'), /print margin is a count of x/, 'order');
+  assertThrows(p('  gutter: max(1x, 3mm)\n'), /print gutter takes no max\(\)/, 'only the margin');
+});
+
 test('a brand without a print block has no print', () => {
   assertEq(parseBrandFile(PRINT_BRAND(''), 'test.brand').print, undefined, 'print');
 });

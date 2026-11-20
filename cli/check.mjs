@@ -2853,7 +2853,15 @@ background ${id}
     }
     for (const [key, field] of Object.entries(measures)) {
       const entry = printRaw[key];
-      if (entry) print[field] = inX(key, entry.value, entry.line);
+      if (!entry) continue;
+      const floored = entry.value.match(/^max\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)$/);
+      if (floored && key !== "margin") throw new Error(`${fileName}:${entry.line}: print ${key} takes no max(): only the margin has a floor`);
+      print[field] = inX(key, floored ? floored[1] : entry.value, entry.line);
+      if (floored) {
+        const mm = floored[2].match(/^(\d+(?:\.\d+)?)mm$/);
+        if (!mm || parseFloat(mm[1]) <= 0) throw new Error(`${fileName}:${entry.line}: print margin's floor is a length in mm (e.g. "max(2x, 6mm)"), got "${floored[2]}"`);
+        print.marginMinMm = parseFloat(mm[1]);
+      }
     }
     const spacers = printRaw["spacers"];
     if (spacers) {
