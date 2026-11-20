@@ -760,6 +760,13 @@ test('a grain finish: amount and size, blend overlay and full opacity by default
   assertEq(parseBrandFile(src, 'test.brand').finishes, [{ id: 'grain', label: 'Grain', kind: 'grain', blend: 'overlay', opacity: 100, amount: 12, size: 0.15 }], 'grain');
 });
 
+test('a finish takes every blend mode a browser and a PDF share', () => {
+  for (const blend of ['normal', 'color-burn', 'hard-light', 'luminosity']) {
+    const src = `${HEADER}${DUSK}${DAY}finish grain\n  kind:   grain\n  amount: 12%\n  size:   0.15\n  blend:  ${blend}\n`;
+    assertEq(parseBrandFile(src, 'test.brand').finishes?.[0].blend, blend, blend);
+  }
+});
+
 test('an image finish: tiled with a scale, or cover; blend, opacity and themes', () => {
   const src = `${HEADER}${DUSK}${DAY}finish paper\n  kind:    image\n  src:     finishes/paper.png\n  fit:     tile\n  scale:   40\n  blend:   multiply\n  opacity: 60%\n  themes:  Day\nfinish print\n  kind:   image\n  src:    finishes/print.jpg\n  fit:    cover\n  blend:  soft-light\n  themes: Dusk\n`;
   assertEq(parseBrandFile(src, 'test.brand').finishes, [
@@ -782,7 +789,7 @@ test('a finish needs a kind, its own keys and valid values', () => {
   bad('  kind: grain\n  amount: 0%\n  size: 0.15\n', /amount: must be a percentage/, 'amount 0');
   bad('  kind: grain\n  amount: 12%\n  size: s\n', /size: must be a number above 0, in cqmin/, 'token as size');
   bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  src: x.png\n', /has no "src:"/, 'image key on grain');
-  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  blend: darken\n', /blend: must be multiply, overlay, soft-light or screen/, 'blend');
+  bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  blend: burn\n', /blend: must be one of normal, multiply, .*luminosity, got "burn"/, 'blend');
   bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  opacity: 120%\n', /opacity: must be a percentage/, 'opacity');
   bad('  kind: grain\n  amount: 12%\n  size: 0.15\n  themes: Dawn\n', /unknown theme "Dawn"/, 'unknown theme');
   bad('  kind: image\n  fit: cover\n', /needs "src:"/, 'no src');

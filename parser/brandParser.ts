@@ -185,7 +185,9 @@ export interface ParsedBackgroundDef {
 }
 
 /** How a finish meets what lies under it. The four modes CSS and PDF both have. */
-export type FinishBlend = 'multiply' | 'overlay' | 'soft-light' | 'screen';
+/** The blend modes a browser (`mix-blend-mode`) and a PDF (the transparency model's blend modes) both have. */
+export const FINISH_BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'] as const;
+export type FinishBlend = typeof FINISH_BLENDS[number];
 
 /** A finish: the surface over the whole page (ground, photos, text, logo), on screen and in print. */
 export interface ParsedFinishDef {
@@ -1849,7 +1851,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       return n;
     };
     const blend = props['blend']?.value ?? 'overlay';
-    if (!['multiply', 'overlay', 'soft-light', 'screen'].includes(blend)) throw new Error(`${fileName}:${props['blend'].line}: finish "${id}" blend: must be multiply, overlay, soft-light or screen, got "${blend}"`);
+    if (!(FINISH_BLENDS as readonly string[]).includes(blend)) throw new Error(`${fileName}:${props['blend'].line}: finish "${id}" blend: must be one of ${FINISH_BLENDS.join(', ')}, got "${blend}"`);
     const def: ParsedFinishDef = { id, label: props['label']?.value || id, kind, blend: blend as FinishBlend, opacity: props['opacity'] ? percent('opacity', 1) : 100 };
     if (props['themes']) {
       const names = props['themes'].value.split(',').map(t => t.trim()).filter(Boolean);

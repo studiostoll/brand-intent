@@ -783,7 +783,7 @@ finish paper
 | `label:` | string | all | No | Display name. Default: the block's name |
 | `kind:` | `grain` \| `image` | all | Yes | What the finish is: generated grain, or a texture image |
 | `themes:` | theme names, comma list | all | No | The themes whose pages it lies on. Without it, every page |
-| `blend:` | `multiply` \| `overlay` \| `soft-light` \| `screen` | all | No | How it meets what lies under it. Default: `overlay` |
+| `blend:` | a blend mode (see Blend) | all | No | How it meets what lies under it. Default: `overlay` |
 | `opacity:` | percentage, 1–100% | all | No | How strongly it shows. Default: `100%` |
 | `amount:` | percentage, 1–100% | grain | Yes | The share of the surface that carries a grain |
 | `size:` | number, cqmin | grain | Yes | The size of one grain, in % of the canvas's shorter side |
@@ -793,7 +793,7 @@ finish paper
 
 **Sizes.** `size:` and `scale:` are in cqmin, like type sizes, so a grain and a tile are the same share of the page on a square, a portrait and a story. They are numbers, not spacing tokens: spacing steps are distances between blocks (`xs` is 1.5 cqmin, 16 px on a 1080 px post), and a grain is a fraction of that.
 
-**Blend.** The four modes are the ones a browser (`mix-blend-mode`) and a PDF (blend modes of the transparency model) both have, so a finish looks the same on screen and in print. `multiply` darkens, `screen` lightens, `overlay` and `soft-light` do both, and keep the page's mid tones.
+**Blend.** The modes are the sixteen a browser (`mix-blend-mode`) and a PDF (blend modes of the transparency model) both have, under the same names, so a finish looks the same on screen and in print: `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`, `hue`, `saturation`, `color`, `luminosity`. `normal` lays the finish over the page at its `opacity:`; `multiply`, `darken` and `color-burn` darken; `screen`, `lighten` and `color-dodge` lighten; `overlay`, `soft-light` and `hard-light` do both and keep the page's mid tones; `difference` and `exclusion` invert; `hue`, `saturation`, `color` and `luminosity` take one property of the finish's colour.
 
 **Pairing.** A page has one finish. A finish without `themes:` lies on every page; with it, on the pages in those themes. Two finishes that would lie on one page are an error: two without `themes:`, one without and one with, or two that name the same theme. A theme in `themes:` the brand doesn't declare is an error. A brand that wants grain on a paper texture puts both in one image.
 

@@ -1166,6 +1166,7 @@ function splitLabelledItem(text) {
 }
 
 // parser/brandParser.ts
+var FINISH_BLENDS = ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"];
 var GROUP_KEYWORDS = /* @__PURE__ */ new Set(["primary", "secondary", "accent", "neutral"]);
 var NEUTRAL_ROLES = /* @__PURE__ */ new Set(["light", "subtle", "mid", "muted", "dark"]);
 var STATE_KEYS = /* @__PURE__ */ new Set(["problem", "warning", "success", "info", "inactive"]);
@@ -2444,7 +2445,7 @@ background ${id}
       return n;
     };
     const blend = props["blend"]?.value ?? "overlay";
-    if (!["multiply", "overlay", "soft-light", "screen"].includes(blend)) throw new Error(`${fileName}:${props["blend"].line}: finish "${id}" blend: must be multiply, overlay, soft-light or screen, got "${blend}"`);
+    if (!FINISH_BLENDS.includes(blend)) throw new Error(`${fileName}:${props["blend"].line}: finish "${id}" blend: must be one of ${FINISH_BLENDS.join(", ")}, got "${blend}"`);
     const def = { id, label: props["label"]?.value || id, kind, blend, opacity: props["opacity"] ? percent("opacity", 1) : 100 };
     if (props["themes"]) {
       const names = props["themes"].value.split(",").map((t) => t.trim()).filter(Boolean);
