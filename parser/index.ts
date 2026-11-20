@@ -81,6 +81,8 @@ export type {
   ParsedIllustration,
   IllustrationAnchor,
   GridYKeyword,
+  FlowDistance,
+  SpacingToken,
 } from './compositionParser';
 
 export { parseStoryFile, checkStory, storyPlace, storyTextVariables, STORY_VARIABLES } from './storyParser';

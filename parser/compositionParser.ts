@@ -93,10 +93,37 @@ export interface ParsedStickyItem {
 export type SpacingToken = 'xs' | 's' | 'm' | 'l' | 'xl' | '2xl' | '3xl';
 const SPACING_TOKENS: readonly string[] = ['xs', 's', 'm', 'l', 'xl', '2xl', '3xl'];
 
+/**
+ * An anchored flow's distance: a spacing token, or a number of px of the format's own size
+ * (a print format's px at its dpi). A centre offset is signed, down positive: a number carries
+ * its sign, a token upwards is written `-TOKEN`.
+ */
+export type FlowDistance = SpacingToken | `-${SpacingToken}` | number;
+
+/** Reads "TOKEN" or "NUMBER" (top/bottom) or "+TOKEN", "-TOKEN", "+NUMBER", "-NUMBER" (center); throws with `where` on anything else. */
+function readFlowDistance(raw: string, edge: 'top' | 'center' | 'bottom', where: string): FlowDistance {
+  const fail = (msg: string): never => { throw new Error(`${where}: ${msg}`); };
+  if (edge === 'center') {
+    const m = raw.match(/^([+-])(.+)$/);
+    if (!m) return fail(`a centre offset needs a sign: +${raw} moves it down, -${raw} up`);
+    const [, sign, rest] = m;
+    if (SPACING_TOKENS.includes(rest)) return (sign === '-' ? `-${rest}` : rest) as FlowDistance;
+    if (/^\d+(?:\.\d+)?$/.test(rest)) return (sign === '-' ? -1 : 1) * parseFloat(rest);
+    return fail(`invalid centre offset "${raw}" (expected +/- a spacing token or a number of px)`);
+  }
+  if (SPACING_TOKENS.includes(raw)) return raw as SpacingToken;
+  if (/^\d+(?:\.\d+)?$/.test(raw)) return parseFloat(raw);
+  return fail(`invalid flow distance "${raw}" (expected a spacing token: ${SPACING_TOKENS.join(', ')}, or a number of px)`);
+}
+
 /** A flow region — where content flows. */
 export interface ParsedFlowRegion {
-  /** Anchored flow: pinned to the top or bottom edge of the safe area (at `distance`, a spacing token, or on the edge) or to its centre. As tall as its content. */
-  anchor?: { edge: 'top' | 'center' | 'bottom'; distance?: SpacingToken };
+  /**
+   * Anchored flow: pinned to the top or bottom edge of the safe area, `distance` from it (or on the edge),
+   * or to its centre, `distance` being the signed offset (down positive). `formats` holds a distance per
+   * format id (`on FORMAT: VALUE`); a format without one takes `distance`. As tall as its content.
+   */
+  anchor?: { edge: 'top' | 'center' | 'bottom'; distance?: FlowDistance; formats?: Record<string, FlowDistance> };
   /** Panel positioning (null = fill remaining space). */
   panel?: {
     position: string;  // e.g. 'bottom-left', 'top-right'
@@ -454,13 +481,13 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       const firstWord = value.split(/\s+/)[0];
 
       if (firstWord === 'top' || firstWord === 'center' || firstWord === 'bottom') {
-        // Anchored flow: "flow: top [TOKEN]", "flow: bottom [TOKEN]", "flow: center"
+        // Anchored flow: "flow: top [DISTANCE]", "flow: bottom [DISTANCE]", "flow: center [+/-OFFSET]"
         const parts = value.split(/\s+/);
-        const distance = parts[1];
-        if (parts.length > 2) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(2).join(' ')}" in anchored flow (expected: flow: top|bottom [TOKEN] or flow: center)`);
-        if (distance !== undefined && firstWord === 'center') throw new Error(`${fileName}:${lineNum}: "flow: center" takes no distance (it sits on the centre of the safe area)`);
-        if (distance !== undefined && !SPACING_TOKENS.includes(distance)) throw new Error(`${fileName}:${lineNum}: invalid flow distance "${distance}" (expected a spacing token: ${SPACING_TOKENS.join(', ')})`);
-        anchor = { edge: firstWord, ...(distance !== undefined ? { distance: distance as SpacingToken } : {}) };
+        if (parts.length > 2) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(2).join(' ')}" in anchored flow (expected: flow: top|bottom [DISTANCE] or flow: center [+/-OFFSET])`);
+        anchor = { edge: firstWord };
+        if (parts[1] !== undefined) {
+          anchor.distance = readFlowDistance(parts[1], firstWord, `${fileName}:${lineNum}`);
+        }
       } else if (value.startsWith('panel')) {
         // Parse: "panel <position> [<width>] [<height>] [inset]"
         const all = value.split(/\s+/);
@@ -495,6 +522,18 @@ export function parseCompositionFile(content: string, fileName: string): ParsedC
       while (i + 1 < lines.length) {
         const nextLine = lines[i + 1].trim();
         if (nextLine === '') { i++; continue; }
+        const onFormat = nextLine.match(/^on\s+(\S+?):\s+(\S+)$/);
+        if (onFormat || nextLine.startsWith('on ')) {
+          i++;
+          if (!anchor) throw new Error(`${fileName}:${i + 1}: "on FORMAT:" is only allowed in an anchored flow (flow: top|center|bottom)`);
+          if (!onFormat) throw new Error(`${fileName}:${i + 1}: invalid "${nextLine}" (expected: on FORMAT: DISTANCE, e.g. on 4:5: 130)`);
+          const [, formatId, raw] = onFormat;
+          const d = readFlowDistance(raw, anchor.edge, `${fileName}:${i + 1}`);
+          anchor.formats ??= {};
+          if (formatId in anchor.formats) throw new Error(`${fileName}:${i + 1}: format "${formatId}" has a distance twice in this flow`);
+          anchor.formats[formatId] = d;
+          continue;
+        }
         if (nextLine.startsWith('direction:')) {
           i++;
           const dir = nextLine.slice(10).trim();

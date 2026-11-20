@@ -142,8 +142,11 @@ test('2xl and 3xl are distances', () => {
 });
 
 test('anchored flow errors', () => {
-  assertThrows(() => comp(`flow: center m\n  | primary center\n`), /takes no distance/, 'centre distance');
+  assertThrows(() => comp(`flow: center m\n  | primary center\n`), /a centre offset needs a sign: \+m moves it down, -m up/, 'centre offset without sign');
   assertThrows(() => comp(`flow: top 4xl\n  | primary left\n`), /invalid flow distance/, 'unknown token');
+  assertThrows(() => comp(`flow: top -20\n  | primary left\n`), /invalid flow distance "-20"/, 'negative distance');
+  assertThrows(() => comp(`flow: top 20px\n  | primary left\n`), /invalid flow distance "20px"/, 'unit');
+  assertThrows(() => comp(`flow: center +4xl\n  | primary left\n`), /invalid centre offset "\+4xl"/, 'unknown token offset');
   assertThrows(() => comp(`flow: top m l\n  | primary left\n`), /unexpected "l"/, 'extra word');
   assertThrows(() => comp(`flow: bottom\n  | primary left\n  | spacer-auto\n`), /spacer-auto/, 'spacer-auto');
   assertThrows(() => comp(`flow: bottom\n  | photo center\n`), /only allowed in a plain/, 'photo');

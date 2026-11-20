@@ -29,7 +29,7 @@ export interface BrandFiles {
   brand?: ParsedBrand;
   /** Without an identity, `scope.audience` is not checked. */
   identity?: Pick<ParsedIdentity, 'audiences'>;
-  formats: Pick<ParsedFormat, 'id' | 'purposes'>[];
+  formats: (Pick<ParsedFormat, 'id' | 'purposes'> & Partial<Pick<ParsedFormat, 'widthMm' | 'dpi'>>)[];
   compositions: (Pick<ParsedComposition, 'id' | 'mode' | 'sticky'> & Partial<Pick<ParsedComposition, 'anchoredFlows'>>)[];
   purposes: ParsedPurpose[];
   stories: ParsedStory[];
@@ -101,6 +101,20 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
     for (const edge of ['top', 'center', 'bottom'] as const) {
       if (anchored.filter(f => f.anchor?.edge === edge).length > 1) warning(file, `two flows are anchored to the ${edge}, so they overlap; make them one flow`);
       if (edge !== 'center' && anchored.some(f => f.anchor?.edge === edge) && composition.sticky.some(st => st.position === edge)) warning(file, `flow: ${edge} and sticky: ${edge} overlap; a sticky bar doesn't push an anchored flow`);
+    }
+    // A distance per format names a format of the brand; a px default reaches print formats as their own px
+    for (const { anchor } of anchored) {
+      if (!anchor) continue;
+      if (formats.length) {
+        for (const id of Object.keys(anchor.formats ?? {})) {
+          if (!formats.some(f => f.id === id)) warning(file, `flow: ${anchor.edge} has a distance for format "${id}", which the brand doesn't declare`);
+        }
+      }
+      if (typeof anchor.distance === 'number' && anchor.distance !== 0) {
+        for (const f of formats) {
+          if (f.widthMm !== undefined && !(f.id in (anchor.formats ?? {}))) warning(file, `flow: ${anchor.edge} ${anchor.distance > 0 && anchor.edge === 'center' ? '+' : ''}${anchor.distance} is ${Math.abs(anchor.distance)} px on print format "${f.id}" too, ${(Math.abs(anchor.distance) * 25.4 / (f.dpi ?? 300)).toFixed(1)} mm at ${f.dpi ?? 300} dpi; give it its own "on ${f.id}:" value`);
+        }
+      }
     }
   }
 

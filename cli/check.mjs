@@ -3902,6 +3902,22 @@ var ILLUSTRATION_ANCHORS = /* @__PURE__ */ new Set([
   "bottom-right"
 ]);
 var SPACING_TOKENS = ["xs", "s", "m", "l", "xl", "2xl", "3xl"];
+function readFlowDistance(raw, edge, where) {
+  const fail = (msg) => {
+    throw new Error(`${where}: ${msg}`);
+  };
+  if (edge === "center") {
+    const m = raw.match(/^([+-])(.+)$/);
+    if (!m) return fail(`a centre offset needs a sign: +${raw} moves it down, -${raw} up`);
+    const [, sign, rest] = m;
+    if (SPACING_TOKENS.includes(rest)) return sign === "-" ? `-${rest}` : rest;
+    if (/^\d+(?:\.\d+)?$/.test(rest)) return (sign === "-" ? -1 : 1) * parseFloat(rest);
+    return fail(`invalid centre offset "${raw}" (expected +/- a spacing token or a number of px)`);
+  }
+  if (SPACING_TOKENS.includes(raw)) return raw;
+  if (/^\d+(?:\.\d+)?$/.test(raw)) return parseFloat(raw);
+  return fail(`invalid flow distance "${raw}" (expected a spacing token: ${SPACING_TOKENS.join(", ")}, or a number of px)`);
+}
 var GRID_Y_KEYWORDS = /* @__PURE__ */ new Set(["top", "center", "bottom"]);
 var VALID_SLOTS2 = new Set(SLOT_IDS);
 function parseCol(value, fileName, lineNum, maxCol = 12) {
@@ -4129,11 +4145,11 @@ function parseCompositionFile(content, fileName) {
       const firstWord = value.split(/\s+/)[0];
       if (firstWord === "top" || firstWord === "center" || firstWord === "bottom") {
         const parts = value.split(/\s+/);
-        const distance = parts[1];
-        if (parts.length > 2) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(2).join(" ")}" in anchored flow (expected: flow: top|bottom [TOKEN] or flow: center)`);
-        if (distance !== void 0 && firstWord === "center") throw new Error(`${fileName}:${lineNum}: "flow: center" takes no distance (it sits on the centre of the safe area)`);
-        if (distance !== void 0 && !SPACING_TOKENS.includes(distance)) throw new Error(`${fileName}:${lineNum}: invalid flow distance "${distance}" (expected a spacing token: ${SPACING_TOKENS.join(", ")})`);
-        anchor = { edge: firstWord, ...distance !== void 0 ? { distance } : {} };
+        if (parts.length > 2) throw new Error(`${fileName}:${lineNum}: unexpected "${parts.slice(2).join(" ")}" in anchored flow (expected: flow: top|bottom [DISTANCE] or flow: center [+/-OFFSET])`);
+        anchor = { edge: firstWord };
+        if (parts[1] !== void 0) {
+          anchor.distance = readFlowDistance(parts[1], firstWord, `${fileName}:${lineNum}`);
+        }
       } else if (value.startsWith("panel")) {
         const all = value.split(/\s+/);
         const inset = all.includes("inset");
@@ -4164,6 +4180,18 @@ function parseCompositionFile(content, fileName) {
         const nextLine = lines[i + 1].trim();
         if (nextLine === "") {
           i++;
+          continue;
+        }
+        const onFormat = nextLine.match(/^on\s+(\S+?):\s+(\S+)$/);
+        if (onFormat || nextLine.startsWith("on ")) {
+          i++;
+          if (!anchor) throw new Error(`${fileName}:${i + 1}: "on FORMAT:" is only allowed in an anchored flow (flow: top|center|bottom)`);
+          if (!onFormat) throw new Error(`${fileName}:${i + 1}: invalid "${nextLine}" (expected: on FORMAT: DISTANCE, e.g. on 4:5: 130)`);
+          const [, formatId, raw2] = onFormat;
+          const d = readFlowDistance(raw2, anchor.edge, `${fileName}:${i + 1}`);
+          anchor.formats ??= {};
+          if (formatId in anchor.formats) throw new Error(`${fileName}:${i + 1}: format "${formatId}" has a distance twice in this flow`);
+          anchor.formats[formatId] = d;
           continue;
         }
         if (nextLine.startsWith("direction:")) {
@@ -5381,6 +5409,19 @@ function checkFiles(files) {
     for (const edge of ["top", "center", "bottom"]) {
       if (anchored.filter((f) => f.anchor?.edge === edge).length > 1) warning(file, `two flows are anchored to the ${edge}, so they overlap; make them one flow`);
       if (edge !== "center" && anchored.some((f) => f.anchor?.edge === edge) && composition.sticky.some((st) => st.position === edge)) warning(file, `flow: ${edge} and sticky: ${edge} overlap; a sticky bar doesn't push an anchored flow`);
+    }
+    for (const { anchor } of anchored) {
+      if (!anchor) continue;
+      if (formats.length) {
+        for (const id of Object.keys(anchor.formats ?? {})) {
+          if (!formats.some((f) => f.id === id)) warning(file, `flow: ${anchor.edge} has a distance for format "${id}", which the brand doesn't declare`);
+        }
+      }
+      if (typeof anchor.distance === "number" && anchor.distance !== 0) {
+        for (const f of formats) {
+          if (f.widthMm !== void 0 && !(f.id in (anchor.formats ?? {}))) warning(file, `flow: ${anchor.edge} ${anchor.distance > 0 && anchor.edge === "center" ? "+" : ""}${anchor.distance} is ${Math.abs(anchor.distance)} px on print format "${f.id}" too, ${(Math.abs(anchor.distance) * 25.4 / (f.dpi ?? 300)).toFixed(1)} mm at ${f.dpi ?? 300} dpi; give it its own "on ${f.id}:" value`);
+        }
+      }
     }
   }
   const firstTheme = Object.values(brand?.themes ?? {})[0];

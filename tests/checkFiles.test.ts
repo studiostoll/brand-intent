@@ -101,6 +101,24 @@ test('two flows on one anchor, or on a sticky bar\'s edge, are warnings', () => 
   ]);
 });
 
+test('a distance for an undeclared format, and a px default on a print format, are warnings', () => {
+  const file = `${base().compositions[0].id}.composition`;
+  const issues = added(f => {
+    f.compositions[0].mode = 'flow';
+    f.compositions[0].anchoredFlows = [{ anchor: { edge: 'top', distance: 74, formats: { '4:5': 130, '9:16': 70 } } }] as never;
+    f.formats.push({ id: 'A5', widthMm: 148, dpi: 300 } as never);
+  });
+  assertEq(issues, [
+    `warning ${file}: flow: top has a distance for format "9:16", which the brand doesn't declare`,
+    `warning ${file}: flow: top 74 is 74 px on print format "A5" too, 6.3 mm at 300 dpi; give it its own "on A5:" value`,
+  ]);
+  assertEq(added(f => {
+    f.compositions[0].mode = 'flow';
+    f.compositions[0].anchoredFlows = [{ anchor: { edge: 'top', distance: 74, formats: { A5: 'xl' } } }] as never;
+    f.formats.push({ id: 'A5', widthMm: 148, dpi: 300 } as never);
+  }), [], 'print format with its own value');
+});
+
 test('scope names an audience the identity does not have', () => {
   const file = `${purpose(base()).id}.purpose`;
   assertEq(added(f => { purpose(f).scope = { audience: ['nobody'] }; }), [`error ${file}: scope: audience "nobody" is not in the .identity`]);
