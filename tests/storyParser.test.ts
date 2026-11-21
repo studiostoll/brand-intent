@@ -521,8 +521,22 @@ test('item variables and background: {item}', () => {
   const none = parse('page\n  purpose: notice\n  background: {item}\n');
   assertEq(checkStory(none, { ...BRAND, works: [COLOURS] }, 's.story'), ['s.story: page 1: background {item} needs a work: on the page or the story'], 'no work');
   assertEq(parse('page\n  purpose: notice\n  background: #FFCC00\n').pages[0].background, '#FFCC00', 'a fixed hex');
+});
+
+test('background: NAME names a background of the .brand', () => {
+  const s = parse('page\n  purpose: notice\n  theme: Dawn\n  background: dawn-drift\n');
+  assertEq(s.pages[0].backgroundName, 'dawn-drift', 'parsed');
+  assertEq(s.pages[0].background, undefined, 'not a ground');
+  const brand = { ...BRAND, themes: ['Dawn', 'Dusk'], backgrounds: [{ id: 'dawn-drift', themes: ['Dawn'] }, { id: 'dots' }] };
+  assertEq(checkStory(s, brand, 's.story'), [], 'fits');
+  assertEq(checkStory(parse('page\n  purpose: notice\n  background: dots\n'), brand, 's.story'), [], 'a background without themes');
+  assertEq(checkStory(parse('page\n  purpose: notice\n  background: dusk-mesh\n'), brand, 's.story'), ['s.story: page 1: background "dusk-mesh" does not exist'], 'unknown');
+  assertEq(checkStory(parse('page\n  purpose: notice\n  theme: Dusk\n  background: dawn-drift\n'), brand, 's.story'), ['s.story: page 1: background "dawn-drift" does not lie under theme "Dusk"'], 'other theme');
+  let err = '';
+  try { parse('page\n  purpose: notice\n  background: Dawn Drift\n'); } catch (e) { err = (e as Error).message; }
+  assertEq(err.includes('expected #RRGGBB, {item} or a background name'), true, 'invalid');
   assertThrows(() => parse('page\n  purpose: notice\n  background: {work}\n'), 'invalid background');
-  assertThrows(() => parse('page\n  purpose: notice\n  background: yellow\n'), 'invalid background');
+  assertThrows(() => parse('page\n  purpose: notice\n  background: #FFCC0\n'), 'invalid background');
 });
 
 test('work variables need a work and what it has', () => {

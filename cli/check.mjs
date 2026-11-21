@@ -5061,8 +5061,9 @@ function parseStoryFile(content, fileName) {
         if (read.value === "true") currentPage.placeholder = true;
       } else if (read?.key === "theme") currentPage.theme = read.value;
       else if (read?.key === "background") {
-        if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== "{item}") throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
-        currentPage.background = read.value;
+        if (/^#[0-9a-fA-F]{6}$/.test(read.value) || read.value === "{item}") currentPage.background = read.value;
+        else if (/^[a-z0-9][a-z0-9-]*$/.test(read.value)) currentPage.backgroundName = read.value;
+        else throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB, {item} or a background name)`);
       } else if (read?.key === "repeat") {
         const m = /^(\d+)\s*-\s*(\d+)$/.exec(read.value);
         const min = m ? parseInt(m[1], 10) : 0;
@@ -5401,6 +5402,11 @@ function checkStory(story, brand, fileName) {
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.placeholder && purpose.camera === false) say(`${where}: placeholder: true, but purpose "${purpose.id}" has camera: false, so nobody can replace it`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
+    if (page.backgroundName && brand.backgrounds) {
+      const bg = brand.backgrounds.find((b) => b.id === page.backgroundName);
+      if (!bg) say(`${where}: background "${page.backgroundName}" does not exist`);
+      else if (page.theme && bg.themes && !bg.themes.includes(page.theme)) say(`${where}: background "${bg.id}" does not lie under theme "${page.theme}"`);
+    }
     if (page.background === "{item}" && workMap) {
       if (!named.work) say(`${where}: background {item} needs a work: on the page or the story`);
       else if (facts.work && !facts.work.items) say(`${where}: background {item} needs items: in work "${facts.work.id}"`);
@@ -5530,6 +5536,7 @@ function checkFiles(files) {
         compositions: [...compositionIds],
         formats: formats.map((f) => f.id),
         themes: Object.keys(brand.themes ?? {}),
+        backgrounds: (brand.backgrounds ?? []).map((b) => ({ id: b.id, themes: b.themes })),
         photos: files.photos ?? (brand.assets?.photos ?? []).map((p) => p.id),
         videos: files.videos ?? (brand.assets?.videos ?? []).map((v) => v.id),
         illustrations: (brand.assets?.illustrations ?? []).map((i) => i.id),
