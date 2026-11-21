@@ -154,9 +154,13 @@ export interface ParsedStoryPage {
   placeholder?: true;
   /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
   theme?: string;
-  /** The page's ground: `#RRGGBB`, or `{item}` for the day's item of the page's work. Text and logo follow
-   *  the brand's contrast rule against it. */
+  /** `background:` is what lies under the page: a plain colour or a `background` block of the `.brand`.
+   *  A plain colour: `#RRGGBB`, or `{item}` for the day's item of the page's work. The page is plain: no gradient
+   *  or pattern from its theme lies on it. Text and logo follow the brand's contrast rule against it. */
   background?: string;
+  /** A `background` block: the id of the `background NAME` block (a gradient or a pattern) that lies under this
+   *  page, instead of the one its theme would get. Since v0.68. */
+  backgroundName?: string;
   /** Page topic: what this page adds to the story. */
   topic?: string;
   /** Person id this page speaks about, instead of the story's. */
@@ -424,8 +428,9 @@ export function parseStoryFile(content: string, fileName: string): ParsedStory {
       }
       else if (read?.key === 'theme') currentPage.theme = read.value;
       else if (read?.key === 'background') {
-        if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== '{item}') throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
-        currentPage.background = read.value;
+        if (/^#[0-9a-fA-F]{6}$/.test(read.value) || read.value === '{item}') currentPage.background = read.value;
+        else if (/^[a-z0-9][a-z0-9-]*$/.test(read.value)) currentPage.backgroundName = read.value;
+        else throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB, {item} or a background name)`);
       }
       else if (read?.key === 'repeat') {
         const m = /^(\d+)\s*-\s*(\d+)$/.exec(read.value);
@@ -710,7 +715,7 @@ function longestText(text: string, { place, time, person, group, work, byNames }
  *  `works` the same for `group:` and `work:`. `name` is the brand's name, what `{by}` shows without `by:`. */
 export function checkStory(
   story: ParsedStory,
-  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; videos?: string[]; themes?: string[]; location?: boolean; places?: ParsedPlace[]; time?: ParsedTime | null; people?: ParsedPerson[]; groups?: ParsedGroup[]; works?: ParsedWork[]; name?: string },
+  brand: { purposes: ParsedPurpose[]; compositions: string[]; formats: string[]; illustrations?: string[]; photos?: string[]; videos?: string[]; themes?: string[]; backgrounds?: { id: string; themes?: string[] }[]; location?: boolean; places?: ParsedPlace[]; time?: ParsedTime | null; people?: ParsedPerson[]; groups?: ParsedGroup[]; works?: ParsedWork[]; name?: string },
   fileName: string,
 ): string[] {
   const problems: string[] = [];
@@ -827,6 +832,11 @@ export function checkStory(
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.placeholder && purpose.camera === false) say(`${where}: placeholder: true, but purpose "${purpose.id}" has camera: false, so nobody can replace it`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
+    if (page.backgroundName && brand.backgrounds) {
+      const bg = brand.backgrounds.find(b => b.id === page.backgroundName);
+      if (!bg) say(`${where}: background "${page.backgroundName}" does not exist`);
+      else if (page.theme && bg.themes && !bg.themes.includes(page.theme)) say(`${where}: background "${bg.id}" does not lie under theme "${page.theme}"`);
+    }
     if (page.background === '{item}' && workMap) {
       if (!named.work) say(`${where}: background {item} needs a work: on the page or the story`);
       else if (facts.work && !facts.work.items) say(`${where}: background {item} needs items: in work "${facts.work.id}"`);
