@@ -2,6 +2,11 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.67 · 21 Nov 2026
+
+- **Brand.** A `kind: gradient` background takes `points` or `mesh` instead of `src:`. `points` holds one colour point per line, `#RRGGBB at X% Y% size S%` (places may lie off the sheet); `mesh` holds rows of colours `#RRGGBB #RRGGBB …`, at least two rows of two, all rows the same length. Both need `size:`, the side of the square sheet in px. One of `src:`, `points`, `mesh`; two are an error.
+- **Brand.** `motion: drift Ns` on any gradient: it flows and is back where it started after `N` seconds. Absent, it stands still.
+
 ## v0.66 · 20 Nov 2026
 
 - **Brand.** `trim: cap | none` in a `typography` block sets the text box: `cap` runs it from the first line's cap height to the last line's baseline, so spacers, padding and anchored-flow distances measure to the letters. Descenders and accents hang outside it. Default `none`; any other value is an error.
