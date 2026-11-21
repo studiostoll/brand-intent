@@ -2,6 +2,12 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.68 · 21 Nov 2026
+
+- **Story.** A page's `background:` is its background: a plain colour (`#RRGGBB` or `{item}`, as before) or the name of a `background NAME` block, which must lie under the page's `theme:`. A plain colour now also means no gradient or pattern of the theme lies on the page. Without the key the page takes its theme's ground and one of its theme's backgrounds.
+- **Brand.** A gradient's colours are free (an image's own, or those `points` and `mesh` write); each theme it names keeps its ground as the colour it stands for.
+- **Tooling.** `checkStory` reports a background name the `.brand` doesn't declare, or whose `themes:` leave out the page's theme.
+
 ## v0.67 · 21 Nov 2026
 
 - **Brand.** A `kind: gradient` background takes `points` or `mesh` instead of `src:`. `points` holds one colour point per line, `#RRGGBB at X% Y% size S%` (places may lie off the sheet); `mesh` holds rows of colours `#RRGGBB #RRGGBB …`, at least two rows of two, all rows the same length. Both need `size:`, the side of the square sheet in px. One of `src:`, `points`, `mesh`; two are an error.
