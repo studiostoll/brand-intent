@@ -1234,7 +1234,7 @@ The format file describes a canvas: platform, dimensions, safe zones. It knows n
 | `id:` | string | Yes | Unique identifier (e.g., `4:5`, `A4`) |
 | `label:` | string | Yes | Display label |
 | `sublabel:` | string | Yes | Secondary label (e.g., `Feed Portrait`) |
-| `category:` | enum | Yes | `instagram` \| `facebook` \| `linkedin` \| `print` \| `signage` |
+| `category:` | enum | Yes | `instagram` \| `facebook` \| `linkedin` \| `print` \| `signage` \| `presentation`. A `presentation` page is a slide in a presentation, in px, not posted |
 | `post:` | enum | No | `feed` \| `story` \| `reel`: how a page in this format is posted. A `reel` is a video: its pages are posted when something on them moves. Absent = the format is not posted |
 | `size:` | string | Yes | Dimensions in pixels (e.g., `1080 1350`) or mm (e.g., `210mm 297mm`) |
 | `grid:` | string | Yes | Row × column grid (e.g., `5 4`). For a print format used by a composition in regions mode, the rows are the page's fields: equal heights between the brand's print margins, a print gutter apart |

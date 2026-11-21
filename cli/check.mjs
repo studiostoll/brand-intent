@@ -3198,8 +3198,8 @@ function parseFormatFile(content, fileName) {
         sublabel = value;
         break;
       case "category":
-        if (value !== "instagram" && value !== "facebook" && value !== "linkedin" && value !== "print" && value !== "signage")
-          throw new Error(`${fileName}:${lineNum}: category must be instagram, facebook, linkedin, print, or signage, got "${value}"`);
+        if (value !== "instagram" && value !== "facebook" && value !== "linkedin" && value !== "print" && value !== "signage" && value !== "presentation")
+          throw new Error(`${fileName}:${lineNum}: category must be instagram, facebook, linkedin, print, signage, or presentation, got "${value}"`);
         category = value;
         break;
       case "post":

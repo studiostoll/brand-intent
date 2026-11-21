@@ -5,7 +5,7 @@
  * Throws on parse errors with file name and line number.
  *
  * Units:
- *   - screen: size in px, zone values in px
+ *   - screen (social, presentation): size in px, zone values in px
  *   - print/signage: size in mm (px computed via dpi), zone values in mm (converted to px)
  */
 
@@ -19,7 +19,7 @@ export interface ParsedFormat {
   name?: string;
   label: string;
   sublabel: string;
-  category: 'instagram' | 'facebook' | 'linkedin' | 'print' | 'signage';
+  category: 'instagram' | 'facebook' | 'linkedin' | 'print' | 'signage' | 'presentation';
   /** How the page is posted (from `post:`). Absent = the format is not posted. */
   post?: 'feed' | 'story' | 'reel';
   // Pixel dimensions (always present — computed from mm+dpi for print/signage)
@@ -145,8 +145,8 @@ export function parseFormatFile(content: string, fileName: string): ParsedFormat
         break;
 
       case 'category':
-        if (value !== 'instagram' && value !== 'facebook' && value !== 'linkedin' && value !== 'print' && value !== 'signage')
-          throw new Error(`${fileName}:${lineNum}: category must be instagram, facebook, linkedin, print, or signage, got "${value}"`);
+        if (value !== 'instagram' && value !== 'facebook' && value !== 'linkedin' && value !== 'print' && value !== 'signage' && value !== 'presentation')
+          throw new Error(`${fileName}:${lineNum}: category must be instagram, facebook, linkedin, print, signage, or presentation, got "${value}"`);
         category = value;
         break;
 

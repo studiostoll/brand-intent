@@ -45,6 +45,14 @@ test('facebook is a category with px dimensions', () => {
   assertEq([f.widthPx, f.heightPx], [1200, 630], 'size');
 });
 
+test('presentation is a category with px dimensions, not posted', () => {
+  const f = parseFormatFile('id: 16:9\nlabel: 16:9\nsublabel: Presentation\ncategory: presentation\n\nsize: 1920 1080\ngrid: 4 6\n', 'p.format');
+  assertEq(f.category, 'presentation', 'category');
+  assertEq([f.widthPx, f.heightPx], [1920, 1080], 'size');
+  assertEq(f.post, undefined, 'post');
+  assertEq(f.dpi, undefined, 'dpi');
+});
+
 test('an unknown category is refused', () => {
   assertThrows(() => parseFormatFile(format('tiktok'), 'f.format'), 'category must be');
 });
