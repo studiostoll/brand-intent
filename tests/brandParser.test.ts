@@ -723,7 +723,22 @@ test('a gradient from points: what is wrong', () => {
   bad('  size: 1920\n  points\n    #3B2A5C at 10% 20% size 30%\n', /at least two/, 'one point');
   bad('  size: 1920\n  points\n    #3B2A5C 10 20 30\n    #E08A5F at 50% 50% size 30%\n', /#RRGGBB at X% Y% size S%/, 'point syntax');
   bad(`  size: 1920\n  motion: wobble\n${two}`, /drift Ns/, 'motion');
-  bad(`  motion: drift 20s\n  src: gradients/dusk.png\n`, /has no "motion:"/, 'motion on an image');
+  bad(`  size: 1920\n${two}  mesh\n    #3B2A5C #E08A5F\n    #E08A5F #3B2A5C\n`, /points and a mesh/, 'points and mesh');
+});
+
+test('a gradient from a mesh: rows of colours, the sheet size, a drift', () => {
+  const src = `${HEADER}${DUSK}background dusk\n  kind:   gradient\n  themes: Dusk\n  size:   1920\n  motion: drift 24s\n  mesh\n    #3b2a5c #E08A5F #3B2A5C   # top\n    #E08A5F #3B2A5C #E08A5F\n`;
+  assertEq(parseBrandFile(src, 'test.brand').backgrounds, [{ id: 'dusk', label: 'dusk', kind: 'gradient', themes: ['Dusk'],
+    mesh: [['#3B2A5C', '#E08A5F', '#3B2A5C'], ['#E08A5F', '#3B2A5C', '#E08A5F']], size: 1920, motion: { kind: 'drift', period: 24 } }], 'mesh');
+  const bad = (body: string, re: RegExp, msg: string) => assertThrows(() => parseBrandFile(`${HEADER}${DUSK}background dusk\n  kind: gradient\n  themes: Dusk\n  size: 1920\n${body}`, 'test.brand'), re, msg);
+  bad('  mesh\n    #3B2A5C #E08A5F\n    #E08A5F\n', /same number of colours/, 'ragged');
+  bad('  mesh\n    #3B2A5C #E08A5F\n', /at least two rows/, 'one row');
+  bad('  mesh\n    #3B2A5C red\n    #E08A5F #3B2A5C\n', /mesh row must be colours/, 'not a colour');
+});
+
+test('an image gradient may drift', () => {
+  const src = `${HEADER}${DUSK}background dusk\n  kind: gradient\n  themes: Dusk\n  src: gradients/dusk.png\n  motion: drift 30s\n`;
+  assertEq(parseBrandFile(src, 'test.brand').backgrounds?.[0].motion, { kind: 'drift', period: 30 }, 'image drift');
 });
 
 test('a brand without backgrounds has none', () => {
