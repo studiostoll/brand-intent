@@ -445,7 +445,7 @@
       }
     },
     "asset-value": {
-      "match": "^(\\s{2,})(label|src|lottie|gltf|generator|group|work|when|framing|place|person|taken|focus|horizon|description|caption|goals|kind|themes|tone|blend|fit)(:\\s*)(.*)|^(\\s{2,})(aspect|scale|amount|opacity)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params|align-left|align-center|align-right)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
+      "match": "^(\\s{2,})(label|src|lottie|gltf|generator|group|work|when|framing|place|person|taken|focus|horizon|description|caption|goals|kind|themes|tone|blend|fit|motion)(:\\s*)(.*)|^(\\s{2,})(aspect|scale|amount|opacity)(:\\s*)(\\S+)|^(\\s{2,})(animated|generator-params|align-left|align-center|align-right|points|mesh)\\s*$|^(\\s{2,})(loop)(?:(:\\s*)(true|false))?\\s*$",
       "captures": {
         "2": { "name": "support.type.property-name.brand-intent-brand" },
         "3": { "name": "punctuation.separator.key-value.brand-intent-brand" },

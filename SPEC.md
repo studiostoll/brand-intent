@@ -735,11 +735,11 @@ background ripples
 | `label:` | string | all | No | Display name. Default: the block's name |
 | `kind:` | `gradient` \| `pattern` | all | Yes | What the background is |
 | `themes:` | theme names, comma list | all | Gradient: yes. Pattern: no | The themes it lies under (see Pairing) |
-| `src:` | path | gradient | one of `src:`, `points`, `mesh` | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
-| `points` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn from colour points, one per line: `#RRGGBB at X% Y% size S%` (see Points) |
-| `mesh` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn through a grid of colours, one row per line: `#RRGGBB #RRGGBB …` (see Mesh) |
-| `size:` | px | gradient with `points` or `mesh` | Yes | The side of the square sheet it is drawn on, in canvas px |
-| `motion:` | `drift Ns` | gradient | No | The gradient flows slowly and is back after `N` seconds. Absent: it stands still |
+| `src:` | path | gradient | one of `src:`, `points`, `mesh` (since v0.67; before, required) | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
+| `points` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn from colour points, one per line: `#RRGGBB at X% Y% size S%` (see Points) (since v0.67) |
+| `mesh` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn through a grid of colours, one row per line: `#RRGGBB #RRGGBB …` (see Mesh) (since v0.67) |
+| `size:` | px | gradient with `points` or `mesh` | Yes | The side of the square sheet it is drawn on, in canvas px (since v0.67) |
+| `motion:` | `drift Ns` | gradient | No | The gradient flows slowly and is back after `N` seconds. Absent: it stands still (since v0.67) |
 | `generator:` | id | pattern | Yes | The generator that draws it. Ids are the implementation's, like a logo's `generator:` (for example `ripples`, `swell`, `wind`) |
 | `tone:` | `shade` \| `tint` | pattern | Yes | A shade is darker than the ground, a tint lighter |
 
