@@ -735,11 +735,43 @@ background ripples
 | `label:` | string | all | No | Display name. Default: the block's name |
 | `kind:` | `gradient` \| `pattern` | all | Yes | What the background is |
 | `themes:` | theme names, comma list | all | Gradient: yes. Pattern: no | The themes it lies under (see Pairing) |
-| `src:` | path | gradient | Yes | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
+| `src:` | path | gradient | one of `src:`, `points`, `mesh` (since v0.67; before, required) | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
+| `points` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn from colour points, one per line: `#RRGGBB at X% Y% size S%` (see Points) (since v0.67) |
+| `mesh` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn through a grid of colours, one row per line: `#RRGGBB #RRGGBB …` (see Mesh) (since v0.67) |
+| `size:` | px | gradient with `points` or `mesh` | Yes | The side of the square sheet it is drawn on, in canvas px (since v0.67) |
+| `motion:` | `drift Ns` | gradient | No | The gradient flows slowly and is back after `N` seconds. Absent: it stands still (since v0.67) |
 | `generator:` | id | pattern | Yes | The generator that draws it. Ids are the implementation's, like a logo's `generator:` (for example `ripples`, `swell`, `wind`) |
 | `tone:` | `shade` \| `tint` | pattern | Yes | A shade is darker than the ground, a tint lighter |
 
 **Gradient.** Its colours are its themes' colours, so it names them. Each theme keeps its `ground:` (or `background`) as the colour the gradient stands for; the slots derived from the ground (`label-fg`, `sticker-fg`) take it. The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so its grain (the noise that keeps a gradient from banding) looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when the page gets the background and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown.
+
+**Points.** A gradient can be drawn instead of loaded. Its sheet is a square of `size:` px, treated like an image of that size (sections, turns, mirroring). Each point gives its colour most weight at its place, less with distance, as a bell `size` wide (% of the sheet); a spot on the sheet has the colours of all points mixed by their weights. Places may lie outside the sheet (below 0 % or above 100 %): a point off the edge still tints it. With `motion: drift`, each point moves on a small closed path around its place; the same round repeats without a seam, so a still is the moment the round starts.
+
+```yaml
+background dusk
+  kind:   gradient
+  themes: Dusk
+  size:   1920
+  motion: drift 24s
+  points
+    #3B2A5C at 10% 20% size 30%
+    #E08A5F at 80% 90% size 22%
+```
+
+**Mesh.** A gradient can also be drawn through a grid of colours: each line of `mesh` is a row, top to bottom, each colour a node, left to right; all rows have the same number of colours, at least two rows of two. The nodes lie evenly from edge to edge of the square sheet (`size:` px, placed like an image). The surface passes through every node's colour and runs smoothly between neighbours, so the colours written are the colours seen.
+
+```yaml
+background dusk
+  kind:   gradient
+  themes: Dusk
+  size:   1920
+  motion: drift 24s
+  mesh
+    #3B2A5C #E08A5F #3B2A5C
+    #E08A5F #F4C59B #3B2A5C
+```
+
+**Drift.** With `motion: drift Ns` a gradient moves slowly and is back where it started after `N` seconds, so the round repeats without a seam and a still is the moment it starts. Points wander around their places; a mesh or an image flows, gently warped like liquid. Exports and a reader who asks for reduced motion get the still.
 
 **Pattern.** A pattern has one colour, taken from the ground: a shade is darker, a tint lighter, and near black or white the direction turns so the pattern stays visible. So a pattern fits any theme. How strong, how large and in which direction it is drawn are the page's, not the language's.
 
@@ -753,7 +785,7 @@ A photo or video on the page lies above the background; with `image: full` it is
 
 **Contrast.** A background adds no rule to its themes: each is checked against its ground, as every theme. Whether text reads on a gradient is checked per page, against the part of the gradient under the text, by an implementation that reads the image.
 
-**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand: a generated gradient (`kind: gradient` with colour stops instead of `src:`). Grain over the page is a [finish](#finish-name-block), not a background.
+**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand. Grain over the page is a [finish](#finish-name-block), not a background.
 
 ### `finish NAME` Block
 

@@ -176,12 +176,40 @@ export interface ParsedBackgroundDef {
   kind: 'gradient' | 'pattern';
   /** The themes it lies under by default. Absent (patterns only): it fits every theme and is picked, never laid by default. */
   themes?: string[];
-  /** Gradient: the image, relative to the brand folder. */
+  /** Gradient: the image, relative to the brand folder. A gradient has one of `src`, `points` or `mesh`. */
   src?: string;
+  /** Gradient drawn from colour points (`points` sub-block): each point's colour weighs most at its place and
+   *  less with distance, as a bell of width `size`. Places and sizes in % of the square sheet. */
+  points?: GradientPoint[];
+  /** Gradient drawn from a mesh (`mesh` sub-block): rows of colours, top to bottom, on an even grid from edge to
+   *  edge of the square sheet; the surface passes through every colour and runs smoothly between them. */
+  mesh?: string[][];
+  /** Gradient from points or a mesh: the side of its square sheet, in canvas px. */
+  size?: number;
+  /** How the gradient moves. Absent: it stands still. */
+  motion?: GradientMotion;
   /** Pattern: the generator id, provided by the implementation (e.g. `ripples`, `swell`, `wind`). */
   generator?: string;
   /** Pattern: its one colour is a shade (darker) or a tint (lighter) of the ground. */
   tone?: 'shade' | 'tint';
+}
+
+/** A colour point of a generated gradient: `#RRGGBB at X% Y% size S%`. */
+export interface GradientPoint {
+  color: string;
+  /** % of the sheet, may lie outside 0–100 */
+  x: number;
+  y: number;
+  /** Width of the point's bell, % of the sheet */
+  size: number;
+}
+
+/** `motion: drift 24s`: the gradient flows slowly (points wander around their places; a mesh or an image is
+ *  gently warped) and is back after one period. */
+export interface GradientMotion {
+  kind: 'drift';
+  /** Seconds for one round; the movement loops without a seam. */
+  period: number;
 }
 
 /** How a finish meets what lies under it. The four modes CSS and PDF both have. */
@@ -588,7 +616,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   const warnings: string[] = [];
   const framingsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
   const finishesRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
-  const backgroundsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }> }> = [];
+  const backgroundsRaw: Array<{ id: string; line: number; props: Record<string, { value: string; line: number }>; points?: Array<{ value: string; line: number }>; mesh?: Array<{ value: string; line: number }>; sub?: 'points' | 'mesh' }> = [];
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -1075,10 +1103,22 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (activeBlock === 'background') {
         const trimmed = raw.trim();
         if (trimmed === '' || trimmed.startsWith('# ')) continue;
+        const bg = backgroundsRaw[backgroundsRaw.length - 1];
+        const indent = raw.length - raw.trimStart().length;
+        // `points` and `mesh` open a sub-block: one colour point, or one row of the mesh, per line, indented deeper
+        if (trimmed === 'points' || trimmed === 'mesh') {
+          if (bg[trimmed]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${trimmed} twice`);
+          bg[trimmed] = []; bg.sub = trimmed;
+          continue;
+        }
+        if (bg.sub && indent >= 4) {
+          bg[bg.sub]!.push({ value: trimmed.replace(/\s+#\s.*$/, ''), line: lineNum });
+          continue;
+        }
+        bg.sub = undefined;
         const colonIdx = trimmed.indexOf(':');
         if (colonIdx === -1) throw new Error(`${fileName}:${lineNum}: background property must be "KEY: VALUE", got "${trimmed}"`);
         const key = trimmed.slice(0, colonIdx).trim();
-        const bg = backgroundsRaw[backgroundsRaw.length - 1];
         if (bg.props[key]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${key}: twice`);
         bg.props[key] = { value: trimmed.slice(colonIdx + 1).replace(/\s+#\s.*$/, '').trim(), line: lineNum };
         continue;
@@ -1797,10 +1837,13 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
 
   // Backgrounds: a gradient names its themes (its colours are theirs);
   // a pattern takes its one colour from the ground, so it fits any theme.
-  const backgrounds: ParsedBackgroundDef[] = backgroundsRaw.map(({ id, line, props }) => {
+  const backgrounds: ParsedBackgroundDef[] = backgroundsRaw.map(({ id, line, props, points, mesh }) => {
     const kind = props['kind']?.value;
     if (kind !== 'gradient' && kind !== 'pattern') throw new Error(`${fileName}:${line}: background "${id}" needs "kind: gradient" or "kind: pattern"${kind ? `, got "${kind}"` : ''}`);
-    const known = new Set(kind === 'gradient' ? ['label', 'kind', 'themes', 'src'] : ['label', 'kind', 'themes', 'generator', 'tone']);
+    const known = new Set(kind === 'gradient' ? (points || mesh ? ['label', 'kind', 'themes', 'size', 'motion'] : ['label', 'kind', 'themes', 'src', 'motion']) : ['label', 'kind', 'themes', 'generator', 'tone']);
+    if (points && kind !== 'gradient') throw new Error(`${fileName}:${points[0]?.line ?? line}: background "${id}" (${kind}) has no points`);
+    if (mesh && kind !== 'gradient') throw new Error(`${fileName}:${mesh[0]?.line ?? line}: background "${id}" (${kind}) has no mesh`);
+    if (points && mesh) throw new Error(`${fileName}:${mesh[0]?.line ?? line}: background "${id}" has points and a mesh, one of them`);
     for (const [key, { line: l }] of Object.entries(props)) {
       if (!known.has(key)) throw new Error(`${fileName}:${l}: background "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(', ')})`);
     }
@@ -1815,14 +1858,46 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     } else if (kind === 'gradient') {
       throw new Error(`${fileName}:${line}: background "${id}" is a gradient and needs "themes:", the themes whose colours it carries`);
     }
-    if (kind === 'gradient') {
+    if (kind === 'gradient' && mesh) {
+      def.mesh = mesh.map(({ value, line: l }) => {
+        const row = value.split(/\s+/);
+        if (row.some(c => !/^#[0-9a-fA-F]{6}$/.test(c))) throw new Error(`${fileName}:${l}: background "${id}" mesh row must be colours "#RRGGBB #RRGGBB …", got "${value}"`);
+        return row.map(c => c.toUpperCase());
+      });
+      if (def.mesh.length < 2 || def.mesh[0].length < 2) throw new Error(`${fileName}:${mesh[0]?.line ?? line}: background "${id}" mesh needs at least two rows of at least two colours`);
+      const bad = mesh.find((_, i) => def.mesh![i].length !== def.mesh![0].length);
+      if (bad) throw new Error(`${fileName}:${bad.line}: background "${id}" mesh rows must have the same number of colours (${def.mesh[0].length})`);
+    }
+    if (kind === 'gradient' && points) {
+      if (points.length < 2) throw new Error(`${fileName}:${line}: background "${id}" points: a gradient needs at least two`);
+      def.points = points.map(({ value, line: l }) => {
+        const m = value.match(/^(#[0-9a-fA-F]{6})\s+at\s+(-?\d+(?:\.\d+)?)%\s+(-?\d+(?:\.\d+)?)%\s+size\s+(\d+(?:\.\d+)?)%$/);
+        if (!m) throw new Error(`${fileName}:${l}: background "${id}" point must be "#RRGGBB at X% Y% size S%", got "${value}"`);
+        const size = Number(m[4]);
+        if (size <= 0) throw new Error(`${fileName}:${l}: background "${id}" point size must be more than 0%`);
+        return { color: m[1].toUpperCase(), x: Number(m[2]), y: Number(m[3]), size };
+      });
+    }
+    if (kind === 'gradient' && (points || mesh)) {
+      const size = props['size'];
+      if (!size) throw new Error(`${fileName}:${line}: background "${id}" needs "size:", the side of its square sheet in px`);
+      if (!/^\d+$/.test(size.value) || Number(size.value) <= 0) throw new Error(`${fileName}:${size.line}: background "${id}" size must be whole px, got "${size.value}"`);
+      def.size = Number(size.value);
+    }
+    const motion = kind === 'gradient' ? props['motion'] : undefined;
+    if (motion) {
+      const m = motion.value.match(/^drift\s+(\d+(?:\.\d+)?)s$/);
+      if (!m || Number(m[1]) <= 0) throw new Error(`${fileName}:${motion.line}: background "${id}" motion must be "drift Ns" (seconds for one round), got "${motion.value}"`);
+      def.motion = { kind: 'drift', period: Number(m[1]) };
+    }
+    if (kind === 'gradient' && !points && !mesh) {
       const src = props['src'];
-      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder`);
+      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder, "points" or "mesh"`);
       if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split('/').includes('..')) {
         throw new Error(`${fileName}:${src.line}: background "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
       }
       def.src = src.value;
-    } else {
+    } else if (kind === 'pattern') {
       const gen = props['generator']?.value;
       if (!gen) throw new Error(`${fileName}:${line}: background "${id}" is a pattern and needs "generator:" (e.g. ripples)`);
       if (!/^[a-z][a-z0-9-]*$/.test(gen)) throw new Error(`${fileName}:${props['generator'].line}: background "${id}" generator must be a lowercase id, got "${gen}"`);
