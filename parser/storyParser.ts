@@ -154,11 +154,12 @@ export interface ParsedStoryPage {
   placeholder?: true;
   /** Theme name from the `.brand`; this page uses it instead of the colours the story starts with. */
   theme?: string;
-  /** The page's ground: `#RRGGBB`, or `{item}` for the day's item of the page's work. Text and logo follow
-   *  the brand's contrast rule against it. */
+  /** `background:` is what lies under the page: a plain colour or a `background` block of the `.brand`.
+   *  A plain colour: `#RRGGBB`, or `{item}` for the day's item of the page's work. The page is plain: no gradient
+   *  or pattern from its theme lies on it. Text and logo follow the brand's contrast rule against it. */
   background?: string;
-  /** `background: NAME`: the `background NAME` block of the `.brand` that lies under this page (a gradient or a
-   *  pattern), instead of the one its theme would get. Since v0.68. */
+  /** A `background` block: the id of the `background NAME` block (a gradient or a pattern) that lies under this
+   *  page, instead of the one its theme would get. Since v0.68. */
   backgroundName?: string;
   /** Page topic: what this page adds to the story. */
   topic?: string;

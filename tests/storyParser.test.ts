@@ -539,6 +539,14 @@ test('background: NAME names a background of the .brand', () => {
   assertThrows(() => parse('page\n  purpose: notice\n  background: #FFCC0\n'), 'invalid background');
 });
 
+test('background: a colour is a plain page, without a background block', () => {
+  const s = parse('page\n  purpose: notice\n  theme: Dawn\n  background: #FFCC00\npage\n  purpose: notice\n  theme: Dawn\n');
+  assertEq([s.pages[0].background, s.pages[0].backgroundName], ['#FFCC00', undefined], 'plain colour, no block');
+  assertEq([s.pages[1].background, s.pages[1].backgroundName], [undefined, undefined], 'no key: the theme decides');
+  const brand = { ...BRAND, themes: ['Dawn'], backgrounds: [{ id: 'dawn-drift', themes: ['Dawn'] }] };
+  assertEq(checkStory(s, brand, 's.story'), [], 'a plain page under a theme with a gradient');
+});
+
 test('work variables need a work and what it has', () => {
   const s = parse('work: nachtfahrt\npage\n  purpose: notice\n  primary: {work} {kind} {by} {price}\n  detail:\n    {on} {days-until}\n');
   assertEq(checkStory(s, { ...BRAND, works: [ALBUM], groups: [FENSTER], people: [LENA] }, 's.story'), [
