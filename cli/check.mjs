@@ -1801,10 +1801,22 @@ function parseBrandFile(content, fileName) {
       if (activeBlock === "background") {
         const trimmed = raw.trim();
         if (trimmed === "" || trimmed.startsWith("# ")) continue;
+        const bg = backgroundsRaw[backgroundsRaw.length - 1];
+        const indent = raw.length - raw.trimStart().length;
+        if (trimmed === "points" || trimmed === "mesh") {
+          if (bg[trimmed]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${trimmed} twice`);
+          bg[trimmed] = [];
+          bg.sub = trimmed;
+          continue;
+        }
+        if (bg.sub && indent >= 4) {
+          bg[bg.sub].push({ value: trimmed.replace(/\s+#\s.*$/, ""), line: lineNum });
+          continue;
+        }
+        bg.sub = void 0;
         const colonIdx2 = trimmed.indexOf(":");
         if (colonIdx2 === -1) throw new Error(`${fileName}:${lineNum}: background property must be "KEY: VALUE", got "${trimmed}"`);
         const key2 = trimmed.slice(0, colonIdx2).trim();
-        const bg = backgroundsRaw[backgroundsRaw.length - 1];
         if (bg.props[key2]) throw new Error(`${fileName}:${lineNum}: background "${bg.id}" has ${key2}: twice`);
         bg.props[key2] = { value: trimmed.slice(colonIdx2 + 1).replace(/\s+#\s.*$/, "").trim(), line: lineNum };
         continue;
@@ -2431,10 +2443,13 @@ background ${id}
     if (theme["counter-bg"] === void 0 && theme["label-bg"] !== void 0) theme["counter-bg"] = theme["label-bg"];
     if (theme["counter-fg"] === void 0 && theme["label-fg"] !== void 0) theme["counter-fg"] = theme["label-fg"];
   }
-  const backgrounds = backgroundsRaw.map(({ id, line, props }) => {
+  const backgrounds = backgroundsRaw.map(({ id, line, props, points, mesh }) => {
     const kind = props["kind"]?.value;
     if (kind !== "gradient" && kind !== "pattern") throw new Error(`${fileName}:${line}: background "${id}" needs "kind: gradient" or "kind: pattern"${kind ? `, got "${kind}"` : ""}`);
-    const known = new Set(kind === "gradient" ? ["label", "kind", "themes", "src"] : ["label", "kind", "themes", "generator", "tone"]);
+    const known = new Set(kind === "gradient" ? points || mesh ? ["label", "kind", "themes", "size", "motion"] : ["label", "kind", "themes", "src", "motion"] : ["label", "kind", "themes", "generator", "tone"]);
+    if (points && kind !== "gradient") throw new Error(`${fileName}:${points[0]?.line ?? line}: background "${id}" (${kind}) has no points`);
+    if (mesh && kind !== "gradient") throw new Error(`${fileName}:${mesh[0]?.line ?? line}: background "${id}" (${kind}) has no mesh`);
+    if (points && mesh) throw new Error(`${fileName}:${mesh[0]?.line ?? line}: background "${id}" has points and a mesh, one of them`);
     for (const [key, { line: l }] of Object.entries(props)) {
       if (!known.has(key)) throw new Error(`${fileName}:${l}: background "${id}" (${kind}) has no "${key}:" (keys: ${[...known].join(", ")})`);
     }
@@ -2449,14 +2464,46 @@ background ${id}
     } else if (kind === "gradient") {
       throw new Error(`${fileName}:${line}: background "${id}" is a gradient and needs "themes:", the themes whose colours it carries`);
     }
-    if (kind === "gradient") {
+    if (kind === "gradient" && mesh) {
+      def.mesh = mesh.map(({ value, line: l }) => {
+        const row = value.split(/\s+/);
+        if (row.some((c) => !/^#[0-9a-fA-F]{6}$/.test(c))) throw new Error(`${fileName}:${l}: background "${id}" mesh row must be colours "#RRGGBB #RRGGBB \u2026", got "${value}"`);
+        return row.map((c) => c.toUpperCase());
+      });
+      if (def.mesh.length < 2 || def.mesh[0].length < 2) throw new Error(`${fileName}:${mesh[0]?.line ?? line}: background "${id}" mesh needs at least two rows of at least two colours`);
+      const bad = mesh.find((_, i) => def.mesh[i].length !== def.mesh[0].length);
+      if (bad) throw new Error(`${fileName}:${bad.line}: background "${id}" mesh rows must have the same number of colours (${def.mesh[0].length})`);
+    }
+    if (kind === "gradient" && points) {
+      if (points.length < 2) throw new Error(`${fileName}:${line}: background "${id}" points: a gradient needs at least two`);
+      def.points = points.map(({ value, line: l }) => {
+        const m = value.match(/^(#[0-9a-fA-F]{6})\s+at\s+(-?\d+(?:\.\d+)?)%\s+(-?\d+(?:\.\d+)?)%\s+size\s+(\d+(?:\.\d+)?)%$/);
+        if (!m) throw new Error(`${fileName}:${l}: background "${id}" point must be "#RRGGBB at X% Y% size S%", got "${value}"`);
+        const size = Number(m[4]);
+        if (size <= 0) throw new Error(`${fileName}:${l}: background "${id}" point size must be more than 0%`);
+        return { color: m[1].toUpperCase(), x: Number(m[2]), y: Number(m[3]), size };
+      });
+    }
+    if (kind === "gradient" && (points || mesh)) {
+      const size = props["size"];
+      if (!size) throw new Error(`${fileName}:${line}: background "${id}" needs "size:", the side of its square sheet in px`);
+      if (!/^\d+$/.test(size.value) || Number(size.value) <= 0) throw new Error(`${fileName}:${size.line}: background "${id}" size must be whole px, got "${size.value}"`);
+      def.size = Number(size.value);
+    }
+    const motion = kind === "gradient" ? props["motion"] : void 0;
+    if (motion) {
+      const m = motion.value.match(/^drift\s+(\d+(?:\.\d+)?)s$/);
+      if (!m || Number(m[1]) <= 0) throw new Error(`${fileName}:${motion.line}: background "${id}" motion must be "drift Ns" (seconds for one round), got "${motion.value}"`);
+      def.motion = { kind: "drift", period: Number(m[1]) };
+    }
+    if (kind === "gradient" && !points && !mesh) {
       const src = props["src"];
-      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder`);
+      if (!src) throw new Error(`${fileName}:${line}: background "${id}" needs "src:", the gradient as an image in the brand folder, "points" or "mesh"`);
       if (!/^[^/.][^:]*\.(png|jpe?g|webp)$/i.test(src.value) || src.value.split("/").includes("..")) {
         throw new Error(`${fileName}:${src.line}: background "${id}" src must be a .png, .jpg or .webp path inside the brand folder, got "${src.value}"`);
       }
       def.src = src.value;
-    } else {
+    } else if (kind === "pattern") {
       const gen = props["generator"]?.value;
       if (!gen) throw new Error(`${fileName}:${line}: background "${id}" is a pattern and needs "generator:" (e.g. ripples)`);
       if (!/^[a-z][a-z0-9-]*$/.test(gen)) throw new Error(`${fileName}:${props["generator"].line}: background "${id}" generator must be a lowercase id, got "${gen}"`);
@@ -5506,8 +5553,9 @@ function parseStoryFile(content, fileName) {
         if (read.value === "true") currentPage.placeholder = true;
       } else if (read?.key === "theme") currentPage.theme = read.value;
       else if (read?.key === "background") {
-        if (!/^#[0-9a-fA-F]{6}$/.test(read.value) && read.value !== "{item}") throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB or {item})`);
-        currentPage.background = read.value;
+        if (/^#[0-9a-fA-F]{6}$/.test(read.value) || read.value === "{item}") currentPage.background = read.value;
+        else if (/^[a-z0-9][a-z0-9-]*$/.test(read.value)) currentPage.backgroundName = read.value;
+        else throw new Error(`${fileName}:${lineNum}: invalid background "${read.value}" (expected #RRGGBB, {item} or a background name)`);
       } else if (read?.key === "continues") {
         if (read.value !== "true" && read.value !== "false") throw new Error(`${fileName}:${lineNum}: invalid continues "${read.value}" (expected true or false)`);
         if (read.value === "true") currentPage.continues = true;
@@ -5875,6 +5923,11 @@ function checkStory(story, brand, fileName) {
     if (page.camera && purpose.camera === false) say(`${where}: photo: camera, but purpose "${purpose.id}" has camera: false`);
     if (page.placeholder && purpose.camera === false) say(`${where}: placeholder: true, but purpose "${purpose.id}" has camera: false, so nobody can replace it`);
     if (page.theme && brand.themes && !brand.themes.includes(page.theme)) say(`${where}: theme "${page.theme}" does not exist`);
+    if (page.backgroundName && brand.backgrounds) {
+      const bg = brand.backgrounds.find((b) => b.id === page.backgroundName);
+      if (!bg) say(`${where}: background "${page.backgroundName}" does not exist`);
+      else if (page.theme && bg.themes && !bg.themes.includes(page.theme)) say(`${where}: background "${bg.id}" does not lie under theme "${page.theme}"`);
+    }
     if (page.background === "{item}" && workMap) {
       if (!named.work) say(`${where}: background {item} needs a work: on the page or the story`);
       else if (facts.work && !facts.work.items) say(`${where}: background {item} needs items: in work "${facts.work.id}"`);
@@ -6022,6 +6075,7 @@ function checkFiles(files) {
         compositions: [...compositionIds],
         formats: formats.map((f) => f.id),
         themes: Object.keys(brand.themes ?? {}),
+        backgrounds: (brand.backgrounds ?? []).map((b) => ({ id: b.id, themes: b.themes })),
         photos: files.photos ?? (brand.assets?.photos ?? []).map((p) => p.id),
         videos: files.videos ?? (brand.assets?.videos ?? []).map((v) => v.id),
         illustrations: (brand.assets?.illustrations ?? []).map((i) => i.id),

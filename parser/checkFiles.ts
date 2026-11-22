@@ -169,6 +169,7 @@ export function checkFiles(files: BrandFiles): FileIssue[] {
         compositions: [...compositionIds],
         formats: formats.map(f => f.id),
         themes: Object.keys(brand.themes ?? {}),
+        backgrounds: (brand.backgrounds ?? []).map(b => ({ id: b.id, themes: b.themes })),
         photos: files.photos ?? (brand.assets?.photos ?? []).map(p => p.id),
         videos: files.videos ?? (brand.assets?.videos ?? []).map(v => v.id),
         illustrations: (brand.assets?.illustrations ?? []).map(i => i.id),

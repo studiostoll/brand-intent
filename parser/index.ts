@@ -29,7 +29,7 @@ export {
   DEFAULT_COLOR_RULES,
 } from './colorSystem';
 export type { ReachConfig, ToneAnchors } from './colorSystem';
-export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedRole, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedCameraDef, ParsedLocationDef, ParsedPrintDef, ParsedBackgroundDef, ParsedFinishDef, FinishBlend, TextTrim, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
+export type { ParsedBrand, ParsedFontDef, ParsedTypographyDef, ParsedRole, ParsedDividerDef, BrandColorPrintSpec, ParsedAssetDef, ParsedBadgeStyle, LogoAlign, ParsedCounterDef, CounterFormat, CounterShape, ParsedFramingDef, ParsedCameraDef, ParsedLocationDef, ParsedPrintDef, ParsedBackgroundDef, GradientPoint, GradientMotion, ParsedFinishDef, FinishBlend, TextTrim, ParsedPhotoLookDef, PhotoLookKey } from './brandParser';
 
 export { parseDateWindowRanges, isInDateWindow, SAMPLE_WINDOW_MARKER } from './dateWindows';
 export type { DateWindowRange } from './dateWindows';

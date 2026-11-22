@@ -737,17 +737,49 @@ background ripples
 | `label:` | string | all | No | Display name. Default: the block's name |
 | `kind:` | `gradient` \| `pattern` | all | Yes | What the background is |
 | `themes:` | theme names, comma list | all | Gradient: yes. Pattern: no | The themes it lies under (see Pairing) |
-| `src:` | path | gradient | Yes | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
+| `src:` | path | gradient | one of `src:`, `points`, `mesh` (since v0.67; before, required) | The gradient as a `.png`, `.jpg` or `.webp` file inside the brand folder |
+| `points` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn from colour points, one per line: `#RRGGBB at X% Y% size S%` (see Points) (since v0.67) |
+| `mesh` | sub-block | gradient | one of `src:`, `points`, `mesh` | The gradient drawn through a grid of colours, one row per line: `#RRGGBB #RRGGBB …` (see Mesh) (since v0.67) |
+| `size:` | px | gradient with `points` or `mesh` | Yes | The side of the square sheet it is drawn on, in canvas px (since v0.67) |
+| `motion:` | `drift Ns` | gradient | No | The gradient flows slowly and is back after `N` seconds. Absent: it stands still (since v0.67) |
 | `generator:` | id | pattern | Yes | The generator that draws it. Ids are the implementation's, like a logo's `generator:` (for example `ripples`, `swell`, `wind`) |
 | `tone:` | `shade` \| `tint` | pattern | Yes | A shade is darker than the ground, a tint lighter |
 
-**Gradient.** Its colours are its themes' colours, so it names them. Each theme keeps its `ground:` (or `background`) as the colour the gradient stands for; the slots derived from the ground (`label-fg`, `sticker-fg`) take it. The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so its grain (the noise that keeps a gradient from banding) looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when the page gets the background and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown.
+**Gradient.** Its colours are free: an image brings its own, `points` and `mesh` write theirs, brand colours or not. It names the themes it lies under, and each of them keeps its `ground:` (or `background`) as the colour the gradient stands for: contrast is checked against it, and the slots derived from the ground (`label-fg`, `sticker-fg`) take it. Several gradients may name one theme; a page gets one of them, the one its story page names (`background: NAME`), or none when its story page gives a plain colour. The image is drawn at its own size, one image pixel to one canvas pixel, and enlarged only as far as it must be to cover the canvas, so its grain (the noise that keeps a gradient from banding) looks the same on every format. Each page takes its own section: any position, turned in quarter turns, mirrored or not. The implementation chooses the section when the page gets the background and keeps it with the page, so no two pages look alike and a page looks the same every time it is shown.
+
+**Points.** A gradient can be drawn instead of loaded. Its sheet is a square of `size:` px, treated like an image of that size (sections, turns, mirroring). Each point gives its colour most weight at its place, less with distance, as a bell `size` wide (% of the sheet); a spot on the sheet has the colours of all points mixed by their weights. Places may lie outside the sheet (below 0 % or above 100 %): a point off the edge still tints it. With `motion: drift`, each point moves on a small closed path around its place; the same round repeats without a seam, so a still is the moment the round starts.
+
+```yaml
+background dusk
+  kind:   gradient
+  themes: Dusk
+  size:   1920
+  motion: drift 24s
+  points
+    #3B2A5C at 10% 20% size 30%
+    #E08A5F at 80% 90% size 22%
+```
+
+**Mesh.** A gradient can also be drawn through a grid of colours: each line of `mesh` is a row, top to bottom, each colour a node, left to right; all rows have the same number of colours, at least two rows of two. The nodes lie evenly from edge to edge of the square sheet (`size:` px, placed like an image). The surface passes through every node's colour and runs smoothly between neighbours, so the colours written are the colours seen.
+
+```yaml
+background dusk
+  kind:   gradient
+  themes: Dusk
+  size:   1920
+  motion: drift 24s
+  mesh
+    #3B2A5C #E08A5F #3B2A5C
+    #E08A5F #F4C59B #3B2A5C
+```
+
+**Drift.** With `motion: drift Ns` a gradient moves slowly and is back where it started after `N` seconds, so the round repeats without a seam and a still is the moment it starts. Points wander around their places; a mesh or an image flows, gently warped like liquid. Exports and a reader who asks for reduced motion get the still.
 
 **Pattern.** A pattern has one colour, taken from the ground: a shade is darker, a tint lighter, and near black or white the direction turns so the pattern stays visible. So a pattern fits any theme. How strong, how large and in which direction it is drawn are the page's, not the language's.
 
 **Pairing.** The background names its themes, the theme doesn't name its background.
 
-- A background with `themes:` lies under every page in those themes. A theme named by several takes one of them per page.
+- A background with `themes:` lies under every page in those themes. A theme named by several takes one of them per page. A story page chooses with `background:`: a name, or a plain colour for no background.
 - A pattern without `themes:` fits every theme and lies under no page until someone picks it.
 - A theme in `themes:` the brand doesn't declare is an error.
 
@@ -755,7 +787,7 @@ A photo or video on the page lies above the background; with `image: full` it is
 
 **Contrast.** A background adds no rule to its themes: each is checked against its ground, as every theme. Whether text reads on a gradient is checked per page, against the part of the gradient under the text, by an implementation that reads the image.
 
-**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand: a generated gradient (`kind: gradient` with colour stops instead of `src:`). Grain over the page is a [finish](#finish-name-block), not a background.
+**Later kinds.** Unknown kinds and keys are errors, so new ones arrive without breaking a brand. Grain over the page is a [finish](#finish-name-block), not a background.
 
 ### `finish NAME` Block
 
@@ -1906,7 +1938,7 @@ A story is an ordered set of pages, posted or shared together: a carousel, a seq
 | `video:` | comma list | No | Video ids from the `.brand`. The page's ground is a video instead of a photo. With several, or beside `photo:`, they are one pool, the photos first, then the videos: implementations pick one per story date, the same one every time for that date, so a recurring post shows a photo on one day and a video on another. Implementations that post the story post a page whose pick is a video as a video where the format takes one, and show a frame of it elsewhere. Not beside `photo: camera`. `checkStory` reports an unknown id. Since v0.53; a list, and beside `photo:`, since v0.56 |
 | `placeholder:` | bool | No | `true`: the page's `photo:` or `video:` ids only hold the place. A person replaces them before the page goes out, by camera or upload, with a photo or a video; implementations refuse to publish the page until then, and a post that goes out on its own asks for the photo first. Needs a `photo:` or `video:` on the page, and not `photo: camera`, which has no placeholder and takes the camera only. `checkStory` reports it on a purpose with `camera: false`. Default: `false`. Since v0.58 |
 | `theme:` | string | No | Theme name from the `.brand`. This page uses that theme instead of the colours the story starts with (the first page's purpose `palette:`). `checkStory` reports an unknown theme |
-| `background:` | `#RRGGBB` or `{item}` | No | The page's ground, instead of the theme's background. `{item}` is the day's [item](#items) of the page's work: a colour of the day. Text and logo follow the brand's contrast rule against it. `checkStory` reports `{item}` without a work, without `items:`, or with an item that is not `#RRGGBB` |
+| `background:` | `#RRGGBB`, `{item}` or a background name | No | The page's background: a plain colour or a [`background` block](#background-name-block). A plain colour (`#RRGGBB`, or `{item}`, the day's [item](#items) of the page's work: a colour of the day) is the page's ground, instead of the theme's `background`, and the page stays plain: no gradient or pattern of its theme lies on it. Text and logo follow the brand's contrast rule against it. A name is the `background NAME` block of the `.brand` that lies under the page, instead of the one its theme would get; it must lie under the page's theme. Without `background:` the page takes its theme's ground and one of its theme's backgrounds. Names since v0.68. `checkStory` reports `{item}` without a work, without `items:`, or with an item that is not `#RRGGBB`, and a name the `.brand` doesn't declare or whose `themes:` leave out the page's `theme:` |
 | `topic:` | string | No | Page topic: what this page adds to the story |
 | `person:` | string | No | [Person](#person-person) id this page speaks about, instead of the story's. One page can name one person; a carousel of three regulars is three pages |
 | `group:` | string | No | [Group](#group-group) id this page speaks about, instead of the story's |
