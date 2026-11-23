@@ -83,6 +83,15 @@ test('scrim: paragraph and line put a ground behind each paragraph or line', () 
   assertThrows(() => s('scrim: box'), /invalid scrim "box" \(expected none, paragraph or line/, 'a look is no value');
 });
 
+test('a slot scrim overrides the purpose scrim for that slot', () => {
+  const p = (line: string) => () => parsePurposeFile(`id: p\ncompositions: panel\nscrim: none\n\nslot primary\n  label: Headline\n  typography: headline\n  maxLength: 40\n  samples: a\n\nslot secondary\n  label: Subline\n  typography: headline\n  maxLength: 40\n  samples: b\n${line}\n`, 'p.purpose');
+  const parsed = p('  scrim: line')();
+  assertEq(parsed.scrim, 'none', 'the purpose keeps its own');
+  assertEq(parsed.slots.find(x => x.id === 'secondary')?.scrim, 'line', 'the slot has its own');
+  assertEq(parsed.slots.find(x => x.id === 'primary')?.scrim, undefined, 'another slot has none');
+  assertThrows(p('  scrim: 30%'), /invalid slot scrim "30%"/, 'a strength');
+});
+
 test('a blank line in a multi-line example text is a paragraph break', () => {
   const head = 'id: p\ncompositions: panel\n\nslot primary\n  label: Text\n  typography: headline\n  maxLength: 200\n\n';
   const p = parsePurposeFile(`${head}example\n  primary:\n    On the house\n\n    This Saturday a glass with every purchase.\n    Until six.\n\n\n    Come by.\n\nexample\n  primary: One line\n`, 'p.purpose');

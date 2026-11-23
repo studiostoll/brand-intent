@@ -1089,6 +1089,8 @@ A `.purpose` can give the scrim a finer unit: instead of one gradient behind all
 
 An empty line in a text starts a new paragraph, and with it a new ground, `scrim-gap` away from the one before. Two slots that follow each other without a spacer keep the same gap. The ground is the theme's `background`, opaque, with square corners; the text keeps the theme's text colour, so the pair is the one the theme already checks. `scrim-padding` and `scrim-gap` are the brand's, like the gradient's strength; they need no `scrim:` percentage, and the gradient is not drawn under a purpose with a paragraph or line scrim.
 
+A slot can set its own `scrim:` (`none`, `paragraph` or `line`), which wins over the purpose's for that slot: a subline in its ground under a headline that stands free on the photo is `scrim: none` on the purpose and `scrim: line` on the subline. The gradient lies only under the text that keeps it, the slots without a ground and without `none`.
+
 **Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
 
 ### `location` Block
@@ -1305,6 +1307,7 @@ These names are fixed. They travel through the entire stack: a composition place
 | `label:` | string | Yes | Human-readable slot name |
 | `typography:` | string | Yes | Named typography style from `.brand` |
 | `color:` | string | No | Theme slot name (e.g., `text-primary`, `cta`) |
+| `scrim:` | `none` \| `paragraph` \| `line` | No | This slot's [scrim](#paragraph-and-line-scrim), over the purpose's `scrim:`. Absent: the purpose's |
 | `maxLength:` | int | Yes | Character limit. The hard limit: layouts are built for it |
 | `words:` | range | No | Editorial word range, `N` or `MIN..MAX` (e.g. `3..8`). Guidance for writing and review on top of `maxLength` |
 | `sentences:` | range | No | Editorial sentence range, `N` or `MIN..MAX` |

@@ -3480,7 +3480,7 @@ function parsePurposeFile(content, fileName) {
       illustrations = line.slice(13).split(",").map((id2) => id2.trim()).filter(Boolean);
       continue;
     }
-    if (line.startsWith("scrim:")) {
+    if (line.startsWith("scrim:") && !raw.startsWith(" ")) {
       const value = line.slice(6).trim();
       if (value !== "none" && value !== "paragraph" && value !== "line") throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none, paragraph or line; how dark the gradient gets is the brand's photo-look scrim)`);
       scrim = value;
@@ -3816,6 +3816,12 @@ ${text}` : text;
       }
       if (prop.startsWith("color:")) {
         currentSlot.colorRef = prop.slice(6).trim();
+        continue;
+      }
+      if (prop.startsWith("scrim:")) {
+        const value = prop.slice(6).trim();
+        if (value !== "none" && value !== "paragraph" && value !== "line") throw new Error(`${fileName}:${lineNum}: invalid slot scrim "${value}" (expected none, paragraph or line)`);
+        currentSlot.scrim = value;
         continue;
       }
       if (prop === "editable" || prop === "editable: true" || prop === "editable:true") {
