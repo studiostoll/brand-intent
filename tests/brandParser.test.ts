@@ -514,6 +514,9 @@ test('photo-look scrim-padding and scrim-gap', () => {
   assertThrows(() => look('  scrim-padding: 1 2 3 4 5\n'), /photo-look scrim-padding/, 'five values');
   assertThrows(() => look('  scrim-padding: 1cqh\n'), /photo-look scrim-padding/, 'a unit');
   assertThrows(() => look('  scrim-gap: -1\n'), /photo-look scrim-gap/, 'negative');
+  assertEq(look('  scrim-ground: figure\n').scrimGround, 'figure', 'ground figure');
+  assertEq('scrimGround' in look('  scrim: 45%\n'), false, 'ground absent');
+  assertThrows(() => look('  scrim-ground: accent\n'), /photo-look scrim-ground/, 'ground unknown');
 });
 
 test('photo-look rejects bad values and keys', () => {

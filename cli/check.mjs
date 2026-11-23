@@ -2831,7 +2831,7 @@ background ${id}
   if (photoLookDeclared) {
     const keys = ["saturation", "contrast", "warmth", "fade", "mono", "duotone"];
     for (const [key, { line }] of Object.entries(photoLookRaw)) {
-      if (key !== "fixed" && key !== "scrim" && key !== "scrim-padding" && key !== "scrim-gap" && !keys.includes(key)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+      if (key !== "fixed" && key !== "scrim" && key !== "scrim-padding" && key !== "scrim-gap" && key !== "scrim-ground" && !keys.includes(key)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
     }
     const int = (key, min, max) => {
       const p = photoLookRaw[key];
@@ -2900,6 +2900,11 @@ background ${id}
     if (scrimGap) {
       if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqmin), got "${scrimGap.value}"`);
       look.scrimGap = Number(scrimGap.value);
+    }
+    const scrimGround = photoLookRaw["scrim-ground"];
+    if (scrimGround) {
+      if (scrimGround.value !== "background" && scrimGround.value !== "figure") throw new Error(`${fileName}:${scrimGround.line}: photo-look scrim-ground must be background or figure, got "${scrimGround.value}"`);
+      look.scrimGround = scrimGround.value;
     }
     result.photoLook = look;
   }

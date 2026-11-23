@@ -150,6 +150,9 @@ export interface ParsedPhotoLookDef {
   scrimPadding?: [number, number, number, number];
   /** Paragraph and line scrim: space between two grounds, in cqmin. */
   scrimGap?: number;
+  /** Paragraph and line scrim: what the ground takes. Absent = `figure`: the theme's figure (logo colour), the text
+   *  on it the background. `background`: the theme's background, the text its text colour. */
+  scrimGround?: 'background' | 'figure';
 }
 
 export interface ParsedCameraDef {
@@ -2303,7 +2306,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   if (photoLookDeclared) {
     const keys: PhotoLookKey[] = ['saturation', 'contrast', 'warmth', 'fade', 'mono', 'duotone'];
     for (const [key, { line }] of Object.entries(photoLookRaw)) {
-      if (key !== 'fixed' && key !== 'scrim' && key !== 'scrim-padding' && key !== 'scrim-gap' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+      if (key !== 'fixed' && key !== 'scrim' && key !== 'scrim-padding' && key !== 'scrim-gap' && key !== 'scrim-ground' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
     }
     const int = (key: string, min: number, max: number): number => {
       const p = photoLookRaw[key];
@@ -2372,6 +2375,11 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (scrimGap) {
       if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqmin), got "${scrimGap.value}"`);
       look.scrimGap = Number(scrimGap.value);
+    }
+    const scrimGround = photoLookRaw['scrim-ground'];
+    if (scrimGround) {
+      if (scrimGround.value !== 'background' && scrimGround.value !== 'figure') throw new Error(`${fileName}:${scrimGround.line}: photo-look scrim-ground must be background or figure, got "${scrimGround.value}"`);
+      look.scrimGround = scrimGround.value;
     }
     result.photoLook = look;
   }
