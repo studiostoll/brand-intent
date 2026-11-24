@@ -1346,6 +1346,7 @@ function parseBrandFile(content, fileName) {
       if (activeBlock === "brand-colors") {
         const trimmed = raw.trimStart();
         if (trimmed === "") continue;
+        if (/^#(\s|$)/.test(trimmed)) continue;
         const indentLen = raw.length - trimmed.length;
         if (brandColorsShape === "unknown") {
           if (GROUP_KEYWORDS.has(trimmed) && indentLen <= 2) {
@@ -2970,7 +2971,7 @@ background ${id}
   if (photoLookDeclared) {
     const keys = ["saturation", "contrast", "warmth", "fade", "mono", "duotone"];
     for (const [key, { line }] of Object.entries(photoLookRaw)) {
-      if (key !== "fixed" && key !== "scrim" && key !== "scrim-padding" && key !== "scrim-gap" && !keys.includes(key)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+      if (key !== "fixed" && key !== "scrim" && key !== "scrim-padding" && key !== "scrim-gap" && key !== "scrim-ground" && key !== "scrim-opacity" && !keys.includes(key)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
     }
     const int = (key, min, max) => {
       const p = photoLookRaw[key];
@@ -3039,6 +3040,19 @@ background ${id}
     if (scrimGap) {
       if (!/^\d+(\.\d+)?$/.test(scrimGap.value)) throw new Error(`${fileName}:${scrimGap.line}: photo-look scrim-gap must be a number (cqmin), got "${scrimGap.value}"`);
       look.scrimGap = Number(scrimGap.value);
+    }
+    const scrimGround = photoLookRaw["scrim-ground"];
+    if (scrimGround) {
+      if (scrimGround.value !== "background" && scrimGround.value !== "figure") throw new Error(`${fileName}:${scrimGround.line}: photo-look scrim-ground must be background or figure, got "${scrimGround.value}"`);
+      look.scrimGround = scrimGround.value;
+    }
+    const scrimOpacity = photoLookRaw["scrim-opacity"];
+    if (scrimOpacity) {
+      const m = /^(\d+)%$/.exec(scrimOpacity.value);
+      if (!m || Number(m[1]) < 1 || Number(m[1]) > 100) {
+        throw new Error(`${fileName}:${scrimOpacity.line}: photo-look scrim-opacity must be a percentage from 1% to 100%, got "${scrimOpacity.value}"`);
+      }
+      look.scrimOpacity = Number(m[1]);
     }
     result.photoLook = look;
   }
@@ -3696,7 +3710,7 @@ function parsePurposeFile(content, fileName) {
       illustrations = line.slice(13).split(",").map((id2) => id2.trim()).filter(Boolean);
       continue;
     }
-    if (line.startsWith("scrim:")) {
+    if (line.startsWith("scrim:") && !raw.startsWith(" ")) {
       const value = line.slice(6).trim();
       if (value !== "none" && value !== "paragraph" && value !== "line") throw new Error(`${fileName}:${lineNum}: invalid scrim "${value}" (expected none, paragraph or line; how dark the gradient gets is the brand's photo-look scrim)`);
       scrim = value;
@@ -4039,6 +4053,12 @@ ${text}` : text;
       }
       if (prop.startsWith("color:")) {
         currentSlot.colorRef = prop.slice(6).trim();
+        continue;
+      }
+      if (prop.startsWith("scrim:")) {
+        const value = prop.slice(6).trim();
+        if (value !== "none" && value !== "paragraph" && value !== "line") throw new Error(`${fileName}:${lineNum}: invalid slot scrim "${value}" (expected none, paragraph or line)`);
+        currentSlot.scrim = value;
         continue;
       }
       if (prop === "editable" || prop === "editable: true" || prop === "editable:true") {

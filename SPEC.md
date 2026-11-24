@@ -418,6 +418,8 @@ brand-colors
       meaning: text, headings, structural weight
 ```
 
+**Comments:** an indented line that starts with `#` and a space (`  # Red: rose, red, wine`) is a comment in either form, also when it holds a colon. A `#` directly followed by a digit or letter is a hex.
+
 **Group rules:**
 
 - Groups are declared in this order: `primary`, `secondary`, `accent`, `neutral`. Declaration order is load-bearing for references — a group can only reference colors in earlier groups.
@@ -1121,6 +1123,8 @@ photo-look
   # scrim:    45%          # dark gradient under light text, at most this dark
   # scrim-padding: 1.78 2.84   # paragraph and line scrim: space around the text
   # scrim-gap: 0.71        # paragraph and line scrim: space between two grounds
+  # scrim-ground: figure   # paragraph and line scrim: the ground takes the figure, the text the background
+  # scrim-opacity: 90%     # paragraph and line scrim: how opaque the ground is
 ```
 
 | Key | Type | Default | Description |
@@ -1135,6 +1139,8 @@ photo-look
 | `scrim:` | percent | — | Under light text on a photo a dark gradient may lie, at most this dark (`1%`–`100%` black). Absent → no scrim |
 | `scrim-padding:` | 1–4 numbers | `1.78 2.84` | [Paragraph and line scrim](#paragraph-and-line-scrim): space between the text and the edge of its ground, in cqmin, CSS order (top/right/bottom/left) |
 | `scrim-gap:` | number | `0.71` | Paragraph and line scrim: space between two grounds, in cqmin |
+| `scrim-ground:` | `figure` \| `background` | `figure` | Paragraph and line scrim: the colour of the ground. `figure`: the theme's figure (the logo's colour), the text on it the theme's `background`. `background`: the other way round, the ground the theme's `background`, the text its text colour |
+| `scrim-opacity:` | percentage, 1–100 | `100%` | Paragraph and line scrim: how opaque the ground is; below 100% the photo shows through a little |
 
 **Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a grayscale-only or duotone brand).
 
@@ -1149,7 +1155,9 @@ A `.purpose` can give the scrim a finer unit: instead of one gradient behind all
 - `scrim: paragraph`: one ground behind each paragraph, as wide as the paragraph's longest line. A text without an empty line is one paragraph, so every slot gets its ground.
 - `scrim: line`: one ground behind each line, as wide as that line. The lines of a paragraph touch, so its edge steps with the line lengths.
 
-An empty line in a text starts a new paragraph, and with it a new ground, `scrim-gap` away from the one before. Two slots that follow each other without a spacer keep the same gap. The ground is the theme's `background`, opaque, with square corners; the text keeps the theme's text colour, so the pair is the one the theme already checks. `scrim-padding` and `scrim-gap` are the brand's, like the gradient's strength; they need no `scrim:` percentage, and the gradient is not drawn under a purpose with a paragraph or line scrim.
+An empty line in a text starts a new paragraph, and with it a new ground, `scrim-gap` away from the one before. Two slots that follow each other without a spacer keep the same gap. The ground is the theme's figure (the logo's colour), opaque unless `scrim-opacity` says less, with square corners; the text on it takes the theme's `background`, so the pair is the one the theme already checks, the other way round. With `scrim-ground: background` the ground is the theme's `background` and the text keeps the theme's text colour. `scrim-padding` and `scrim-gap` are the brand's, like the gradient's strength; they need no `scrim:` percentage, and the gradient is not drawn under a purpose with a paragraph or line scrim.
+
+A slot can set its own `scrim:` (`none`, `paragraph` or `line`), which wins over the purpose's for that slot: a subline in its ground under a headline that stands free on the photo is `scrim: none` on the purpose and `scrim: line` on the subline. The gradient lies only under the text that keeps it, the slots without a ground and without `none`.
 
 **Non-destructive.** The photo file stays as taken; the values are stored with the page and applied when rendering and exporting. Adjustments apply in the order `saturation`, `warmth`, `contrast`, `fade`, then `mono` or `duotone`.
 
@@ -1371,6 +1379,7 @@ A purpose may also name slots of its own. A slot ID is any name of lowercase let
 | `label:` | string | Yes | Human-readable slot name |
 | `typography:` | string | Yes | Named typography style from `.brand`; a role of the purpose's `use:` kind when the purpose has one |
 | `color:` | string | No | Theme slot name (e.g., `text-primary`, `cta`) |
+| `scrim:` | `none` \| `paragraph` \| `line` | No | This slot's [scrim](#paragraph-and-line-scrim), over the purpose's `scrim:`. Absent: the purpose's |
 | `maxLength:` | int | Yes | Character limit. The hard limit: layouts are built for it |
 | `words:` | range | No | Editorial word range, `N` or `MIN..MAX` (e.g. `3..8`). Guidance for writing and review on top of `maxLength` |
 | `sentences:` | range | No | Editorial sentence range, `N` or `MIN..MAX` |

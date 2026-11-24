@@ -2,6 +2,15 @@
 
 What the Brand Intent language gained in each release, by file type. The [specification](SPEC.md) is the source of truth; each key it lists names the version it arrived in.
 
+## v0.69.1 · 24 Nov 2026
+
+0.69.0 has the scrim keys; 0.69.1 adds the `brand-colors` comment fix.
+
+- **Purpose.** A slot takes `scrim: none | paragraph | line`, which wins over the purpose's `scrim:` for that slot. Absent, the slot keeps the purpose's.
+- **Brand.** `scrim-ground: figure | background` in the `photo-look` sets the ground of a paragraph or line scrim: `figure` (default) is the theme's figure with the theme's `background` as text, `background` the theme's `background` with its text colour. *Breaking:* the ground was the theme's `background` before; a brand that wants it keeps it with `scrim-ground: background`.
+- **Brand.** `scrim-opacity: N%` in the `photo-look`, 1%–100%, how opaque that ground is. Default `100%`; any other value is an error.
+- **Brand.** In `brand-colors`, an indented line that starts with `#` and a space is a comment, in the flat and the grouped form, also when it holds a colon. Before, such a line could be read as a colour.
+
 ## v0.68 · 21 Nov 2026
 
 - **Story.** A page's `background:` is its background: a plain colour (`#RRGGBB` or `{item}`, as before) or the name of a `background NAME` block, which must lie under the page's `theme:`. A plain colour now also means no gradient or pattern of the theme lies on the page. Without the key the page takes its theme's ground and one of its theme's backgrounds.

@@ -105,6 +105,21 @@ test('parses flat colors with print specs', () => {
   assertEq(out.brandColorPrint?.primary, { pantone: '286 C', cmyk: '97/80/0/31' }, 'brandColorPrint.primary');
 });
 
+test('skips indented comments in flat brand-colors, colon or not', () => {
+  const src = `${HEADER}brand-colors\n  # Red: rose, red, wine\n  primary: #0324B1\n  # warm accent\n  accent: #E32D39\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.brandColors, { primary: '#0324B1', accent: '#E32D39' }, 'brandColors');
+  assertEq(out.colorGroups, undefined, 'colorGroups (flat shape kept)');
+});
+
+test('skips indented comments in grouped brand-colors', () => {
+  const src = `${HEADER}brand-colors\n  primary\n    # Blue: light, base, dark\n    #0324B1  Royal\n      # role: not a property\n      role: default\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  if (!out.colorGroups) throw new Error('colorGroups missing');
+  assertEq(out.colorGroups[0].entries.length, 1, 'entries');
+  assertEq(out.colorGroups[0].entries[0].role, 'default', 'role');
+});
+
 test('rejects alpha in flat brand color (unchanged behavior)', () => {
   const src = `${HEADER}brand-colors\n  primary: #0324B1 75%\n`;
   assertThrows(() => parseBrandFile(src, 'test.brand'), /alpha syntax/, 'alpha reject');
@@ -549,6 +564,13 @@ test('photo-look scrim-padding and scrim-gap', () => {
   assertThrows(() => look('  scrim-padding: 1 2 3 4 5\n'), /photo-look scrim-padding/, 'five values');
   assertThrows(() => look('  scrim-padding: 1cqh\n'), /photo-look scrim-padding/, 'a unit');
   assertThrows(() => look('  scrim-gap: -1\n'), /photo-look scrim-gap/, 'negative');
+  assertEq(look('  scrim-ground: figure\n').scrimGround, 'figure', 'ground figure');
+  assertEq('scrimGround' in look('  scrim: 45%\n'), false, 'ground absent');
+  assertThrows(() => look('  scrim-ground: accent\n'), /photo-look scrim-ground/, 'ground unknown');
+  assertEq(look('  scrim-opacity: 90%\n').scrimOpacity, 90, 'opacity');
+  assertEq(look('  scrim-ground: figure\n').scrimOpacity, undefined, 'opacity absent');
+  assertThrows(() => look('  scrim-opacity: 0.9\n'), /photo-look scrim-opacity/, 'opacity not a percentage');
+  assertThrows(() => look('  scrim-opacity: 120%\n'), /photo-look scrim-opacity/, 'opacity over 100');
 });
 
 test('photo-look rejects bad values and keys', () => {
