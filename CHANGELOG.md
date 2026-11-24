@@ -4,7 +4,7 @@ What the Brand Intent language gained in each release, by file type. The [specif
 
 ## v0.69.1 · 24 Nov 2026
 
-The first published 0.69 (0.69.0 was tagged, never published).
+0.69.0 has the scrim keys; 0.69.1 adds the `brand-colors` comment fix.
 
 - **Purpose.** A slot takes `scrim: none | paragraph | line`, which wins over the purpose's `scrim:` for that slot. Absent, the slot keeps the purpose's.
 - **Brand.** `scrim-ground: figure | background` in the `photo-look` sets the ground of a paragraph or line scrim: `figure` (default) is the theme's figure with the theme's `background` as text, `background` the theme's `background` with its text colour. *Breaking:* the ground was the theme's `background` before; a brand that wants it keeps it with `scrim-ground: background`.
