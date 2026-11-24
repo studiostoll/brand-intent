@@ -416,6 +416,8 @@ brand-colors
       meaning: text, headings, structural weight
 ```
 
+**Comments:** an indented line that starts with `#` and a space (`  # Red: rose, red, wine`) is a comment in either form, also when it holds a colon. A `#` directly followed by a digit or letter is a hex.
+
 **Group rules:**
 
 - Groups are declared in this order: `primary`, `secondary`, `accent`, `neutral`. Declaration order is load-bearing for references — a group can only reference colors in earlier groups.

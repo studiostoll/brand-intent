@@ -639,6 +639,8 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
       if (activeBlock === 'brand-colors') {
         const trimmed = raw.trimStart();
         if (trimmed === '') continue;
+        // An indented comment: `#` then a space (or nothing). A hex entry has no space after `#`.
+        if (/^#(\s|$)/.test(trimmed)) continue;
         const indentLen = raw.length - trimmed.length;
 
         // Shape detection: first non-blank indented line decides.

@@ -70,6 +70,21 @@ test('parses flat colors with print specs', () => {
   assertEq(out.brandColorPrint?.primary, { pantone: '286 C', cmyk: '97/80/0/31' }, 'brandColorPrint.primary');
 });
 
+test('skips indented comments in flat brand-colors, colon or not', () => {
+  const src = `${HEADER}brand-colors\n  # Red: rose, red, wine\n  primary: #0324B1\n  # warm accent\n  accent: #E32D39\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  assertEq(out.brandColors, { primary: '#0324B1', accent: '#E32D39' }, 'brandColors');
+  assertEq(out.colorGroups, undefined, 'colorGroups (flat shape kept)');
+});
+
+test('skips indented comments in grouped brand-colors', () => {
+  const src = `${HEADER}brand-colors\n  primary\n    # Blue: light, base, dark\n    #0324B1  Royal\n      # role: not a property\n      role: default\n`;
+  const out = parseBrandFile(src, 'test.brand');
+  if (!out.colorGroups) throw new Error('colorGroups missing');
+  assertEq(out.colorGroups[0].entries.length, 1, 'entries');
+  assertEq(out.colorGroups[0].entries[0].role, 'default', 'role');
+});
+
 test('rejects alpha in flat brand color (unchanged behavior)', () => {
   const src = `${HEADER}brand-colors\n  primary: #0324B1 75%\n`;
   assertThrows(() => parseBrandFile(src, 'test.brand'), /alpha syntax/, 'alpha reject');

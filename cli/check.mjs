@@ -1338,6 +1338,7 @@ function parseBrandFile(content, fileName) {
       if (activeBlock === "brand-colors") {
         const trimmed = raw.trimStart();
         if (trimmed === "") continue;
+        if (/^#(\s|$)/.test(trimmed)) continue;
         const indentLen = raw.length - trimmed.length;
         if (brandColorsShape === "unknown") {
           if (GROUP_KEYWORDS.has(trimmed) && indentLen <= 2) {
