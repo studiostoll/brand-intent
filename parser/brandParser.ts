@@ -153,6 +153,8 @@ export interface ParsedPhotoLookDef {
   /** Paragraph and line scrim: what the ground takes. Absent = `figure`: the theme's figure (logo colour), the text
    *  on it the background. `background`: the theme's background, the text its text colour. */
   scrimGround?: 'background' | 'figure';
+  /** Paragraph and line scrim: opacity of the ground, 1..100 (%). Absent = 100 (opaque). */
+  scrimOpacity?: number;
 }
 
 export interface ParsedCameraDef {
@@ -2306,7 +2308,7 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
   if (photoLookDeclared) {
     const keys: PhotoLookKey[] = ['saturation', 'contrast', 'warmth', 'fade', 'mono', 'duotone'];
     for (const [key, { line }] of Object.entries(photoLookRaw)) {
-      if (key !== 'fixed' && key !== 'scrim' && key !== 'scrim-padding' && key !== 'scrim-gap' && key !== 'scrim-ground' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
+      if (key !== 'fixed' && key !== 'scrim' && key !== 'scrim-padding' && key !== 'scrim-gap' && key !== 'scrim-ground' && key !== 'scrim-opacity' && !keys.includes(key as PhotoLookKey)) throw new Error(`${fileName}:${line}: unknown photo-look property "${key}"`);
     }
     const int = (key: string, min: number, max: number): number => {
       const p = photoLookRaw[key];
@@ -2380,6 +2382,14 @@ export function parseBrandFile(content: string, fileName: string): ParsedBrand {
     if (scrimGround) {
       if (scrimGround.value !== 'background' && scrimGround.value !== 'figure') throw new Error(`${fileName}:${scrimGround.line}: photo-look scrim-ground must be background or figure, got "${scrimGround.value}"`);
       look.scrimGround = scrimGround.value;
+    }
+    const scrimOpacity = photoLookRaw['scrim-opacity'];
+    if (scrimOpacity) {
+      const m = /^(\d+)%$/.exec(scrimOpacity.value);
+      if (!m || Number(m[1]) < 1 || Number(m[1]) > 100) {
+        throw new Error(`${fileName}:${scrimOpacity.line}: photo-look scrim-opacity must be a percentage from 1% to 100%, got "${scrimOpacity.value}"`);
+      }
+      look.scrimOpacity = Number(m[1]);
     }
     result.photoLook = look;
   }

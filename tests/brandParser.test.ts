@@ -517,6 +517,10 @@ test('photo-look scrim-padding and scrim-gap', () => {
   assertEq(look('  scrim-ground: figure\n').scrimGround, 'figure', 'ground figure');
   assertEq('scrimGround' in look('  scrim: 45%\n'), false, 'ground absent');
   assertThrows(() => look('  scrim-ground: accent\n'), /photo-look scrim-ground/, 'ground unknown');
+  assertEq(look('  scrim-opacity: 90%\n').scrimOpacity, 90, 'opacity');
+  assertEq(look('  scrim-ground: figure\n').scrimOpacity, undefined, 'opacity absent');
+  assertThrows(() => look('  scrim-opacity: 0.9\n'), /photo-look scrim-opacity/, 'opacity not a percentage');
+  assertThrows(() => look('  scrim-opacity: 120%\n'), /photo-look scrim-opacity/, 'opacity over 100');
 });
 
 test('photo-look rejects bad values and keys', () => {

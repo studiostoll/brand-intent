@@ -1060,6 +1060,7 @@ photo-look
   # scrim-padding: 1.78 2.84   # paragraph and line scrim: space around the text
   # scrim-gap: 0.71        # paragraph and line scrim: space between two grounds
   # scrim-ground: figure   # paragraph and line scrim: the ground takes the figure, the text the background
+  # scrim-opacity: 90%     # paragraph and line scrim: how opaque the ground is
 ```
 
 | Key | Type | Default | Description |
@@ -1075,6 +1076,7 @@ photo-look
 | `scrim-padding:` | 1–4 numbers | `1.78 2.84` | [Paragraph and line scrim](#paragraph-and-line-scrim): space between the text and the edge of its ground, in cqmin, CSS order (top/right/bottom/left) |
 | `scrim-gap:` | number | `0.71` | Paragraph and line scrim: space between two grounds, in cqmin |
 | `scrim-ground:` | `figure` \| `background` | `figure` | Paragraph and line scrim: the colour of the ground. `figure`: the theme's figure (the logo's colour), the text on it the theme's `background`. `background`: the other way round, the ground the theme's `background`, the text its text colour |
+| `scrim-opacity:` | percentage, 1–100 | `100%` | Paragraph and line scrim: how opaque the ground is; below 100% the photo shows through a little |
 
 **Starting values, not rules.** Every key not listed in `fixed:` is a default: implementations apply it and let the person adjust it, including back to neutral. Use `fixed:` for treatments that define the brand (a grayscale-only or duotone brand).
 
@@ -1089,7 +1091,7 @@ A `.purpose` can give the scrim a finer unit: instead of one gradient behind all
 - `scrim: paragraph`: one ground behind each paragraph, as wide as the paragraph's longest line. A text without an empty line is one paragraph, so every slot gets its ground.
 - `scrim: line`: one ground behind each line, as wide as that line. The lines of a paragraph touch, so its edge steps with the line lengths.
 
-An empty line in a text starts a new paragraph, and with it a new ground, `scrim-gap` away from the one before. Two slots that follow each other without a spacer keep the same gap. The ground is the theme's figure (the logo's colour), opaque, with square corners; the text on it takes the theme's `background`, so the pair is the one the theme already checks, the other way round. With `scrim-ground: background` the ground is the theme's `background` and the text keeps the theme's text colour. `scrim-padding` and `scrim-gap` are the brand's, like the gradient's strength; they need no `scrim:` percentage, and the gradient is not drawn under a purpose with a paragraph or line scrim.
+An empty line in a text starts a new paragraph, and with it a new ground, `scrim-gap` away from the one before. Two slots that follow each other without a spacer keep the same gap. The ground is the theme's figure (the logo's colour), opaque unless `scrim-opacity` says less, with square corners; the text on it takes the theme's `background`, so the pair is the one the theme already checks, the other way round. With `scrim-ground: background` the ground is the theme's `background` and the text keeps the theme's text colour. `scrim-padding` and `scrim-gap` are the brand's, like the gradient's strength; they need no `scrim:` percentage, and the gradient is not drawn under a purpose with a paragraph or line scrim.
 
 A slot can set its own `scrim:` (`none`, `paragraph` or `line`), which wins over the purpose's for that slot: a subline in its ground under a headline that stands free on the photo is `scrim: none` on the purpose and `scrim: line` on the subline. The gradient lies only under the text that keeps it, the slots without a ground and without `none`.
 
